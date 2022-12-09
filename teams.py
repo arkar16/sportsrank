@@ -1,4 +1,8 @@
+# import pandas as pd
+
 nfl_teams = {
+    "Test1": 1000,
+    "Test2": 1000,
     "49ers": 1590,
     "Bears": 1412,
     "Bengals": 1585,
@@ -32,3 +36,5 @@ nfl_teams = {
     "Titans": 1616,
     "Vikings": 1570
 }
+
+
