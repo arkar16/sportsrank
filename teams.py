@@ -1,4 +1,30 @@
-# import pandas as pd
+import cfbd
+from api import api_key
+import pandas as pd
+
+# Configure API key authorization: ApiKeyAuth
+configuration = cfbd.Configuration()
+configuration.api_key['Authorization'] = api_key
+configuration.api_key_prefix['Authorization'] = 'Bearer'
+teams_api_instance = cfbd.TeamsApi(cfbd.ApiClient(configuration))
+
+# CONSTANTS
+YEAR = 2022
+DIVISION = 'fbs'
+BASE_ELO = 1000
+BASE_CORS = 0
+
+fbs_teams = teams_api_instance.get_fbs_teams(year=YEAR)
+cfb_teams = pd.DataFrame(columns=['school', 'conference'])
+
+# Loop through the FBS teams to create teams list
+for team in fbs_teams:
+    school = team.school
+    conf = team.conference
+    division = team.division
+
+    # Add the data to the dataframe
+    cfb_teams = pd.concat([cfb_teams, pd.DataFrame({'school': school, 'conference': conf, 'elo': BASE_ELO, 'cors': BASE_CORS}, index=[0])], ignore_index=True)
 
 nfl_teams = {
     "Test1": 1000,

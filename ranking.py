@@ -1,5 +1,7 @@
 import random
+import pandas as pd
 from teams import cfb_teams
+
 
 def calculate_ranking(wins, losses):
     """
@@ -24,10 +26,10 @@ def calculate_ranking(wins, losses):
     return ranking
 
 
-# Create a dictionary to store the teams and their rankings
+# Create a dictionary to store the cfb_teams and their rankings
 rankings = {}
 
-# Loop through the 130 teams
+# Loop through the 130 cfb_teams
 for team in cfb_teams.itertuples('col'):
     # Generate random number of wins and losses
     games = 12

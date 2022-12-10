@@ -1,12 +1,13 @@
 import random
 import teams
 
+
 def spread_prediction():
     K_CONSTANT = 3  # score constant adjustment
     HFA = .05  # home field advantage
     SIMULATION_RUNS = int(input("Enter how many simulations to run: "))  # how many matches to run
-    LOWER_RAND_CONSTANT = -10 # lower random elo bound
-    UPPER_RAND_CONSTANT = 10 # upper random elo bound
+    LOWER_RAND_CONSTANT = -10  # lower random elo bound
+    UPPER_RAND_CONSTANT = 10  # upper random elo bound
     SPORT = "NFL"  # what sport
 
     while True:
