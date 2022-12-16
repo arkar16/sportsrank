@@ -20,11 +20,11 @@ week_slate = fbs_games[fbs_games["week"] == WEEK]
 
 cors_week_df = (
     week_slate
-    .merge(cors_ratings.rename('home_elo'), left_on='home_team', right_index=True)
-    .merge(cors_ratings.rename('away_elo'), left_on='away_team', right_index=True)
+    .merge(cors_ratings.rename('home_cors'), left_on='home_team', right_index=True)
+    .merge(cors_ratings.rename('away_cors'), left_on='away_team', right_index=True)
 )
 
-cors_week_df['spread'] = cors_week_df['home_elo'] - cors_week_df['away_elo']
+cors_week_df['spread'] = cors_week_df['home_cors'] - cors_week_df['away_cors']
 print(cors_week_df)
 
 cors_week_html = cors_week_df.to_html()
