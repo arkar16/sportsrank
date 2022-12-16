@@ -1,81 +1,41 @@
 import random
-import teams
+import pandas as pd
+from cors import cors_team
+from games import fbs_games
+import os
+
+# get original working directory
+os.chdir("/Users/aryak/PycharmProjects/sportsrank")
+owd = os.getcwd()
+
+# constants
+WEEK = 1
+YEAR = 2022
+DIVISION = "fbs"
+
+#def calc_for_week(week_id, week_df):
+
+cors_ratings = cors_team[['school', 'cors']].set_index('school').squeeze()
+week_slate = fbs_games[fbs_games["week"] == WEEK]
+
+cors_week_df = (
+    week_slate
+    .merge(cors_ratings.rename('home_elo'), left_on='home_team', right_index=True)
+    .merge(cors_ratings.rename('away_elo'), left_on='away_team', right_index=True)
+)
+
+cors_week_df['spread'] = cors_week_df['home_elo'] - cors_week_df['away_elo']
+print(cors_week_df)
+
+cors_week_html = cors_week_df.to_html()
+os.chdir("spread")
+os.chdir(f"{YEAR}_spread")
+with open(f"{YEAR}_W{WEEK}_{DIVISION}_spread.html", "w") as f:
+    f.write(cors_week_html)
+os.chdir(owd)
 
 
-def spread_prediction():
-    K_CONSTANT = 3  # score constant adjustment
-    HFA = .05  # home field advantage
-    SIMULATION_RUNS = int(input("Enter how many simulations to run: "))  # how many matches to run
-    LOWER_RAND_CONSTANT = -10  # lower random elo bound
-    UPPER_RAND_CONSTANT = 10  # upper random elo bound
-    SPORT = "NFL"  # what sport
-
-    while True:
-        home_team = input("Enter Home Team: ")
-        if home_team in teams.nfl_teams:
-            break
-        else:
-            print(f"Team is not a {SPORT} team.")
-
-    while True:
-        away_team = input("Enter Away Team: ")
-        if away_team in teams.nfl_teams:
-            break
-        else:
-            print(f"Team is not a {SPORT} team.")
-
-    while True:  # need to fix
-        venue = input("Enter Venue (Home or Neutral): ")
-        if venue == "Home" or venue == "home" or venue == "Neutral" or venue == "neutral":
-            break
-        else:
-            print("That is not a venue option.")
-
-    simulation_counter = 0  # counter
-    spread_counter = 0  # counts up spread
-
-    # print(f"{home_team} vs. {away_team}")
-    while simulation_counter < SIMULATION_RUNS:
-        home_rat = teams.nfl_teams[home_team]
-        away_rat = teams.nfl_teams[away_team]
-        HOME_RAND_CONSTANT = random.randint(LOWER_RAND_CONSTANT, UPPER_RAND_CONSTANT)  # home elo random buffer
-        AWAY_RAND_CONSTANT = random.randint(LOWER_RAND_CONSTANT, UPPER_RAND_CONSTANT)  # away elo random buffer
-
-        if venue == "Home":
-            home_rat = home_rat + ((home_rat * HFA) + HOME_RAND_CONSTANT)
-            away_rat = away_rat + AWAY_RAND_CONSTANT
-        else:
-            home_rat = home_rat + HOME_RAND_CONSTANT
-            away_rat = away_rat + AWAY_RAND_CONSTANT
-        # t1_points = round((home_rat ** K_CONSTANT) // (away_rat ** K_CONSTANT))
-        # t2_points = round((away_rat ** K_CONSTANT) // (home_rat ** K_CONSTANT))
-        rat_spread = round((home_rat - away_rat) / 25)
-        spread_counter += rat_spread  # for debugging reasons
-        # if rat_spread >= 0:
-        # spread_counter += int(rat_spread)
-        # rat_spread = '+' + str(rat_spread)
-        # else:
-        # rat_spread = rat_spread
-        # spread_counter += int(rat_spread)
-
-        # print(f"{home_team} {home_rat} {away_team} {away_rat} {rat_spread}")
-        # print(f"{home_team} expected points: {t1_points}")
-        # print(f"{away_team} expected points: {t2_points}")
-        # if t1_points >= t2_points:
-        # print(f"Expected score: {home_team} {t1_points} - {away_team} {t2_points}")
-        # else:
-        # print(f"Expected score: {away_team} {t2_points} - {home_team} {t1_points}")
-        # print(f"Expected score: {home_team} {t1_points} - {away_team} {t2_points}")
-
-        simulation_counter += 1
-
-    avg_spread = round((spread_counter / SIMULATION_RUNS), 1)
-    # print(avg_spread)
-    if avg_spread > 0.0:
-        avg_spread = '+' + str(avg_spread)
-    elif avg_spread == 0.0:
-        avg_spread = "PUSH"
-    print(f"{home_team} vs. {away_team} ({avg_spread})")
 
 
-spread_prediction()
+
+
