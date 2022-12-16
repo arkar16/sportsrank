@@ -1,2 +1,5 @@
 # sportsrank
-sportsrank test
+sportsrank
+
+current:
+CFB
