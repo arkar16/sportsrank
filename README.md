@@ -3,4 +3,3 @@ sportsrank
 
 current:
 CFB
-NFL
