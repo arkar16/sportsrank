@@ -40,3 +40,6 @@ def get_teams(year, division):
     with open(f"{YEAR}_{DIVISION}_teams.html", "w") as f:
         f.write(teams_html)
     os.chdir(owd)
+
+    # return dataframe to be used in other functions
+    return cfb_teams

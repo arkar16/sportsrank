@@ -1,7 +1,7 @@
 import random
 import pandas as pd
-from cors import cors_team
-from games import fbs_games
+from cors import weekly_cors
+from games import get_week_slate
 import os
 
 # get original working directory
@@ -16,7 +16,8 @@ DIVISION = "fbs"
 #def calc_for_week(week_id, week_df):
 
 cors_ratings = cors_team[['school', 'cors']].set_index('school').squeeze()
-week_slate = fbs_games[fbs_games["week"] == WEEK]
+print(cors_ratings)
+week_slate = get_week_slate(YEAR, WEEK, DIVISION)
 
 cors_week_df = (
     week_slate
