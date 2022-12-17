@@ -22,6 +22,8 @@ def get_teams(year, division):
     fbs_teams = teams_api_instance.get_fbs_teams(year=YEAR)
     cfb_teams = pd.DataFrame(columns=["logo", "school", "conference"])
 
+    counter = 0
+
     # create dataframe of FBS teams
     for team in fbs_teams:
         logo = team.logos[0]
@@ -34,12 +36,11 @@ def get_teams(year, division):
             [cfb_teams, pd.DataFrame({"logo": logo_png, "school": school, "conference": conf}, index=[0])],
             ignore_index=True)
 
-    teams_html = cfb_teams.to_html(escape=False)
+    teams_html = cfb_teams.to_html(index=False, escape=False)
     os.chdir("data")
     os.chdir(f"{YEAR}_data")
     with open(f"{YEAR}_{DIVISION}_teams.html", "w") as f:
         f.write(teams_html)
     os.chdir(owd)
 
-    # return dataframe to be used in other functions
     return cfb_teams

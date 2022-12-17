@@ -1,5 +1,6 @@
 import os
 from teams import get_teams
+import pandas as pd
 from games import get_results
 
 
@@ -15,40 +16,34 @@ def get_records(year, week, division):
 
     teams_df = get_teams(YEAR, DIVISION)
     results_df = get_results(YEAR, DIVISION)
-    cfb_records_df = teams_df
 
-    for index, team_row in teams_df.iterrows():
-        team_name = team_row["school"]
+    cfb_records_df = teams_df.copy()
+    cfb_records_df['wins'] = 0
+    cfb_records_df['losses'] = 0
+    cfb_records_df['record'] = ''
+    cfb_records_df['win_pct'] = 0
 
-        wins = 0
-        losses = 0
+    current_record_games_df = results_df[results_df['week'] < WEEK + 1]  # a df of games up until the current week
 
-        for game_index, game_row in results_df.iterrows():
-            # Check if the team won or lost
-            if game_row['home_team'] == team_name:
-                # Skip the comparison if either score is None
-                if game_row['home_score'] is not None and game_row['away_score'] is not None:
-                    if game_row['home_score'] > game_row['away_score']:
-                        wins += 1
-                    else:
-                        losses += 1
-            elif game_row['away_team'] == team_name:
-                # Skip the comparison if either score is None
-                if game_row['home_score'] is not None and game_row['away_score'] is not None:
-                    if game_row['away_score'] > game_row['home_score']:
-                        wins += 1
-                    else:
-                        losses += 1
-        cfb_records_df.loc[index, "wins"] = wins
-        cfb_records_df.loc[index, "losses"] = losses
-        cfb_records_df.loc[index, "record"] = str(wins) + "-" + str(losses)
-        cfb_records_df.loc[index, "win_pct"] = round(wins / (wins + losses), 2)
+    for index, row in current_record_games_df.iterrows():
+        if row['home_score'] is not None and row['away_score'] is not None:
+            home_team = cfb_records_df['school'] == row['home_team']
+            away_team = cfb_records_df['school'] == row['away_team']
+            if row['home_score'] > row['away_score']:
+                cfb_records_df.loc[home_team, 'wins'] += 1
+                cfb_records_df.loc[away_team, 'losses'] += 1
+            else:
+                cfb_records_df.loc[away_team, 'wins'] += 1
+                cfb_records_df.loc[home_team, 'losses'] += 1
+            cfb_records_df['record'] = cfb_records_df['wins'].astype(str) + "-" + cfb_records_df['losses'].astype(str)
+            cfb_records_df['win_pct'] = round(
+                cfb_records_df['wins'] / (cfb_records_df['wins'] + cfb_records_df['losses']), 2)
 
-    cfb_records_df = cfb_records_df.sort_values(by=["win_pct"], ascending=False, ignore_index=True)
+    cfb_records_df = cfb_records_df.sort_values(by=["win_pct", "wins"], ascending=[False, False], ignore_index=True)
 
     # write dataframe to html
     cfb_presentable_records_df = cfb_records_df.drop(columns=["wins", "losses"])
-    records_html = cfb_presentable_records_df.to_html(escape=False)
+    records_html = cfb_presentable_records_df.to_html(justify="center", escape=False, index=False)
     os.chdir("data")
     os.chdir(f"{YEAR}_data")
     os.chdir("records")

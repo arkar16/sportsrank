@@ -16,7 +16,7 @@ def weekly_cors(base, year, week, division):
     WEEK = week
     DIVISION = division
 
-    cors_teams_df = get_records(YEAR, WEEK, DIVISION)
+    cors_teams_df = get_records(YEAR, WEEK, DIVISION).copy()
     weekly_results = get_results(YEAR, DIVISION)
 
     for index, row in cors_teams_df.iterrows():
