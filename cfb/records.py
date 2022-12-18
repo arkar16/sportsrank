@@ -4,7 +4,7 @@ import pandas as pd
 from games import get_results
 
 
-def get_records(year, week, division):
+def get_current_records(year, week, division):
     # get original working directory
     os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb")
     owd = os.getcwd()

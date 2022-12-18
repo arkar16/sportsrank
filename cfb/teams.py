@@ -22,8 +22,6 @@ def get_teams(year, division):
     fbs_teams = teams_api_instance.get_fbs_teams(year=YEAR)
     cfb_teams = pd.DataFrame(columns=["logo", "school", "conference"])
 
-    counter = 0
-
     # create dataframe of FBS teams
     for team in fbs_teams:
         logo = team.logos[0]

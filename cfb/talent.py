@@ -12,7 +12,7 @@ teams_api_instance = cfbd.TeamsApi(cfbd.ApiClient(configuration))
 players_api_instance = cfbd.PlayersApi(cfbd.ApiClient(configuration))
 
 # CONSTANTS
-YEAR = 2022
+YEAR = 2000 # has to be greater than 2015 for talent, 2014 for returning production
 
 fbs_talent = teams_api_instance.get_talent(year=YEAR)
 fbs_returning_production = players_api_instance.get_returning_production(year=YEAR)
