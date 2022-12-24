@@ -1,20 +1,21 @@
 import random
 import pandas as pd
 import os
+from games import get_week_slate
 
 
-def weekly_spread(year, week, division, week_games, week_cors):
+def weekly_spread(year, week, division, week_cors):
     # get original working directory
     os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb")
     owd = os.getcwd()
 
     # constants
-    WEEK = week
+    WEEK = week + 1
     YEAR = year
     DIVISION = division
 
     cors_team = week_cors
-    week_slate = week_games
+    week_slate = get_week_slate(YEAR, WEEK, DIVISION)
     cors_ratings = cors_team[['school', 'cors']].set_index('school').squeeze()
 
     cors_week_df = (
@@ -32,3 +33,4 @@ def weekly_spread(year, week, division, week_games, week_cors):
     with open(f"{YEAR}_W{WEEK}_{DIVISION}_spread.html", "w") as f:
         f.write(cors_week_html)
     os.chdir(owd)
+

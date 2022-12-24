@@ -101,7 +101,7 @@ def get_results(year, division):
 
     fbs_results = fbs_results
     # convert games to html
-    results_html = fbs_results.to_html()
+    results_html = fbs_results.to_html(index=False)
 
     # write games to html file for viewing
     os.chdir("data")
@@ -156,7 +156,7 @@ def get_week_slate(year, week, division):
 
     fbs_week_slate = fbs_week_slate
     # convert week_games to html
-    games_html = fbs_week_slate.to_html()
+    games_html = fbs_week_slate.to_html(index=False)
 
     # write week_games to html file for viewing
     os.chdir("data")
@@ -207,7 +207,7 @@ def get_slate(year, division):
 
     fbs_slate = fbs_slate
     # convert games to html
-    games_html = fbs_slate.to_html()
+    games_html = fbs_slate.to_html(index=False)
 
     # write games to html file for viewing
     os.chdir("data")

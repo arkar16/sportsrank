@@ -1,11 +1,9 @@
 import random
 import pandas as pd
-from records import get_current_records
-from games import get_weekly_results
 import os
 
 
-def weekly_cors(base, year, week, division):
+def weekly_cors(base, year, week, division, current_records, weekly_results):
     # get original working directory
     os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb")
     owd = os.getcwd()
@@ -16,8 +14,8 @@ def weekly_cors(base, year, week, division):
     WEEK = week
     DIVISION = division
 
-    cors_teams_df = get_current_records(YEAR, WEEK, DIVISION).copy()
-    weekly_results = get_weekly_results(YEAR, WEEK, DIVISION)
+    cors_teams_df = current_records.copy()
+    #weekly_results = weekly_results
 
     for index, row in cors_teams_df.iterrows():
         wins = row["wins"]
@@ -39,5 +37,3 @@ def weekly_cors(base, year, week, division):
     os.chdir(owd)
 
     return cors_teams_df
-
-weekly_cors(1000, 2022, 2, "fbs")
