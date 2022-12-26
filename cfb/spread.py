@@ -6,7 +6,7 @@ from games import get_week_slate
 
 def weekly_spread(year, week, division, week_cors):
     # get original working directory
-    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb")
+    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
     owd = os.getcwd()
 
     # constants
@@ -24,12 +24,11 @@ def weekly_spread(year, week, division, week_cors):
         .merge(cors_ratings.rename('away_cors'), left_on='away_team', right_index=True)
     )
 
-    cors_week_df['spread'] = cors_week_df['home_cors'] - cors_week_df['away_cors']
+    cors_week_df['spread'] = round((cors_week_df['home_cors'] - cors_week_df['away_cors'])*2) / 2
 
     cors_week_df_clean = cors_week_df.drop(columns=["home_division", "away_division"])
     cors_week_html = cors_week_df_clean.to_html(index=False)
-    os.chdir("spread")
-    os.chdir(f"{YEAR}_spread")
+    os.chdir(f"{YEAR}/spread")
     with open(f"{YEAR}_W{WEEK}_{DIVISION}_spread.html", "w") as f:
         f.write(cors_week_html)
     os.chdir(owd)

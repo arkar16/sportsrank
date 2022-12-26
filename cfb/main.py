@@ -7,19 +7,19 @@ import pandas as pd
 
 # CONSTANTS
 YEAR = 2022  # define year
-WEEK = 1  # define week
+WEEK = 0  # define week
 DIVISION = "fbs"  # define division (currently only supporting FBS)
-BASE_CORS = 1000
+BASE_CORS = 0
 
 # get original working directory
-os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb")
+os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
 owd = os.getcwd()
 
 if WEEK == 0:
     get_teams(YEAR, DIVISION)
     get_slate(YEAR, DIVISION)
     current_records = get_current_records(YEAR, WEEK, DIVISION)
-    os.chdir(f"rankings/{YEAR - 1}_rankings")
+    os.chdir(f"{YEAR - 1}/rankings")
     week_cors = pd.read_html(f"{YEAR - 1}_W15_{DIVISION}_cors.html")[0].set_index("rank")
     weekly_spread(YEAR, WEEK, DIVISION, week_cors)
 else:

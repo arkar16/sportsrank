@@ -6,7 +6,7 @@ import os
 
 def get_teams(year, division):
     # get original working directory
-    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb")
+    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
     owd = os.getcwd()
 
     # Configure API key authorization: ApiKeyAuth
@@ -35,8 +35,7 @@ def get_teams(year, division):
             ignore_index=True)
 
     teams_html = cfb_teams.to_html(index=False, escape=False)
-    os.chdir("data")
-    os.chdir(f"{YEAR}_data")
+    os.chdir(f"{YEAR}/data")
     with open(f"{YEAR}_{DIVISION}_teams.html", "w") as f:
         f.write(teams_html)
     os.chdir(owd)

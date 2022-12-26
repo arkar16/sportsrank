@@ -6,7 +6,7 @@ from games import get_results
 
 def get_current_records(year, week, division):
     # get original working directory
-    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb")
+    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
     owd = os.getcwd()
 
     # CONSTANTS
@@ -44,9 +44,7 @@ def get_current_records(year, week, division):
     # write dataframe to html
     cfb_presentable_records_df = cfb_records_df.drop(columns=["wins", "losses"])
     records_html = cfb_presentable_records_df.to_html(justify="center", escape=False, index=False)
-    os.chdir("data")
-    os.chdir(f"{YEAR}_data")
-    os.chdir("records")
+    os.chdir(f"{YEAR}/data/records")
     with open(f"{YEAR}_W{WEEK}_{DIVISION}_records.html", "w") as f:
         f.write(records_html)
     os.chdir(owd)

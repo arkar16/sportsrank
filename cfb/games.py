@@ -6,7 +6,7 @@ import os
 
 def get_weekly_results(year, week, division):
     # get original working directory
-    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb")
+    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
     owd = os.getcwd()
 
     # Configure API key authorization: ApiKeyAuth
@@ -50,8 +50,7 @@ def get_weekly_results(year, week, division):
     week_results_html = fbs_week_results.to_html(index=False)
 
     # write games to html file for viewing
-    os.chdir("data")
-    os.chdir(f"{YEAR}_data/results/weekly_results")
+    os.chdir(f"{YEAR}/data/results/weekly_results")
     with open(f"{YEAR}_W{WEEK}_{DIVISION}_results.html", "w") as f:
         f.write(week_results_html)
     os.chdir(owd)
@@ -61,7 +60,7 @@ def get_weekly_results(year, week, division):
 
 def get_results(year, division):
     # get original working directory
-    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb")
+    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
     owd = os.getcwd()
 
     # Configure API key authorization: ApiKeyAuth
@@ -104,8 +103,7 @@ def get_results(year, division):
     results_html = fbs_results.to_html(index=False)
 
     # write games to html file for viewing
-    os.chdir("data")
-    os.chdir(f"{YEAR}_data/results")
+    os.chdir(f"{YEAR}/data/results")
     with open(f"{YEAR}_{DIVISION}_results.html", "w") as f:
         f.write(results_html)
     os.chdir(owd)
@@ -115,7 +113,7 @@ def get_results(year, division):
 
 def get_week_slate(year, week, division):
     # get original working directory
-    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb")
+    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
     owd = os.getcwd()
 
     # CONSTANTS
@@ -159,8 +157,7 @@ def get_week_slate(year, week, division):
     games_html = fbs_week_slate.to_html(index=False)
 
     # write week_games to html file for viewing
-    os.chdir("data")
-    os.chdir(f"{YEAR}_data/slate/weekly_slate")
+    os.chdir(f"{YEAR}/data/slate/weekly_slate")
     with open(f"{YEAR}_W{WEEK}_{DIVISION}_slate.html", "w") as f:
         f.write(games_html)
     os.chdir(owd)
@@ -169,7 +166,7 @@ def get_week_slate(year, week, division):
 
 def get_slate(year, division):
     # get original working directory
-    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb")
+    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
     owd = os.getcwd()
 
     # CONSTANTS
@@ -210,8 +207,7 @@ def get_slate(year, division):
     games_html = fbs_slate.to_html(index=False)
 
     # write games to html file for viewing
-    os.chdir("data")
-    os.chdir(f"{YEAR}_data/slate")
+    os.chdir(f"{YEAR}/data/slate")
     with open(f"{YEAR}_{DIVISION}_slate.html", "w") as f:
         f.write(games_html)
     os.chdir(owd)
