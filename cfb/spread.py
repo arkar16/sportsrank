@@ -4,7 +4,15 @@ import os
 from games import get_week_slate
 
 
-def weekly_spread(year, week, division, week_cors):
+def spread_calc(row, hfa):
+    HFA = hfa
+    if row["neutral_site"]:  # if the game is at a neutral site
+        return round((row['home_cors'] - row['away_cors']) * 2) / 2
+    else:
+        return round(((row['home_cors'] + HFA) - row['away_cors']) * 2) / 2
+
+
+def weekly_spread(year, week, division, week_cors, hfa):
     # get original working directory
     os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
     owd = os.getcwd()
@@ -13,6 +21,7 @@ def weekly_spread(year, week, division, week_cors):
     WEEK = week + 1
     YEAR = year
     DIVISION = division
+    HFA = hfa
 
     cors_team = week_cors
     week_slate = get_week_slate(YEAR, WEEK, DIVISION)
@@ -24,7 +33,7 @@ def weekly_spread(year, week, division, week_cors):
         .merge(cors_ratings.rename('away_cors'), left_on='away_team', right_index=True)
     )
 
-    cors_week_df['spread'] = round((cors_week_df['home_cors'] - cors_week_df['away_cors'])*2) / 2
+    cors_week_df['spread'] = cors_week_df.apply(spread_calc, axis=1, hfa=HFA)
 
     cors_week_df_clean = cors_week_df.drop(columns=["home_division", "away_division"])
     cors_week_html = cors_week_df_clean.to_html(index=False)
@@ -32,4 +41,3 @@ def weekly_spread(year, week, division, week_cors):
     with open(f"{YEAR}_W{WEEK}_{DIVISION}_spread.html", "w") as f:
         f.write(cors_week_html)
     os.chdir(owd)
-

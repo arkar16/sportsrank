@@ -3,29 +3,99 @@ import pandas as pd
 import os
 
 
-def cors_calc(base, wins, losses, weekly_results):
+def margin_of_victory(team, week, results):
     # get original working directory
     os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
     owd = os.getcwd()
 
     # constants
+    TEAM = team
+    WEEK = week
+
+    results_df = results
+    team_margin = 0
+    games = 0
+    net_mov = None
+
+    current_results = results_df[results_df["week"] < WEEK + 1]  # a df of games up until the current week
+    for index, row in current_results.iterrows():
+        if row["home_team"] == TEAM and row["home_score"] is not None and row["away_score"] is not None:
+            games += 1
+            margin = row["home_score"] - row["away_score"]
+            team_margin += margin
+        elif row["away_team"] == TEAM and row["home_score"] is not None and row["away_score"] is not None:
+            games += 1
+            margin = row["away_score"] - row["home_score"]
+            team_margin += margin
+        if games > 0:
+            net_mov = team_margin / games
+        else:
+            net_mov = 0
+
+    return net_mov
+
+
+def current_sos(team, week, last_cors, results):
+    # get original working directory
+    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
+    owd = os.getcwd()
+
+    # constants
+    TEAM = team
+    WEEK = week
+
+    results_df = results
+    last_cors_df = last_cors.drop(columns=["logo", "rank", "conference", "record", "win_pct"])
+    sos = 0
+    teams_played = 0
+
+    current_results = results_df[results_df["week"] < WEEK + 1]  # a df of games up until the current week
+    for index, row in current_results.iterrows():
+        if row["home_team"] == TEAM and row["home_score"] is not None and row["away_score"] is not None:
+            try:
+                opp_cors = last_cors_df.loc[row["away_team"], "cors"]
+            except KeyError:
+                opp_cors = 0
+            sos += opp_cors
+            teams_played += 1
+        elif row["away_team"] == TEAM and row["home_score"] is not None and row["away_score"] is not None:
+            try:
+                opp_cors = last_cors_df.loc[row["home_team"], "cors"]
+            except KeyError:
+                opp_cors = 0
+            sos += opp_cors
+            teams_played += 1
+    avg_sos = round((sos / teams_played), 2)
+    #print(f"{TEAM} = SOS {avg_sos}")
+    return avg_sos
+
+
+def cors_calc(team, week, base, wins, losses, results, last_week_cors):
+    # get original working directory
+    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
+    owd = os.getcwd()
+
+    # constants
+    TEAM = team
+    WEEK = week
     BASE_CORS = base
     wins = int(wins)
     losses = int(losses)
     win_pct = round((wins / (wins + losses)), 2)
 
-    # weekly_results_df = weekly_results MOV comes next
+    results_df = results
+    last_cors = last_week_cors
 
-    # values that affect the ranking
-    win_pct_m = round(((win_pct * 100) / 3), 2)
-    cors = win_pct_m
-    # mov = next to add
-    # sos = next to add
+    win_pct_m = round(((win_pct * 100) / 2), 2)
+    net_mov = round((margin_of_victory(TEAM, WEEK, results_df) / 4), 2)
+    sos = round((current_sos(TEAM, WEEK, last_cors, results_df) / 4), 2)
+
+    cors = win_pct_m + net_mov + sos
 
     return cors
 
 
-def weekly_cors(base, year, week, division, current_records, weekly_results):
+def weekly_cors(base, year, week, division, current_records, results, weekly_results):
     # get original working directory
     os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
     owd = os.getcwd()
@@ -36,17 +106,23 @@ def weekly_cors(base, year, week, division, current_records, weekly_results):
     WEEK = week
     DIVISION = division
 
+    # last week CORS
+    os.chdir(f"{YEAR}/rankings")
+    last_week_cors = pd.read_html(f"{YEAR}_W{WEEK - 1}_{DIVISION}_cors.html")[0].set_index("school")
     cors_teams_df = current_records.copy()
+    results_df = results
     weekly_results_df = weekly_results
 
     for index, row in cors_teams_df.iterrows():
         wins = row["wins"]
         losses = row["losses"]
-        cors = cors_calc(BASE_CORS, wins, losses, weekly_results)
+        team = row["school"]
+        cors = cors_calc(team, WEEK, BASE_CORS, wins, losses, results_df, last_week_cors)
         cors_teams_df.loc[index, "cors"] = cors
 
+    cors_teams_df = cors_teams_df.sort_values(by=["cors", "wins", "losses"], ascending=[False, False, True],
+                                              ignore_index=True)
     cors_teams_df = cors_teams_df.drop(columns=["wins", "losses"])
-    cors_teams_df = cors_teams_df.sort_values(by=["cors"], ascending=False, ignore_index=True)
     cors_teams_df.index = range(1, cors_teams_df.shape[0] + 1)
     cors_teams_df.columns.name = "rank"
 
