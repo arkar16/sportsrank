@@ -1,15 +1,19 @@
+import os
+
 from records import get_current_records
 from teams import *
 from cors import weekly_cors
 from games import *
 from spread import *
 import pandas as pd
+import shutil
 
 
-def single_week_calc(year, week, division, hfa, base_cors):
+def single_week_calc(year, week, end_week, division, hfa, base_cors):
     # CONSTANTS
     YEAR = year  # define year
     WEEK = week  # define week
+    END_WEEK = end_week  # define end week
     DIVISION = division  # define division (currently only supporting FBS)
     HFA = hfa  # define HFA constant
     BASE_CORS = base_cors
@@ -17,15 +21,39 @@ def single_week_calc(year, week, division, hfa, base_cors):
     # get original working directory
     os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
     owd = os.getcwd()
+    old_cors_file = f"{owd}/{YEAR - 1}/rankings/{YEAR - 1}_FINAL_fbs_cors.html"  # last year final CORS ranking
+    dst = f"{owd}/{YEAR}/rankings"
+    week_zero_cors = f"{YEAR}_W0_{DIVISION}_cors.html"
 
     if WEEK == 0:
         get_teams(YEAR, DIVISION)
+        print("teams done")
         get_slate(YEAR, DIVISION)
+        print("slate done")
         current_records = get_current_records(YEAR, WEEK, DIVISION)
-        os.chdir(f"{YEAR - 1}/rankings")
-        week_cors = pd.read_html(f"{YEAR - 1}_W15_{DIVISION}_cors.html")[0].set_index("rank")
-        # write week_cors as W0 in new year directory
+        print("records done")
+        shutil.copy(old_cors_file, dst + "/" + week_zero_cors)  # copies FINAL to WEEK 0
+        print("copy done")
+        # need to add a week_zero_readjust function here
+        # print("readjust done")
+        os.chdir(f"{YEAR}/rankings")
+        week_cors = pd.read_html(f"{YEAR}_W0_{DIVISION}_cors.html")[0].set_index("rank")
         weekly_spread(YEAR, WEEK, DIVISION, week_cors, HFA)
+        print("spread done")
+    elif WEEK != END_WEEK:
+        current_records = get_current_records(YEAR, WEEK, DIVISION)
+        print("records done")
+        weekly_results = get_weekly_results(YEAR, WEEK, DIVISION)
+        print("weekly results done")
+        results = get_results(YEAR, DIVISION)  # need to edit weekly_results to pass this through as a parameter
+        print("results done")
+        week_cors = weekly_cors(BASE_CORS, YEAR, WEEK, END_WEEK, DIVISION, current_records, results, weekly_results)
+        print("week cors done")
+        week_games = get_week_slate(YEAR, WEEK, DIVISION)
+        print("week games done")
+        weekly_spread(YEAR, WEEK, DIVISION, week_cors, HFA)
+        print("week spread done")
+        print(f"W{WEEK} done")
     else:
         current_records = get_current_records(YEAR, WEEK, DIVISION)
         print("records done")
@@ -33,12 +61,10 @@ def single_week_calc(year, week, division, hfa, base_cors):
         print("weekly results done")
         results = get_results(YEAR, DIVISION)  # need to edit weekly_results to pass this through as a parameter
         print("results done")
-        week_cors = weekly_cors(BASE_CORS, YEAR, WEEK, DIVISION, current_records, results, weekly_results)
+        week_cors = weekly_cors(BASE_CORS, YEAR, WEEK, END_WEEK, DIVISION, current_records, results, weekly_results)
         print("week cors done")
         week_games = get_week_slate(YEAR, WEEK, DIVISION)
         print("week games done")
-        weekly_spread(YEAR, WEEK, DIVISION, week_cors, HFA)
-        print("week spread done")
         print(f"W{WEEK} done")
 
 
@@ -54,16 +80,40 @@ def full_season_calc(year, week, end_week, division, hfa, base_cors):
     # get original working directory
     os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
     owd = os.getcwd()
+    old_cors_file = f"{owd}/{YEAR - 1}/rankings/{YEAR - 1}_FINAL_fbs_cors.html"  # last year final CORS ranking
+    dst = f"{owd}/{YEAR}/rankings"
+    week_zero_cors = f"{YEAR}_W0_{DIVISION}_cors.html"
 
     for i in range(WEEK, END_WEEK + 1):
         if WEEK == 0:
             get_teams(YEAR, DIVISION)
+            print("teams done")
             get_slate(YEAR, DIVISION)
+            print("slate done")
             current_records = get_current_records(YEAR, WEEK, DIVISION)
-            os.chdir(f"{YEAR - 1}/rankings")
-            week_cors = pd.read_html(f"{YEAR - 1}_W15_{DIVISION}_cors.html")[0].set_index("rank")
-            # write week_cors as W0 in new year directory
+            print("records done")
+            shutil.copy(old_cors_file, dst + "/" + week_zero_cors)  # copies FINAL to WEEK 0
+            print("copy done")
+            # need to add a week_zero_readjust function here
+            # print("readjust done")
+            os.chdir(f"{YEAR}/rankings")
+            week_cors = pd.read_html(f"{YEAR}_W0_{DIVISION}_cors.html")[0].set_index("rank")
             weekly_spread(YEAR, WEEK, DIVISION, week_cors, HFA)
+            print("spread done")
+        elif WEEK != END_WEEK:
+            current_records = get_current_records(YEAR, WEEK, DIVISION)
+            print("records done")
+            weekly_results = get_weekly_results(YEAR, WEEK, DIVISION)
+            print("weekly results done")
+            results = get_results(YEAR, DIVISION)  # need to edit weekly_results to pass this through as a parameter
+            print("results done")
+            week_cors = weekly_cors(BASE_CORS, YEAR, WEEK, END_WEEK, DIVISION, current_records, results, weekly_results)
+            print("week cors done")
+            week_games = get_week_slate(YEAR, WEEK, DIVISION)
+            print("week games done")
+            weekly_spread(YEAR, WEEK, DIVISION, week_cors, HFA)
+            print("week spread done")
+            print(f"W{WEEK} done")
         else:
             current_records = get_current_records(YEAR, WEEK, DIVISION)
             print("records done")
@@ -71,11 +121,9 @@ def full_season_calc(year, week, end_week, division, hfa, base_cors):
             print("weekly results done")
             results = get_results(YEAR, DIVISION)  # need to edit weekly_results to pass this through as a parameter
             print("results done")
-            week_cors = weekly_cors(BASE_CORS, YEAR, WEEK, DIVISION, current_records, results, weekly_results)
+            week_cors = weekly_cors(BASE_CORS, YEAR, WEEK, END_WEEK, DIVISION, current_records, results, weekly_results)
             print("week cors done")
             week_games = get_week_slate(YEAR, WEEK, DIVISION)
             print("week games done")
-            weekly_spread(YEAR, WEEK, DIVISION, week_cors, HFA)
-            print("week spread done")
             print(f"W{WEEK} done")
         WEEK += 1

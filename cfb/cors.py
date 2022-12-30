@@ -95,7 +95,7 @@ def cors_calc(team, week, base, wins, losses, results, last_week_cors):
     return cors
 
 
-def weekly_cors(base, year, week, division, current_records, results, weekly_results):
+def weekly_cors(base, year, week, end_week, division, current_records, results, weekly_results):
     # get original working directory
     os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
     owd = os.getcwd()
@@ -104,6 +104,7 @@ def weekly_cors(base, year, week, division, current_records, results, weekly_res
     BASE_CORS = base
     YEAR = year
     WEEK = week
+    END_WEEK = end_week
     DIVISION = division
 
     # last week CORS
@@ -111,7 +112,7 @@ def weekly_cors(base, year, week, division, current_records, results, weekly_res
     last_week_cors = pd.read_html(f"{YEAR}_W{WEEK - 1}_{DIVISION}_cors.html")[0].set_index("school")
     cors_teams_df = current_records.copy()
     results_df = results
-    weekly_results_df = weekly_results
+    # weekly_results_df = weekly_results / don't think this is needed no more (replaced with cors_calc)
 
     for index, row in cors_teams_df.iterrows():
         wins = row["wins"]
@@ -127,10 +128,17 @@ def weekly_cors(base, year, week, division, current_records, results, weekly_res
     cors_teams_df.columns.name = "rank"
 
     # set escape tag false to prevent HTML code passthrough as plain text
-    cors_html = cors_teams_df.to_html(escape=False)
-    os.chdir(f"{YEAR}/rankings")
-    with open(f"{YEAR}_W{WEEK}_{DIVISION}_cors.html", "w") as f:
-        f.write(cors_html)
-    os.chdir(owd)
+    if WEEK == END_WEEK:
+        cors_html = cors_teams_df.to_html(escape=False)
+        os.chdir(f"{YEAR}/rankings")
+        with open(f"{YEAR}_FINAL_{DIVISION}_cors.html", "w") as f:
+            f.write(cors_html)
+        os.chdir(owd)
+    else:
+        cors_html = cors_teams_df.to_html(escape=False)
+        os.chdir(f"{YEAR}/rankings")
+        with open(f"{YEAR}_W{WEEK}_{DIVISION}_cors.html", "w") as f:
+            f.write(cors_html)
+        os.chdir(owd)
 
     return cors_teams_df
