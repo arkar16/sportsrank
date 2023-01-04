@@ -9,6 +9,7 @@ import pandas as pd
 import shutil
 from readjust import week_zero_readjust
 # FIXME NEED TO FIX ALL FUNCTIONS TO REMOVE CONSTANTS AND USE PARAMETERS
+# TODO CHANGE ALL WEEK CODE TO FUNCTIONS TO CALL
 
 def single_week_calc(year, week, end_week, division, hfa, base_cors):
     # CONSTANTS
@@ -37,12 +38,11 @@ def single_week_calc(year, week, end_week, division, hfa, base_cors):
         os.chdir(f"{YEAR}/rankings")
         week_zero_file = pd.read_html(f"{YEAR}_W0_{DIVISION}_cors.html")[0].set_index("rank")
         week_zero_file_df = week_zero_file.drop(columns="logo")
-        #print(week_zero_file_df)
         week_cors = week_zero_readjust(YEAR, DIVISION, teams, week_zero_file_df)
-        print(week_cors)
-        #print("readjust done")
-        #weekly_spread(YEAR, WEEK, DIVISION, week_cors, HFA)
-        #print("spread done")
+        print("readjust done")
+        weekly_spread(YEAR, WEEK, DIVISION, week_cors, HFA)
+        print("spread done")
+        print(f"W{WEEK} done")
     elif WEEK != END_WEEK:
         current_records = get_current_records(YEAR, WEEK, DIVISION)
         print("records done")
@@ -88,7 +88,7 @@ def full_season_calc(year, week, end_week, division, hfa, base_cors):
 
     for i in range(WEEK, END_WEEK + 1):
         if WEEK == 0:
-            get_teams(YEAR, DIVISION)
+            teams = get_teams(YEAR, DIVISION)
             print("teams done")
             get_slate(YEAR, DIVISION)
             print("slate done")
@@ -96,13 +96,14 @@ def full_season_calc(year, week, end_week, division, hfa, base_cors):
             print("records done")
             shutil.copy(old_cors_file, dst + "/" + week_zero_cors)  # copies FINAL to WEEK 0
             print("copy done")
-            week_zero_file = pd.read_html(f"{YEAR}_W0_{DIVISION}_cors.html")[0].set_index("rank")
-            week_zero_readjust(week_zero_file)
-            print("readjust done")
             os.chdir(f"{YEAR}/rankings")
-            week_cors = pd.read_html(f"{YEAR}_W0_{DIVISION}_cors.html")[0].set_index("rank")
+            week_zero_file = pd.read_html(f"{YEAR}_W0_{DIVISION}_cors.html")[0].set_index("rank")
+            week_zero_file_df = week_zero_file.drop(columns="logo")
+            week_cors = week_zero_readjust(YEAR, DIVISION, teams, week_zero_file_df)
+            print("readjust done")
             weekly_spread(YEAR, WEEK, DIVISION, week_cors, HFA)
             print("spread done")
+            print(f"W{WEEK} done")
         elif WEEK != END_WEEK:
             current_records = get_current_records(YEAR, WEEK, DIVISION)
             print("records done")
