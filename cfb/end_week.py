@@ -5,7 +5,7 @@ import os
 
 def get_end_week(year):
     # get original working directory
-    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
+    os.chdir("/Users/aryak/Projects/sportsrank/cfb/years")
     owd = os.getcwd()
 
     # Configure API key authorization: ApiKeyAuth

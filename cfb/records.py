@@ -6,7 +6,7 @@ from games import get_results
 
 def get_current_records(year, week, division):
     # get original working directory
-    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
+    os.chdir("/Users/aryak/Projects/sportsrank/cfb/years")
     owd = os.getcwd()
 
     # CONSTANTS

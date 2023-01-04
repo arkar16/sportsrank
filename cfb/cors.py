@@ -5,7 +5,7 @@ import os
 
 def margin_of_victory(team, week, results):
     # get original working directory
-    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
+    os.chdir("/Users/aryak/Projects/sportsrank/cfb/years")
     owd = os.getcwd()
 
     # constants
@@ -37,7 +37,7 @@ def margin_of_victory(team, week, results):
 
 def current_sos(team, week, last_cors, results):
     # get original working directory
-    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
+    os.chdir("/Users/aryak/Projects/sportsrank/cfb/years")
     owd = os.getcwd()
 
     # constants
@@ -55,14 +55,14 @@ def current_sos(team, week, last_cors, results):
             try:
                 opp_cors = last_cors_df.loc[row["away_team"], "cors"]
             except KeyError:
-                opp_cors = 0
+                opp_cors = -10 # fcs constant
             sos += opp_cors
             teams_played += 1
         elif row["away_team"] == TEAM and row["home_score"] is not None and row["away_score"] is not None:
             try:
                 opp_cors = last_cors_df.loc[row["home_team"], "cors"]
             except KeyError:
-                opp_cors = 0
+                opp_cors = -10 # fcs constant
             sos += opp_cors
             teams_played += 1
     avg_sos = round((sos / teams_played), 2)
@@ -72,7 +72,7 @@ def current_sos(team, week, last_cors, results):
 
 def cors_calc(team, week, base, wins, losses, results, last_week_cors):
     # get original working directory
-    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
+    os.chdir("/Users/aryak/Projects/sportsrank/cfb/years")
     owd = os.getcwd()
 
     # constants
@@ -97,7 +97,7 @@ def cors_calc(team, week, base, wins, losses, results, last_week_cors):
 
 def weekly_cors(base, year, week, end_week, division, current_records, results, weekly_results):
     # get original working directory
-    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
+    os.chdir("/Users/aryak/Projects/sportsrank/cfb/years")
     owd = os.getcwd()
 
     # constants

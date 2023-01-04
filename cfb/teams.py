@@ -2,12 +2,12 @@ import cfbd
 from api import api_key
 import pandas as pd
 import os
+import config
 
 
 def get_teams(year, division):
     # get original working directory
-    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
-    owd = os.getcwd()
+    os.chdir(config.owd)
 
     # Configure API key authorization: ApiKeyAuth
     configuration = cfbd.Configuration()
@@ -38,6 +38,6 @@ def get_teams(year, division):
     os.chdir(f"{YEAR}/data")
     with open(f"{YEAR}_{DIVISION}_teams.html", "w") as f:
         f.write(teams_html)
-    os.chdir(owd)
+    os.chdir(config.owd)
 
     return cfb_teams

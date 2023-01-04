@@ -1,5 +1,5 @@
 import os
-
+import config
 from records import get_current_records
 from teams import *
 from cors import weekly_cors
@@ -7,7 +7,8 @@ from games import *
 from spread import *
 import pandas as pd
 import shutil
-
+from readjust import week_zero_readjust
+# FIXME NEED TO FIX ALL FUNCTIONS TO REMOVE CONSTANTS AND USE PARAMETERS
 
 def single_week_calc(year, week, end_week, division, hfa, base_cors):
     # CONSTANTS
@@ -19,14 +20,13 @@ def single_week_calc(year, week, end_week, division, hfa, base_cors):
     BASE_CORS = base_cors
 
     # get original working directory
-    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
-    owd = os.getcwd()
-    old_cors_file = f"{owd}/{YEAR - 1}/rankings/{YEAR - 1}_FINAL_fbs_cors.html"  # last year final CORS ranking
-    dst = f"{owd}/{YEAR}/rankings"
+    os.chdir(config.owd)
+    old_cors_file = f"{config.owd}/{YEAR - 1}/rankings/{YEAR - 1}_FINAL_{DIVISION}_cors.html"  # last year final CORS ranking
+    dst = f"{config.owd}/{YEAR}/rankings"
     week_zero_cors = f"{YEAR}_W0_{DIVISION}_cors.html"
 
     if WEEK == 0:
-        get_teams(YEAR, DIVISION)
+        teams = get_teams(YEAR, DIVISION)
         print("teams done")
         get_slate(YEAR, DIVISION)
         print("slate done")
@@ -34,12 +34,15 @@ def single_week_calc(year, week, end_week, division, hfa, base_cors):
         print("records done")
         shutil.copy(old_cors_file, dst + "/" + week_zero_cors)  # copies FINAL to WEEK 0
         print("copy done")
-        # need to add a week_zero_readjust function here
-        # print("readjust done")
         os.chdir(f"{YEAR}/rankings")
-        week_cors = pd.read_html(f"{YEAR}_W0_{DIVISION}_cors.html")[0].set_index("rank")
-        weekly_spread(YEAR, WEEK, DIVISION, week_cors, HFA)
-        print("spread done")
+        week_zero_file = pd.read_html(f"{YEAR}_W0_{DIVISION}_cors.html")[0].set_index("rank")
+        week_zero_file_df = week_zero_file.drop(columns="logo")
+        #print(week_zero_file_df)
+        week_cors = week_zero_readjust(YEAR, DIVISION, teams, week_zero_file_df)
+        print(week_cors)
+        #print("readjust done")
+        #weekly_spread(YEAR, WEEK, DIVISION, week_cors, HFA)
+        #print("spread done")
     elif WEEK != END_WEEK:
         current_records = get_current_records(YEAR, WEEK, DIVISION)
         print("records done")
@@ -78,10 +81,9 @@ def full_season_calc(year, week, end_week, division, hfa, base_cors):
     BASE_CORS = base_cors
 
     # get original working directory
-    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
-    owd = os.getcwd()
-    old_cors_file = f"{owd}/{YEAR - 1}/rankings/{YEAR - 1}_FINAL_fbs_cors.html"  # last year final CORS ranking
-    dst = f"{owd}/{YEAR}/rankings"
+    os.chdir(config.owd)
+    old_cors_file = f"{config.owd}/{YEAR - 1}/rankings/{YEAR - 1}_FINAL_{DIVISION}_cors.html"  # last year final CORS ranking
+    dst = f"{config.owd}/{YEAR}/rankings"
     week_zero_cors = f"{YEAR}_W0_{DIVISION}_cors.html"
 
     for i in range(WEEK, END_WEEK + 1):
@@ -94,8 +96,9 @@ def full_season_calc(year, week, end_week, division, hfa, base_cors):
             print("records done")
             shutil.copy(old_cors_file, dst + "/" + week_zero_cors)  # copies FINAL to WEEK 0
             print("copy done")
-            # need to add a week_zero_readjust function here
-            # print("readjust done")
+            week_zero_file = pd.read_html(f"{YEAR}_W0_{DIVISION}_cors.html")[0].set_index("rank")
+            week_zero_readjust(week_zero_file)
+            print("readjust done")
             os.chdir(f"{YEAR}/rankings")
             week_cors = pd.read_html(f"{YEAR}_W0_{DIVISION}_cors.html")[0].set_index("rank")
             weekly_spread(YEAR, WEEK, DIVISION, week_cors, HFA)

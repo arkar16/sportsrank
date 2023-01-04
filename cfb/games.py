@@ -6,7 +6,7 @@ import os
 
 def get_weekly_results(year, week, division):
     # get original working directory
-    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
+    os.chdir("/Users/aryak/Projects/sportsrank/cfb/years")
     owd = os.getcwd()
 
     # Configure API key authorization: ApiKeyAuth
@@ -60,7 +60,7 @@ def get_weekly_results(year, week, division):
 
 def get_results(year, division):
     # get original working directory
-    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
+    os.chdir("/Users/aryak/Projects/sportsrank/cfb/years")
     owd = os.getcwd()
 
     # Configure API key authorization: ApiKeyAuth
@@ -99,6 +99,7 @@ def get_results(year, division):
         fbs_results["neutral_site"] = fbs_results["neutral_site"].astype(bool)
 
     fbs_results = fbs_results
+
     # convert games to html
     results_html = fbs_results.to_html(index=False)
 
@@ -113,7 +114,7 @@ def get_results(year, division):
 
 def get_week_slate(year, week, division):
     # get original working directory
-    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
+    os.chdir("/Users/aryak/Projects/sportsrank/cfb/years")
     owd = os.getcwd()
 
     # CONSTANTS
@@ -166,7 +167,7 @@ def get_week_slate(year, week, division):
 
 def get_slate(year, division):
     # get original working directory
-    os.chdir("/Users/aryak/PycharmProjects/sportsrank/cfb/years")
+    os.chdir("/Users/aryak/Projects/sportsrank/cfb/years")
     owd = os.getcwd()
 
     # CONSTANTS
