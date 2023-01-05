@@ -6,7 +6,7 @@ import time
 # CONSTANTS
 start_time = time.time()
 YEAR = 1941  # define year (cannot be earlier than 1897)
-END_YEAR = 1940 # define end year
+END_YEAR = 2018 # define end year
 WEEK = 0  # define week
 END_WEEK = get_end_week(YEAR)  # define last week of season
 DIVISION = "fbs"  # define division (currently only supporting FBS)
