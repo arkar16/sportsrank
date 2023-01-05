@@ -24,10 +24,16 @@ def get_teams(year, division):
 
     # create dataframe of FBS teams
     for team in fbs_teams:
-        logo = team.logos[0]
-        logo_png = f"<img src='{logo}' style='width: 20px; height: 20px;'>"
+        try:
+            logo = team.logos[0]
+            logo_png = f"<img src='{logo}' style='width: 20px; height: 20px;'>"
+        except:
+            logo_png = ""
         school = team.school
-        conf = team.conference
+        try:
+            conf = team.conference
+        except:
+            conf = "FBS Independents"
 
         # Add the data to the dataframe
         cfb_teams = pd.concat(

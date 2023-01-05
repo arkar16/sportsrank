@@ -2,6 +2,7 @@ import random
 import pandas as pd
 import os
 import config
+from all_time import *
 # TODO change OWD to config.owd
 
 def margin_of_victory(team, week, results):
@@ -130,7 +131,7 @@ def weekly_cors(base, year, week, end_week, division, current_records, results, 
 
     cors_teams_df = cors_teams_df.sort_values(by=["cors", "wins", "losses"], ascending=[False, False, True],
                                               ignore_index=True)
-    cors_teams_df = cors_teams_df.drop(columns=["wins", "losses"])
+    cors_teams_df = cors_teams_df.drop(columns=["wins", "losses", "ties"])
     cors_teams_df.index = range(1, cors_teams_df.shape[0] + 1)
     cors_teams_df.columns.name = "rank"
 
@@ -138,32 +139,35 @@ def weekly_cors(base, year, week, end_week, division, current_records, results, 
 
     # set escape tag false to prevent HTML code passthrough as plain text
     if WEEK == END_WEEK:
-        html = "<html>\n"
-        html += "<head>\n"
-        html += f"<title>CORS {config.cors_version} - {YEAR} Final Rankings - {DIVISION} CFB</title>\n" # TODO change CFB to SPORT variable
-        html += "</head>\n"
-        html += "<body>\n"
-        html += f"<h1>CORS {config.cors_version} - {YEAR} Final Rankings - {DIVISION} CFB</h1>\n" # TODO change CFB to SPORT variable
-        html += "</body>\n"
-        html += "</html>\n"
+        title_html = "<html>\n"
+        title_html += "<head>\n"
+        title_html += f"<title>CORS {config.cors_version} - {YEAR} Final Rankings - {DIVISION} CFB</title>\n" # TODO change CFB to SPORT variable
+        title_html += "</head>\n"
+        title_html += "<body>\n"
+        title_html += f"<h1>CORS {config.cors_version} - {YEAR} Final Rankings - {DIVISION} CFB</h1>\n" # TODO change CFB to SPORT variable
+        title_html += "</body>\n"
+        title_html += "</html>\n"
         cors_html = cors_teams_df.to_html(escape=False)
         os.chdir(f"{YEAR}/rankings")
         with open(f"{YEAR}_FINAL_{DIVISION}_cors.html", "w") as f:
-            f.write(html)
+            f.write(title_html)
             f.write(cors_html)
         os.chdir(owd)
+        nc_to_history(year, division, cors_teams_df)
+        worst_to_history(year, division, cors_teams_df)
     else:
-        html = "<html>\n"
-        html += "<head>\n"
-        html += f"<title>CORS {config.cors_version} - {YEAR} W{WEEK} Rankings - {DIVISION} CFB</title>\n" # TODO change CFB to SPORT variable
-        html += "</head>\n"
-        html += "<body>\n"
-        html += f"<h1>CORS {config.cors_version} - {YEAR} W{WEEK} Rankings - {DIVISION} CFB</h1>\n" # TODO change CFB to SPORT variable
-        html += "</body>\n"
-        html += "</html>\n"
+        title_html = "<html>\n"
+        title_html += "<head>\n"
+        title_html += f"<title>CORS {config.cors_version} - {YEAR} W{WEEK} Rankings - {DIVISION} CFB</title>\n" # TODO change CFB to SPORT variable
+        title_html += "</head>\n"
+        title_html += "<body>\n"
+        title_html += f"<h1>CORS {config.cors_version} - {YEAR} W{WEEK} Rankings - {DIVISION} CFB</h1>\n" # TODO change CFB to SPORT variable
+        title_html += "</body>\n"
+        title_html += "</html>\n"
         cors_html = cors_teams_df.to_html(escape=False)
         os.chdir(f"{YEAR}/rankings")
         with open(f"{YEAR}_W{WEEK}_{DIVISION}_cors.html", "w") as f:
+            f.write(title_html)
             f.write(cors_html)
         os.chdir(owd)
 
