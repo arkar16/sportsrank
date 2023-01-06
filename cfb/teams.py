@@ -26,7 +26,7 @@ def get_teams(year, division):
     for team in fbs_teams:
         try:
             logo = team.logos[0]
-            logo_png = f"<img src='{logo}' style='width: 20px; height: 20px;'>"
+            logo_png = f"<img src='{logo}' style='width: 20px; height: 20px;'>" # TODO potentially add these as a constant (20x) across filesystem
         except:
             logo_png = ""
         school = team.school
