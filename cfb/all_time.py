@@ -20,7 +20,7 @@ def nc_to_history(year, division, final_cors_df): # national champ to history
 
 def worst_to_history(year, division, final_cors_df): # worst team to history
     os.chdir(f"{config.owd}/history")
-    worst_team_df = final_cors_df.tail(n=1)
+    worst_team_df = final_cors_df.tail(n=1) # FIXME 2020 issue (needs to have played games)
     worst_team_df.insert(0, 'year', year)
     division = division.upper()
 
