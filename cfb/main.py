@@ -7,7 +7,7 @@ from nc_wt_clean import *
 
 # CONSTANTS
 start_time = time.time()
-YEAR = 1901  # define year (cannot be earlier than 1897)
+YEAR = 1897  # define year (cannot be earlier than 1897)
 END_YEAR = 2022 # define end year
 WEEK = 0  # define week
 END_WEEK = get_end_week(YEAR)  # define last week of season
