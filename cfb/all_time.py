@@ -36,10 +36,10 @@ def worst_to_history(year, division, final_cors_df): # worst team to history
     if year == 1897:
         title_html = "<html>\n"
         title_html += "<head>\n"
-        title_html += f"<title>CORS {config.cors_version} - Worst Team - {division} CFB</title>\n" # TODO change CFB to SPORT variable
+        title_html += f"<title>CORS {config.cors_version} - Worst Teams - {division} CFB</title>\n" # TODO change CFB to SPORT variable
         title_html += "</head>\n"
         title_html += "<body>\n"
-        title_html += f"<h1>CORS {config.cors_version} - Worst Team - {division} CFB</h1>\n" # TODO change CFB to SPORT variable
+        title_html += f"<h1>CORS {config.cors_version} - Worst Teams - {division} CFB</h1>\n" # TODO change CFB to SPORT variable
         title_html += "</body>\n"
         title_html += "</html>\n"
         wt_html = worst_team_df.to_html(escape=False, header=False)
