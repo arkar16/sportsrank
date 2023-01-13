@@ -21,7 +21,7 @@ BASE_CORS = 0
 
 # files to run after running a calc
 
-html_grab(YEAR, END_YEAR, DIVISION) # writes to index.html # FIXME github pages???
+#html_grab(YEAR, END_YEAR, DIVISION) # writes to index.html # FIXME github pages???
 #nc_clean(DIVISION) # cleans up NC files
 #wt_clean(DIVISION) # cleans up NC files
 
