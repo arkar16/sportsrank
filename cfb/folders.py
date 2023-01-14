@@ -1,10 +1,10 @@
 import os
 import config
 
-os.chdir(config.owd) # puts program in cfb/years
+os.chdir(config.owd) # puts program in website/cfb/years
 
-start_year = 1901
-end_year = 2011
+start_year = 2023
+end_year = 2023
 
 
 data_folder = "data"
@@ -28,3 +28,4 @@ for year in range(start_year, end_year + 1):
     os.mkdir(f"{weekly_slate_folder}")
     os.mkdir(f"{rankings_folder}")
     os.mkdir(f"{spread_folder}")
+    print(f"Created {year} folders")

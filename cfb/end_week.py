@@ -8,8 +8,7 @@ import pandas as pd
 
 def get_end_week(year):
     # get original working directory
-    os.chdir("/Users/aryak/Projects/sportsrank/cfb/years")
-    owd = os.getcwd() # config.owd
+    os.chdir(config.owd)
 
     # Configure API key authorization: ApiKeyAuth
     configuration = cfbd.Configuration()

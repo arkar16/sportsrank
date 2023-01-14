@@ -3,12 +3,11 @@ import pandas as pd
 import os
 import config
 from all_time import *
-# TODO change OWD to config.owd
+
 
 def margin_of_victory(team, week, results):
     # get original working directory
-    os.chdir("/Users/aryak/Projects/sportsrank/cfb/years")
-    owd = os.getcwd()
+    os.chdir(config.owd)
 
     # constants
     TEAM = team
@@ -39,8 +38,7 @@ def margin_of_victory(team, week, results):
 
 def current_sos(team, week, last_cors, results):
     # get original working directory
-    os.chdir("/Users/aryak/Projects/sportsrank/cfb/years")
-    owd = os.getcwd()
+    os.chdir(config.owd)
 
     # constants
     TEAM = team
@@ -77,8 +75,7 @@ def current_sos(team, week, last_cors, results):
 
 def cors_calc(team, week, base, wins, losses, results, last_week_cors):
     # get original working directory
-    os.chdir("/Users/aryak/Projects/sportsrank/cfb/years")
-    owd = os.getcwd()
+    os.chdir(config.owd)
 
     # constants
     TEAM = team
@@ -105,8 +102,7 @@ def cors_calc(team, week, base, wins, losses, results, last_week_cors):
 
 def weekly_cors(base, year, week, end_week, division, current_records, results, weekly_results):
     # get original working directory
-    os.chdir("/Users/aryak/Projects/sportsrank/cfb/years")
-    owd = os.getcwd()
+    os.chdir(config.owd)
 
     # constants
     BASE_CORS = base
@@ -152,7 +148,7 @@ def weekly_cors(base, year, week, end_week, division, current_records, results, 
         with open(f"{YEAR}_FINAL_{DIVISION}_cors.html", "w") as f:
             f.write(title_html)
             f.write(cors_html)
-        os.chdir(owd)
+        os.chdir(config.owd)
         nc_to_history(year, division, cors_teams_df)
         worst_to_history(year, division, cors_teams_df)
     else:
@@ -169,6 +165,6 @@ def weekly_cors(base, year, week, end_week, division, current_records, results, 
         with open(f"{YEAR}_W{WEEK}_{DIVISION}_cors.html", "w") as f:
             f.write(title_html)
             f.write(cors_html)
-        os.chdir(owd)
+        os.chdir(config.owd)
 
     return cors_teams_df

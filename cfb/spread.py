@@ -1,7 +1,8 @@
-import random
+# import random
 import pandas as pd
 import os
 from games import get_week_slate
+import config
 
 
 def spread_calc(row, hfa):
@@ -14,8 +15,7 @@ def spread_calc(row, hfa):
 
 def weekly_spread(year, week, division, week_cors, hfa):
     # get original working directory
-    os.chdir("/Users/aryak/Projects/sportsrank/cfb/years")
-    owd = os.getcwd()
+    os.chdir(config.owd)
 
     # constants
     WEEK = week + 1
@@ -40,6 +40,6 @@ def weekly_spread(year, week, division, week_cors, hfa):
         os.chdir(f"{YEAR}/spread")
         with open(f"{YEAR}_W{WEEK}_{DIVISION}_spread.html", "w") as f:
             f.write(cors_week_html)
-        os.chdir(owd)
+        os.chdir(config.owd)
     except:
         print(f"no FBS games this week")

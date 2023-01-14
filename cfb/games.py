@@ -2,12 +2,12 @@ import cfbd
 from api import api_key
 import pandas as pd
 import os
+import config
 
 
 def get_weekly_results(year, week, division):
     # get original working directory
-    os.chdir("/Users/aryak/Projects/sportsrank/cfb/years")
-    owd = os.getcwd()
+    os.chdir(config.owd)
 
     # Configure API key authorization: ApiKeyAuth
     configuration = cfbd.Configuration()
@@ -53,15 +53,14 @@ def get_weekly_results(year, week, division):
     os.chdir(f"{YEAR}/data/results/weekly_results")
     with open(f"{YEAR}_W{WEEK}_{DIVISION}_results.html", "w") as f:
         f.write(week_results_html)
-    os.chdir(owd)
+    os.chdir(config.owd)
 
     return fbs_week_results
 
 
 def get_results(year, division):
     # get original working directory
-    os.chdir("/Users/aryak/Projects/sportsrank/cfb/years")
-    owd = os.getcwd()
+    os.chdir(config.owd)
 
     # Configure API key authorization: ApiKeyAuth
     configuration = cfbd.Configuration()
@@ -107,15 +106,14 @@ def get_results(year, division):
     os.chdir(f"{YEAR}/data/results")
     with open(f"{YEAR}_{DIVISION}_results.html", "w") as f:
         f.write(results_html)
-    os.chdir(owd)
+    os.chdir(config.owd)
 
     return fbs_results
 
 
 def get_week_slate(year, week, division):
     # get original working directory
-    os.chdir("/Users/aryak/Projects/sportsrank/cfb/years")
-    owd = os.getcwd()
+    os.chdir(config.owd)
 
     # CONSTANTS
     YEAR = year
@@ -161,14 +159,13 @@ def get_week_slate(year, week, division):
     os.chdir(f"{YEAR}/data/slate/weekly_slate")
     with open(f"{YEAR}_W{WEEK}_{DIVISION}_slate.html", "w") as f:
         f.write(games_html)
-    os.chdir(owd)
+    os.chdir(config.owd)
     return fbs_week_slate
 
 
 def get_slate(year, division):
     # get original working directory
-    os.chdir("/Users/aryak/Projects/sportsrank/cfb/years")
-    owd = os.getcwd()
+    os.chdir(config.owd)
 
     # CONSTANTS
     YEAR = year
@@ -211,5 +208,5 @@ def get_slate(year, division):
     os.chdir(f"{YEAR}/data/slate")
     with open(f"{YEAR}_{DIVISION}_slate.html", "w") as f:
         f.write(games_html)
-    os.chdir(owd)
+    os.chdir(config.owd)
     return fbs_slate

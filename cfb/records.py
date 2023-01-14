@@ -2,12 +2,12 @@ import os
 from teams import get_teams
 import pandas as pd
 from games import get_results
+import config
 
 
 def get_current_records(year, week, division):
     # get original working directory
-    os.chdir("/Users/aryak/Projects/sportsrank/cfb/years")
-    owd = os.getcwd()
+    os.chdir(config.owd)
 
     # CONSTANTS
     YEAR = year
@@ -56,5 +56,5 @@ def get_current_records(year, week, division):
     os.chdir(f"{YEAR}/data/records")
     with open(f"{YEAR}_W{WEEK}_{DIVISION}_records.html", "w") as f:
         f.write(records_html)
-    os.chdir(owd)
+    os.chdir(config.owd)
     return cfb_records_df
