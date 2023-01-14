@@ -2,4 +2,4 @@
 
 a work in process
 
-https://arkar16.github.io/sportsrank/
+https://sportsrank.top/
