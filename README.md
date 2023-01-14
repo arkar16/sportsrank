@@ -2,4 +2,4 @@
 
 a work in process
 
-https://sportsrank.top/
+https://www.sportsrank.top
