@@ -1,3 +1,5 @@
+<script src='https://code.jquery.com/jquery-3.5.1.js'></script>
+<script src='https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js'></script>
 <html>
 <head>
 <title>CORS v0.2.0 - Worst Teams - FBS CFB</title>
@@ -6,7 +8,7 @@
 <h1>CORS v0.2.0 - Worst Teams - FBS CFB</h1>
 </body>
 </html>
-Last updated: 2023-01-15 00:09:09<hr>
+Last updated: 2023-01-15 00:10:22<hr>
 <table border="1" class="dataframe display" id="worstteam">
   <thead>
     <tr style="text-align: left;">
@@ -1146,4 +1148,8 @@ Last updated: 2023-01-15 00:09:09<hr>
       <td>10.23</td>
     </tr>
   </tbody>
-</table>
+</table><script>
+$(document).ready(function() {
+$('#worstteam').DataTable();
+} );
+</script>

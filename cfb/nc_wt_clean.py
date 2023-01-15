@@ -110,8 +110,11 @@ def wt_clean(division, timestamp):
     title_html += "</html>\n"
     timestamp = f"Last updated: {timestamp}<hr>\n" 
     with open(f"wt_{division}_CFB_output.html", "w") as f: # TODO change CFB to {SPORT}
+        f.write(jquery_top)
+        f.write(jquery_bottom)
         f.write(title_html)
         f.write(timestamp)
         f.write(wt_html)
+        f.write(jquery_b2)
 
 
