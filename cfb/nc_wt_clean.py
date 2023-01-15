@@ -34,8 +34,9 @@ def nc_clean(division, timestamp):
     nc_df["Year"] = years_html
 
     nc_df = nc_df.drop_duplicates(subset=["Year"])
-    
+
     nc_html = nc_df.to_html(justify="left", escape=False, index=False)
+    
     title_html = "<html>\n"
     title_html += "<head>\n"
     title_html += f"<title>CORS {config.cors_version} - National Champions - {division} CFB</title>\n" # TODO change CFB to SPORT variable
