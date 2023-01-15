@@ -4,7 +4,6 @@ import os
 import config
 
 
-
 def week_zero_readjust(year, division, teams, week_zero_file):
     os.chdir(config.owd)
     os.chdir(f"{year}/rankings/")
