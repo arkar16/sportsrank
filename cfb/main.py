@@ -25,7 +25,7 @@ timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
 
 # files to run after running a calc
 nc_clean(DIVISION, timestamp) # cleans up NC files
-#wt_clean(DIVISION, timestamp) # cleans up NC files
+wt_clean(DIVISION, timestamp) # cleans up NC files
 #html_grab(YEAR, END_YEAR, DIVISION, timestamp) # writes to index.html TODO move to outside CFB folder to allow for different sports
 
 # TODO add main and config to outside CFB folder to allow for different sports

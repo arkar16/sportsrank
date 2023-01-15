@@ -35,8 +35,14 @@ def nc_clean(division, timestamp):
 
     nc_df = nc_df.drop_duplicates(subset=["Year"])
 
-    nc_html = nc_df.to_html(justify="left", escape=False, index=False)
-    
+    nc_html = nc_df.to_html(justify="left", escape=False, index=False, table_id="nationalchamp", classes="display")
+    jquery_top = "<script src='https://code.jquery.com/jquery-3.5.1.js'></script>\n"
+    jquery_bottom = "<script src='https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js'></script>\n"
+    jquery_b2 = "<script>\n"
+    jquery_b2 += "$(document).ready(function() {\n"
+    jquery_b2 += "$('#nationalchamp').DataTable();\n"
+    jquery_b2 += "} );\n"
+    jquery_b2 += "</script>\n"
     title_html = "<html>\n"
     title_html += "<head>\n"
     title_html += f"<title>CORS {config.cors_version} - National Champions - {division} CFB</title>\n" # TODO change CFB to SPORT variable
@@ -47,9 +53,12 @@ def nc_clean(division, timestamp):
     title_html += "</html>\n"
     timestamp = f"Last updated: {timestamp}<hr>\n" 
     with open(f"nc_{division}_CFB_output.html", "w") as f: # TODO change CFB to {SPORT}
+        f.write(jquery_top)
+        f.write(jquery_bottom)
         f.write(title_html)
         f.write(timestamp)
         f.write(nc_html)
+        f.write(jquery_b2)
 
 def wt_clean(division, timestamp):
     division = division.upper()
@@ -83,7 +92,14 @@ def wt_clean(division, timestamp):
 
     wt_df = wt_df.drop_duplicates(subset=["Year"])
 
-    wt_html = wt_df.to_html(justify="left", escape=False, index=False)
+    wt_html = wt_df.to_html(justify="left", escape=False, index=False, table_id="worstteam", classes="display")
+    jquery_top = "<script src='https://code.jquery.com/jquery-3.5.1.js'></script>\n"
+    jquery_bottom = "<script src='https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js'></script>\n"
+    jquery_b2 = "<script>\n"
+    jquery_b2 += "$(document).ready(function() {\n"
+    jquery_b2 += "$('#worstteam').DataTable();\n"
+    jquery_b2 += "} );\n"
+    jquery_b2 += "</script>\n"
     title_html = "<html>\n"
     title_html += "<head>\n"
     title_html += f"<title>CORS {config.cors_version} - Worst Teams - {division} CFB</title>\n" # TODO change CFB to SPORT variable

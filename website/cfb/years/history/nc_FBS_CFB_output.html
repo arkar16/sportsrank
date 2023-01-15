@@ -1,6 +1,5 @@
-<script src="https://code.jquery.com/jquery-3.5.1.js"></script>
-<script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
-
+<script src='https://code.jquery.com/jquery-3.5.1.js'></script>
+<script src='https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js'></script>
 <html>
 <head>
 <title>CORS v0.2.0 - National Champions - FBS CFB</title>
@@ -9,17 +8,17 @@
 <h1>CORS v0.2.0 - National Champions - FBS CFB</h1>
 </body>
 </html>
-Last updated: 2023-01-14 23:51:47<hr>
-<table id="myTable" border="1" class="display">
+Last updated: 2023-01-15 00:09:09<hr>
+<table border="1" class="dataframe display" id="nationalchamp">
   <thead>
     <tr style="text-align: left;">
-      <th class="sorting">Year</th>
+      <th>Year</th>
       <th>Logo</th>
-      <th class="sorting">School</th>
+      <th>School</th>
       <th>Conference</th>
       <th>Record</th>
-      <th class="sorting">Win</th>
-      <th class="sorting">CORS</th>
+      <th>Win%</th>
+      <th>CORS</th>
     </tr>
   </thead>
   <tbody>
@@ -1158,9 +1157,8 @@ Last updated: 2023-01-14 23:51:47<hr>
       <td>62.88</td>
     </tr>
   </tbody>
-</table>
-<script>
-  $(document).ready( function () {
-      $('#myTable').DataTable();
-  } );
-  </script>
+</table><script>
+$(document).ready(function() {
+$('#nationalchamp').DataTable();
+} );
+</script>
