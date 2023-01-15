@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 import config
 import os
 
-def nc_clean(division):
+def nc_clean(division, timestamp):
     division = division.upper()
     os.chdir(f"{config.owd}/history")
     with open(f"CORS_NC_{division}_CFB.html") as f: # TODO change CFB to {SPORT}
@@ -34,11 +34,13 @@ def nc_clean(division):
     title_html += f"<h1>CORS {config.cors_version} - National Champions - {division} CFB</h1>\n" # TODO change CFB to SPORT variable
     title_html += "</body>\n"
     title_html += "</html>\n"
+    timestamp = f"Last updated: {timestamp}<hr>\n" 
     with open(f"nc_{division}_CFB_output.html", "w") as f: # TODO change CFB to {SPORT}
         f.write(title_html)
+        f.write(timestamp)
         f.write(nc_html)
 
-def wt_clean(division):
+def wt_clean(division, timestamp):
     division = division.upper()
     os.chdir(f"{config.owd}/history")
     with open(f"CORS_WT_{division}_CFB.html") as f: # TODO change CFB to {SPORT}
@@ -70,8 +72,10 @@ def wt_clean(division):
     title_html += f"<h1>CORS {config.cors_version} - Worst Teams - {division} CFB</h1>\n" # TODO change CFB to SPORT variable
     title_html += "</body>\n"
     title_html += "</html>\n"
+    timestamp = f"Last updated: {timestamp}<hr>\n" 
     with open(f"wt_{division}_CFB_output.html", "w") as f: # TODO change CFB to {SPORT}
         f.write(title_html)
+        f.write(timestamp)
         f.write(wt_html)
 
 

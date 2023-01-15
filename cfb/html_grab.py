@@ -2,8 +2,9 @@ import config
 import os
 
 # TODO Change all CFB to {SPORT} tags
+# TODO need to change this file to be outside of the CFB folder to allow for different sports
 
-def html_grab(start_year, end_year, division):
+def html_grab(start_year, end_year, division, timestamp):
     division = division.upper()
     os.chdir("/Users/aryak/Projects/sportsrank/website")
     title_html = "<html>\n"
@@ -14,9 +15,11 @@ def html_grab(start_year, end_year, division):
     title_html += f"<h1>CORS {config.cors_version} Results</h1>\n"
     title_html += "</body>\n"
     title_html += "</html>\n"
+    timestamp = f"Last updated: {timestamp}<hr>\n" 
     cfb_html = f'<a href="cfb/cfb.html"><h1>{division} CFB - CORS<h1></a><br>\n' # TODO CFB to {SPORT}
     with open("index.html", "w") as f: # TODO might need to change this in the future for different sports
             f.write(title_html)
+            f.write(timestamp)
             f.write(cfb_html)
     title_html = "<html>\n"
     title_html += "<head>\n"
