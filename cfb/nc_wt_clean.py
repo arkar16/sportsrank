@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import config
 import os
 
+
 def nc_clean(division, timestamp):
     division = division.upper()
     os.chdir(f"{config.owd}/history")
@@ -23,8 +24,15 @@ def nc_clean(division, timestamp):
         nc_dfs.append(nc_df)
 
     nc_df = pd.concat(nc_dfs)
-    
 
+    nc_df = nc_df.sort_values(by=["Year"], ascending=False)
+
+    years = nc_df["Year"].tolist()
+    years_html = []
+    for year in years:
+        years_html.append(f"<center><a href='../{year}/{year}_CFB.html'>{year}</a></center>")
+    nc_df["Year"] = years_html
+    
     nc_html = nc_df.to_html(justify="left", escape=False, index=False)
     title_html = "<html>\n"
     title_html += "<head>\n"
@@ -62,6 +70,13 @@ def wt_clean(division, timestamp):
 
     wt_df = pd.concat(wt_dfs)
     
+    wt_df = wt_df.sort_values(by=["Year"], ascending=False)
+
+    years = wt_df["Year"].tolist()
+    years_html = []
+    for year in years:
+        years_html.append(f"<center><a href='../{year}/{year}_CFB.html'>{year}</a></center>")
+    wt_df["Year"] = years_html
 
     wt_html = wt_df.to_html(justify="left", escape=False, index=False)
     title_html = "<html>\n"
