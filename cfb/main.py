@@ -7,8 +7,8 @@ from nc_wt_clean import *
 
 # CONSTANTS
 start_time = time.time()
-YEAR = 2019  # define year (cannot be earlier than 1897)
-END_YEAR = 2019 # define end year
+YEAR = 1897  # define year (cannot be earlier than 1897)
+END_YEAR = 2022 # define end year
 WEEK = 15  # define week
 END_WEEK = get_end_week(YEAR)  # define last week of season
 DIVISION = "FBS"  # define division (currently only supporting FBS)
@@ -24,8 +24,8 @@ timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
 #history_calc(YEAR, END_YEAR, WEEK, END_WEEK, DIVISION, HFA, BASE_CORS) # for historical year to year calculations
 
 # files to run after running a calc
-nc_clean(DIVISION, timestamp) # cleans up NC files
-wt_clean(DIVISION, timestamp) # cleans up NC files
+#nc_clean(DIVISION, timestamp) # cleans up NC files
+#wt_clean(DIVISION, timestamp) # cleans up NC files
 html_grab(YEAR, END_YEAR, DIVISION, timestamp) # writes to index.html TODO move to outside CFB folder to allow for different sports
 
 # TODO add main and config to outside CFB folder to allow for different sports
