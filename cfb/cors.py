@@ -100,7 +100,7 @@ def cors_calc(team, week, base, wins, losses, results, last_week_cors):
     return cors
 
 
-def weekly_cors(base, year, week, end_week, division, current_records, results, weekly_results):
+def weekly_cors(base, year, week, end_week, division, current_records, results, weekly_results, timestamp):
     # get original working directory
     os.chdir(config.owd)
 
@@ -143,11 +143,14 @@ def weekly_cors(base, year, week, end_week, division, current_records, results, 
         title_html += f"<h1>CORS {config.cors_version} - {YEAR} Final Rankings - {DIVISION} CFB</h1>\n" # TODO change CFB to SPORT variable
         title_html += "</body>\n"
         title_html += "</html>\n"
+        timestamp = f"Last updated: {timestamp}<hr>\n" 
         cors_html = cors_teams_df.to_html(escape=False)
         os.chdir(f"{YEAR}/rankings")
         with open(f"{YEAR}_FINAL_{DIVISION}_cors.html", "w") as f:
             f.write(title_html)
+            f.write(timestamp)
             f.write(cors_html)
+            f.close()
         os.chdir(config.owd)
         nc_to_history(year, division, cors_teams_df)
         worst_to_history(year, division, cors_teams_df)
@@ -160,11 +163,14 @@ def weekly_cors(base, year, week, end_week, division, current_records, results, 
         title_html += f"<h1>CORS {config.cors_version} - {YEAR} W{WEEK} Rankings - {DIVISION} CFB</h1>\n" # TODO change CFB to SPORT variable
         title_html += "</body>\n"
         title_html += "</html>\n"
+        timestamp = f"Last updated: {timestamp}<hr>\n" 
         cors_html = cors_teams_df.to_html(escape=False)
         os.chdir(f"{YEAR}/rankings")
         with open(f"{YEAR}_W{WEEK}_{DIVISION}_cors.html", "w") as f:
             f.write(title_html)
+            f.write(timestamp)
             f.write(cors_html)
+            f.close()
         os.chdir(config.owd)
 
     return cors_teams_df

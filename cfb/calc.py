@@ -13,9 +13,10 @@ from bs4 import BeautifulSoup
 # FIXME NEED TO FIX ALL FUNCTIONS TO REMOVE CONSTANTS AND USE PARAMETERS
 
 # TODO def postseason_games() -> maybe not?
+# TODO add timestamp to all files
 
 
-def if_week_zero_true(year, week, division, hfa):
+def if_week_zero_true(year, week, division, hfa, timestamp):
     # get original working directory
     os.chdir(config.owd)
     try:
@@ -44,7 +45,7 @@ def if_week_zero_true(year, week, division, hfa):
             else:
                 week_zero_file.at[index, "logo"] = ""  # Set the value to "N/A" if no logo was found
         week_zero_file_df = week_zero_file #week_zero_file.drop(columns="logo")
-        week_cors = week_zero_readjust(year, division, teams, week_zero_file_df)
+        week_cors = week_zero_readjust(year, division, teams, week_zero_file_df, timestamp)
         print("readjust done")
         weekly_spread(year, week, division, week_cors, hfa)
         print("spread done")
@@ -75,35 +76,35 @@ def if_week_zero_true(year, week, division, hfa):
         print("no spread")
         print(f"W{week} done")
 
-def regular_season_week(year, week, end_week, division, hfa, base_cors):
+def regular_season_week(year, week, end_week, division, hfa, base_cors, timestamp):
     current_records = get_current_records(year, week, division)
     print("records done")
     weekly_results = get_weekly_results(year, week, division)
     print("weekly results done")
     results = get_results(year, division)  # need to edit weekly_results to pass this through as a parameter
     print("results done")
-    week_cors = weekly_cors(base_cors, year, week, end_week, division, current_records, results, weekly_results)
+    week_cors = weekly_cors(base_cors, year, week, end_week, division, current_records, results, weekly_results, timestamp)
     print("week cors done")
     week_games = get_week_slate(year, week, division)
     print("week games done")
-    weekly_spread(year, week, division, week_cors, hfa)
+    weekly_spread(year, week, division, week_cors, hfa, timestamp)
     print("week spread done")
     print(f"W{week} done") 
 
-def last_regular_week(year, week, end_week, division, hfa, base_cors):
+def last_regular_week(year, week, end_week, division, hfa, base_cors, timestamp):
     current_records = get_current_records(year, week, division)
     print("records done")
     weekly_results = get_weekly_results(year, week, division)
     print("weekly results done")
     results = get_results(year, division)  # need to edit weekly_results to pass this through as a parameter
     print("results done")
-    week_cors = weekly_cors(base_cors, year, week, end_week, division, current_records, results, weekly_results)
+    week_cors = weekly_cors(base_cors, year, week, end_week, division, current_records, results, weekly_results, timestamp)
     print("week cors done")
     week_games = get_week_slate(year, week, division)
     print("week games done")
     print(f"W{week} done")
 
-def single_week_calc(year, week, end_week, division, hfa, base_cors):
+def single_week_calc(year, week, end_week, division, hfa, base_cors, timestamp):
     # CONSTANTS
     YEAR = year  # define year
     WEEK = week  # define week
@@ -113,13 +114,14 @@ def single_week_calc(year, week, end_week, division, hfa, base_cors):
     BASE_CORS = base_cors
 
     if WEEK == 0:
-        if_week_zero_true(year, week, division, hfa)
+        if_week_zero_true(year, week, division, hfa, timestamp)
     elif WEEK != END_WEEK:
-        regular_season_week(year, week, end_week, division, hfa, base_cors)
+        regular_season_week(year, week, end_week, division, hfa, base_cors, timestamp)
     else:
-        last_regular_week(year, week, end_week, division, hfa, base_cors)
+        last_regular_week(year, week, end_week, division, hfa, base_cors, timestamp)
 
-def full_season_calc(year, week, end_week, division, hfa, base_cors):
+
+def full_season_calc(year, week, end_week, division, hfa, base_cors, timestamp):
     # CONSTANTS
     YEAR = year  # define year
     WEEK = week  # define week
@@ -130,20 +132,20 @@ def full_season_calc(year, week, end_week, division, hfa, base_cors):
 
     for wk in range(WEEK, END_WEEK + 1):
         if wk == 0:
-            if_week_zero_true(year, wk, division, hfa)
+            if_week_zero_true(year, wk, division, hfa, timestamp)
         elif wk != END_WEEK:
-            regular_season_week(year, wk, end_week, division, hfa, base_cors)
+            regular_season_week(year, wk, end_week, division, hfa, base_cors, timestamp)
         else:
-            last_regular_week(year, wk, end_week, division, hfa, base_cors)
+            last_regular_week(year, wk, end_week, division, hfa, base_cors, timestamp)
 
-def history_calc(year, end_year, week, end_week, division, hfa, base_cors):
+def history_calc(year, end_year, week, end_week, division, hfa, base_cors, timestamp):
     for i in range(year, end_year + 1):
         for wk in range(week, end_week + 1):
             if wk == 0:
-                if_week_zero_true(year, wk, division, hfa)
+                if_week_zero_true(year, wk, division, hfa, timestamp)
             elif wk != end_week:
-                regular_season_week(year, wk, end_week, division, hfa, base_cors)
+                regular_season_week(year, wk, end_week, division, hfa, base_cors, timestamp)
             else:
-                last_regular_week(year, wk, end_week, division, hfa, base_cors)
+                last_regular_week(year, wk, end_week, division, hfa, base_cors, timestamp)
             print(f"Y{year} W{wk} done")
         year += 1
