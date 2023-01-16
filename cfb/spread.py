@@ -6,7 +6,7 @@ import config
 
 
 def spread_calc(row, hfa):
-    HFA = hfa # FIXME check if this is actually being applied?
+    HFA = hfa
     if row["neutral_site"]:  # if the game is at a neutral site
         return round((row["home_cors"] - row["away_cors"]) * 2) / 2
     else:

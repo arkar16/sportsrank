@@ -4,7 +4,7 @@ import os
 # TODO need to change this file to be outside of the CFB folder to allow for different sports
 sport_upper = config.sport.upper()
 
-def html_grab(start_year, end_year, division, timestamp):
+def html_grab(start_year, end_year, week, end_week, division, timestamp):
     division = division.upper()
     os.chdir("/Users/aryak/Projects/sportsrank/website")
     title_html = "<html>\n"
@@ -54,6 +54,8 @@ def html_grab(start_year, end_year, division, timestamp):
             f.write(year_title_html)
             f.write(timestamp)
             f.write(final_template)
+            for week in range(week, end_week):
+                f.write(f'<a href="rankings/{year}_W{week}_{division}_cors.html">Link to {year} W{week} {division} {sport_upper} rankings</a><br>\n')
             f.close()
         with open(f"{config.sport}/{config.sport}.html", "a") as f:
             f.write(year_template)

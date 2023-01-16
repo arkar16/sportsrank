@@ -4,8 +4,6 @@ from api import api_key
 import os
 import pandas as pd
 
-# TODO potentially change this API to call get_games -> reduce extra week due to FCS
-
 def get_end_week(year):
     # get original working directory
     os.chdir(config.owd)
@@ -21,8 +19,8 @@ def get_end_week(year):
     season_weeks_df = pd.DataFrame(data)
     season_weeks_df = season_weeks_df.sort_values(by="week", ascending=False)
     end_week = season_weeks_df.iloc[0]["week"] # takes highest week as end week
-    if end_week > 16:
-        end_week = 16
+    if end_week > config.week_count:
+        end_week = config.week_count
     else:
         end_week = end_week
     

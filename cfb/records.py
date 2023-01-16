@@ -5,17 +5,18 @@ from games import get_results
 import config
 
 
-def get_current_records(year, week, division):
+def get_current_records(year, week, division, timestamp):
     # get original working directory
     os.chdir(config.owd)
+    sport_upper = config.sport.upper()
 
     # CONSTANTS
     YEAR = year
     WEEK = week
     DIVISION = division
 
-    teams_df = get_teams(YEAR, DIVISION)
-    results_df = get_results(YEAR, DIVISION)
+    teams_df = get_teams(YEAR, DIVISION, timestamp)
+    results_df = get_results(YEAR, DIVISION, timestamp)
 
     cfb_records_df = teams_df.copy()
     cfb_records_df["wins"] = 0
@@ -54,7 +55,18 @@ def get_current_records(year, week, division):
     cfb_presentable_records_df = cfb_records_df.drop(columns=["wins", "losses", "ties"])
     records_html = cfb_presentable_records_df.to_html(justify="center", escape=False, index=False)
     os.chdir(f"{YEAR}/data/records")
+    title_html = "<html>\n"
+    title_html += "<head>\n"
+    title_html += f"<title>CORS {config.cors_version} - {YEAR} W{WEEK} Records - {DIVISION} {sport_upper}</title>\n"
+    title_html += "</head>\n"
+    title_html += "<body>\n"
+    title_html += f"<h1>CORS {config.cors_version} - {YEAR} W{WEEK} Records - {DIVISION} {sport_upper}</h1>\n"
+    title_html += "</body>\n"
+    title_html += "</html>\n"
+    timestamp = f"Last updated: {timestamp}<hr>\n"  
     with open(f"{YEAR}_W{WEEK}_{DIVISION}_records.html", "w") as f:
+        f.write(title_html)
+        f.write(timestamp)
         f.write(records_html)
     os.chdir(config.owd)
     return cfb_records_df

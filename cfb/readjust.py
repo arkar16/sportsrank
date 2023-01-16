@@ -5,6 +5,7 @@ import config
 
 
 def week_zero_readjust(year, division, teams, week_zero_file, timestamp):
+    sport_upper = config.sport.upper()
     os.chdir(config.owd)
     os.chdir(f"{year}/rankings/")
     division = division.upper()
@@ -46,10 +47,10 @@ def week_zero_readjust(year, division, teams, week_zero_file, timestamp):
     week_zero_html = week_zero_file_final.to_html(escape=False)
     title_html = "<html>\n"
     title_html += "<head>\n"
-    title_html += f"<title>CORS {config.cors_version} - {year} W0 Rankings - {division} CFB</title>\n" # TODO change CFB to SPORT variable
+    title_html += f"<title>CORS {config.cors_version} - {year} W0 Rankings - {division} {sport_upper}</title>\n"
     title_html += "</head>\n"
     title_html += "<body>\n"
-    title_html += f"<h1>CORS {config.cors_version} - {year} W0 Rankings - {division} CFB</h1>\n" # TODO change CFB to SPORT variable
+    title_html += f"<h1>CORS {config.cors_version} - {year} W0 Rankings - {division} {sport_upper}</h1>\n"
     title_html += "</body>\n"
     title_html += "</html>\n"
     timestamp = f"Last updated: {timestamp}<hr>\n" 

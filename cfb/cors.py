@@ -110,6 +110,7 @@ def weekly_cors(base, year, week, end_week, division, current_records, results, 
     WEEK = week
     END_WEEK = end_week
     DIVISION = division
+    sport_upper = config.sport.upper()
 
     # last week CORS
     os.chdir(f"{YEAR}/rankings")
@@ -137,10 +138,10 @@ def weekly_cors(base, year, week, end_week, division, current_records, results, 
     if WEEK == END_WEEK:
         title_html = "<html>\n"
         title_html += "<head>\n"
-        title_html += f"<title>CORS {config.cors_version} - {YEAR} Final Rankings - {DIVISION} CFB</title>\n" # TODO change CFB to SPORT variable
+        title_html += f"<title>CORS {config.cors_version} - {YEAR} Final Rankings - {DIVISION} {sport_upper}</title>\n"
         title_html += "</head>\n"
         title_html += "<body>\n"
-        title_html += f"<h1>CORS {config.cors_version} - {YEAR} Final Rankings - {DIVISION} CFB</h1>\n" # TODO change CFB to SPORT variable
+        title_html += f"<h1>CORS {config.cors_version} - {YEAR} Final Rankings - {DIVISION} {sport_upper}</h1>\n"
         title_html += "</body>\n"
         title_html += "</html>\n"
         timestamp = f"Last updated: {timestamp}<hr>\n" 
@@ -157,10 +158,10 @@ def weekly_cors(base, year, week, end_week, division, current_records, results, 
     else:
         title_html = "<html>\n"
         title_html += "<head>\n"
-        title_html += f"<title>CORS {config.cors_version} - {YEAR} W{WEEK} Rankings - {DIVISION} CFB</title>\n" # TODO change CFB to SPORT variable
+        title_html += f"<title>CORS {config.cors_version} - {YEAR} W{WEEK} Rankings - {DIVISION} {sport_upper}</title>\n"
         title_html += "</head>\n"
         title_html += "<body>\n"
-        title_html += f"<h1>CORS {config.cors_version} - {YEAR} W{WEEK} Rankings - {DIVISION} CFB</h1>\n" # TODO change CFB to SPORT variable
+        title_html += f"<h1>CORS {config.cors_version} - {YEAR} W{WEEK} Rankings - {DIVISION} {sport_upper}</h1>\n"
         title_html += "</body>\n"
         title_html += "</html>\n"
         timestamp = f"Last updated: {timestamp}<hr>\n" 

@@ -10,7 +10,6 @@ import shutil
 from readjust import week_zero_readjust
 from bs4 import BeautifulSoup
 
-# FIXME NEED TO FIX ALL FUNCTIONS TO REMOVE CONSTANTS AND USE PARAMETERS
 
 # TODO def postseason_games() -> maybe not?
 # TODO add timestamp to all files
@@ -23,11 +22,11 @@ def if_week_zero_true(year, week, division, hfa, timestamp):
         old_cors_file = f"{config.owd}/{year - 1}/rankings/{year - 1}_FINAL_{division}_cors.html"  # last year final CORS ranking
         dst = f"{config.owd}/{year}/rankings"
         week_zero_cors = f"{year}_W0_{division}_cors.html"
-        teams = get_teams(year, division)
+        teams = get_teams(year, division, timestamp)
         print("teams done")
-        get_slate(year, division)
+        get_slate(year, division, timestamp)
         print("slate done")
-        get_current_records(year, week, division)
+        get_current_records(year, week, division, timestamp)
         print("records done")
         shutil.copy(old_cors_file, dst + "/" + week_zero_cors)  # copies FINAL to WEEK 0
         print("copy done")
@@ -53,9 +52,9 @@ def if_week_zero_true(year, week, division, hfa, timestamp):
     except:
         #teams = get_teams(year, division)
         #print("teams2 done")
-        #get_slate(year, division)
+        #get_slate(year, division, timestamp)
         #print("slate2 done")
-        #current_records = get_current_records(year, week, division)
+        #current_records = get_current_records(year, week, division, timestamp)
         #print("records2 done")
         os.chdir(f"{year}/rankings")
         week_zero_file_df = teams.copy()
@@ -77,30 +76,30 @@ def if_week_zero_true(year, week, division, hfa, timestamp):
         print(f"W{week} done")
 
 def regular_season_week(year, week, end_week, division, hfa, base_cors, timestamp):
-    current_records = get_current_records(year, week, division)
+    current_records = get_current_records(year, week, division, timestamp)
     print("records done")
-    weekly_results = get_weekly_results(year, week, division)
+    weekly_results = get_weekly_results(year, week, division, timestamp)
     print("weekly results done")
-    results = get_results(year, division)  # need to edit weekly_results to pass this through as a parameter
+    results = get_results(year, division, timestamp)  # TODO need to edit weekly_results to pass this through as a parameter
     print("results done")
     week_cors = weekly_cors(base_cors, year, week, end_week, division, current_records, results, weekly_results, timestamp)
     print("week cors done")
-    week_games = get_week_slate(year, week, division)
+    week_games = get_week_slate(year, week, division, timestamp)
     print("week games done")
     weekly_spread(year, week, division, week_cors, hfa, timestamp)
     print("week spread done")
     print(f"W{week} done") 
 
 def last_regular_week(year, week, end_week, division, hfa, base_cors, timestamp):
-    current_records = get_current_records(year, week, division)
+    current_records = get_current_records(year, week, division, timestamp)
     print("records done")
-    weekly_results = get_weekly_results(year, week, division)
+    weekly_results = get_weekly_results(year, week, division, timestamp)
     print("weekly results done")
-    results = get_results(year, division)  # need to edit weekly_results to pass this through as a parameter
+    results = get_results(year, division, timestamp)  # need to edit weekly_results to pass this through as a parameter
     print("results done")
     week_cors = weekly_cors(base_cors, year, week, end_week, division, current_records, results, weekly_results, timestamp)
     print("week cors done")
-    week_games = get_week_slate(year, week, division)
+    week_games = get_week_slate(year, week, division, timestamp)
     print("week games done")
     print(f"W{week} done")
 

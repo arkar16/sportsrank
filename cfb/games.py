@@ -5,9 +5,10 @@ import os
 import config
 
 
-def get_weekly_results(year, week, division):
+def get_weekly_results(year, week, division, timestamp):
     # get original working directory
     os.chdir(config.owd)
+    sport_upper = config.sport.upper()
 
     # Configure API key authorization: ApiKeyAuth
     configuration = cfbd.Configuration()
@@ -51,16 +52,28 @@ def get_weekly_results(year, week, division):
 
     # write games to html file for viewing
     os.chdir(f"{YEAR}/data/results/weekly_results")
+    title_html = "<html>\n"
+    title_html += "<head>\n"
+    title_html += f"<title>CORS {config.cors_version} - {YEAR} W{WEEK} Results - {DIVISION} {sport_upper}</title>\n"
+    title_html += "</head>\n"
+    title_html += "<body>\n"
+    title_html += f"<h1>CORS {config.cors_version} - {YEAR} W{WEEK} Results - {DIVISION} {sport_upper}</h1>\n"
+    title_html += "</body>\n"
+    title_html += "</html>\n"
+    timestamp = f"Last updated: {timestamp}<hr>\n" 
     with open(f"{YEAR}_W{WEEK}_{DIVISION}_results.html", "w") as f:
+        f.write(title_html)
+        f.write(timestamp)
         f.write(week_results_html)
     os.chdir(config.owd)
 
     return fbs_week_results
 
 
-def get_results(year, division):
+def get_results(year, division, timestamp):
     # get original working directory
     os.chdir(config.owd)
+    sport_upper = config.sport.upper()
 
     # Configure API key authorization: ApiKeyAuth
     configuration = cfbd.Configuration()
@@ -104,16 +117,28 @@ def get_results(year, division):
 
     # write games to html file for viewing
     os.chdir(f"{YEAR}/data/results")
+    title_html = "<html>\n"
+    title_html += "<head>\n"
+    title_html += f"<title>CORS {config.cors_version} - {YEAR} Results - {DIVISION} {sport_upper}</title>\n"
+    title_html += "</head>\n"
+    title_html += "<body>\n"
+    title_html += f"<h1>CORS {config.cors_version} - {YEAR} Results - {DIVISION} {sport_upper}</h1>\n"
+    title_html += "</body>\n"
+    title_html += "</html>\n"
+    timestamp = f"Last updated: {timestamp}<hr>\n" 
     with open(f"{YEAR}_{DIVISION}_results.html", "w") as f:
+        f.write(title_html)
+        f.write(timestamp)
         f.write(results_html)
     os.chdir(config.owd)
 
     return fbs_results
 
 
-def get_week_slate(year, week, division):
+def get_week_slate(year, week, division, timestamp):
     # get original working directory
     os.chdir(config.owd)
+    sport_upper = config.sport.upper()
 
     # CONSTANTS
     YEAR = year
@@ -157,15 +182,27 @@ def get_week_slate(year, week, division):
 
     # write week_games to html file for viewing
     os.chdir(f"{YEAR}/data/slate/weekly_slate")
+    title_html = "<html>\n"
+    title_html += "<head>\n"
+    title_html += f"<title>CORS {config.cors_version} - {YEAR} W{WEEK} Slate - {DIVISION} {sport_upper}</title>\n"
+    title_html += "</head>\n"
+    title_html += "<body>\n"
+    title_html += f"<h1>CORS {config.cors_version} - {YEAR} W{WEEK} Slate - {DIVISION} {sport_upper}</h1>\n"
+    title_html += "</body>\n"
+    title_html += "</html>\n"
+    timestamp = f"Last updated: {timestamp}<hr>\n" 
     with open(f"{YEAR}_W{WEEK}_{DIVISION}_slate.html", "w") as f:
+        f.write(title_html)
+        f.write(timestamp)
         f.write(games_html)
     os.chdir(config.owd)
     return fbs_week_slate
 
 
-def get_slate(year, division):
+def get_slate(year, division, timestamp):
     # get original working directory
     os.chdir(config.owd)
+    sport_upper = config.sport.upper()
 
     # CONSTANTS
     YEAR = year
@@ -206,7 +243,18 @@ def get_slate(year, division):
 
     # write games to html file for viewing
     os.chdir(f"{YEAR}/data/slate")
+    title_html = "<html>\n"
+    title_html += "<head>\n"
+    title_html += f"<title>CORS {config.cors_version} - {YEAR} Slate - {DIVISION} {sport_upper}</title>\n"
+    title_html += "</head>\n"
+    title_html += "<body>\n"
+    title_html += f"<h1>CORS {config.cors_version} - {YEAR} Slate - {DIVISION} {sport_upper}</h1>\n"
+    title_html += "</body>\n"
+    title_html += "</html>\n"
+    timestamp = f"Last updated: {timestamp}<hr>\n" 
     with open(f"{YEAR}_{DIVISION}_slate.html", "w") as f:
+        f.write(title_html)
+        f.write(timestamp)
         f.write(games_html)
     os.chdir(config.owd)
     return fbs_slate
