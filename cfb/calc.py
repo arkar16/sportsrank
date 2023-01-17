@@ -56,6 +56,7 @@ def if_week_zero_true(year, week, division, hfa, timestamp):
         #print("slate2 done")
         #current_records = get_current_records(year, week, division, timestamp)
         #print("records2 done")
+        os.chdir(config.owd)
         os.chdir(f"{year}/rankings")
         week_zero_file_df = teams.copy()
         week_zero_file_df["record"] = "0-0"
