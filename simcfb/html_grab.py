@@ -38,7 +38,7 @@ def html_grab(start_year, end_year, week, end_week, division, timestamp):
             f.write(year_title_html)
             f.write(timestamp)
             f.write(final_template)
-            for week in range(0, config.week_count + 1):
+            for week in range(0, config.week_count):
                 f.write(f'<a href="rankings/{year}_W{week}_{division}_cors.html">Link to {year} W{week} {division} {sport_upper} rankings</a><br>\n')
             f.close()
         os.chdir("/Users/aryak/Projects/sportsrank/website")

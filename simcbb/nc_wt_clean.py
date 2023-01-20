@@ -31,7 +31,7 @@ def nc_clean(division, timestamp):
     years = nc_df["Year"].tolist()
     years_html = []
     for year in years:
-        years_html.append(f"<center><a href='../{year}/{year}_CFB.html'>{year}</a></center>")
+        years_html.append(f"<center><a href='../{year}/{year}_{sport_upper}.html'>{year}</a></center>")
     nc_df["Year"] = years_html
 
     nc_df = nc_df.drop_duplicates(subset=["Year"])
@@ -90,7 +90,7 @@ def wt_clean(division, timestamp):
     years = wt_df["Year"].tolist()
     years_html = []
     for year in years:
-        years_html.append(f"<center><a href='../{year}/{year}_CFB.html'>{year}</a></center>")
+        years_html.append(f"<center><a href='../{year}/{year}_{sport_upper}.html'>{year}</a></center>")
     wt_df["Year"] = years_html
 
     wt_df = wt_df.drop_duplicates(subset=["Year"])
