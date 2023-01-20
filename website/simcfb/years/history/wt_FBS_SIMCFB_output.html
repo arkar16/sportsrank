@@ -1,0 +1,40 @@
+<script src='https://code.jquery.com/jquery-3.5.1.js'></script>
+<script src='https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js'></script>
+<html>
+<head>
+<title>CORS v0.2.0 - Worst Teams - FBS SIMCFB</title>
+</head>
+<body>
+<h1>CORS v0.2.0 - Worst Teams - FBS SIMCFB</h1>
+</body>
+</html>
+Last updated: 2023-01-20 12:55:43<hr>
+<table border="1" class="dataframe display" id="worstteam">
+  <thead>
+    <tr style="text-align: left;">
+      <th>Year</th>
+      <th>Logo</th>
+      <th>School</th>
+      <th>Conference</th>
+      <th>Record</th>
+      <th>Win%</th>
+      <th>CORS</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><center><a href='../2022/2022_CFB.html'>2022</a></center></td>
+      <td><center><img src='' style='width: 20px; height: 20px;'></center></td>
+      <td>MINN</td>
+      <td>NaN</td>
+      <td>0-12</td>
+      <td>0.0</td>
+      <td>10.73</td>
+    </tr>
+  </tbody>
+</table><script>
+$(document).ready( function () {
+$('#worstteam').DataTable({
+paging: false});
+});
+</script>
