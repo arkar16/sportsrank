@@ -34,6 +34,7 @@ def html_grab(start_year, end_year, week, end_week, division, timestamp):
         year_title_html += "</body>\n"
         year_title_html += "</html>\n"
         year_template = f'<a href="years/{year}/{year}_{sport_upper}.html">Link to {year} {division} CFB</a><br>\n'
+        timestamp = f"Last updated: {timestamp}<hr>\n" 
         with open(f"{config.sport}/years/{year}/{year}_{sport_upper}.html", "w") as f:
             f.write(year_title_html)
             f.write(timestamp)

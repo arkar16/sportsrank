@@ -2,7 +2,6 @@ import config
 import os
 from end_week import get_end_week
 
-# TODO need to change this file to be outside of the CFB folder to allow for different sports
 sport_upper = config.sport.upper()
 
 def html_grab(start_year, end_year, week, end_week, division, timestamp):
@@ -17,6 +16,8 @@ def html_grab(start_year, end_year, week, end_week, division, timestamp):
         year_title_html += "</body>\n"
         year_title_html += "</html>\n"
         year_template = f'<a href="years/{year}/{year}_{sport_upper}.html">Link to {year} {division} CFB</a><br>\n'
+        timestamp = f"Last updated: {timestamp}<hr>\n" 
+        os.chdir("/Users/aryak/Projects/sportsrank/website")
         with open(f"{config.sport}/years/{year}/{year}_{sport_upper}.html", "w") as f:
             f.write(year_title_html)
             f.write(timestamp)

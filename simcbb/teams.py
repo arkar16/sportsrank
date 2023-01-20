@@ -34,6 +34,8 @@ def get_teams(year, division, timestamp):
 
     teams_html = cfb_teams.to_html(index=False, escape=False)
 
+    # TODO add logos
+    
     os.chdir(f"{YEAR}/data")
     title_html = "<html>\n"
     title_html += "<head>\n"

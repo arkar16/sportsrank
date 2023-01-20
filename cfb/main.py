@@ -8,7 +8,7 @@ from nc_wt_clean import *
 # CONSTANTS
 start_time = time.time()
 YEAR = 2022  # define current year (cannot be earlier than 1897)
-START_YEAR = 1897  # define start year
+START_YEAR = 2022  # define start year
 END_YEAR = 2022 # define end year
 WEEK = 0  # define current week
 START_WEEK = 0  # define start week
