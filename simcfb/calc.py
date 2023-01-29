@@ -105,35 +105,18 @@ def last_regular_week(year, week, end_week, division, hfa, base_cors, timestamp)
     print(f"W{week} done")
 
 def single_week_calc(year, week, end_week, division, hfa, base_cors, timestamp):
-    # CONSTANTS
-    YEAR = year  # define year
-    WEEK = week  # define week
-    END_WEEK = end_week  # define end week
-    DIVISION = division  # define division (currently only supporting fbs)
-    HFA = hfa  # define HFA constant
-    BASE_CORS = base_cors
-
-    if WEEK == 0:
+    if week == 0:
         if_week_zero_true(year, week, division, hfa, timestamp)
-    elif WEEK != END_WEEK:
+    elif week != end_week:
         regular_season_week(year, week, end_week, division, hfa, base_cors, timestamp)
     else:
         last_regular_week(year, week, end_week, division, hfa, base_cors, timestamp)
 
-
 def full_season_calc(year, week, end_week, division, hfa, base_cors, timestamp):
-    # CONSTANTS
-    YEAR = year  # define year
-    WEEK = week  # define week
-    END_WEEK = end_week  # define end week
-    DIVISION = division  # define division (currently only supporting fbs)
-    HFA = hfa  # define HFA constant
-    BASE_CORS = base_cors
-
-    for wk in range(WEEK, END_WEEK + 1):
+    for wk in range(week, end_week + 1):
         if wk == 0:
             if_week_zero_true(year, wk, division, hfa, timestamp)
-        elif wk != END_WEEK:
+        elif wk != end_week:
             regular_season_week(year, wk, end_week, division, hfa, base_cors, timestamp)
         else:
             last_regular_week(year, wk, end_week, division, hfa, base_cors, timestamp)

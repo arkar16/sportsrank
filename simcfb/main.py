@@ -9,7 +9,7 @@ start_time = time.time()
 YEAR = 2022  # define current year (cannot be earlier than 2022)
 START_YEAR = 2021  # define start year
 END_YEAR = 2022 # define end year
-WEEK = 0  # define current week
+WEEK = 14  # define current week
 START_WEEK = 0  # define start week
 END_WEEK = 14  # define last week of season
 DIVISION = "FBS"  # define division (currently only supporting fbs)
@@ -24,8 +24,8 @@ timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
 #history_calc(START_YEAR, END_YEAR, START_WEEK, END_WEEK, DIVISION, HFA, BASE_CORS, timestamp) # for historical year to year calculations
 
 # files to run after running a calc
-nc_clean(DIVISION, timestamp) # cleans up NC files
+nc_clean(DIVISION, timestamp) # FIXME history no work cleans up NC files
 wt_clean(DIVISION, timestamp) # cleans up NC files
-html_grab(START_YEAR, END_YEAR, START_WEEK, END_WEEK, DIVISION, timestamp) # writes to index.html TODO move to outside CFB folder to allow for different sports
+#html_grab(START_YEAR, END_YEAR, START_WEEK, END_WEEK, DIVISION, timestamp) # writes to index.html TODO move to outside CFB folder to allow for different sports
 
 print("Process finished --- %s seconds ---" % (time.time() - start_time))
