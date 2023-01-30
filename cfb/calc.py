@@ -23,29 +23,30 @@ def if_week_zero_true(year, week, division, hfa, timestamp):
         dst = f"{config.owd}/{year}/rankings"
         week_zero_cors = f"{year}_W0_{division}_cors.html"
         teams = get_teams(year, division, timestamp)
-        print("teams done")
+        print("teams done W0")
         get_slate(year, division, timestamp)
-        print("slate done")
+        print("slate done W0")
         get_current_records(year, week, division, timestamp)
-        print("records done")
+        print("records done W0")
         shutil.copy(old_cors_file, dst + "/" + week_zero_cors)  # copies FINAL to WEEK 0
-        print("copy done")
+        print("copy done W0")
         os.chdir(f"{year}/rankings")
         week_zero_file = pd.read_html(f"{year}_W0_{division}_cors.html")[0].set_index("rank")
-        with open(f"{year}_W0_{division}_cors.html") as f:
-            soup = BeautifulSoup(f, "html.parser")
-        for index, row in week_zero_file.iterrows(): # FIXME THIS DOES NOT WORK IF THE PAST SEASON TEAM DID NOT HAVE A LOGO
-            imgs = soup.find_all("img")
-            srcs = [img["src"] for img in imgs]
-            srcs_team = srcs[index-1:index]
-            src_str = " ".join(srcs_team)  # Concatenate the srcs list into a single string
-            if src_str:  # Check if src_str is not empty
-                week_zero_file.at[index, "logo"] = f"<center><img src='{src_str}' style='width: 20px; height: 20px;'></center>"
-            else:
-                week_zero_file.at[index, "logo"] = ""  # Set the value to "N/A" if no logo was found
+        #with open(f"{year}_W0_{division}_cors.html") as f:
+            #soup = BeautifulSoup(f, "html.parser")
+        #for index, row in week_zero_file.iterrows(): # FIXME THIS DOES NOT WORK IF THE PAST SEASON TEAM DID NOT HAVE A LOGO
+            #imgs = soup.find_all("img")
+            #srcs = [img["src"] for img in imgs]
+            #srcs_team = srcs[index-1:index]
+            #src_str = " ".join(srcs_team)  # Concatenate the srcs list into a single string
+            #if src_str:  # Check if src_str is not empty
+                #week_zero_file.at[index, "logo"] = f"<center><img src='{src_str}' style='width: 20px; height: 20px;'></center>"
+            #else:
+                #week_zero_file.at[index, "logo"] = ""  # Set the value to "N/A" if no logo was found
         week_zero_file_df = week_zero_file #week_zero_file.drop(columns="logo")
+        print("week zero file done")
         week_cors = week_zero_readjust(year, division, teams, week_zero_file_df, timestamp)
-        print("readjust done")
+        print("readjust done W0")
         weekly_spread(year, week, division, week_cors, hfa)
         print("spread done")
         print(f"W{week} done")

@@ -21,15 +21,15 @@ def get_teams(year, division, timestamp):
     DIVISION = division
 
     fbs_teams = teams_api_instance.get_fbs_teams(year=YEAR)
-    cfb_teams = pd.DataFrame(columns=["logo", "school", "conference"])
+    cfb_teams = pd.DataFrame(columns=["school", "conference"])
 
     # create dataframe of FBS teams
     for team in fbs_teams:
-        try:
-            logo = team.logos[0]
-            logo_png = f"<img src='{logo}' style='width: 20px; height: 20px;'>"
-        except:
-            logo_png = ""
+        #try:
+            #logo = team.logos[0]
+            #logo_png = f"<img src='{logo}' style='width: 20px; height: 20px;'>"
+        #except:
+            #logo_png = ""
         school = team.school
         try:
             conf = team.conference
@@ -38,7 +38,7 @@ def get_teams(year, division, timestamp):
 
         # Add the data to the dataframe
         cfb_teams = pd.concat(
-            [cfb_teams, pd.DataFrame({"logo": logo_png, "school": school, "conference": conf}, index=[0])],
+            [cfb_teams, pd.DataFrame({"school": school, "conference": conf}, index=[0])],
             ignore_index=True)
 
     teams_html = cfb_teams.to_html(index=False, escape=False)

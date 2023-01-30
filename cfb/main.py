@@ -20,13 +20,13 @@ BASE_CORS = 0
 # create timestamp variable
 timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
 
-#single_week_calc(YEAR, WEEK, END_WEEK, DIVISION, HFA, BASE_CORS, timestamp)  # for week-by-week calculations
+single_week_calc(YEAR, WEEK, END_WEEK, DIVISION, HFA, BASE_CORS, timestamp)  # for week-by-week calculations
 #full_season_calc(YEAR, START_WEEK, END_WEEK, DIVISION, HFA, BASE_CORS, timestamp)  # for full season calculations
 #history_calc(START_YEAR, END_YEAR, START_WEEK, END_WEEK, DIVISION, HFA, BASE_CORS, timestamp) # for historical year to year calculations
 
 # files to run after running a calc
 #nc_clean(DIVISION, timestamp) # cleans up NC files
 #wt_clean(DIVISION, timestamp) # cleans up NC files
-html_grab(START_YEAR, END_YEAR, START_WEEK, END_WEEK, DIVISION, timestamp) # writes to index.html TODO move to outside CFB folder to allow for different sports
+#html_grab(START_YEAR, END_YEAR, START_WEEK, END_WEEK, DIVISION, timestamp) # writes to index.html TODO move to outside CFB folder to allow for different sports
 
 print("Process finished --- %s seconds ---" % (time.time() - start_time))

@@ -45,7 +45,7 @@ def current_sos(team, week, last_cors, results):
     WEEK = week
 
     results_df = results
-    last_cors_df = last_cors.drop(columns=["logo", "rank", "conference", "record", "win_pct"])
+    last_cors_df = last_cors.drop(columns=["rank", "conference", "record", "win_pct"])
     sos = 0
     teams_played = 0
 

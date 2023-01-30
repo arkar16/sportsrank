@@ -3,8 +3,8 @@ import config
 
 os.chdir(config.owd) # puts program in website/cfb/years
 
-start_year = 2023
-end_year = 2023
+start_year = 2022
+end_year = 2022
 
 
 data_folder = "data"
