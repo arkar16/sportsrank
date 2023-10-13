@@ -1,0 +1,77 @@
+[debug] [2023-10-13T21:49:30.538Z] ----------------------------------------------------------------------
+[debug] [2023-10-13T21:49:30.540Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\aryak\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js deploy
+[debug] [2023-10-13T21:49:30.541Z] CLI Version:   11.20.0
+[debug] [2023-10-13T21:49:30.541Z] Platform:      win32
+[debug] [2023-10-13T21:49:30.541Z] Node Version:  v18.13.0
+[debug] [2023-10-13T21:49:30.549Z] Time:          Fri Oct 13 2023 16:49:30 GMT-0500 (Central Daylight Time)
+[debug] [2023-10-13T21:49:30.549Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2023-10-13T21:49:30.552Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2023-10-13T21:49:30.687Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2023-10-13T21:49:30.687Z] > authorizing via signed-in user (aryakarnik4@gmail.com)
+[debug] [2023-10-13T21:49:30.688Z] [iam] checking project sportsrank-837af for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2023-10-13T21:49:30.688Z] > refreshing access token with scopes: []
+[debug] [2023-10-13T21:49:30.689Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2023-10-13T21:49:30.689Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2023-10-13T21:49:30.824Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 200
+[debug] [2023-10-13T21:49:30.825Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json {"cloudBuildErrorAfter":1594252800000,"cloudBuildWarnAfter":1590019200000,"defaultNode10After":1594252800000,"minVersion":"3.0.5","node8DeploysDisabledAfter":1613390400000,"node8RuntimeDisabledAfter":1615809600000,"node8WarnAfter":1600128000000}
+[debug] [2023-10-13T21:49:30.861Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 400
+[debug] [2023-10-13T21:49:30.862Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2023-10-13T21:49:30.862Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/sportsrank-837af:testIamPermissions [none]
+[debug] [2023-10-13T21:49:30.862Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/sportsrank-837af:testIamPermissions x-goog-quota-user=projects/sportsrank-837af
+[debug] [2023-10-13T21:49:30.863Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/sportsrank-837af:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2023-10-13T21:49:31.109Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/sportsrank-837af:testIamPermissions 401
+[debug] [2023-10-13T21:49:31.110Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/sportsrank-837af:testIamPermissions {"error":{"code":401,"message":"Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.","status":"UNAUTHENTICATED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"ACCESS_TOKEN_TYPE_UNSUPPORTED","metadata":{"method":"google.cloudresourcemanager.v1.Projects.TestIamPermissions","service":"cloudresourcemanager.googleapis.com"}}]}}
+[debug] [2023-10-13T21:49:31.112Z] [iam] error while checking permissions, command may fail: FirebaseError: HTTP Error: 401, Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+[debug] [2023-10-13T21:49:31.112Z] > refreshing access token with scopes: []
+[debug] [2023-10-13T21:49:31.113Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2023-10-13T21:49:31.113Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2023-10-13T21:49:31.262Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 400
+[debug] [2023-10-13T21:49:31.262Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2023-10-13T21:49:31.264Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/sportsrank-837af [none]
+[debug] [2023-10-13T21:49:31.478Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/sportsrank-837af 401
+[debug] [2023-10-13T21:49:31.478Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/sportsrank-837af {"error":{"code":401,"message":"Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.","status":"UNAUTHENTICATED"}}
+[debug] [2023-10-13T21:49:31.478Z] HTTP Error: 401, Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+[debug] [2023-10-13T21:49:31.628Z] FirebaseError: HTTP Error: 401, Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+    at responseToError (C:\Users\aryak\AppData\Roaming\npm\node_modules\firebase-tools\lib\responseToError.js:49:12)
+    at RetryOperation._fn (C:\Users\aryak\AppData\Roaming\npm\node_modules\firebase-tools\lib\apiv2.js:288:77)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[error] 
+[error] Error: Failed to get Firebase project sportsrank-837af. Please make sure the project exists and your account has permission to access it.
+[debug] [2023-10-13T21:49:43.410Z] ----------------------------------------------------------------------
+[debug] [2023-10-13T21:49:43.412Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\aryak\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js deploy
+[debug] [2023-10-13T21:49:43.412Z] CLI Version:   11.20.0
+[debug] [2023-10-13T21:49:43.413Z] Platform:      win32
+[debug] [2023-10-13T21:49:43.413Z] Node Version:  v18.13.0
+[debug] [2023-10-13T21:49:43.413Z] Time:          Fri Oct 13 2023 16:49:43 GMT-0500 (Central Daylight Time)
+[debug] [2023-10-13T21:49:43.414Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2023-10-13T21:49:43.479Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2023-10-13T21:49:43.480Z] > authorizing via signed-in user (aryakarnik4@gmail.com)
+[debug] [2023-10-13T21:49:43.480Z] [iam] checking project sportsrank-837af for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2023-10-13T21:49:43.482Z] > refreshing access token with scopes: []
+[debug] [2023-10-13T21:49:43.486Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2023-10-13T21:49:43.486Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2023-10-13T21:49:43.702Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 400
+[debug] [2023-10-13T21:49:43.703Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2023-10-13T21:49:43.704Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/sportsrank-837af:testIamPermissions [none]
+[debug] [2023-10-13T21:49:43.704Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/sportsrank-837af:testIamPermissions x-goog-quota-user=projects/sportsrank-837af
+[debug] [2023-10-13T21:49:43.704Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/sportsrank-837af:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2023-10-13T21:49:43.895Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/sportsrank-837af:testIamPermissions 401
+[debug] [2023-10-13T21:49:43.895Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/sportsrank-837af:testIamPermissions {"error":{"code":401,"message":"Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.","status":"UNAUTHENTICATED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"ACCESS_TOKEN_TYPE_UNSUPPORTED","metadata":{"method":"google.cloudresourcemanager.v1.Projects.TestIamPermissions","service":"cloudresourcemanager.googleapis.com"}}]}}
+[debug] [2023-10-13T21:49:43.896Z] [iam] error while checking permissions, command may fail: FirebaseError: HTTP Error: 401, Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+[debug] [2023-10-13T21:49:43.896Z] > refreshing access token with scopes: []
+[debug] [2023-10-13T21:49:43.897Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2023-10-13T21:49:43.897Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2023-10-13T21:49:44.054Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 400
+[debug] [2023-10-13T21:49:44.054Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2023-10-13T21:49:44.056Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/sportsrank-837af [none]
+[debug] [2023-10-13T21:49:44.507Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/sportsrank-837af 401
+[debug] [2023-10-13T21:49:44.508Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/sportsrank-837af {"error":{"code":401,"message":"Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.","status":"UNAUTHENTICATED"}}
+[debug] [2023-10-13T21:49:44.508Z] HTTP Error: 401, Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+[debug] [2023-10-13T21:49:44.651Z] FirebaseError: HTTP Error: 401, Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+    at responseToError (C:\Users\aryak\AppData\Roaming\npm\node_modules\firebase-tools\lib\responseToError.js:49:12)
+    at RetryOperation._fn (C:\Users\aryak\AppData\Roaming\npm\node_modules\firebase-tools\lib\apiv2.js:288:77)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[error] 
+[error] Error: Failed to get Firebase project sportsrank-837af. Please make sure the project exists and your account has permission to access it.

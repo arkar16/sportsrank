@@ -47,7 +47,7 @@ def if_week_zero_true(year, week, division, hfa, timestamp):
         print("week zero file done")
         week_cors = week_zero_readjust(year, division, teams, week_zero_file_df, timestamp)
         print("readjust done W0")
-        weekly_spread(year, week, division, week_cors, hfa)
+        #weekly_spread(year, week, division, week_cors, hfa)
         print("spread done")
         print(f"W{week} done")
     except:
@@ -73,7 +73,7 @@ def if_week_zero_true(year, week, division, hfa, timestamp):
         print("week zero file done")
         week_cors = week_zero_file_df
         print("cors done")
-        #weekly_spread(year, week, division, week_cors, hfa)
+        weekly_spread(year, week, division, week_cors, hfa)
         print("no spread")
         print(f"W{week} done")
 
