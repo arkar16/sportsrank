@@ -10,7 +10,7 @@ start_time = time.time()
 YEAR = 2023  # define current year (cannot be earlier than 1897)
 START_YEAR = 2023  # define start year
 END_YEAR = 2023 # define end year
-WEEK = 6  # define current week
+WEEK = 12  # define current week
 START_WEEK = 0  # define start week
 END_WEEK = get_end_week(YEAR)  # TODO change this to add this to the config file / define last week of season
 DIVISION = "FBS"  # define division (currently only supporting FBS)
@@ -20,7 +20,7 @@ BASE_CORS = 0
 # create timestamp variable
 timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
 # FIXME spread not working
-single_week_calc(YEAR, WEEK, END_WEEK, DIVISION, HFA, BASE_CORS, timestamp)  # for week-by-week calculations
+#single_week_calc(YEAR, WEEK, END_WEEK, DIVISION, HFA, BASE_CORS, timestamp)  # for week-by-week calculations
 #full_season_calc(YEAR, START_WEEK, END_WEEK, DIVISION, HFA, BASE_CORS, timestamp)  # for full season calculations
 #history_calc(START_YEAR, END_YEAR, START_WEEK, END_WEEK, DIVISION, HFA, BASE_CORS, timestamp) # for historical year to year calculations
 
