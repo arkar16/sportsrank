@@ -26,7 +26,7 @@ timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
 
 # files to run after running a calc
 #nc_clean(DIVISION, timestamp) # cleans up NC files
-#wt_clean(DIVISION, timestamp) # cleans up WT files
-html_grab(START_YEAR, END_YEAR, START_WEEK, END_WEEK, DIVISION, timestamp) # writes to index.html TODO move to outside CFB folder to allow for different sports
+wt_clean(DIVISION, timestamp) # cleans up WT files
+#html_grab(START_YEAR, END_YEAR, START_WEEK, END_WEEK, DIVISION, timestamp) # writes to index.html TODO move to outside CFB folder to allow for different sports
 
 print("Process finished --- %s seconds ---" % (time.time() - start_time))

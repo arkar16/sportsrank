@@ -74,7 +74,7 @@ def wt_clean(division, timestamp):
     wt_dfs = []
     for table in tables:
         wt_df = pd.read_html(str(table))[0]
-        wt_df = wt_df.rename(columns={0: "Rank", 1: "Year", 2: "School", 3: "Conference", 4: "Record", 5: "Win%", 6: "CORS%"})
+        wt_df = wt_df.rename(columns={0: "Rank", 1: "Year", 2: "School", 3: "Conference", 4: "Record", 5: "Win%", 6: "CORS"})
         wt_df = wt_df.drop(columns={"Rank"})
         #imgs = table.find_all("img")
         #srcs = [img["src"] for img in imgs]
