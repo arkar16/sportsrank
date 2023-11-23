@@ -20,7 +20,7 @@ def html_grab(start_year, end_year, week, end_week, division, timestamp):
         os.chdir("/Users/aryak/Projects/sportsrank/website")
         with open(f"{config.sport}/years/{year}/{year}_{sport_upper}.html", "w") as f:
             f.write(year_title_html)
-            f.write(timestamp)
+            #f.write(timestamp)
             f.write(final_template)
             for week in range(0, get_end_week(year)):
                 f.write(f'<a href="rankings/{year}_W{week}_{division}_cors.html">Link to {year} W{week} {division} {sport_upper} rankings</a><br>\n')

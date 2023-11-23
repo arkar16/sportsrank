@@ -4,7 +4,7 @@ import nfl_teams
 
 def nfl_spread_prediction(home_team, away_team, venue):
     K_CONSTANT = 3  # score constant adjustment
-    HFA = .05  # home field advantage
+    HFA = .1  # home field advantage
     SIMULATION_RUNS = int(input("Enter how many simulations to run: "))  # how many matches to run
     LOWER_RAND_CONSTANT = -10  # lower random elo bound
     UPPER_RAND_CONSTANT = 10  # upper random elo bound
@@ -57,4 +57,4 @@ def nfl_spread_prediction(home_team, away_team, venue):
     print(f"{home_team} vs. {away_team} ({avg_spread})")
 
 
-nfl_spread_prediction("Patriots", "Bills", "Home")
+nfl_spread_prediction("Seahawks", "Bills", "Home")
