@@ -16,11 +16,11 @@ def nc_clean(division, timestamp):
     nc_dfs = []
     for table in tables:
         nc_df = pd.read_html(str(table))[0]
-        nc_df = nc_df.rename(columns={0: "Year", 1: "Logo", 2: "School", 3: "Conference", 4: "Record", 5: "Win%", 6: "CORS"})
-        imgs = table.find_all("img")
-        srcs = [img["src"] for img in imgs]
-        src_str = " ".join(srcs)  # Concatenate the srcs list into a single string
-        nc_df["Logo"] = f"<center><img src='{src_str}' style='width: 20px; height: 20px;'></center>"
+        nc_df = nc_df.rename(columns={0: "Year", 1: "School", 2: "Conference", 3: "Record", 4: "Win%", 5: "CORS"})
+        #imgs = table.find_all("img")
+        #srcs = [img["src"] for img in imgs]
+        #src_str = " ".join(srcs)  # Concatenate the srcs list into a single string
+        #nc_df["Logo"] = f"<center><img src='{src_str}' style='width: 20px; height: 20px;'></center>"
         nc_df.style.set_properties(**{"width": "100px"})
         nc_dfs.append(nc_df)
 
@@ -74,12 +74,12 @@ def wt_clean(division, timestamp):
     wt_dfs = []
     for table in tables:
         wt_df = pd.read_html(str(table))[0]
-        wt_df = wt_df.rename(columns={0: "Rank", 1: "Year", 2: "Logo", 3: "School", 4: "Conference", 5: "Record", 6: "Win%", 7: "CORS"})
+        wt_df = wt_df.rename(columns={0: "Rank", 1: "Year", 2: "School", 3: "Conference", 4: "Record", 5: "Win%", 6: "CORS%"})
         wt_df = wt_df.drop(columns={"Rank"})
-        imgs = table.find_all("img")
-        srcs = [img["src"] for img in imgs]
-        src_str = " ".join(srcs)  # Concatenate the srcs list into a single string
-        wt_df["Logo"] = f"<center><img src='{src_str}' style='width: 20px; height: 20px;'></center>"
+        #imgs = table.find_all("img")
+        #srcs = [img["src"] for img in imgs]
+        #src_str = " ".join(srcs)  # Concatenate the srcs list into a single string
+        #wt_df["Logo"] = f"<center><img src='{src_str}' style='width: 20px; height: 20px;'></center>"
         wt_df.style.set_properties(**{"width": "100px"})
         wt_dfs.append(wt_df)
 

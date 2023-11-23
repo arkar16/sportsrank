@@ -3,8 +3,8 @@ import config
 
 os.chdir(config.owd) # puts program in website/cfb/years
 
-start_year = 2022
-end_year = 2022
+start_year = 1897
+end_year = 2023
 
 
 data_folder = "data"
@@ -15,6 +15,8 @@ slate_folder = f"{data_folder}/slate"
 weekly_slate_folder = f"{slate_folder}/weekly_slate"
 rankings_folder = "rankings"
 spread_folder = "spread"
+
+os.mkdir("history")
 
 for year in range(start_year, end_year + 1):
     os.chdir(config.owd)

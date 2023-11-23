@@ -73,7 +73,7 @@ def if_week_zero_true(year, week, division, hfa, timestamp):
         print("week zero file done")
         week_cors = week_zero_file_df
         print("cors done")
-        weekly_spread(year, week, division, week_cors, hfa)
+        weekly_spread(year, week, division, week_cors, hfa, timestamp)
         print("no spread")
         print(f"W{week} done")
 

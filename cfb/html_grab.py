@@ -25,9 +25,9 @@ def html_grab(start_year, end_year, week, end_week, division, timestamp):
             for week in range(0, get_end_week(year)):
                 f.write(f'<a href="rankings/{year}_W{week}_{division}_cors.html">Link to {year} W{week} {division} {sport_upper} rankings</a><br>\n')
             f.close()
-        os.chdir("/Users/aryak/Projects/sportsrank/website")
-        with open(f"{config.sport}/{config.sport}.html", "a") as f:
-            f.write(year_template)
-            f.close()
+        #os.chdir("/Users/aryak/Projects/sportsrank/website")
+        #with open(f"{config.sport}/{config.sport}.html", "a") as f:
+            #f.write(year_template)
+            #f.close()
         print(f"{year} done")
 
