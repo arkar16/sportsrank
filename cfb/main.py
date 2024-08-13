@@ -11,9 +11,9 @@ from nc_wt_clean import nc_clean, wt_clean
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # CONSTANTS
-YEAR = 2023  # define current year (cannot be earlier than 1897)
+YEAR = 2024  # define current year (cannot be earlier than 1897)
 START_YEAR = 1897  # define start year
-END_YEAR = 2023 # define end year
+END_YEAR = 2024 # define end year
 WEEK = 0  # define current week
 START_WEEK = 0  # define start week
 END_WEEK = 12  # define last week of season
@@ -66,12 +66,16 @@ def main():
     run_calculations(calc_type, year, START_WEEK, END_WEEK, DIVISION, HFA, BASE_CORS, timestamp)
     
     # Run additional processes
-    try:
-        nc_clean(DIVISION, timestamp)
-        wt_clean(DIVISION, timestamp)
-        html_grab(START_YEAR, END_YEAR, START_WEEK, END_WEEK, DIVISION, timestamp)
-    except Exception as e:
-        logging.error(f"Error during additional processes: {str(e)}")
+    if calc_type == "history":
+        try:
+            nc_clean(DIVISION, timestamp)
+            wt_clean(DIVISION, timestamp)
+            html_grab(START_YEAR, END_YEAR, START_WEEK, END_WEEK, DIVISION, timestamp)
+        except Exception as e:
+            logging.error(f"Error during additional processes: {str(e)}")
+    
+    if week == 0:
+        html_grab(year, year, START_WEEK, END_WEEK, DIVISION, timestamp)
     
     logging.info(f"Process finished in {time.time() - start_time:.2f} seconds")
 
