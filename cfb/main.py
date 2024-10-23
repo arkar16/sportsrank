@@ -14,9 +14,9 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 YEAR = 2024  # define current year (cannot be earlier than 1897)
 START_YEAR = 1897  # define start year
 END_YEAR = 2024 # define end year
-WEEK = 0  # define current week
+WEEK = 9  # define current week
 START_WEEK = 0  # define start week
-END_WEEK = 12  # define last week of season
+END_WEEK = 9  # define last week of season
 DIVISION = "FBS"  # define division (currently only supporting FBS)
 HFA = 2  # define HFA constant for spread
 BASE_CORS = 0
