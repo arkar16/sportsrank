@@ -7,10 +7,19 @@ import config
 
 def spread_calc(row, hfa):
     HFA = hfa
+    home_team = row["home_team"]
     if row["neutral_site"]:  # if the game is at a neutral site
-        return round((row["home_cors"] - row["away_cors"]) * 2) / 2
+        spread_val = round((row["home_cors"] - row["away_cors"]) * 2) / 2
+        if spread_val > 0:
+            return f"{home_team} -{spread_val}"
+        else:
+            return f"{home_team} +{abs(spread_val)}"
     else:
-        return round(((row["home_cors"] + HFA) - row["away_cors"]) * 2) / 2
+        spread_val = round(((row["home_cors"] + HFA) - row["away_cors"]) * 2) / 2
+        if spread_val > 0:
+            return f"{home_team} -{spread_val}"
+        else:
+            return f"{home_team} +{abs(spread_val)}"
 
 
 def weekly_spread(year, week, division, week_cors, hfa, timestamp):
@@ -40,10 +49,10 @@ def weekly_spread(year, week, division, week_cors, hfa, timestamp):
         cors_week_html = cors_week_df_clean.to_html(index=False)
         title_html = "<html>\n"
         title_html += "<head>\n"
-        title_html += f"<title>CORS {config.cors_version} - {YEAR} W{week} Spread - {DIVISION} {sport_upper}</title>\n"
+        title_html += f"<title>CORS {config.cors_version} - {YEAR} W{week+1} Spread - {DIVISION} {sport_upper}</title>\n"
         title_html += "</head>\n"
         title_html += "<body>\n"
-        title_html += f"<h1>CORS {config.cors_version} - {YEAR} W{week} Spread - {DIVISION} {sport_upper}</h1>\n"
+        title_html += f"<h1>CORS {config.cors_version} - {YEAR} W{week+1} Spread - {DIVISION} {sport_upper}</h1>\n"
         title_html += "</body>\n"
         title_html += "</html>\n"
         timestamp = f"Last updated: {timestamp}<hr>\n" 
