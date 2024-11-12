@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 YEAR = 2024  # define current year (cannot be earlier than 1897)
 START_YEAR = 1897  # define start year
 END_YEAR = 2024 # define end year
-WEEK = 9  # define current week
+WEEK = 10  # define current week
 START_WEEK = 0  # define start week
 END_WEEK = 15  # define last week of season
 DIVISION = "FBS"  # define division (currently only supporting FBS)
@@ -35,10 +35,10 @@ def get_current_year_and_week():
     
     return current_year, current_week
 
-def run_calculations(calc_type, year, start_week, end_week, division, hfa, base_cors, timestamp):
+def run_calculations(calc_type, year, week, start_week, end_week, division, hfa, base_cors, timestamp):
     try:
         if calc_type == "single_week":
-            single_week_calc(year, WEEK, end_week, division, hfa, base_cors, timestamp)
+            single_week_calc(year, week, end_week, division, hfa, base_cors, timestamp)
         elif calc_type == "full_season":
             full_season_calc(year, start_week, end_week, division, hfa, base_cors, timestamp)
         elif calc_type == "history":
@@ -63,9 +63,8 @@ def main():
     
     logging.info(f"Starting {calc_type} calculation for year {year}, week {week}")
     
-    run_calculations(calc_type, year, START_WEEK, END_WEEK, DIVISION, HFA, BASE_CORS, timestamp)
+    run_calculations(calc_type, year, week, START_WEEK, END_WEEK, DIVISION, HFA, BASE_CORS, timestamp)
     
-    # Run additional processes
     if calc_type == "history":
         try:
             nc_clean(DIVISION, timestamp)
