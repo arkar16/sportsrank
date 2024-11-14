@@ -16,7 +16,6 @@ START_YEAR = 1897  # define start year
 END_YEAR = 2024 # define end year
 WEEK = 10  # define current week
 START_WEEK = 0  # define start week
-END_WEEK = 15  # define last week of season
 DIVISION = "FBS"  # define division (currently only supporting FBS)
 HFA = 2  # define HFA constant for spread
 BASE_CORS = 0
@@ -25,18 +24,24 @@ def get_current_year_and_week():
     current_date = datetime.now()
     current_year = current_date.year
     
+    # Get dynamic end week for current year
+    end_week = get_end_week(current_year)
+    
     # Assuming the season starts on the first Saturday of September
     season_start = datetime(current_year, 9, 1)
     while season_start.weekday() != 5:  # 5 is Saturday
         season_start += timedelta(days=1)
     
     weeks_since_start = (current_date - season_start).days // 7
-    current_week = max(0, min(weeks_since_start, END_WEEK))
+    current_week = max(0, min(weeks_since_start, end_week))
     
     return current_year, current_week
 
-def run_calculations(calc_type, year, week, start_week, end_week, division, hfa, base_cors, timestamp):
+def run_calculations(calc_type, year, week, start_week, division, hfa, base_cors, timestamp):
     try:
+        # Get dynamic end week for the specified year
+        end_week = get_end_week(year)
+        
         if calc_type == "single_week":
             single_week_calc(year, week, end_week, division, hfa, base_cors, timestamp)
         elif calc_type == "full_season":
@@ -61,20 +66,29 @@ def main():
         calc_type = "single_week"  # Default to weekly calculation
         year, week = get_current_year_and_week()
     
-    logging.info(f"Starting {calc_type} calculation for year {year}, week {week}")
+    if calc_type != "full_season":
+        logging.info(f"Starting {calc_type} calculation for year {year}, week {week}")
+    elif calc_type == "single_week":
+        logging.info(f"Starting {calc_type} calculation for year {year}, week {week}")
+    else:
+        logging.info(f"Starting {calc_type} calculation for history {START_YEAR} - {END_YEAR}")
     
-    run_calculations(calc_type, year, week, START_WEEK, END_WEEK, DIVISION, HFA, BASE_CORS, timestamp)
+    run_calculations(calc_type, year, week, START_WEEK, DIVISION, HFA, BASE_CORS, timestamp)
     
     if calc_type == "history":
         try:
             nc_clean(DIVISION, timestamp)
             wt_clean(DIVISION, timestamp)
-            html_grab(START_YEAR, END_YEAR, START_WEEK, END_WEEK, DIVISION, timestamp)
+            # Get dynamic end week for html_grab
+            end_week = get_end_week(END_YEAR)
+            html_grab(START_YEAR, END_YEAR, START_WEEK, end_week, DIVISION, timestamp)
         except Exception as e:
             logging.error(f"Error during additional processes: {str(e)}")
     
     if week == 0:
-        html_grab(year, year, START_WEEK, END_WEEK, DIVISION, timestamp)
+        # Get dynamic end week for html_grab
+        end_week = get_end_week(year)
+        html_grab(year, year, START_WEEK, end_week, DIVISION, timestamp)
     
     logging.info(f"Process finished in {time.time() - start_time:.2f} seconds")
 
