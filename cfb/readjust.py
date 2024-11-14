@@ -18,7 +18,7 @@ def week_zero_readjust(year, division, teams, week_zero_file, timestamp):
     missing_teams_copy["cors"] = config.fcs_constant 
 
     week_zero_file.loc[:, "record"] = "0-0"
-    week_zero_file.loc[:, "win_pct"] = ""
+    week_zero_file.loc[:, "win_pct"] = 0
     #week_zero_file.reset_index(inplace=True)
     #week_zero_file.index = range(1, week_zero_file.shape[0] + 1)
     #week_zero_file.columns.name = "rank"

@@ -28,4 +28,4 @@ def mainpage(timestamp):
             f.close()
 
 mainpage(timestamp)
-print("Process finished --- %s seconds ---" % (time.time() - start_time))
+print("mainpage.py Mainpage updated in: --- %s seconds ---" % (time.time() - start_time))
