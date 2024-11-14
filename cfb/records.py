@@ -69,4 +69,5 @@ def get_current_records(year, week, division, timestamp):
         f.write(timestamp)
         f.write(records_html)
     os.chdir(config.owd)
+    print("records done")
     return cfb_records_df

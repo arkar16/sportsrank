@@ -14,7 +14,9 @@ from bs4 import BeautifulSoup
 # TODO def postseason_games() -> maybe not?
 # TODO add timestamp to all files
 
+def pythagorean_exp():
 
+    return None
 def if_week_zero_true(year, week, division, hfa, timestamp):
     # get original working directory
     os.chdir(config.owd)
@@ -79,30 +81,19 @@ def if_week_zero_true(year, week, division, hfa, timestamp):
 
 def regular_season_week(year, week, end_week, division, hfa, base_cors, timestamp):
     current_records = get_current_records(year, week, division, timestamp)
-    print("records done")
     weekly_results = get_weekly_results(year, week, division, timestamp)
-    print("weekly results done")
     results = get_results(year, division, timestamp)  # TODO need to edit weekly_results to pass this through as a parameter
-    print("results done")
     week_cors = weekly_cors(base_cors, year, week, end_week, division, current_records, results, weekly_results, timestamp)
-    print("week cors done")
-    week_games = get_week_slate(year, week, division, timestamp)
-    print("week games done")
+    get_week_slate(year, week, division, timestamp)
     weekly_spread(year, week, division, week_cors, hfa, timestamp)
-    print("week spread done")
     print(f"W{week} done") 
 
 def last_regular_week(year, week, end_week, division, hfa, base_cors, timestamp):
     current_records = get_current_records(year, week, division, timestamp)
-    print("records done")
     weekly_results = get_weekly_results(year, week, division, timestamp)
-    print("weekly results done")
     results = get_results(year, division, timestamp)  # need to edit weekly_results to pass this through as a parameter
-    print("results done")
-    week_cors = weekly_cors(base_cors, year, week, end_week, division, current_records, results, weekly_results, timestamp)
-    print("week cors done")
-    week_games = get_week_slate(year, week, division, timestamp)
-    print("week games done")
+    weekly_cors(base_cors, year, week, end_week, division, current_records, results, weekly_results, timestamp)
+    get_week_slate(year, week, division, timestamp)
     print(f"W{week} done")
 
 def single_week_calc(year, week, end_week, division, hfa, base_cors, timestamp):
@@ -120,7 +111,6 @@ def single_week_calc(year, week, end_week, division, hfa, base_cors, timestamp):
         regular_season_week(year, week, end_week, division, hfa, base_cors, timestamp)
     else:
         last_regular_week(year, week, end_week, division, hfa, base_cors, timestamp)
-
 
 def full_season_calc(year, week, end_week, division, hfa, base_cors, timestamp):
     # CONSTANTS

@@ -62,5 +62,6 @@ def weekly_spread(year, week, division, week_cors, hfa, timestamp):
             f.write(timestamp)
             f.write(cors_week_html)
         os.chdir(config.owd)
+        print("week spread done")
     except:
         print(f"no FBS games this week")

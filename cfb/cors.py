@@ -173,5 +173,5 @@ def weekly_cors(base, year, week, end_week, division, current_records, results, 
             f.write(cors_html)
             f.close()
         os.chdir(config.owd)
-
+    print("week cors done")
     return cors_teams_df

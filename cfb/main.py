@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from calc import single_week_calc, full_season_calc, history_calc
 from end_week import get_end_week
 from html_grab import html_grab
-from nc_wt_clean import nc_clean, wt_clean
+from nc_wt_clean import process_rankings
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -77,8 +77,8 @@ def main():
     
     if calc_type == "history":
         try:
-            nc_clean(DIVISION, timestamp)
-            wt_clean(DIVISION, timestamp)
+            # Process both national champions and worst teams in one pass
+            process_rankings(DIVISION, timestamp)
             # Get dynamic end week for html_grab
             end_week = get_end_week(END_YEAR)
             html_grab(START_YEAR, END_YEAR, START_WEEK, end_week, DIVISION, timestamp)

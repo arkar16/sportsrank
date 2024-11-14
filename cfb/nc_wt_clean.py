@@ -2,121 +2,117 @@ import pandas as pd
 from bs4 import BeautifulSoup
 import config
 import os
+import glob
 
-
-def nc_clean(division, timestamp):
+def process_rankings(division, timestamp):
+    """Process all FINAL rankings files to extract national champions and worst teams in one pass."""
     sport_upper = config.sport.upper()
     division = division.upper()
-    os.chdir(f"{config.owd}/history")
-    with open(f"CORS_NC_{division}_{sport_upper}.html") as f:
-        soup = BeautifulSoup(f, "html.parser")
-
-    tables = soup.find_all("table")
     
-    nc_dfs = []
-    for table in tables:
-        nc_df = pd.read_html(str(table))[0]
-        nc_df = nc_df.rename(columns={0: "Year", 1: "School", 2: "Conference", 3: "Record", 4: "Win%", 5: "CORS"})
-        #imgs = table.find_all("img")
-        #srcs = [img["src"] for img in imgs]
-        #src_str = " ".join(srcs)  # Concatenate the srcs list into a single string
-        #nc_df["Logo"] = f"<center><img src='{src_str}' style='width: 20px; height: 20px;'></center>"
-        nc_df.style.set_properties(**{"width": "100px"})
-        nc_dfs.append(nc_df)
-
-    nc_df = pd.concat(nc_dfs)
-
-    nc_df = nc_df.sort_values(by=["Year"], ascending=False)
-
-    years = nc_df["Year"].tolist()
+    # Lists to store national champions and worst teams data
+    nc_data = []
+    wt_data = []
+    
+    # Get all FINAL rankings files
+    years_path = f"{config.owd}/website/cfb/years"
+    for year_dir in sorted(glob.glob(f"{years_path}/*/"), reverse=True):
+        year = os.path.basename(os.path.dirname(year_dir))
+        if not year.isdigit():
+            continue
+            
+        final_ranking_file = f"{year_dir}/rankings/{year}_FINAL_{division}_cors.html"
+        if not os.path.exists(final_ranking_file):
+            continue
+            
+        with open(final_ranking_file) as f:
+            soup = BeautifulSoup(f, "html.parser")
+            
+        # Find the rankings table
+        tables = soup.find_all("table")
+        if not tables:
+            continue
+            
+        df = pd.read_html(str(tables[0]))[0]
+        
+        if len(df) == 0:
+            continue
+            
+        # Extract national champion (first row) and worst team (last row)
+        national_champion = df.iloc[0]
+        worst_team = df.iloc[-1]
+        
+        # Add to national champions data
+        nc_data.append({
+            "Year": year,
+            "School": national_champion["school"],
+            "Conference": national_champion["conference"],
+            "Record": national_champion["record"],
+            "Win%": national_champion["win_pct"],
+            "CORS": national_champion["cors"]
+        })
+        
+        # Add to worst teams data
+        wt_data.append({
+            "Year": year,
+            "School": worst_team["school"],
+            "Conference": worst_team["conference"],
+            "Record": worst_team["record"],
+            "Win%": worst_team["win_pct"],
+            "CORS": worst_team["cors"]
+        })
+    
+    # Create DataFrames
+    nc_df = pd.DataFrame(nc_data)
+    wt_df = pd.DataFrame(wt_data)
+    
+    # Add HTML links to years
     years_html = []
-    for year in years:
+    for year in nc_df["Year"]:
         years_html.append(f"<center><a href='../{year}/{year}_CFB.html'>{year}</a></center>")
     nc_df["Year"] = years_html
-
-    nc_df = nc_df.drop_duplicates(subset=["Year"])
-
-    nc_html = nc_df.to_html(justify="left", escape=False, index=False, table_id="nationalchamp", classes="display")
-    jquery_top = "<script src='https://code.jquery.com/jquery-3.5.1.js'></script>\n"
-    jquery_bottom = "<script src='https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js'></script>\n"
-    jquery_b2 = "<script>\n"
-    jquery_b2 += "$(document).ready( function () {\n"
-    jquery_b2 += "$('#nationalchamp').DataTable({\n"
-    jquery_b2 += "paging: false});\n"
-    jquery_b2 += "});\n"
-    jquery_b2 += "</script>\n"
-    title_html = "<html>\n"
-    title_html += "<head>\n"
-    title_html += f"<title>CORS {config.cors_version} - National Champions - {division} {sport_upper}</title>\n"
-    title_html += "</head>\n"
-    title_html += "<body>\n"
-    title_html += f"<h1>CORS {config.cors_version} - National Champions - {division} {sport_upper}</h1>\n"
-    title_html += "</body>\n"
-    title_html += "</html>\n"
-    timestamp = f"Last updated: {timestamp}<hr>\n" 
-    with open(f"nc_{division}_{sport_upper}_output.html", "w") as f:
-        f.write(jquery_top)
-        f.write(jquery_bottom)
-        f.write(title_html)
-        f.write(timestamp)
-        f.write(nc_html)
-        f.write(jquery_b2)
-
-def wt_clean(division, timestamp):
-    sport_upper = config.sport.upper()
-    division = division.upper()
-    os.chdir(f"{config.owd}/history")
-    with open(f"CORS_WT_{division}_{sport_upper}.html") as f:
-        soup = BeautifulSoup(f, "html.parser")
-
-    tables = soup.find_all("table")
-    
-    wt_dfs = []
-    for table in tables:
-        wt_df = pd.read_html(str(table))[0]
-        wt_df = wt_df.rename(columns={0: "Rank", 1: "Year", 2: "School", 3: "Conference", 4: "Record", 5: "Win%", 6: "CORS"})
-        wt_df = wt_df.drop(columns={"Rank"})
-        #imgs = table.find_all("img")
-        #srcs = [img["src"] for img in imgs]
-        #src_str = " ".join(srcs)  # Concatenate the srcs list into a single string
-        #wt_df["Logo"] = f"<center><img src='{src_str}' style='width: 20px; height: 20px;'></center>"
-        wt_df.style.set_properties(**{"width": "100px"})
-        wt_dfs.append(wt_df)
-
-    wt_df = pd.concat(wt_dfs)
-    
-    wt_df = wt_df.sort_values(by=["Year"], ascending=False)
-
-    years = wt_df["Year"].tolist()
-    years_html = []
-    for year in years:
-        years_html.append(f"<center><a href='../{year}/{year}_CFB.html'>{year}</a></center>")
     wt_df["Year"] = years_html
-
-    wt_df = wt_df.drop_duplicates(subset=["Year"])
-
+    
+    # Generate HTML for national champions
+    nc_html = nc_df.to_html(justify="left", escape=False, index=False, table_id="nationalchamp", classes="display")
+    nc_jquery = generate_jquery_code("nationalchamp", division, sport_upper, "National Champions", timestamp)
+    
+    # Generate HTML for worst teams
     wt_html = wt_df.to_html(justify="left", escape=False, index=False, table_id="worstteam", classes="display")
-    jquery_top = "<script src='https://code.jquery.com/jquery-3.5.1.js'></script>\n"
-    jquery_bottom = "<script src='https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js'></script>\n"
-    jquery_b2 = "<script>\n"
-    jquery_b2 += "$(document).ready( function () {\n"
-    jquery_b2 += "$('#worstteam').DataTable({\n"
-    jquery_b2 += "paging: false});\n"
-    jquery_b2 += "});\n"
-    jquery_b2 += "</script>\n"
+    wt_jquery = generate_jquery_code("worstteam", division, sport_upper, "Worst Teams", timestamp)
+    
+    # Write output files
+    os.chdir(f"{config.owd}/history")
+    with open(f"nc_{division}_{sport_upper}_output.html", "w") as f:
+        f.write(nc_jquery)
+        
+    with open(f"wt_{division}_{sport_upper}_output.html", "w") as f:
+        f.write(wt_jquery)
+
+def generate_jquery_code(table_id, division, sport_upper, title_text, timestamp):
+    """Generate the jQuery and HTML wrapper code for tables."""
+    jquery_code = "<script src='https://code.jquery.com/jquery-3.5.1.js'></script>\n"
+    jquery_code += "<script src='https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js'></script>\n"
+    jquery_code += "<script>\n"
+    jquery_code += "$(document).ready( function () {\n"
+    jquery_code += f"$('#{table_id}').DataTable({{\n"
+    jquery_code += "paging: false});\n"
+    jquery_code += "});\n"
+    jquery_code += "</script>\n"
+    
     title_html = "<html>\n"
     title_html += "<head>\n"
-    title_html += f"<title>CORS {config.cors_version} - Worst Teams - {division} {sport_upper}</title>\n"
+    title_html += f"<title>CORS {config.cors_version} - {title_text} - {division} {sport_upper}</title>\n"
     title_html += "</head>\n"
     title_html += "<body>\n"
-    title_html += f"<h1>CORS {config.cors_version} - Worst Teams - {division} {sport_upper}</h1>\n"
+    title_html += f"<h1>CORS {config.cors_version} - {title_text} - {division} {sport_upper}</h1>\n"
     title_html += "</body>\n"
     title_html += "</html>\n"
-    timestamp = f"Last updated: {timestamp}<hr>\n" 
-    with open(f"wt_{division}_{sport_upper}_output.html", "w") as f:
-        f.write(jquery_top)
-        f.write(jquery_bottom)
-        f.write(title_html)
-        f.write(timestamp)
-        f.write(wt_html)
-        f.write(jquery_b2)
+    
+    timestamp_html = f"Last updated: {timestamp}<hr>\n"
+    
+    if table_id == "nationalchamp":
+        table_html = nc_html
+    else:
+        table_html = wt_html
+        
+    return jquery_code + title_html + timestamp_html + table_html + jquery_code
