@@ -10,13 +10,15 @@ import shutil
 from readjust import week_zero_readjust
 from bs4 import BeautifulSoup
 
+# TODO
+#def hfa_calc():
+#    return None
+
 
 # TODO def postseason_games() -> maybe not?
 # TODO add timestamp to all files
 
-def pythagorean_exp():
 
-    return None
 def if_week_zero_true(year, week, division, hfa, timestamp):
     # get original working directory
     os.chdir(config.owd)
@@ -86,7 +88,7 @@ def regular_season_week(year, week, end_week, division, hfa, base_cors, timestam
     week_cors = weekly_cors(base_cors, year, week, end_week, division, current_records, results, weekly_results, timestamp)
     get_week_slate(year, week, division, timestamp)
     weekly_spread(year, week, division, week_cors, hfa, timestamp)
-    print(f"W{week} done") 
+    print(f"Y{year} - W{week} done") 
 
 def last_regular_week(year, week, end_week, division, hfa, base_cors, timestamp):
     current_records = get_current_records(year, week, division, timestamp)
@@ -94,7 +96,7 @@ def last_regular_week(year, week, end_week, division, hfa, base_cors, timestamp)
     results = get_results(year, division, timestamp)  # need to edit weekly_results to pass this through as a parameter
     weekly_cors(base_cors, year, week, end_week, division, current_records, results, weekly_results, timestamp)
     get_week_slate(year, week, division, timestamp)
-    print(f"W{week} done")
+    print(f"Y{year} - W{week} done") 
 
 def single_week_calc(year, week, end_week, division, hfa, base_cors, timestamp):
     # CONSTANTS
@@ -111,6 +113,7 @@ def single_week_calc(year, week, end_week, division, hfa, base_cors, timestamp):
         regular_season_week(year, week, end_week, division, hfa, base_cors, timestamp)
     else:
         last_regular_week(year, week, end_week, division, hfa, base_cors, timestamp)
+
 
 def full_season_calc(year, week, end_week, division, hfa, base_cors, timestamp):
     # CONSTANTS

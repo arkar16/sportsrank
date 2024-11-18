@@ -66,8 +66,8 @@ def main():
         calc_type = "single_week"  # Default to weekly calculation
         year, week = get_current_year_and_week()
     
-    if calc_type != "full_season":
-        logging.info(f"Starting {calc_type} calculation for year {year}, week {week}")
+    if calc_type == "full_season":
+        logging.info(f"Starting {calc_type} calculation for year {year}")
     elif calc_type == "single_week":
         logging.info(f"Starting {calc_type} calculation for year {year}, week {week}")
     else:

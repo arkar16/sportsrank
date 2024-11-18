@@ -72,23 +72,23 @@ def process_rankings(division, timestamp):
     nc_df["Year"] = years_html
     wt_df["Year"] = years_html
     
-    # Generate HTML for national champions
+    # Generate HTML tables
     nc_html = nc_df.to_html(justify="left", escape=False, index=False, table_id="nationalchamp", classes="display")
-    nc_jquery = generate_jquery_code("nationalchamp", division, sport_upper, "National Champions", timestamp)
-    
-    # Generate HTML for worst teams
     wt_html = wt_df.to_html(justify="left", escape=False, index=False, table_id="worstteam", classes="display")
-    wt_jquery = generate_jquery_code("worstteam", division, sport_upper, "Worst Teams", timestamp)
+    
+    # Generate complete HTML documents
+    nc_complete = generate_jquery_code("nationalchamp", division, sport_upper, "National Champions", timestamp, nc_html)
+    wt_complete = generate_jquery_code("worstteam", division, sport_upper, "Worst Teams", timestamp, wt_html)
     
     # Write output files
     os.chdir(f"{config.owd}/history")
     with open(f"nc_{division}_{sport_upper}_output.html", "w") as f:
-        f.write(nc_jquery)
+        f.write(nc_complete)
         
     with open(f"wt_{division}_{sport_upper}_output.html", "w") as f:
-        f.write(wt_jquery)
+        f.write(wt_complete)
 
-def generate_jquery_code(table_id, division, sport_upper, title_text, timestamp):
+def generate_jquery_code(table_id, division, sport_upper, title_text, timestamp, table_html):
     """Generate the jQuery and HTML wrapper code for tables."""
     jquery_code = "<script src='https://code.jquery.com/jquery-3.5.1.js'></script>\n"
     jquery_code += "<script src='https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js'></script>\n"
@@ -110,9 +110,4 @@ def generate_jquery_code(table_id, division, sport_upper, title_text, timestamp)
     
     timestamp_html = f"Last updated: {timestamp}<hr>\n"
     
-    if table_id == "nationalchamp":
-        table_html = nc_html
-    else:
-        table_html = wt_html
-        
     return jquery_code + title_html + timestamp_html + table_html + jquery_code

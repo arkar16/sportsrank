@@ -4,17 +4,16 @@ import pandas as pd
 import os
 import config
 
+# Configure API key authorization: ApiKeyAuth
+configuration = cfbd.Configuration()
+configuration.api_key["Authorization"] = api_key
+configuration.api_key_prefix["Authorization"] = "Bearer"
+games_api_instance = cfbd.GamesApi(cfbd.ApiClient(configuration))
 
 def get_weekly_results(year, week, division, timestamp):
     # get original working directory
     os.chdir(config.owd)
     sport_upper = config.sport.upper()
-
-    # Configure API key authorization: ApiKeyAuth
-    configuration = cfbd.Configuration()
-    configuration.api_key["Authorization"] = api_key
-    configuration.api_key_prefix["Authorization"] = "Bearer"
-    games_api_instance = cfbd.GamesApi(cfbd.ApiClient(configuration))
 
     # CONSTANTS
     YEAR = year
@@ -74,12 +73,6 @@ def get_results(year, division, timestamp):
     # get original working directory
     os.chdir(config.owd)
     sport_upper = config.sport.upper()
-
-    # Configure API key authorization: ApiKeyAuth
-    configuration = cfbd.Configuration()
-    configuration.api_key["Authorization"] = api_key
-    configuration.api_key_prefix["Authorization"] = "Bearer"
-    games_api_instance = cfbd.GamesApi(cfbd.ApiClient(configuration))
 
     # CONSTANTS
     YEAR = year
@@ -147,12 +140,6 @@ def get_week_slate(year, week, division, timestamp):
 
     # os.chdir(f"{YEAR}_data/slate")
 
-    # Configure API key authorization: ApiKeyAuth
-    configuration = cfbd.Configuration()
-    configuration.api_key["Authorization"] = api_key
-    configuration.api_key_prefix["Authorization"] = "Bearer"
-    games_api_instance = cfbd.GamesApi(cfbd.ApiClient(configuration))
-
     week_games = games_api_instance.get_games(year=YEAR, week=WEEK, division=DIVISION)
     fbs_week_slate = pd.DataFrame(
         columns=["week", "home_team", "home_division", "away_team",
@@ -209,12 +196,6 @@ def get_slate(year, division, timestamp):
     YEAR = year
     DIVISION = division
 
-    # Configure API key authorization: ApiKeyAuth
-    configuration = cfbd.Configuration()
-    configuration.api_key["Authorization"] = api_key
-    configuration.api_key_prefix["Authorization"] = "Bearer"
-    games_api_instance = cfbd.GamesApi(cfbd.ApiClient(configuration))
-
     games = games_api_instance.get_games(year=YEAR, division=DIVISION)
     fbs_slate = pd.DataFrame(
         columns=["week", "home_team", "home_division", "away_team",
@@ -258,4 +239,5 @@ def get_slate(year, division, timestamp):
         f.write(timestamp)
         f.write(games_html)
     os.chdir(config.owd)
+    print("slate done")
     return fbs_slate

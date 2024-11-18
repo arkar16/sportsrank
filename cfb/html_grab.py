@@ -22,14 +22,15 @@ def html_grab(start_year, end_year, week, end_week, division, timestamp):
             f.write(year_title_html)
             #f.write(timestamp)
             f.write(final_template)
-            for week in range(0, get_end_week(year)):
+            for week in range(0, end_week):
                 f.write(f'<a href="rankings/{year}_W{week}_{division}_cors.html">Link to {year} W{week} {division} {sport_upper} rankings</a><br>\n')
-            for week in range(0, get_end_week(year)):
+            for week in range(1, end_week):
                 f.write(f'<a href="spread/{year}_W{week}_{division}_spread.html">Link to {year} W{week} {division} {sport_upper} spread</a><br>\n')
             f.close()
         #os.chdir("/Users/aryak/Projects/sportsrank/website")
         #with open(f"{config.sport}/{config.sport}.html", "a") as f:
             #f.write(year_template)
             #f.close()
-        print(f"{year} done")
+        print(f"{year} End week: {end_week}")
+        print(f"{year} HTML files created")
 

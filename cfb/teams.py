@@ -4,17 +4,16 @@ import pandas as pd
 import os
 import config
 
+# Configure API key authorization: ApiKeyAuth
+configuration = cfbd.Configuration()
+configuration.api_key["Authorization"] = api_key
+configuration.api_key_prefix["Authorization"] = "Bearer"
+teams_api_instance = cfbd.TeamsApi(cfbd.ApiClient(configuration))
 
 def get_teams(year, division, timestamp):
     # get original working directory
     os.chdir(config.owd)
     sport_upper = config.sport.upper()
-
-    # Configure API key authorization: ApiKeyAuth
-    configuration = cfbd.Configuration()
-    configuration.api_key["Authorization"] = api_key
-    configuration.api_key_prefix["Authorization"] = "Bearer"
-    teams_api_instance = cfbd.TeamsApi(cfbd.ApiClient(configuration))
 
     # CONSTANTS
     YEAR = year
@@ -58,4 +57,5 @@ def get_teams(year, division, timestamp):
         f.write(teams_html)
     os.chdir(config.owd)
 
+    print("teams done")
     return cfb_teams
