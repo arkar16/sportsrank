@@ -91,6 +91,7 @@ def regular_season_week(year, week, end_week, division, hfa, base_cors, timestam
     print(f"Y{year} - W{week} done") 
 
 def last_regular_week(year, week, end_week, division, hfa, base_cors, timestamp):
+    print("Starting Last Regular Week")
     current_records = get_current_records(year, week, division, timestamp)
     weekly_results = get_weekly_results(year, week, division, timestamp)
     results = get_results(year, division, timestamp)  # need to edit weekly_results to pass this through as a parameter

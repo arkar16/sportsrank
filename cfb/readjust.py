@@ -18,8 +18,11 @@ def week_zero_readjust(year, division, teams, week_zero_file, timestamp):
 
     week_zero_file.loc[:, "record"] = "0-0"
     week_zero_file.loc[:, "win_pct"] = 0
+    week_zero_file.loc[:, "mov"] = 0
+    week_zero_file.loc[:, "sos"] = 0
 
     # Sort by regressed CORS values before adding new teams
+    # TODO regress CORS values
     week_zero_file = week_zero_file.sort_values(by="cors", ascending=False)
 
     week_zero_file_final = pd.concat([week_zero_file, missing_teams_copy])
@@ -33,6 +36,8 @@ def week_zero_readjust(year, division, teams, week_zero_file, timestamp):
     # Reset index to get proper ranking
     week_zero_file_final = week_zero_file_final.reset_index(drop=True)
     week_zero_file_final.index = range(1, week_zero_file_final.shape[0] + 1)
+    week_zero_file_final.columns.name = "rank"
+
 
     title_html = "<html>\n"
     title_html += "<head>\n"

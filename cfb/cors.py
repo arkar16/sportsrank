@@ -137,9 +137,14 @@ def weekly_cors(base, year, week, end_week, division, current_records, results, 
         cors = cors_calc(team, WEEK, BASE_CORS, wins, losses, results_df, last_week_cors)
         mov = round(margin_of_victory(team, WEEK, results), 2)
         sos = round(current_sos(team, WEEK, last_week_cors, results))
+        exp_wins = pythagorean_exp(team, WEEK, results)
+        wins_vs_exp = round(wins - exp_wins, 2)
+        
         cors_teams_df.loc[index, "cors"] = cors
         cors_teams_df.loc[index, "mov"] = mov
         cors_teams_df.loc[index, "sos"] = sos
+        cors_teams_df.loc[index, "expected_wins"] = exp_wins
+        cors_teams_df.loc[index, "wins_vs_expected"] = wins_vs_exp
 
     cors_teams_df = cors_teams_df.sort_values(by=["cors", "wins", "losses"], ascending=[False, False, True],
                                               ignore_index=True)
@@ -151,22 +156,6 @@ def weekly_cors(base, year, week, end_week, division, current_records, results, 
 
     # set escape tag false to prevent HTML code passthrough as plain text
     if WEEK == END_WEEK:
-        # Calculate pythagorean stats for final rankings
-        pyth_df = pythagorean_exp(YEAR, DIVISION, timestamp)
-        
-        # Merge pythagorean stats with final rankings
-        cors_teams_df = pd.merge(
-            cors_teams_df,
-            pyth_df[['school', 'expected_wins', 'wins_vs_expected']],
-            on='school',
-            how='left'
-        )
-        
-        # Round the new columns
-        cors_teams_df['expected_wins'] = cors_teams_df['expected_wins'].round(2)
-        cors_teams_df['wins_vs_expected'] = cors_teams_df['wins_vs_expected'].round(2)
-        
-        
         title_html = "<html>\n"
         title_html += "<head>\n"
         title_html += f"<title>CORS {config.cors_version} - {YEAR} Final Rankings - {DIVISION} {sport_upper}</title>\n"
@@ -177,10 +166,10 @@ def weekly_cors(base, year, week, end_week, division, current_records, results, 
         title_html += "</html>\n"
         timestamp = f"Last updated: {timestamp}<hr>\n" 
         
-        # Create HTML with index starting at 1
-        cors_teams_df.index = range(1, len(cors_teams_df) + 1)
-        cors_html = cors_teams_df.to_html(index=True, escape=False)
-        cors_teams_df.columns.name = "rank"
+        # # Create HTML with index starting at 1
+        # cors_teams_df.index = range(1, len(cors_teams_df) + 1)
+        # cors_teams_df.index.name = "rank"
+        cors_html = cors_teams_df.to_html(escape=False)
         
         os.chdir(f"{YEAR}/rankings")
         with open(f"{YEAR}_FINAL_{DIVISION}_cors.html", "w") as f:
