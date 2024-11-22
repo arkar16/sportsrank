@@ -21,8 +21,12 @@ def week_zero_readjust(year, division, teams, week_zero_file, timestamp):
     week_zero_file.loc[:, "mov"] = 0
     week_zero_file.loc[:, "sos"] = 0
 
-    # Sort by regressed CORS values before adding new teams
-    # TODO regress CORS values
+    # Regress CORS values based on wins vs expected
+    # TODO need to make this a real regression model
+    regression_factor = 2  # Points to adjust CORS by per win above/below expected
+    week_zero_file.loc[:, "cors"] = week_zero_file["cors"] - (week_zero_file["wins_vs_expected"] * regression_factor)
+    print("regression done")
+    
     week_zero_file = week_zero_file.sort_values(by="cors", ascending=False)
 
     week_zero_file_final = pd.concat([week_zero_file, missing_teams_copy])

@@ -41,6 +41,7 @@ def run_calculations(calc_type, year, week, start_week, division, hfa, base_cors
     try:
         # Get dynamic end week for the specified year
         end_week = get_end_week(year)
+        #print(f"{year} End Week: {end_week}")
         
         if calc_type == "single_week":
             single_week_calc(year, week, end_week, division, hfa, base_cors, timestamp)

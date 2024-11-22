@@ -93,9 +93,9 @@ def cors_calc(team, week, base, wins, losses, results, last_week_cors):
     results_df = results
     last_cors = last_week_cors
 
-    sos_min = 0.7
-    sos_max = 1.5
-    mov_scale = 6
+    sos_min = 0.8
+    sos_max = 1.2
+    mov_scale = 4
     cors_max = 50 + (math.log10(31) * mov_scale) * sos_max # 50 from win_pct, 30 avg MOV, sos_max
     norm_sos = current_sos(TEAM, WEEK, last_cors, results_df) / cors_max
 
