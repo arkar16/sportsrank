@@ -9,6 +9,7 @@ import pandas as pd
 import shutil
 from readjust import week_zero_readjust
 from bs4 import BeautifulSoup
+from end_week import get_end_week
 
 # TODO
 #def hfa_calc():
@@ -135,6 +136,8 @@ def full_season_calc(year, week, end_week, division, hfa, base_cors, timestamp):
 
 def history_calc(year, end_year, week, end_week, division, hfa, base_cors, timestamp):
     for i in range(year, end_year + 1):
+        end_week = get_end_week(i)
+        print(f"{i} end week: {end_week}")
         for wk in range(week, end_week + 1):
             if wk == 0:
                 if_week_zero_true(year, wk, division, hfa, timestamp)

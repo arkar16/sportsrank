@@ -1,27 +1,19 @@
-import cfbd
-import config
-from api import api_key
 import os
+import config
 import pandas as pd
-
-# Configure API key authorization: ApiKeyAuth
-configuration = cfbd.Configuration()
-configuration.api_key["Authorization"] = api_key
-configuration.api_key_prefix["Authorization"] = "Bearer"
-games_api_instance = cfbd.GamesApi(cfbd.ApiClient(configuration))
 
 def get_end_week(year):
     # get original working directory
     os.chdir(config.owd)
-
-    season_weeks = games_api_instance.get_calendar(year=year)
-    data = [{"week": week.week, "season_type": week.season_type} for week in season_weeks]
-    season_weeks_df = pd.DataFrame(data)
-    season_weeks_df = season_weeks_df.sort_values(by="week", ascending=False)
-    end_week = season_weeks_df.iloc[0]["week"] # takes highest week as end week
+    
+    # Read the slate file for the year
+    slate = pd.read_html(f"{year}/data/slate/{year}_FBS_slate.html")[0]
+    
+    # Get highest week number from slate
+    end_week = slate["week"].max()
+    
+    # Cap at config.week_count if needed
     if end_week > config.week_count:
         end_week = config.week_count
-    else:
-        end_week = end_week
-    
+        
     return end_week
