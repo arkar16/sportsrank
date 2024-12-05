@@ -5,6 +5,7 @@ from teams import *
 from cors import weekly_cors
 from games import *
 from spread import *
+from spread_results import analyze_last_week_spreads
 import pandas as pd
 import shutil
 from readjust import week_zero_readjust
@@ -18,8 +19,6 @@ from end_week import get_end_week
 
 # TODO def postseason_games() -> maybe not?
 # TODO add timestamp to all files
-
-
 def if_week_zero_true(year, week, division, hfa, timestamp):
     # get original working directory
     os.chdir(config.owd)
@@ -63,18 +62,7 @@ def if_week_zero_true(year, week, division, hfa, timestamp):
         print("copy done W0")
         os.chdir(f"{year}/rankings")
         week_zero_file = pd.read_html(f"{year}_W0_{division}_cors.html")[0].set_index("rank")
-        #with open(f"{year}_W0_{division}_cors.html") as f:
-            #soup = BeautifulSoup(f, "html.parser")
-        #for index, row in week_zero_file.iterrows(): # FIXME THIS DOES NOT WORK IF THE PAST SEASON TEAM DID NOT HAVE A LOGO
-            #imgs = soup.find_all("img")
-            #srcs = [img["src"] for img in imgs]
-            #srcs_team = srcs[index-1:index]
-            #src_str = " ".join(srcs_team)  # Concatenate the srcs list into a single string
-            #if src_str:  # Check if src_str is not empty
-                #week_zero_file.at[index, "logo"] = f"<center><img src='{src_str}' style='width: 20px; height: 20px;'></center>"
-            #else:
-                #week_zero_file.at[index, "logo"] = ""  # Set the value to "N/A" if no logo was found
-        week_zero_file_df = week_zero_file #week_zero_file.drop(columns="logo")
+        week_zero_file_df = week_zero_file
         print("week zero file done")
         week_cors = week_zero_readjust(year, division, teams, week_zero_file_df, timestamp)
         print("readjust done W0")
@@ -89,6 +77,14 @@ def regular_season_week(year, week, end_week, division, hfa, base_cors, timestam
     week_cors = weekly_cors(base_cors, year, week, end_week, division, current_records, results, weekly_results, timestamp)
     get_week_slate(year, week, division, timestamp)
     weekly_spread(year, week, division, week_cors, hfa, timestamp)
+    
+    # After calculating this week's spreads, analyze last week's results
+    if week > 1:  # Only if not week 0
+        # Get last week's results
+        last_week_results = get_weekly_results(year, week-1, division, timestamp)
+        analyze_last_week_spreads(year, week, division, last_week_results, timestamp)
+        print("spread results analysis done")
+    
     print(f"Y{year} - W{week} done") 
 
 def last_regular_week(year, week, end_week, division, hfa, base_cors, timestamp):
@@ -98,6 +94,9 @@ def last_regular_week(year, week, end_week, division, hfa, base_cors, timestamp)
     results = get_results(year, division, timestamp)  # need to edit weekly_results to pass this through as a parameter
     weekly_cors(base_cors, year, week, end_week, division, current_records, results, weekly_results, timestamp)
     get_week_slate(year, week, division, timestamp)
+    last_week_results = get_weekly_results(year, week-1, division, timestamp)
+    analyze_last_week_spreads(year, week, division, last_week_results, timestamp)
+    print("spread results analysis done")
     print(f"Y{year} - W{week} done") 
 
 def single_week_calc(year, week, end_week, division, hfa, base_cors, timestamp):
