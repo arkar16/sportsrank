@@ -107,9 +107,10 @@ def cors_calc(team, week, base, wins, losses, results, last_week_cors):
         net_mov = -math.log10(1 + abs(mov)) * mov_scale # diminishing returns, multiplied by 5
     scaled_sos = sos_min + (norm_sos * (sos_max - sos_min)) # scaled to sos_min to sos_max
 
-    cors = round(((win_pct_m + net_mov) * scaled_sos), 2)
+    scaled_last_week_cors = last_cors.loc[TEAM, "cors"] / week
+    cors = (((win_pct_m + net_mov) * scaled_sos) + scaled_last_week_cors) / 2
 
-    return cors
+    return round(cors, 2)
 
 
 def weekly_cors(base, year, week, end_week, division, current_records, results, weekly_results, timestamp):

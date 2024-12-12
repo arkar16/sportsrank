@@ -1,12 +1,12 @@
 <html>
 <head>
-<title>CORS v0.2.0 - 1964 W1 Rankings - FBS CFB</title>
+<title>CORS v0.4.0 - 1964 W1 Rankings - FBS CFB</title>
 </head>
 <body>
-<h1>CORS v0.2.0 - 1964 W1 Rankings - FBS CFB</h1>
+<h1>CORS v0.4.0 - 1964 W1 Rankings - FBS CFB</h1>
 </body>
 </html>
-Last updated: 2023-11-21 07:17:43<hr>
+Last updated: 2024-12-10 13:34:51<hr>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -16,6 +16,10 @@ Last updated: 2023-11-21 07:17:43<hr>
       <th>record</th>
       <th>win_pct</th>
       <th>cors</th>
+      <th>mov</th>
+      <th>sos</th>
+      <th>expected_wins</th>
+      <th>wins_vs_expected</th>
     </tr>
   </thead>
   <tbody>
@@ -25,606 +29,910 @@ Last updated: 2023-11-21 07:17:43<hr>
       <td>AAWU</td>
       <td>1-0-0</td>
       <td>1.0</td>
-      <td>71.50</td>
+      <td>25.77</td>
+      <td>5.0</td>
+      <td>21.0</td>
+      <td>0.70</td>
+      <td>0.30</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>Houston</td>
-      <td>FBS Independents</td>
-      <td>1-0-0</td>
-      <td>1.0</td>
-      <td>53.42</td>
-    </tr>
-    <tr>
-      <th>3</th>
       <td>Furman</td>
       <td>Southern</td>
       <td>1-0-0</td>
       <td>1.0</td>
-      <td>47.42</td>
+      <td>25.43</td>
+      <td>3.0</td>
+      <td>-10.0</td>
+      <td>0.65</td>
+      <td>0.35</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Houston</td>
+      <td>FBS Independents</td>
+      <td>1-0-0</td>
+      <td>1.0</td>
+      <td>22.86</td>
+      <td>27.0</td>
+      <td>-10.0</td>
+      <td>0.98</td>
+      <td>0.02</td>
     </tr>
     <tr>
       <th>4</th>
-      <td>Pittsburgh</td>
-      <td>FBS Independents</td>
-      <td>0-1-0</td>
-      <td>0.0</td>
-      <td>6.10</td>
-    </tr>
-    <tr>
-      <th>5</th>
-      <td>Air Force</td>
-      <td>FBS Independents</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>6</th>
-      <td>Alabama</td>
-      <td>SEC</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>7</th>
-      <td>Arizona</td>
-      <td>Western Athletic</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>8</th>
-      <td>Arizona State</td>
-      <td>Western Athletic</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>9</th>
-      <td>Arkansas</td>
-      <td>Southwest</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>10</th>
-      <td>Army</td>
-      <td>FBS Independents</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>11</th>
-      <td>Auburn</td>
-      <td>SEC</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>12</th>
-      <td>Baylor</td>
-      <td>Southwest</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>13</th>
-      <td>Boston College</td>
-      <td>FBS Independents</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>14</th>
-      <td>Bowling Green</td>
-      <td>Mid-American</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>15</th>
-      <td>Brown</td>
-      <td>Ivy</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>16</th>
-      <td>Buffalo</td>
-      <td>FBS Independents</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>17</th>
-      <td>BYU</td>
-      <td>Western Athletic</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>18</th>
-      <td>California</td>
-      <td>AAWU</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>19</th>
-      <td>Cincinnati</td>
-      <td>Missouri Valley</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>20</th>
-      <td>Clemson</td>
-      <td>ACC</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>21</th>
-      <td>Colgate</td>
-      <td>FBS Independents</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>22</th>
-      <td>Colorado</td>
-      <td>Big 8</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>23</th>
-      <td>Colorado State</td>
-      <td>FBS Independents</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>24</th>
-      <td>Columbia</td>
-      <td>Ivy</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>25</th>
-      <td>Cornell</td>
-      <td>Ivy</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>26</th>
-      <td>Dartmouth</td>
-      <td>Ivy</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>27</th>
-      <td>Davidson</td>
-      <td>Southern</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>28</th>
-      <td>Dayton</td>
-      <td>FBS Independents</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>29</th>
-      <td>Duke</td>
-      <td>ACC</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>30</th>
-      <td>Florida</td>
-      <td>SEC</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>31</th>
-      <td>Florida State</td>
-      <td>FBS Independents</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>32</th>
-      <td>Georgia</td>
-      <td>SEC</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>33</th>
-      <td>Georgia Tech</td>
-      <td>FBS Independents</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>34</th>
-      <td>Harvard</td>
-      <td>Ivy</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>35</th>
-      <td>Holy Cross</td>
-      <td>FBS Independents</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>36</th>
-      <td>Idaho</td>
-      <td>FBS Independents</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>37</th>
-      <td>Illinois</td>
-      <td>Big Ten</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>38</th>
-      <td>Indiana</td>
-      <td>Big Ten</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>39</th>
-      <td>Iowa</td>
-      <td>Big Ten</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>40</th>
-      <td>Iowa State</td>
-      <td>Big 8</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>41</th>
-      <td>Kansas</td>
-      <td>Big 8</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>42</th>
-      <td>Kansas State</td>
-      <td>Big 8</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>43</th>
-      <td>Kent State</td>
-      <td>Mid-American</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>44</th>
-      <td>Kentucky</td>
-      <td>SEC</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>45</th>
-      <td>Lehigh</td>
-      <td>FBS Independents</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>46</th>
-      <td>Louisville</td>
-      <td>Missouri Valley</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>47</th>
-      <td>LSU</td>
-      <td>SEC</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>48</th>
-      <td>Marshall</td>
-      <td>Mid-American</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>49</th>
-      <td>Maryland</td>
-      <td>ACC</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>50</th>
-      <td>Memphis</td>
-      <td>FBS Independents</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>51</th>
-      <td>Miami</td>
-      <td>FBS Independents</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>52</th>
-      <td>Miami (OH)</td>
-      <td>Mid-American</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>53</th>
-      <td>Michigan</td>
-      <td>Big Ten</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>54</th>
-      <td>Michigan State</td>
-      <td>Big Ten</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>55</th>
-      <td>Minnesota</td>
-      <td>Big Ten</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>56</th>
-      <td>Mississippi State</td>
-      <td>SEC</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>57</th>
-      <td>Missouri</td>
-      <td>Big 8</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>58</th>
-      <td>Navy</td>
-      <td>FBS Independents</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>59</th>
-      <td>NC State</td>
-      <td>ACC</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>60</th>
-      <td>Nebraska</td>
-      <td>Big 8</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>61</th>
-      <td>New Mexico</td>
-      <td>Western Athletic</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>62</th>
-      <td>New Mexico State</td>
-      <td>FBS Independents</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>63</th>
-      <td>North Carolina</td>
-      <td>ACC</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>64</th>
-      <td>North Texas</td>
-      <td>Missouri Valley</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>65</th>
-      <td>Northwestern</td>
-      <td>Big Ten</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>66</th>
-      <td>Notre Dame</td>
-      <td>FBS Independents</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>67</th>
-      <td>Ohio</td>
-      <td>Mid-American</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>68</th>
-      <td>Ohio State</td>
-      <td>Big Ten</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>69</th>
-      <td>Oklahoma</td>
-      <td>Big 8</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>70</th>
-      <td>Oklahoma State</td>
-      <td>Big 8</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>71</th>
       <td>Ole Miss</td>
       <td>SEC</td>
       <td>0-0-0</td>
       <td>NaN</td>
+      <td>13.92</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
       <td>0.00</td>
     </tr>
     <tr>
-      <th>72</th>
-      <td>Oregon</td>
-      <td>AAWU</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>73</th>
-      <td>Oregon State</td>
-      <td>AAWU</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>74</th>
-      <td>Penn State</td>
+      <th>5</th>
+      <td>Memphis</td>
       <td>FBS Independents</td>
       <td>0-0-0</td>
       <td>NaN</td>
+      <td>12.72</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
       <td>0.00</td>
     </tr>
     <tr>
-      <th>75</th>
-      <td>Pennsylvania</td>
-      <td>Ivy</td>
+      <th>6</th>
+      <td>Texas</td>
+      <td>Southwest</td>
       <td>0-0-0</td>
       <td>NaN</td>
+      <td>11.86</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
       <td>0.00</td>
     </tr>
     <tr>
-      <th>76</th>
+      <th>7</th>
+      <td>Mississippi State</td>
+      <td>SEC</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>11.73</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>Michigan State</td>
+      <td>Big Ten</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>11.33</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>9</th>
       <td>Princeton</td>
       <td>Ivy</td>
       <td>0-0-0</td>
       <td>NaN</td>
+      <td>11.30</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>Utah State</td>
+      <td>FBS Independents</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>11.20</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>Navy</td>
+      <td>FBS Independents</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>11.17</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>12</th>
+      <td>Syracuse</td>
+      <td>FBS Independents</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>11.04</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>13</th>
+      <td>Nebraska</td>
+      <td>Big 8</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>11.00</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>14</th>
+      <td>Illinois</td>
+      <td>Big Ten</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>10.92</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>15</th>
+      <td>Alabama</td>
+      <td>SEC</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>10.90</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>16</th>
+      <td>Arizona State</td>
+      <td>Western Athletic</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>10.78</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>17</th>
+      <td>Air Force</td>
+      <td>FBS Independents</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>10.43</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>18</th>
+      <td>Harvard</td>
+      <td>Ivy</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>10.30</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>19</th>
+      <td>Auburn</td>
+      <td>SEC</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>10.28</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>20</th>
+      <td>Georgia Tech</td>
+      <td>FBS Independents</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>10.17</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>21</th>
+      <td>NC State</td>
+      <td>ACC</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>10.17</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>22</th>
+      <td>Wichita State</td>
+      <td>Missouri Valley</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>10.13</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>23</th>
+      <td>Oklahoma</td>
+      <td>Big 8</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>10.02</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>24</th>
+      <td>Dartmouth</td>
+      <td>Ivy</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>9.96</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>25</th>
+      <td>Oregon</td>
+      <td>AAWU</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>9.84</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>26</th>
+      <td>Army</td>
+      <td>FBS Independents</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>9.83</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>27</th>
+      <td>USC</td>
+      <td>AAWU</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>9.76</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>28</th>
+      <td>Southern Miss</td>
+      <td>FBS Independents</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>9.61</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>29</th>
+      <td>Missouri</td>
+      <td>Big 8</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>9.57</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>30</th>
+      <td>Virginia Tech</td>
+      <td>Southern</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>9.57</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>31</th>
+      <td>Bowling Green</td>
+      <td>Mid-American</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>9.50</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>32</th>
+      <td>Florida State</td>
+      <td>FBS Independents</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>9.48</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>33</th>
+      <td>Baylor</td>
+      <td>Southwest</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>9.44</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>34</th>
+      <td>Arkansas</td>
+      <td>Southwest</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>9.35</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>35</th>
+      <td>Yale</td>
+      <td>Ivy</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>9.30</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>36</th>
+      <td>North Carolina</td>
+      <td>ACC</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>9.23</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>37</th>
+      <td>Pittsburgh</td>
+      <td>FBS Independents</td>
+      <td>0-1-0</td>
+      <td>0.0</td>
+      <td>9.22</td>
+      <td>-5.0</td>
+      <td>1.0</td>
+      <td>0.30</td>
+      <td>-0.30</td>
+    </tr>
+    <tr>
+      <th>38</th>
+      <td>Cincinnati</td>
+      <td>Missouri Valley</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>9.21</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>39</th>
+      <td>Kansas</td>
+      <td>Big 8</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>9.06</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>40</th>
+      <td>Penn State</td>
+      <td>FBS Independents</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>8.86</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>41</th>
+      <td>Xavier</td>
+      <td>FBS Independents</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>8.73</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>42</th>
+      <td>LSU</td>
+      <td>SEC</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>8.46</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>43</th>
+      <td>Washington</td>
+      <td>AAWU</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>8.46</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>44</th>
+      <td>Buffalo</td>
+      <td>FBS Independents</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>8.40</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>45</th>
+      <td>Miami (OH)</td>
+      <td>Mid-American</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>8.36</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>46</th>
+      <td>Clemson</td>
+      <td>ACC</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>8.31</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>47</th>
+      <td>Boston College</td>
+      <td>FBS Independents</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>8.09</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>48</th>
+      <td>Tennessee</td>
+      <td>SEC</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>7.98</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>49</th>
+      <td>Northwestern</td>
+      <td>Big Ten</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>7.96</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>50</th>
+      <td>Rice</td>
+      <td>Southwest</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>7.82</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>51</th>
+      <td>Duke</td>
+      <td>ACC</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>7.72</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>52</th>
+      <td>Ohio</td>
+      <td>Mid-American</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>7.70</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>53</th>
+      <td>Wyoming</td>
+      <td>Western Athletic</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>7.63</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>54</th>
+      <td>Florida</td>
+      <td>SEC</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>7.56</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>55</th>
+      <td>New Mexico</td>
+      <td>Western Athletic</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>7.45</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>56</th>
+      <td>Iowa</td>
+      <td>Big Ten</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>7.43</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>57</th>
+      <td>Wisconsin</td>
+      <td>Big Ten</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>7.39</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>58</th>
+      <td>Columbia</td>
+      <td>Ivy</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>7.35</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>59</th>
+      <td>Idaho</td>
+      <td>FBS Independents</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>7.35</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>60</th>
+      <td>Ohio State</td>
+      <td>Big Ten</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>7.34</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>61</th>
+      <td>West Texas A&M</td>
+      <td>FBS Independents</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>7.04</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>62</th>
+      <td>Michigan</td>
+      <td>Big Ten</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>6.65</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>63</th>
+      <td>VMI</td>
+      <td>Southern</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>6.40</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>64</th>
+      <td>Utah</td>
+      <td>Western Athletic</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>6.35</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>65</th>
+      <td>Marshall</td>
+      <td>Mid-American</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>6.13</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>66</th>
+      <td>Oregon State</td>
+      <td>AAWU</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>6.07</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>67</th>
+      <td>Cornell</td>
+      <td>Ivy</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>5.24</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>68</th>
+      <td>San José State</td>
+      <td>FBS Independents</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>5.19</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>69</th>
+      <td>California</td>
+      <td>AAWU</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>5.09</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>70</th>
+      <td>Georgia</td>
+      <td>SEC</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>4.87</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>71</th>
+      <td>Rutgers</td>
+      <td>FBS Independents</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>4.68</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>72</th>
+      <td>Brown</td>
+      <td>Ivy</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>4.60</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>73</th>
+      <td>Kent State</td>
+      <td>Mid-American</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>4.60</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>74</th>
+      <td>Iowa State</td>
+      <td>Big 8</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>4.58</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>75</th>
+      <td>William & Mary</td>
+      <td>Southern</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>4.39</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>76</th>
+      <td>Tulsa</td>
+      <td>Missouri Valley</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>4.37</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
       <td>0.00</td>
     </tr>
     <tr>
@@ -633,38 +941,58 @@ Last updated: 2023-11-21 07:17:43<hr>
       <td>Big Ten</td>
       <td>0-0-0</td>
       <td>NaN</td>
+      <td>4.33</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
       <td>0.00</td>
     </tr>
     <tr>
       <th>78</th>
-      <td>Rice</td>
-      <td>Southwest</td>
+      <td>Arizona</td>
+      <td>Western Athletic</td>
       <td>0-0-0</td>
       <td>NaN</td>
+      <td>4.20</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
       <td>0.00</td>
     </tr>
     <tr>
       <th>79</th>
-      <td>Richmond</td>
-      <td>Southern</td>
+      <td>Kentucky</td>
+      <td>SEC</td>
       <td>0-0-0</td>
       <td>NaN</td>
+      <td>4.20</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
       <td>0.00</td>
     </tr>
     <tr>
       <th>80</th>
-      <td>Rutgers</td>
-      <td>FBS Independents</td>
+      <td>TCU</td>
+      <td>Southwest</td>
       <td>0-0-0</td>
       <td>NaN</td>
+      <td>4.18</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
       <td>0.00</td>
     </tr>
     <tr>
       <th>81</th>
-      <td>San José State</td>
-      <td>FBS Independents</td>
+      <td>Texas Tech</td>
+      <td>Southwest</td>
       <td>0-0-0</td>
       <td>NaN</td>
+      <td>4.14</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
       <td>0.00</td>
     </tr>
     <tr>
@@ -673,310 +1001,466 @@ Last updated: 2023-11-21 07:17:43<hr>
       <td>Southwest</td>
       <td>0-0-0</td>
       <td>NaN</td>
+      <td>4.04</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
       <td>0.00</td>
     </tr>
     <tr>
       <th>83</th>
-      <td>South Carolina</td>
-      <td>ACC</td>
+      <td>Minnesota</td>
+      <td>Big Ten</td>
       <td>0-0-0</td>
       <td>NaN</td>
+      <td>3.71</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
       <td>0.00</td>
     </tr>
     <tr>
       <th>84</th>
-      <td>Southern Mississippi</td>
-      <td>FBS Independents</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>85</th>
-      <td>Stanford</td>
-      <td>AAWU</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>86</th>
-      <td>Syracuse</td>
-      <td>FBS Independents</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>87</th>
-      <td>TCU</td>
-      <td>Southwest</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>88</th>
-      <td>Tennessee</td>
-      <td>SEC</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>89</th>
-      <td>Texas</td>
-      <td>Southwest</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>90</th>
-      <td>Texas A&M</td>
-      <td>Southwest</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>91</th>
-      <td>Texas Tech</td>
-      <td>Southwest</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>92</th>
-      <td>The Citadel</td>
-      <td>Southern</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>93</th>
-      <td>Toledo</td>
-      <td>Mid-American</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>94</th>
-      <td>Tulane</td>
-      <td>SEC</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>95</th>
-      <td>Tulsa</td>
-      <td>Missouri Valley</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>96</th>
-      <td>USC</td>
-      <td>AAWU</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>97</th>
-      <td>Utah</td>
-      <td>Western Athletic</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>98</th>
-      <td>Utah State</td>
-      <td>FBS Independents</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>99</th>
-      <td>UTEP</td>
-      <td>FBS Independents</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>100</th>
-      <td>Vanderbilt</td>
-      <td>SEC</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>101</th>
-      <td>Villanova</td>
-      <td>FBS Independents</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>102</th>
-      <td>Virginia</td>
-      <td>ACC</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>103</th>
-      <td>Virginia Tech</td>
-      <td>Southern</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>104</th>
-      <td>VMI</td>
-      <td>Southern</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>105</th>
-      <td>Wake Forest</td>
-      <td>ACC</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>106</th>
-      <td>Washington</td>
-      <td>AAWU</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>107</th>
-      <td>Washington State</td>
-      <td>AAWU</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>108</th>
-      <td>Western Michigan</td>
-      <td>Mid-American</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>109</th>
-      <td>West Texas A&M</td>
-      <td>FBS Independents</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>110</th>
       <td>West Virginia</td>
       <td>Southern</td>
       <td>0-0-0</td>
       <td>NaN</td>
+      <td>3.52</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
       <td>0.00</td>
     </tr>
     <tr>
-      <th>111</th>
-      <td>William & Mary</td>
-      <td>Southern</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>112</th>
-      <td>Wisconsin</td>
+      <th>85</th>
+      <td>Indiana</td>
       <td>Big Ten</td>
       <td>0-0-0</td>
       <td>NaN</td>
+      <td>3.49</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
       <td>0.00</td>
     </tr>
     <tr>
-      <th>113</th>
-      <td>Wyoming</td>
-      <td>Western Athletic</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>114</th>
-      <td>Yale</td>
-      <td>Ivy</td>
-      <td>0-0-0</td>
-      <td>NaN</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <th>115</th>
-      <td>Boston University</td>
+      <th>86</th>
+      <td>Villanova</td>
       <td>FBS Independents</td>
       <td>0-0-0</td>
       <td>NaN</td>
+      <td>3.41</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
       <td>0.00</td>
     </tr>
     <tr>
-      <th>116</th>
-      <td>Detroit Mercy</td>
+      <th>87</th>
+      <td>New Mexico State</td>
       <td>FBS Independents</td>
       <td>0-0-0</td>
       <td>NaN</td>
+      <td>3.25</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
       <td>0.00</td>
     </tr>
     <tr>
-      <th>117</th>
+      <th>88</th>
+      <td>Stanford</td>
+      <td>AAWU</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>3.20</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>89</th>
+      <td>The Citadel</td>
+      <td>Southern</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>3.06</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>90</th>
+      <td>Maryland</td>
+      <td>ACC</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>2.95</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>91</th>
       <td>George Washington</td>
       <td>Southern</td>
       <td>0-0-0</td>
       <td>NaN</td>
+      <td>2.72</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
       <td>0.00</td>
     </tr>
     <tr>
-      <th>118</th>
+      <th>92</th>
+      <td>UTEP</td>
+      <td>FBS Independents</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>2.69</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>93</th>
+      <td>Miami</td>
+      <td>FBS Independents</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>2.51</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>94</th>
+      <td>Colgate</td>
+      <td>FBS Independents</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>2.43</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>95</th>
+      <td>Washington State</td>
+      <td>AAWU</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>2.34</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>96</th>
+      <td>Notre Dame</td>
+      <td>FBS Independents</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>2.31</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>97</th>
+      <td>Toledo</td>
+      <td>Mid-American</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>2.12</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>98</th>
+      <td>Richmond</td>
+      <td>Southern</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>2.10</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>99</th>
+      <td>Texas A&M</td>
+      <td>Southwest</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>1.93</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>100</th>
+      <td>North Texas</td>
+      <td>Missouri Valley</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>1.71</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>101</th>
+      <td>South Carolina</td>
+      <td>ACC</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>1.66</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>102</th>
+      <td>Louisville</td>
+      <td>Missouri Valley</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>1.53</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>103</th>
+      <td>Pennsylvania</td>
+      <td>Ivy</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>1.53</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>104</th>
+      <td>Holy Cross</td>
+      <td>FBS Independents</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>1.48</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>105</th>
+      <td>Detroit Mercy</td>
+      <td>FBS Independents</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>1.46</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>106</th>
+      <td>Western Michigan</td>
+      <td>Mid-American</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>1.33</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>107</th>
+      <td>Dayton</td>
+      <td>FBS Independents</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>1.31</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>108</th>
+      <td>Davidson</td>
+      <td>Southern</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>1.09</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>109</th>
+      <td>Vanderbilt</td>
+      <td>SEC</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>1.08</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>110</th>
+      <td>Virginia</td>
+      <td>ACC</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>1.00</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>111</th>
+      <td>Kansas State</td>
+      <td>Big 8</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>0.53</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>112</th>
+      <td>Colorado State</td>
+      <td>FBS Independents</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>0.47</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>113</th>
+      <td>Colorado</td>
+      <td>Big 8</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>0.40</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>114</th>
+      <td>BYU</td>
+      <td>Western Athletic</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>0.38</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>115</th>
+      <td>Oklahoma State</td>
+      <td>Big 8</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>0.09</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>116</th>
       <td>Pacific</td>
       <td>FBS Independents</td>
       <td>0-0-0</td>
       <td>NaN</td>
+      <td>0.01</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>117</th>
+      <td>Lehigh</td>
+      <td>FBS Independents</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>-0.02</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>118</th>
+      <td>Boston University</td>
+      <td>FBS Independents</td>
+      <td>0-0-0</td>
+      <td>NaN</td>
+      <td>-0.11</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
       <td>0.00</td>
     </tr>
     <tr>
       <th>119</th>
-      <td>Wichita State</td>
-      <td>Missouri Valley</td>
+      <td>Tulane</td>
+      <td>SEC</td>
       <td>0-0-0</td>
       <td>NaN</td>
+      <td>-0.46</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
       <td>0.00</td>
     </tr>
     <tr>
       <th>120</th>
-      <td>Xavier</td>
-      <td>FBS Independents</td>
+      <td>Wake Forest</td>
+      <td>ACC</td>
       <td>0-0-0</td>
       <td>NaN</td>
+      <td>-1.02</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.00</td>
       <td>0.00</td>
     </tr>
   </tbody>

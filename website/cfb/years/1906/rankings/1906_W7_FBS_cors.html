@@ -1,12 +1,12 @@
 <html>
 <head>
-<title>CORS v0.2.0 - 1906 W7 Rankings - FBS CFB</title>
+<title>CORS v0.4.0 - 1906 W7 Rankings - FBS CFB</title>
 </head>
 <body>
-<h1>CORS v0.2.0 - 1906 W7 Rankings - FBS CFB</h1>
+<h1>CORS v0.4.0 - 1906 W7 Rankings - FBS CFB</h1>
 </body>
 </html>
-Last updated: 2023-11-20 19:50:59<hr>
+Last updated: 2024-12-09 19:01:23<hr>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -16,6 +16,10 @@ Last updated: 2023-11-20 19:50:59<hr>
       <th>record</th>
       <th>win_pct</th>
       <th>cors</th>
+      <th>mov</th>
+      <th>sos</th>
+      <th>expected_wins</th>
+      <th>wins_vs_expected</th>
     </tr>
   </thead>
   <tbody>
@@ -25,7 +29,11 @@ Last updated: 2023-11-20 19:50:59<hr>
       <td>Western</td>
       <td>2-0-0</td>
       <td>1.00</td>
-      <td>70.20</td>
+      <td>27.72</td>
+      <td>15.50</td>
+      <td>20.0</td>
+      <td>1.99</td>
+      <td>0.01</td>
     </tr>
     <tr>
       <th>2</th>
@@ -33,87 +41,131 @@ Last updated: 2023-11-20 19:50:59<hr>
       <td>FBS Independents</td>
       <td>8-0-0</td>
       <td>1.00</td>
-      <td>67.26</td>
+      <td>26.43</td>
+      <td>23.50</td>
+      <td>12.0</td>
+      <td>7.99</td>
+      <td>0.01</td>
     </tr>
     <tr>
       <th>3</th>
-      <td>Chicago</td>
-      <td>Western</td>
-      <td>2-0-0</td>
-      <td>1.00</td>
-      <td>64.63</td>
-    </tr>
-    <tr>
-      <th>4</th>
       <td>Yale</td>
       <td>FBS Independents</td>
       <td>7-0-0</td>
       <td>1.00</td>
-      <td>63.45</td>
+      <td>25.61</td>
+      <td>18.14</td>
+      <td>9.0</td>
+      <td>7.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Chicago</td>
+      <td>Western</td>
+      <td>2-0-0</td>
+      <td>1.00</td>
+      <td>25.51</td>
+      <td>32.00</td>
+      <td>6.0</td>
+      <td>1.99</td>
+      <td>0.01</td>
     </tr>
     <tr>
       <th>5</th>
+      <td>Sewanee</td>
+      <td>FBS Independents</td>
+      <td>5-0-0</td>
+      <td>1.00</td>
+      <td>24.75</td>
+      <td>23.80</td>
+      <td>4.0</td>
+      <td>5.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>6</th>
       <td>Lafayette</td>
       <td>FBS Independents</td>
       <td>6-0-0</td>
       <td>1.00</td>
-      <td>61.45</td>
-    </tr>
-    <tr>
-      <th>6</th>
-      <td>Sewanee Univ. of the South</td>
-      <td>FBS Independents</td>
-      <td>5-0-0</td>
-      <td>1.00</td>
-      <td>61.14</td>
+      <td>24.53</td>
+      <td>23.67</td>
+      <td>3.0</td>
+      <td>5.97</td>
+      <td>0.03</td>
     </tr>
     <tr>
       <th>7</th>
-      <td>Vanderbilt</td>
-      <td>FBS Independents</td>
-      <td>4-1-0</td>
-      <td>0.80</td>
-      <td>60.07</td>
-    </tr>
-    <tr>
-      <th>8</th>
-      <td>Clemson</td>
-      <td>FBS Independents</td>
-      <td>1-0-3</td>
-      <td>0.25</td>
-      <td>59.17</td>
-    </tr>
-    <tr>
-      <th>9</th>
-      <td>Swarthmore</td>
-      <td>FBS Independents</td>
-      <td>7-0-0</td>
-      <td>1.00</td>
-      <td>58.90</td>
-    </tr>
-    <tr>
-      <th>10</th>
-      <td>Michigan</td>
-      <td>Western</td>
-      <td>4-0-0</td>
-      <td>1.00</td>
-      <td>58.40</td>
-    </tr>
-    <tr>
-      <th>11</th>
       <td>Harvard</td>
       <td>FBS Independents</td>
       <td>8-0-0</td>
       <td>1.00</td>
-      <td>58.35</td>
+      <td>23.99</td>
+      <td>16.12</td>
+      <td>2.0</td>
+      <td>7.98</td>
+      <td>0.02</td>
     </tr>
     <tr>
-      <th>12</th>
+      <th>8</th>
+      <td>Swarthmore</td>
+      <td>FBS Independents</td>
+      <td>7-0-0</td>
+      <td>1.00</td>
+      <td>23.96</td>
+      <td>21.71</td>
+      <td>0.0</td>
+      <td>7.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>Michigan</td>
+      <td>Western</td>
+      <td>4-0-0</td>
+      <td>1.00</td>
+      <td>23.79</td>
+      <td>14.75</td>
+      <td>1.0</td>
+      <td>3.93</td>
+      <td>0.07</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>Clemson</td>
+      <td>FBS Independents</td>
+      <td>1-0-3</td>
+      <td>0.25</td>
+      <td>23.61</td>
+      <td>1.50</td>
+      <td>7.0</td>
+      <td>4.00</td>
+      <td>-3.00</td>
+    </tr>
+    <tr>
+      <th>11</th>
       <td>Wisconsin</td>
       <td>Western</td>
       <td>3-0-0</td>
       <td>1.00</td>
-      <td>58.31</td>
+      <td>23.59</td>
+      <td>9.67</td>
+      <td>2.0</td>
+      <td>2.98</td>
+      <td>0.02</td>
+    </tr>
+    <tr>
+      <th>12</th>
+      <td>Virginia Tech</td>
+      <td>FBS Independents</td>
+      <td>3-0-2</td>
+      <td>0.60</td>
+      <td>23.48</td>
+      <td>11.60</td>
+      <td>0.0</td>
+      <td>5.00</td>
+      <td>-2.00</td>
     </tr>
     <tr>
       <th>13</th>
@@ -121,7 +173,11 @@ Last updated: 2023-11-20 19:50:59<hr>
       <td>FBS Independents</td>
       <td>2-0-0</td>
       <td>1.00</td>
-      <td>57.54</td>
+      <td>22.93</td>
+      <td>38.00</td>
+      <td>-6.0</td>
+      <td>2.00</td>
+      <td>0.00</td>
     </tr>
     <tr>
       <th>14</th>
@@ -129,47 +185,71 @@ Last updated: 2023-11-20 19:50:59<hr>
       <td>FBS Independents</td>
       <td>7-1-0</td>
       <td>0.88</td>
-      <td>57.33</td>
+      <td>22.51</td>
+      <td>24.38</td>
+      <td>6.0</td>
+      <td>7.99</td>
+      <td>-0.99</td>
     </tr>
     <tr>
       <th>15</th>
-      <td>Virginia Tech</td>
+      <td>Vanderbilt</td>
       <td>FBS Independents</td>
-      <td>3-0-2</td>
-      <td>0.60</td>
-      <td>56.61</td>
+      <td>4-1-0</td>
+      <td>0.80</td>
+      <td>22.35</td>
+      <td>34.80</td>
+      <td>12.0</td>
+      <td>4.99</td>
+      <td>-0.99</td>
     </tr>
     <tr>
       <th>16</th>
+      <td>Colorado School Of Mines</td>
+      <td>FBS Independents</td>
+      <td>3-0-0</td>
+      <td>1.00</td>
+      <td>22.22</td>
+      <td>19.00</td>
+      <td>-7.0</td>
+      <td>3.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>17</th>
       <td>Cornell</td>
       <td>FBS Independents</td>
       <td>6-1-1</td>
       <td>0.75</td>
-      <td>54.38</td>
+      <td>21.52</td>
+      <td>20.25</td>
+      <td>4.0</td>
+      <td>7.90</td>
+      <td>-1.90</td>
     </tr>
     <tr>
-      <th>17</th>
+      <th>18</th>
       <td>Iowa State</td>
       <td>FBS Independents</td>
       <td>6-1-0</td>
       <td>0.86</td>
-      <td>53.99</td>
-    </tr>
-    <tr>
-      <th>18</th>
-      <td>Colorado Mines</td>
-      <td>FBS Independents</td>
-      <td>3-0-0</td>
-      <td>1.00</td>
-      <td>53.75</td>
+      <td>20.96</td>
+      <td>30.00</td>
+      <td>0.0</td>
+      <td>6.97</td>
+      <td>-0.97</td>
     </tr>
     <tr>
       <th>19</th>
-      <td>Georgia Tech</td>
+      <td>Kansas</td>
       <td>FBS Independents</td>
-      <td>4-1-1</td>
-      <td>0.67</td>
-      <td>49.68</td>
+      <td>6-1-0</td>
+      <td>0.86</td>
+      <td>19.86</td>
+      <td>13.29</td>
+      <td>-5.0</td>
+      <td>6.57</td>
+      <td>-0.57</td>
     </tr>
     <tr>
       <th>20</th>
@@ -177,15 +257,23 @@ Last updated: 2023-11-20 19:50:59<hr>
       <td>FBS Independents</td>
       <td>4-1-1</td>
       <td>0.67</td>
-      <td>49.67</td>
+      <td>19.84</td>
+      <td>8.17</td>
+      <td>6.0</td>
+      <td>5.91</td>
+      <td>-1.91</td>
     </tr>
     <tr>
       <th>21</th>
-      <td>Ole Miss</td>
+      <td>Georgia Tech</td>
       <td>FBS Independents</td>
-      <td>3-1-0</td>
-      <td>0.75</td>
-      <td>49.57</td>
+      <td>4-1-1</td>
+      <td>0.67</td>
+      <td>19.71</td>
+      <td>4.67</td>
+      <td>8.0</td>
+      <td>5.25</td>
+      <td>-1.25</td>
     </tr>
     <tr>
       <th>22</th>
@@ -193,255 +281,383 @@ Last updated: 2023-11-20 19:50:59<hr>
       <td>FBS Independents</td>
       <td>5-1-1</td>
       <td>0.71</td>
-      <td>47.68</td>
+      <td>19.57</td>
+      <td>2.43</td>
+      <td>3.0</td>
+      <td>4.84</td>
+      <td>0.16</td>
     </tr>
     <tr>
       <th>23</th>
-      <td>Alabama</td>
-      <td>FBS Independents</td>
-      <td>3-1-0</td>
-      <td>0.75</td>
-      <td>47.62</td>
-    </tr>
-    <tr>
-      <th>24</th>
-      <td>Pennsylvania</td>
-      <td>FBS Independents</td>
-      <td>5-2-1</td>
-      <td>0.62</td>
-      <td>46.32</td>
-    </tr>
-    <tr>
-      <th>25</th>
-      <td>Missouri</td>
-      <td>FBS Independents</td>
-      <td>4-1-0</td>
-      <td>0.80</td>
-      <td>45.85</td>
-    </tr>
-    <tr>
-      <th>26</th>
-      <td>Kansas</td>
-      <td>FBS Independents</td>
-      <td>6-1-0</td>
-      <td>0.86</td>
-      <td>45.68</td>
-    </tr>
-    <tr>
-      <th>27</th>
       <td>Texas</td>
       <td>FBS Independents</td>
       <td>5-1-0</td>
       <td>0.83</td>
-      <td>45.35</td>
+      <td>19.12</td>
+      <td>6.33</td>
+      <td>-1.0</td>
+      <td>4.68</td>
+      <td>0.32</td>
     </tr>
     <tr>
-      <th>28</th>
-      <td>Williams</td>
+      <th>24</th>
+      <td>Missouri</td>
       <td>FBS Independents</td>
-      <td>4-2-1</td>
+      <td>4-1-0</td>
+      <td>0.80</td>
+      <td>18.81</td>
+      <td>14.60</td>
+      <td>-3.0</td>
+      <td>4.72</td>
+      <td>-0.72</td>
+    </tr>
+    <tr>
+      <th>25</th>
+      <td>Ole Miss</td>
+      <td>FBS Independents</td>
+      <td>3-1-0</td>
+      <td>0.75</td>
+      <td>18.50</td>
+      <td>1.75</td>
+      <td>12.0</td>
+      <td>2.43</td>
       <td>0.57</td>
-      <td>44.87</td>
     </tr>
     <tr>
-      <th>29</th>
-      <td>Washington & Jefferson</td>
+      <th>26</th>
+      <td>Pennsylvania</td>
       <td>FBS Independents</td>
-      <td>4-2-0</td>
-      <td>0.67</td>
-      <td>44.72</td>
+      <td>5-2-1</td>
+      <td>0.62</td>
+      <td>18.22</td>
+      <td>12.62</td>
+      <td>6.0</td>
+      <td>7.52</td>
+      <td>-2.52</td>
     </tr>
     <tr>
-      <th>30</th>
-      <td>Davidson</td>
-      <td>FBS Independents</td>
-      <td>2-1-2</td>
-      <td>0.40</td>
-      <td>43.86</td>
-    </tr>
-    <tr>
-      <th>31</th>
+      <th>27</th>
       <td>Indiana</td>
       <td>Western</td>
       <td>3-1-0</td>
       <td>0.75</td>
-      <td>43.70</td>
+      <td>17.77</td>
+      <td>13.25</td>
+      <td>-1.0</td>
+      <td>3.55</td>
+      <td>-0.55</td>
     </tr>
     <tr>
-      <th>32</th>
-      <td>Pittsburgh</td>
+      <th>28</th>
+      <td>Washington & Jefferson</td>
       <td>FBS Independents</td>
       <td>4-2-0</td>
       <td>0.67</td>
-      <td>43.23</td>
+      <td>17.59</td>
+      <td>17.00</td>
+      <td>5.0</td>
+      <td>5.92</td>
+      <td>-1.92</td>
     </tr>
     <tr>
-      <th>33</th>
+      <th>29</th>
       <td>Mississippi State</td>
       <td>FBS Independents</td>
       <td>2-1-1</td>
       <td>0.50</td>
-      <td>43.00</td>
+      <td>17.36</td>
+      <td>20.00</td>
+      <td>1.0</td>
+      <td>3.94</td>
+      <td>-1.94</td>
     </tr>
     <tr>
-      <th>34</th>
+      <th>30</th>
+      <td>Williams</td>
+      <td>FBS Independents</td>
+      <td>4-2-1</td>
+      <td>0.57</td>
+      <td>17.19</td>
+      <td>7.14</td>
+      <td>9.0</td>
+      <td>6.29</td>
+      <td>-2.29</td>
+    </tr>
+    <tr>
+      <th>31</th>
       <td>Navy</td>
       <td>FBS Independents</td>
       <td>4-2-2</td>
       <td>0.50</td>
-      <td>42.79</td>
+      <td>17.16</td>
+      <td>9.88</td>
+      <td>5.0</td>
+      <td>7.96</td>
+      <td>-3.96</td>
     </tr>
     <tr>
-      <th>35</th>
+      <th>32</th>
       <td>Nebraska</td>
       <td>FBS Independents</td>
       <td>4-2-0</td>
       <td>0.67</td>
-      <td>42.65</td>
+      <td>17.10</td>
+      <td>11.33</td>
+      <td>4.0</td>
+      <td>5.71</td>
+      <td>-1.71</td>
     </tr>
     <tr>
-      <th>36</th>
-      <td>Army</td>
+      <th>33</th>
+      <td>Pittsburgh</td>
       <td>FBS Independents</td>
-      <td>3-2-1</td>
-      <td>0.50</td>
-      <td>42.44</td>
-    </tr>
-    <tr>
-      <th>37</th>
-      <td>Utah</td>
-      <td>FBS Independents</td>
-      <td>2-1-0</td>
+      <td>4-2-0</td>
       <td>0.67</td>
-      <td>42.42</td>
+      <td>17.10</td>
+      <td>23.83</td>
+      <td>1.0</td>
+      <td>5.80</td>
+      <td>-1.80</td>
     </tr>
     <tr>
-      <th>38</th>
-      <td>Colgate</td>
-      <td>FBS Independents</td>
-      <td>3-2-2</td>
-      <td>0.43</td>
-      <td>41.44</td>
-    </tr>
-    <tr>
-      <th>39</th>
-      <td>Iowa</td>
-      <td>Western</td>
-      <td>1-1-0</td>
-      <td>0.50</td>
-      <td>40.92</td>
-    </tr>
-    <tr>
-      <th>40</th>
+      <th>34</th>
       <td>Colorado College</td>
       <td>FBS Independents</td>
       <td>3-1-1</td>
       <td>0.60</td>
-      <td>40.80</td>
+      <td>16.78</td>
+      <td>1.80</td>
+      <td>0.0</td>
+      <td>4.28</td>
+      <td>-1.28</td>
     </tr>
     <tr>
-      <th>41</th>
+      <th>35</th>
+      <td>Davidson</td>
+      <td>FBS Independents</td>
+      <td>2-1-2</td>
+      <td>0.40</td>
+      <td>16.69</td>
+      <td>4.20</td>
+      <td>7.0</td>
+      <td>4.94</td>
+      <td>-2.94</td>
+    </tr>
+    <tr>
+      <th>36</th>
+      <td>Utah</td>
+      <td>FBS Independents</td>
+      <td>2-1-0</td>
+      <td>0.67</td>
+      <td>16.61</td>
+      <td>20.00</td>
+      <td>1.0</td>
+      <td>2.99</td>
+      <td>-0.99</td>
+    </tr>
+    <tr>
+      <th>37</th>
       <td>Brown</td>
       <td>FBS Independents</td>
       <td>4-2-0</td>
       <td>0.67</td>
-      <td>40.20</td>
+      <td>16.54</td>
+      <td>8.33</td>
+      <td>2.0</td>
+      <td>5.54</td>
+      <td>-1.54</td>
+    </tr>
+    <tr>
+      <th>38</th>
+      <td>Army</td>
+      <td>FBS Independents</td>
+      <td>3-2-1</td>
+      <td>0.50</td>
+      <td>16.20</td>
+      <td>7.33</td>
+      <td>11.0</td>
+      <td>5.78</td>
+      <td>-2.78</td>
+    </tr>
+    <tr>
+      <th>39</th>
+      <td>Colgate</td>
+      <td>FBS Independents</td>
+      <td>3-2-2</td>
+      <td>0.43</td>
+      <td>15.80</td>
+      <td>3.86</td>
+      <td>11.0</td>
+      <td>5.41</td>
+      <td>-2.41</td>
+    </tr>
+    <tr>
+      <th>40</th>
+      <td>Alabama</td>
+      <td>FBS Independents</td>
+      <td>3-1-0</td>
+      <td>0.75</td>
+      <td>15.70</td>
+      <td>-11.50</td>
+      <td>13.0</td>
+      <td>0.50</td>
+      <td>2.50</td>
+    </tr>
+    <tr>
+      <th>41</th>
+      <td>Iowa</td>
+      <td>Western</td>
+      <td>1-1-0</td>
+      <td>0.50</td>
+      <td>14.96</td>
+      <td>4.00</td>
+      <td>20.0</td>
+      <td>1.35</td>
+      <td>-0.35</td>
     </tr>
     <tr>
       <th>42</th>
-      <td>Amherst College</td>
-      <td>FBS Independents</td>
-      <td>3-2-0</td>
-      <td>0.60</td>
-      <td>36.49</td>
-    </tr>
-    <tr>
-      <th>43</th>
       <td>Holy Cross</td>
       <td>FBS Independents</td>
       <td>3-2-1</td>
       <td>0.50</td>
-      <td>35.43</td>
+      <td>13.17</td>
+      <td>0.17</td>
+      <td>3.0</td>
+      <td>3.08</td>
+      <td>-0.08</td>
     </tr>
     <tr>
-      <th>44</th>
-      <td>LSU</td>
-      <td>FBS Independents</td>
-      <td>1-1-1</td>
-      <td>0.33</td>
-      <td>35.27</td>
-    </tr>
-    <tr>
-      <th>45</th>
-      <td>Maryville TN</td>
-      <td>FBS Independents</td>
-      <td>2-2-2</td>
-      <td>0.33</td>
-      <td>34.50</td>
-    </tr>
-    <tr>
-      <th>46</th>
+      <th>43</th>
       <td>Syracuse</td>
       <td>FBS Independents</td>
       <td>3-3-0</td>
       <td>0.50</td>
-      <td>34.18</td>
+      <td>13.06</td>
+      <td>5.83</td>
+      <td>6.0</td>
+      <td>4.33</td>
+      <td>-1.33</td>
     </tr>
     <tr>
-      <th>47</th>
-      <td>Bucknell</td>
+      <th>44</th>
+      <td>Amherst</td>
       <td>FBS Independents</td>
-      <td>2-2-1</td>
-      <td>0.40</td>
-      <td>32.98</td>
+      <td>3-2-0</td>
+      <td>0.60</td>
+      <td>12.78</td>
+      <td>-3.20</td>
+      <td>5.0</td>
+      <td>1.33</td>
+      <td>1.67</td>
     </tr>
     <tr>
-      <th>48</th>
-      <td>Dickinson</td>
+      <th>45</th>
+      <td>Dickinson (PA)</td>
       <td>FBS Independents</td>
       <td>2-2-2</td>
       <td>0.33</td>
-      <td>30.80</td>
+      <td>11.97</td>
+      <td>2.17</td>
+      <td>3.0</td>
+      <td>4.76</td>
+      <td>-2.76</td>
     </tr>
     <tr>
-      <th>49</th>
-      <td>Drake</td>
+      <th>46</th>
+      <td>Haskell</td>
       <td>FBS Independents</td>
       <td>2-2-0</td>
       <td>0.50</td>
-      <td>30.63</td>
+      <td>11.71</td>
+      <td>4.75</td>
+      <td>-6.0</td>
+      <td>3.20</td>
+      <td>-1.20</td>
     </tr>
     <tr>
-      <th>50</th>
-      <td>Villanova</td>
-      <td>FBS Independents</td>
-      <td>3-4-0</td>
-      <td>0.43</td>
-      <td>29.34</td>
-    </tr>
-    <tr>
-      <th>51</th>
+      <th>47</th>
       <td>Colorado</td>
       <td>FBS Independents</td>
       <td>2-2-2</td>
       <td>0.33</td>
-      <td>29.20</td>
+      <td>11.71</td>
+      <td>1.00</td>
+      <td>1.0</td>
+      <td>3.83</td>
+      <td>-1.83</td>
+    </tr>
+    <tr>
+      <th>48</th>
+      <td>Drake</td>
+      <td>FBS Independents</td>
+      <td>2-2-0</td>
+      <td>0.50</td>
+      <td>11.68</td>
+      <td>2.25</td>
+      <td>4.0</td>
+      <td>3.01</td>
+      <td>-1.01</td>
+    </tr>
+    <tr>
+      <th>49</th>
+      <td>Maryville College (TN)</td>
+      <td>FBS Independents</td>
+      <td>2-2-2</td>
+      <td>0.33</td>
+      <td>11.33</td>
+      <td>-0.50</td>
+      <td>9.0</td>
+      <td>2.65</td>
+      <td>-0.65</td>
+    </tr>
+    <tr>
+      <th>50</th>
+      <td>LSU</td>
+      <td>FBS Independents</td>
+      <td>1-1-1</td>
+      <td>0.33</td>
+      <td>11.00</td>
+      <td>-1.33</td>
+      <td>10.0</td>
+      <td>0.60</td>
+      <td>0.40</td>
+    </tr>
+    <tr>
+      <th>51</th>
+      <td>Villanova</td>
+      <td>FBS Independents</td>
+      <td>3-4-0</td>
+      <td>0.43</td>
+      <td>10.76</td>
+      <td>5.00</td>
+      <td>5.0</td>
+      <td>5.74</td>
+      <td>-2.74</td>
     </tr>
     <tr>
       <th>52</th>
+      <td>Bucknell</td>
+      <td>FBS Independents</td>
+      <td>2-2-1</td>
+      <td>0.40</td>
+      <td>9.72</td>
+      <td>-6.80</td>
+      <td>9.0</td>
+      <td>0.63</td>
+      <td>1.37</td>
+    </tr>
+    <tr>
+      <th>53</th>
       <td>Georgia</td>
       <td>FBS Independents</td>
       <td>1-2-0</td>
       <td>0.33</td>
-      <td>28.95</td>
-    </tr>
-    <tr>
-      <th>53</th>
-      <td>Auburn</td>
-      <td>FBS Independents</td>
-      <td>1-2-1</td>
-      <td>0.25</td>
-      <td>27.68</td>
+      <td>8.93</td>
+      <td>11.33</td>
+      <td>10.0</td>
+      <td>2.72</td>
+      <td>-1.72</td>
     </tr>
     <tr>
       <th>54</th>
@@ -449,15 +665,23 @@ Last updated: 2023-11-20 19:50:59<hr>
       <td>FBS Independents</td>
       <td>3-4-1</td>
       <td>0.38</td>
-      <td>26.63</td>
+      <td>8.31</td>
+      <td>-4.38</td>
+      <td>5.0</td>
+      <td>2.14</td>
+      <td>0.86</td>
     </tr>
     <tr>
       <th>55</th>
-      <td>Haskell</td>
+      <td>Auburn</td>
       <td>FBS Independents</td>
-      <td>2-2-0</td>
-      <td>0.50</td>
-      <td>25.29</td>
+      <td>1-2-1</td>
+      <td>0.25</td>
+      <td>8.06</td>
+      <td>-0.25</td>
+      <td>11.0</td>
+      <td>1.88</td>
+      <td>-0.88</td>
     </tr>
     <tr>
       <th>56</th>
@@ -465,7 +689,11 @@ Last updated: 2023-11-20 19:50:59<hr>
       <td>FBS Independents</td>
       <td>1-3-2</td>
       <td>0.17</td>
-      <td>21.74</td>
+      <td>4.71</td>
+      <td>-4.17</td>
+      <td>11.0</td>
+      <td>0.68</td>
+      <td>0.32</td>
     </tr>
     <tr>
       <th>57</th>
@@ -473,63 +701,95 @@ Last updated: 2023-11-20 19:50:59<hr>
       <td>FBS Independents</td>
       <td>1-3-1</td>
       <td>0.20</td>
-      <td>15.83</td>
+      <td>4.26</td>
+      <td>-4.80</td>
+      <td>1.0</td>
+      <td>0.47</td>
+      <td>0.53</td>
     </tr>
     <tr>
       <th>58</th>
-      <td>Denver</td>
-      <td>FBS Independents</td>
-      <td>0-3-0</td>
-      <td>0.00</td>
-      <td>10.49</td>
-    </tr>
-    <tr>
-      <th>59</th>
-      <td>UMass</td>
-      <td>FBS Independents</td>
-      <td>0-6-1</td>
-      <td>0.00</td>
-      <td>9.80</td>
-    </tr>
-    <tr>
-      <th>60</th>
-      <td>Illinois</td>
-      <td>Western</td>
-      <td>0-1-1</td>
-      <td>0.00</td>
-      <td>4.59</td>
-    </tr>
-    <tr>
-      <th>61</th>
       <td>Tulane</td>
       <td>FBS Independents</td>
       <td>0-1-1</td>
       <td>0.00</td>
-      <td>4.01</td>
+      <td>-1.60</td>
+      <td>-8.50</td>
+      <td>3.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
     </tr>
     <tr>
-      <th>62</th>
+      <th>59</th>
+      <td>Illinois</td>
+      <td>Western</td>
+      <td>0-1-1</td>
+      <td>0.00</td>
+      <td>-1.85</td>
+      <td>-9.50</td>
+      <td>6.0</td>
+      <td>0.13</td>
+      <td>-0.13</td>
+    </tr>
+    <tr>
+      <th>60</th>
       <td>Arkansas</td>
       <td>FBS Independents</td>
       <td>0-3-1</td>
       <td>0.00</td>
-      <td>3.53</td>
+      <td>-2.02</td>
+      <td>-12.25</td>
+      <td>5.0</td>
+      <td>0.01</td>
+      <td>-0.01</td>
     </tr>
     <tr>
-      <th>63</th>
-      <td>TCU</td>
+      <th>61</th>
+      <td>Massachusetts</td>
       <td>FBS Independents</td>
-      <td>0-4-0</td>
+      <td>0-6-1</td>
       <td>0.00</td>
-      <td>2.39</td>
+      <td>-2.07</td>
+      <td>-10.71</td>
+      <td>14.0</td>
+      <td>0.06</td>
+      <td>-0.06</td>
     </tr>
     <tr>
-      <th>64</th>
+      <th>62</th>
       <td>Purdue</td>
       <td>Western</td>
       <td>0-3-0</td>
       <td>0.00</td>
-      <td>0.63</td>
+      <td>-2.24</td>
+      <td>-17.33</td>
+      <td>2.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>63</th>
+      <td>Denver</td>
+      <td>FBS Independents</td>
+      <td>0-3-0</td>
+      <td>0.00</td>
+      <td>-2.32</td>
+      <td>-13.67</td>
+      <td>17.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <th>64</th>
+      <td>TCU</td>
+      <td>FBS Independents</td>
+      <td>0-4-0</td>
+      <td>0.00</td>
+      <td>-2.32</td>
+      <td>-18.50</td>
+      <td>5.0</td>
+      <td>0.00</td>
+      <td>0.00</td>
     </tr>
   </tbody>
 </table>

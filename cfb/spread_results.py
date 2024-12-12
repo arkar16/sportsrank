@@ -12,19 +12,18 @@ def calculate_spread_result(predicted_spread_str, actual_home_score, actual_away
         spread_value = float(spread_str)
         
         # Calculate actual margin (positive means home team won by that much)
-        actual_margin = actual_home_score - actual_away_score
-        
-        # Calculate if spread prediction was correct
         if spread_str.startswith('-'):
+            actual_margin = actual_home_score - actual_away_score
             ats_correct = actual_margin > abs(spread_value)
         else:
-            ats_correct = actual_margin > -spread_value
+            actual_margin = actual_away_score - actual_home_score
+            ats_correct = actual_margin < spread_value
             
         # Calculate if straight up winner prediction was correct
         # If spread is negative, home team was predicted to win
         # If spread is positive, away team was predicted to win
         predicted_home_win = spread_str.startswith('-')
-        actual_home_win = actual_margin > 0
+        actual_home_win = (actual_home_score - actual_away_score) > 0
         su_correct = predicted_home_win == actual_home_win
             
         return ats_correct, su_correct
@@ -149,9 +148,16 @@ def analyze_last_week_spreads(year, week, division, weekly_results, timestamp):
         print(f"Week {last_week} ATS Accuracy: {ats_accuracy:.1f}%")
         print(f"Week {last_week} SU Accuracy: {su_accuracy:.1f}%")
         
+        # Append results to spread_results file
+        os.chdir(config.owd)
+        spread_results_file = "spread_analysis.csv"
+        with open(spread_results_file, 'a') as f:
+            f.write(f"{year},{last_week},{ats_accuracy:.1f},{ats_correct},{su_accuracy:.1f},{su_correct},{total_games},{config.cors_version}\n")
+        
     except Exception as e:
         print(f"Error analyzing spreads: {str(e)}")
-        raise  # Re-raise to see full traceback
+        print(f"No spreads to analyse for {year} Week {last_week}")
+        #raise  # Re-raise to see full traceback
     finally:
         os.chdir(config.owd)
 

@@ -12,8 +12,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 # CONSTANTS
 YEAR = 2024  # define current year (cannot be earlier than 1897)
-START_YEAR = 1897  # define start year
-END_YEAR = 2024 # define end year
+START_YEAR = 1986 # define start year
+END_YEAR = 2023 # define end year
 WEEK = 10  # define current week
 START_WEEK = 0  # define start week
 DIVISION = "FBS"  # define division (currently only supporting FBS)
