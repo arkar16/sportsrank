@@ -34,7 +34,7 @@ for year in range(start_year, end_year + 1):
         os.mkdir(f"{weekly_slate_folder}")
         os.mkdir(f"{rankings_folder}")
         os.mkdir(f"{spread_folder}")
-        print(f"Created {year} folders")
+        #print(f"Created {year} folders")
     except FileExistsError:
-        print(f"{year} folders already exist")
+        #print(f"{year} folders already exist")
         pass

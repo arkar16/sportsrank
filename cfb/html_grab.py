@@ -31,6 +31,6 @@ def html_grab(start_year, end_year, week, end_week, division, timestamp):
         #with open(f"{config.sport}/{config.sport}.html", "a") as f:
             #f.write(year_template)
             #f.close()
-        print(f"{year} End week: {end_week}")
-        print(f"{year} HTML files created")
+        #print(f"{year} End week: {end_week}")
+        #print(f"{year} HTML files created")
 

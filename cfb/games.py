@@ -65,7 +65,7 @@ def get_weekly_results(year, week, division, timestamp):
         f.write(timestamp)
         f.write(week_results_html)
     os.chdir(config.owd)
-    print("weekly results done")
+    #print("weekly results done")
 
     return fbs_week_results
 
@@ -124,7 +124,7 @@ def get_results(year, division, timestamp):
         f.write(timestamp)
         f.write(results_html)
     os.chdir(config.owd)
-    print("results done")
+    #print("results done")
     return fbs_results
 
 
@@ -183,7 +183,7 @@ def get_week_slate(year, week, division, timestamp):
         f.write(timestamp)
         f.write(games_html)
     os.chdir(config.owd)
-    print("week games done")
+    #print("week games done")
     return fbs_week_slate
 
 
@@ -239,5 +239,5 @@ def get_slate(year, division, timestamp):
         f.write(timestamp)
         f.write(games_html)
     os.chdir(config.owd)
-    print("slate done")
+    #print("slate done")
     return fbs_slate

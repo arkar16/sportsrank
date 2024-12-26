@@ -26,7 +26,7 @@ def week_zero_readjust(year, division, teams, week_zero_file, timestamp):
     try:
         regression_factor = 1.75  # Points to adjust CORS by per win above/below expected
         week_zero_file.loc[:, "cors"] = week_zero_file["cors"] - (week_zero_file["wins_vs_expected"] * regression_factor)
-        print("regression done")
+        #print("regression done")
     except:
         pass
     

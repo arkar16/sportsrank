@@ -57,5 +57,5 @@ def get_teams(year, division, timestamp):
         f.write(teams_html)
     os.chdir(config.owd)
 
-    print("teams done")
+    #print("teams done")
     return cfb_teams

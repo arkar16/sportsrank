@@ -1,12 +1,12 @@
 <html>
 <head>
-<title>CORS v0.2.0 - 2008 Final Rankings - FBS CFB</title>
+<title>CORS v0.4.0 - 2008 Final Rankings - FBS CFB</title>
 </head>
 <body>
-<h1>CORS v0.2.0 - 2008 Final Rankings - FBS CFB</h1>
+<h1>CORS v0.4.0 - 2008 Final Rankings - FBS CFB</h1>
 </body>
 </html>
-Last updated: 2023-11-21 07:17:43<hr>
+Last updated: 2024-12-12 16:08:04<hr>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -16,968 +16,1452 @@ Last updated: 2023-11-21 07:17:43<hr>
       <th>record</th>
       <th>win_pct</th>
       <th>cors</th>
+      <th>mov</th>
+      <th>sos</th>
+      <th>expected_wins</th>
+      <th>wins_vs_expected</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>1</th>
-      <td>Florida</td>
-      <td>SEC</td>
-      <td>9-1</td>
-      <td>0.90</td>
-      <td>67.30</td>
+      <td>Boise State</td>
+      <td>Western Athletic</td>
+      <td>12-0</td>
+      <td>1.00</td>
+      <td>24.88</td>
+      <td>27.17</td>
+      <td>9.0</td>
+      <td>11.29</td>
+      <td>0.71</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>Texas Tech</td>
-      <td>Big 12</td>
-      <td>10-0</td>
+      <td>Utah</td>
+      <td>Mountain West</td>
+      <td>12-0</td>
       <td>1.00</td>
-      <td>66.78</td>
+      <td>24.63</td>
+      <td>20.17</td>
+      <td>9.0</td>
+      <td>10.35</td>
+      <td>1.65</td>
     </tr>
     <tr>
       <th>3</th>
       <td>Texas</td>
       <td>Big 12</td>
-      <td>10-1</td>
-      <td>0.91</td>
-      <td>66.58</td>
+      <td>11-1</td>
+      <td>0.92</td>
+      <td>23.97</td>
+      <td>25.33</td>
+      <td>14.0</td>
+      <td>10.62</td>
+      <td>0.38</td>
     </tr>
     <tr>
       <th>4</th>
-      <td>Alabama</td>
+      <td>Florida</td>
       <td>SEC</td>
-      <td>11-0</td>
-      <td>1.00</td>
-      <td>66.41</td>
+      <td>12-1</td>
+      <td>0.92</td>
+      <td>23.96</td>
+      <td>32.31</td>
+      <td>13.0</td>
+      <td>12.37</td>
+      <td>-0.37</td>
     </tr>
     <tr>
       <th>5</th>
-      <td>Boise State</td>
-      <td>Western Athletic</td>
-      <td>10-0</td>
-      <td>1.00</td>
-      <td>66.18</td>
+      <td>Oklahoma</td>
+      <td>Big 12</td>
+      <td>12-1</td>
+      <td>0.92</td>
+      <td>23.92</td>
+      <td>29.46</td>
+      <td>13.0</td>
+      <td>11.26</td>
+      <td>0.74</td>
     </tr>
     <tr>
       <th>6</th>
       <td>USC</td>
       <td>Pac-10</td>
-      <td>9-1</td>
-      <td>0.90</td>
-      <td>65.14</td>
+      <td>11-1</td>
+      <td>0.92</td>
+      <td>23.59</td>
+      <td>29.75</td>
+      <td>11.0</td>
+      <td>11.72</td>
+      <td>-0.72</td>
     </tr>
     <tr>
       <th>7</th>
-      <td>Utah</td>
-      <td>Mountain West</td>
-      <td>11-0</td>
-      <td>1.00</td>
-      <td>65.00</td>
+      <td>Alabama</td>
+      <td>SEC</td>
+      <td>12-1</td>
+      <td>0.92</td>
+      <td>23.40</td>
+      <td>18.15</td>
+      <td>12.0</td>
+      <td>11.55</td>
+      <td>0.45</td>
     </tr>
     <tr>
       <th>8</th>
-      <td>Oklahoma</td>
-      <td>Big 12</td>
-      <td>9-1</td>
-      <td>0.90</td>
-      <td>63.89</td>
+      <td>Penn State</td>
+      <td>Big Ten</td>
+      <td>11-1</td>
+      <td>0.92</td>
+      <td>23.29</td>
+      <td>27.75</td>
+      <td>10.0</td>
+      <td>11.30</td>
+      <td>-0.30</td>
     </tr>
     <tr>
       <th>9</th>
-      <td>Ball State</td>
-      <td>Mid-American</td>
-      <td>10-0</td>
-      <td>1.00</td>
-      <td>63.51</td>
+      <td>Texas Tech</td>
+      <td>Big 12</td>
+      <td>11-1</td>
+      <td>0.92</td>
+      <td>22.94</td>
+      <td>18.33</td>
+      <td>10.0</td>
+      <td>9.34</td>
+      <td>1.66</td>
     </tr>
     <tr>
       <th>10</th>
-      <td>Penn State</td>
-      <td>Big Ten</td>
-      <td>10-1</td>
-      <td>0.91</td>
-      <td>63.10</td>
+      <td>Ball State</td>
+      <td>Mid-American</td>
+      <td>12-1</td>
+      <td>0.92</td>
+      <td>22.58</td>
+      <td>18.00</td>
+      <td>7.0</td>
+      <td>10.82</td>
+      <td>1.18</td>
     </tr>
     <tr>
       <th>11</th>
-      <td>BYU</td>
-      <td>Mountain West</td>
-      <td>10-1</td>
-      <td>0.91</td>
-      <td>58.74</td>
+      <td>Ohio State</td>
+      <td>Big Ten</td>
+      <td>10-2</td>
+      <td>0.83</td>
+      <td>21.21</td>
+      <td>15.08</td>
+      <td>12.0</td>
+      <td>10.32</td>
+      <td>-0.32</td>
     </tr>
     <tr>
       <th>12</th>
-      <td>Missouri</td>
-      <td>Big 12</td>
-      <td>9-2</td>
-      <td>0.82</td>
-      <td>58.55</td>
+      <td>TCU</td>
+      <td>Mountain West</td>
+      <td>10-2</td>
+      <td>0.83</td>
+      <td>21.13</td>
+      <td>24.08</td>
+      <td>10.0</td>
+      <td>11.29</td>
+      <td>-1.29</td>
     </tr>
     <tr>
       <th>13</th>
-      <td>TCU</td>
-      <td>Mountain West</td>
-      <td>9-2</td>
-      <td>0.82</td>
-      <td>57.78</td>
+      <td>Cincinnati</td>
+      <td>Big East</td>
+      <td>11-2</td>
+      <td>0.85</td>
+      <td>20.84</td>
+      <td>7.15</td>
+      <td>11.0</td>
+      <td>8.74</td>
+      <td>2.26</td>
     </tr>
     <tr>
       <th>14</th>
-      <td>Ohio State</td>
-      <td>Big Ten</td>
-      <td>9-2</td>
-      <td>0.82</td>
-      <td>57.65</td>
+      <td>BYU</td>
+      <td>Mountain West</td>
+      <td>10-2</td>
+      <td>0.83</td>
+      <td>20.40</td>
+      <td>14.17</td>
+      <td>8.0</td>
+      <td>9.25</td>
+      <td>0.75</td>
     </tr>
     <tr>
       <th>15</th>
       <td>Oklahoma State</td>
       <td>Big 12</td>
-      <td>9-2</td>
-      <td>0.82</td>
-      <td>57.27</td>
+      <td>9-3</td>
+      <td>0.75</td>
+      <td>19.22</td>
+      <td>14.67</td>
+      <td>11.0</td>
+      <td>8.84</td>
+      <td>0.16</td>
     </tr>
     <tr>
       <th>16</th>
-      <td>Georgia</td>
-      <td>SEC</td>
-      <td>9-2</td>
-      <td>0.82</td>
-      <td>56.37</td>
+      <td>Oregon</td>
+      <td>Pac-10</td>
+      <td>9-3</td>
+      <td>0.75</td>
+      <td>19.15</td>
+      <td>13.92</td>
+      <td>11.0</td>
+      <td>8.67</td>
+      <td>0.33</td>
     </tr>
     <tr>
       <th>17</th>
-      <td>Michigan State</td>
-      <td>Big Ten</td>
-      <td>9-2</td>
-      <td>0.82</td>
-      <td>55.42</td>
+      <td>Tulsa</td>
+      <td>Conference USA</td>
+      <td>10-3</td>
+      <td>0.77</td>
+      <td>19.08</td>
+      <td>18.31</td>
+      <td>6.0</td>
+      <td>9.89</td>
+      <td>0.11</td>
     </tr>
     <tr>
       <th>18</th>
       <td>Pittsburgh</td>
       <td>Big East</td>
-      <td>7-2</td>
-      <td>0.78</td>
-      <td>53.63</td>
+      <td>9-3</td>
+      <td>0.75</td>
+      <td>19.01</td>
+      <td>6.33</td>
+      <td>14.0</td>
+      <td>7.68</td>
+      <td>1.32</td>
     </tr>
     <tr>
       <th>19</th>
-      <td>Cincinnati</td>
-      <td>Big East</td>
-      <td>8-2</td>
-      <td>0.80</td>
-      <td>53.44</td>
+      <td>Georgia</td>
+      <td>SEC</td>
+      <td>9-3</td>
+      <td>0.75</td>
+      <td>18.89</td>
+      <td>6.50</td>
+      <td>13.0</td>
+      <td>7.57</td>
+      <td>1.43</td>
     </tr>
     <tr>
       <th>20</th>
-      <td>Tulsa</td>
-      <td>Conference USA</td>
-      <td>8-2</td>
-      <td>0.80</td>
-      <td>52.63</td>
+      <td>Michigan State</td>
+      <td>Big Ten</td>
+      <td>9-3</td>
+      <td>0.75</td>
+      <td>18.56</td>
+      <td>4.25</td>
+      <td>13.0</td>
+      <td>7.24</td>
+      <td>1.76</td>
     </tr>
     <tr>
       <th>21</th>
-      <td>Western Michigan</td>
-      <td>Mid-American</td>
-      <td>9-2</td>
-      <td>0.82</td>
-      <td>52.58</td>
+      <td>Georgia Tech</td>
+      <td>ACC</td>
+      <td>9-3</td>
+      <td>0.75</td>
+      <td>18.52</td>
+      <td>7.33</td>
+      <td>10.0</td>
+      <td>8.23</td>
+      <td>0.77</td>
     </tr>
     <tr>
       <th>22</th>
-      <td>Oregon</td>
-      <td>Pac-10</td>
-      <td>8-3</td>
-      <td>0.73</td>
-      <td>51.52</td>
+      <td>Rice</td>
+      <td>Conference USA</td>
+      <td>9-3</td>
+      <td>0.75</td>
+      <td>18.40</td>
+      <td>6.67</td>
+      <td>10.0</td>
+      <td>7.22</td>
+      <td>1.78</td>
     </tr>
     <tr>
       <th>23</th>
-      <td>Oregon State</td>
-      <td>Pac-10</td>
-      <td>7-3</td>
-      <td>0.70</td>
-      <td>50.98</td>
+      <td>Western Michigan</td>
+      <td>Mid-American</td>
+      <td>9-3</td>
+      <td>0.75</td>
+      <td>18.26</td>
+      <td>6.00</td>
+      <td>9.0</td>
+      <td>7.56</td>
+      <td>1.44</td>
     </tr>
     <tr>
       <th>24</th>
-      <td>North Carolina</td>
-      <td>ACC</td>
-      <td>7-3</td>
-      <td>0.70</td>
-      <td>50.54</td>
+      <td>Northwestern</td>
+      <td>Big Ten</td>
+      <td>9-3</td>
+      <td>0.75</td>
+      <td>18.08</td>
+      <td>5.17</td>
+      <td>9.0</td>
+      <td>7.64</td>
+      <td>1.36</td>
     </tr>
     <tr>
       <th>25</th>
-      <td>Central Michigan</td>
-      <td>Mid-American</td>
-      <td>8-2</td>
-      <td>0.80</td>
-      <td>50.26</td>
+      <td>Missouri</td>
+      <td>Big 12</td>
+      <td>9-4</td>
+      <td>0.69</td>
+      <td>18.04</td>
+      <td>15.62</td>
+      <td>12.0</td>
+      <td>9.67</td>
+      <td>-0.67</td>
     </tr>
     <tr>
       <th>26</th>
-      <td>Miami</td>
+      <td>Boston College</td>
       <td>ACC</td>
-      <td>7-3</td>
-      <td>0.70</td>
-      <td>49.61</td>
+      <td>9-4</td>
+      <td>0.69</td>
+      <td>17.43</td>
+      <td>7.00</td>
+      <td>12.0</td>
+      <td>8.86</td>
+      <td>0.14</td>
     </tr>
     <tr>
       <th>27</th>
-      <td>LSU</td>
-      <td>SEC</td>
-      <td>8-3</td>
-      <td>0.73</td>
-      <td>49.58</td>
+      <td>Iowa</td>
+      <td>Big Ten</td>
+      <td>8-4</td>
+      <td>0.67</td>
+      <td>17.41</td>
+      <td>17.00</td>
+      <td>11.0</td>
+      <td>10.51</td>
+      <td>-2.51</td>
     </tr>
     <tr>
       <th>28</th>
-      <td>Air Force</td>
-      <td>Mountain West</td>
-      <td>8-3</td>
-      <td>0.73</td>
-      <td>49.56</td>
+      <td>California</td>
+      <td>Pac-10</td>
+      <td>8-4</td>
+      <td>0.67</td>
+      <td>17.36</td>
+      <td>13.17</td>
+      <td>12.0</td>
+      <td>9.20</td>
+      <td>-1.20</td>
     </tr>
     <tr>
       <th>29</th>
-      <td>Florida State</td>
-      <td>ACC</td>
-      <td>7-3</td>
-      <td>0.70</td>
-      <td>48.98</td>
+      <td>Ole Miss</td>
+      <td>SEC</td>
+      <td>8-4</td>
+      <td>0.67</td>
+      <td>17.31</td>
+      <td>13.08</td>
+      <td>11.0</td>
+      <td>9.45</td>
+      <td>-1.45</td>
     </tr>
     <tr>
       <th>30</th>
-      <td>Boston College</td>
+      <td>Florida State</td>
       <td>ACC</td>
-      <td>7-3</td>
-      <td>0.70</td>
-      <td>48.62</td>
+      <td>8-4</td>
+      <td>0.67</td>
+      <td>17.22</td>
+      <td>11.92</td>
+      <td>11.0</td>
+      <td>8.95</td>
+      <td>-0.95</td>
     </tr>
     <tr>
       <th>31</th>
-      <td>Northwestern</td>
-      <td>Big Ten</td>
-      <td>8-3</td>
-      <td>0.73</td>
-      <td>48.24</td>
+      <td>Oregon State</td>
+      <td>Pac-10</td>
+      <td>8-4</td>
+      <td>0.67</td>
+      <td>17.21</td>
+      <td>7.83</td>
+      <td>13.0</td>
+      <td>7.87</td>
+      <td>0.13</td>
     </tr>
     <tr>
       <th>32</th>
-      <td>Nebraska</td>
-      <td>Big 12</td>
-      <td>7-4</td>
-      <td>0.64</td>
-      <td>48.13</td>
+      <td>Virginia Tech</td>
+      <td>ACC</td>
+      <td>9-4</td>
+      <td>0.69</td>
+      <td>17.17</td>
+      <td>4.77</td>
+      <td>12.0</td>
+      <td>8.31</td>
+      <td>0.69</td>
     </tr>
     <tr>
       <th>33</th>
-      <td>Connecticut</td>
-      <td>Big East</td>
-      <td>7-3</td>
-      <td>0.70</td>
-      <td>48.07</td>
+      <td>Nebraska</td>
+      <td>Big 12</td>
+      <td>8-4</td>
+      <td>0.67</td>
+      <td>17.10</td>
+      <td>7.00</td>
+      <td>13.0</td>
+      <td>7.50</td>
+      <td>0.50</td>
     </tr>
     <tr>
       <th>34</th>
-      <td>Iowa</td>
-      <td>Big Ten</td>
-      <td>7-4</td>
-      <td>0.64</td>
-      <td>47.31</td>
+      <td>North Carolina</td>
+      <td>ACC</td>
+      <td>8-4</td>
+      <td>0.67</td>
+      <td>16.92</td>
+      <td>7.17</td>
+      <td>12.0</td>
+      <td>8.06</td>
+      <td>-0.06</td>
     </tr>
     <tr>
       <th>35</th>
-      <td>Rice</td>
-      <td>Conference USA</td>
-      <td>7-3</td>
-      <td>0.70</td>
-      <td>47.25</td>
+      <td>Troy</td>
+      <td>Sun Belt</td>
+      <td>8-4</td>
+      <td>0.67</td>
+      <td>16.89</td>
+      <td>12.67</td>
+      <td>9.0</td>
+      <td>9.08</td>
+      <td>-1.08</td>
     </tr>
     <tr>
       <th>36</th>
-      <td>Georgia Tech</td>
-      <td>ACC</td>
-      <td>7-3</td>
-      <td>0.70</td>
-      <td>47.20</td>
+      <td>West Virginia</td>
+      <td>Big East</td>
+      <td>8-4</td>
+      <td>0.67</td>
+      <td>16.87</td>
+      <td>8.08</td>
+      <td>11.0</td>
+      <td>8.71</td>
+      <td>-0.71</td>
     </tr>
     <tr>
       <th>37</th>
-      <td>Maryland</td>
-      <td>ACC</td>
-      <td>7-3</td>
-      <td>0.70</td>
-      <td>46.83</td>
+      <td>East Carolina</td>
+      <td>Conference USA</td>
+      <td>9-4</td>
+      <td>0.69</td>
+      <td>16.68</td>
+      <td>3.00</td>
+      <td>11.0</td>
+      <td>7.53</td>
+      <td>1.47</td>
     </tr>
     <tr>
       <th>38</th>
-      <td>West Virginia</td>
-      <td>Big East</td>
-      <td>6-3</td>
+      <td>Navy</td>
+      <td>FBS Independents</td>
+      <td>8-4</td>
       <td>0.67</td>
-      <td>46.66</td>
+      <td>16.64</td>
+      <td>6.42</td>
+      <td>10.0</td>
+      <td>7.81</td>
+      <td>0.19</td>
     </tr>
     <tr>
       <th>39</th>
-      <td>California</td>
-      <td>Pac-10</td>
-      <td>6-4</td>
-      <td>0.60</td>
-      <td>46.01</td>
+      <td>Air Force</td>
+      <td>Mountain West</td>
+      <td>8-4</td>
+      <td>0.67</td>
+      <td>16.56</td>
+      <td>5.42</td>
+      <td>10.0</td>
+      <td>7.58</td>
+      <td>0.42</td>
     </tr>
     <tr>
       <th>40</th>
-      <td>Ole Miss</td>
+      <td>LSU</td>
       <td>SEC</td>
-      <td>6-4</td>
-      <td>0.60</td>
-      <td>45.30</td>
+      <td>8-5</td>
+      <td>0.62</td>
+      <td>15.40</td>
+      <td>6.23</td>
+      <td>9.0</td>
+      <td>8.18</td>
+      <td>-0.18</td>
     </tr>
     <tr>
       <th>41</th>
-      <td>Arizona</td>
-      <td>Pac-10</td>
-      <td>6-4</td>
-      <td>0.60</td>
-      <td>44.82</td>
+      <td>Buffalo</td>
+      <td>Mid-American</td>
+      <td>8-5</td>
+      <td>0.62</td>
+      <td>15.32</td>
+      <td>3.62</td>
+      <td>12.0</td>
+      <td>7.45</td>
+      <td>0.55</td>
     </tr>
     <tr>
       <th>42</th>
-      <td>South Carolina</td>
-      <td>SEC</td>
-      <td>7-4</td>
-      <td>0.64</td>
-      <td>44.67</td>
+      <td>Arizona</td>
+      <td>Pac-10</td>
+      <td>7-5</td>
+      <td>0.58</td>
+      <td>15.16</td>
+      <td>15.75</td>
+      <td>9.0</td>
+      <td>9.45</td>
+      <td>-2.45</td>
     </tr>
     <tr>
       <th>43</th>
-      <td>Minnesota</td>
-      <td>Big Ten</td>
-      <td>7-4</td>
-      <td>0.64</td>
-      <td>44.37</td>
+      <td>Rutgers</td>
+      <td>Big East</td>
+      <td>7-5</td>
+      <td>0.58</td>
+      <td>15.13</td>
+      <td>10.50</td>
+      <td>12.0</td>
+      <td>8.92</td>
+      <td>-1.92</td>
     </tr>
     <tr>
       <th>44</th>
-      <td>Vanderbilt</td>
-      <td>SEC</td>
-      <td>6-4</td>
-      <td>0.60</td>
-      <td>44.36</td>
+      <td>Clemson</td>
+      <td>ACC</td>
+      <td>7-5</td>
+      <td>0.58</td>
+      <td>14.90</td>
+      <td>8.92</td>
+      <td>10.0</td>
+      <td>8.82</td>
+      <td>-1.82</td>
     </tr>
     <tr>
       <th>45</th>
-      <td>Virginia Tech</td>
-      <td>ACC</td>
-      <td>6-4</td>
-      <td>0.60</td>
-      <td>43.88</td>
+      <td>Houston</td>
+      <td>Conference USA</td>
+      <td>7-5</td>
+      <td>0.58</td>
+      <td>14.84</td>
+      <td>10.00</td>
+      <td>9.0</td>
+      <td>7.91</td>
+      <td>-0.91</td>
     </tr>
     <tr>
       <th>46</th>
-      <td>Houston</td>
-      <td>Conference USA</td>
-      <td>6-4</td>
-      <td>0.60</td>
-      <td>43.79</td>
+      <td>Central Michigan</td>
+      <td>Mid-American</td>
+      <td>8-4</td>
+      <td>0.67</td>
+      <td>14.70</td>
+      <td>-0.50</td>
+      <td>9.0</td>
+      <td>5.88</td>
+      <td>2.12</td>
     </tr>
     <tr>
       <th>47</th>
-      <td>Wake Forest</td>
-      <td>ACC</td>
-      <td>6-4</td>
-      <td>0.60</td>
-      <td>43.60</td>
+      <td>South Florida</td>
+      <td>Big East</td>
+      <td>7-5</td>
+      <td>0.58</td>
+      <td>14.68</td>
+      <td>6.00</td>
+      <td>11.0</td>
+      <td>7.77</td>
+      <td>-0.77</td>
     </tr>
     <tr>
       <th>48</th>
-      <td>Notre Dame</td>
-      <td>FBS Independents</td>
-      <td>6-4</td>
-      <td>0.60</td>
-      <td>43.42</td>
+      <td>Nevada</td>
+      <td>Western Athletic</td>
+      <td>7-5</td>
+      <td>0.58</td>
+      <td>14.63</td>
+      <td>6.33</td>
+      <td>10.0</td>
+      <td>7.28</td>
+      <td>-0.28</td>
     </tr>
     <tr>
       <th>49</th>
-      <td>Buffalo</td>
-      <td>Mid-American</td>
-      <td>6-4</td>
-      <td>0.60</td>
-      <td>43.21</td>
+      <td>UConn</td>
+      <td>Big East</td>
+      <td>7-5</td>
+      <td>0.58</td>
+      <td>14.48</td>
+      <td>4.08</td>
+      <td>11.0</td>
+      <td>7.31</td>
+      <td>-0.31</td>
     </tr>
     <tr>
       <th>50</th>
-      <td>Navy</td>
-      <td>FBS Independents</td>
-      <td>6-4</td>
-      <td>0.60</td>
-      <td>42.77</td>
+      <td>Kansas</td>
+      <td>Big 12</td>
+      <td>7-5</td>
+      <td>0.58</td>
+      <td>14.47</td>
+      <td>3.17</td>
+      <td>13.0</td>
+      <td>6.72</td>
+      <td>0.28</td>
     </tr>
     <tr>
       <th>51</th>
-      <td>Wisconsin</td>
-      <td>Big Ten</td>
-      <td>6-5</td>
-      <td>0.55</td>
-      <td>42.68</td>
+      <td>Miami</td>
+      <td>ACC</td>
+      <td>7-5</td>
+      <td>0.58</td>
+      <td>14.41</td>
+      <td>3.75</td>
+      <td>11.0</td>
+      <td>7.02</td>
+      <td>-0.02</td>
     </tr>
     <tr>
       <th>52</th>
-      <td>Nevada</td>
-      <td>Western Athletic</td>
-      <td>6-4</td>
-      <td>0.60</td>
-      <td>42.65</td>
+      <td>Wisconsin</td>
+      <td>Big Ten</td>
+      <td>7-5</td>
+      <td>0.58</td>
+      <td>14.30</td>
+      <td>3.42</td>
+      <td>11.0</td>
+      <td>6.90</td>
+      <td>0.10</td>
     </tr>
     <tr>
       <th>53</th>
-      <td>South Florida</td>
-      <td>Big East</td>
-      <td>6-4</td>
-      <td>0.60</td>
-      <td>42.32</td>
+      <td>Wake Forest</td>
+      <td>ACC</td>
+      <td>7-5</td>
+      <td>0.58</td>
+      <td>14.26</td>
+      <td>2.08</td>
+      <td>13.0</td>
+      <td>6.76</td>
+      <td>0.24</td>
     </tr>
     <tr>
       <th>54</th>
-      <td>Troy</td>
-      <td>Sun Belt</td>
-      <td>6-4</td>
-      <td>0.60</td>
-      <td>41.81</td>
+      <td>South Carolina</td>
+      <td>SEC</td>
+      <td>7-5</td>
+      <td>0.58</td>
+      <td>13.91</td>
+      <td>1.42</td>
+      <td>11.0</td>
+      <td>6.48</td>
+      <td>0.52</td>
     </tr>
     <tr>
       <th>55</th>
-      <td>Kansas</td>
-      <td>Big 12</td>
-      <td>6-5</td>
-      <td>0.55</td>
-      <td>41.59</td>
+      <td>Louisiana Tech</td>
+      <td>Western Athletic</td>
+      <td>7-5</td>
+      <td>0.58</td>
+      <td>13.13</td>
+      <td>0.42</td>
+      <td>8.0</td>
+      <td>6.12</td>
+      <td>0.88</td>
     </tr>
     <tr>
       <th>56</th>
-      <td>East Carolina</td>
-      <td>Conference USA</td>
-      <td>6-4</td>
-      <td>0.60</td>
-      <td>41.28</td>
+      <td>Minnesota</td>
+      <td>Big Ten</td>
+      <td>7-5</td>
+      <td>0.58</td>
+      <td>13.13</td>
+      <td>0.08</td>
+      <td>10.0</td>
+      <td>6.03</td>
+      <td>0.97</td>
     </tr>
     <tr>
       <th>57</th>
-      <td>Kentucky</td>
-      <td>SEC</td>
-      <td>6-5</td>
-      <td>0.55</td>
-      <td>40.62</td>
+      <td>Southern Miss</td>
+      <td>Conference USA</td>
+      <td>6-6</td>
+      <td>0.50</td>
+      <td>12.93</td>
+      <td>6.83</td>
+      <td>11.0</td>
+      <td>7.74</td>
+      <td>-1.74</td>
     </tr>
     <tr>
       <th>58</th>
-      <td>Fresno State</td>
-      <td>Western Athletic</td>
-      <td>6-4</td>
-      <td>0.60</td>
-      <td>40.51</td>
+      <td>Northern Illinois</td>
+      <td>Mid-American</td>
+      <td>6-6</td>
+      <td>0.50</td>
+      <td>12.85</td>
+      <td>7.25</td>
+      <td>10.0</td>
+      <td>8.28</td>
+      <td>-2.28</td>
     </tr>
     <tr>
       <th>59</th>
-      <td>Louisiana Tech</td>
-      <td>Western Athletic</td>
-      <td>6-4</td>
-      <td>0.60</td>
-      <td>40.08</td>
+      <td>Bowling Green</td>
+      <td>Mid-American</td>
+      <td>6-6</td>
+      <td>0.50</td>
+      <td>12.57</td>
+      <td>4.50</td>
+      <td>10.0</td>
+      <td>7.24</td>
+      <td>-1.24</td>
     </tr>
     <tr>
       <th>60</th>
-      <td>Rutgers</td>
-      <td>Big East</td>
-      <td>5-5</td>
-      <td>0.50</td>
-      <td>39.44</td>
+      <td>Maryland</td>
+      <td>ACC</td>
+      <td>7-5</td>
+      <td>0.58</td>
+      <td>12.54</td>
+      <td>-1.33</td>
+      <td>11.0</td>
+      <td>5.54</td>
+      <td>1.46</td>
     </tr>
     <tr>
       <th>61</th>
-      <td>Clemson</td>
-      <td>ACC</td>
-      <td>5-5</td>
-      <td>0.50</td>
-      <td>38.61</td>
+      <td>Fresno State</td>
+      <td>Western Athletic</td>
+      <td>7-5</td>
+      <td>0.58</td>
+      <td>12.47</td>
+      <td>-1.17</td>
+      <td>10.0</td>
+      <td>5.72</td>
+      <td>1.28</td>
     </tr>
     <tr>
       <th>62</th>
-      <td>Virginia</td>
-      <td>ACC</td>
-      <td>5-5</td>
+      <td>Arkansas State</td>
+      <td>Sun Belt</td>
+      <td>6-6</td>
       <td>0.50</td>
-      <td>37.79</td>
+      <td>12.28</td>
+      <td>3.25</td>
+      <td>8.0</td>
+      <td>6.90</td>
+      <td>-0.90</td>
     </tr>
     <tr>
       <th>63</th>
-      <td>Northern Illinois</td>
-      <td>Mid-American</td>
-      <td>5-5</td>
+      <td>Memphis</td>
+      <td>Conference USA</td>
+      <td>6-6</td>
       <td>0.50</td>
-      <td>37.77</td>
+      <td>11.98</td>
+      <td>2.25</td>
+      <td>8.0</td>
+      <td>6.59</td>
+      <td>-0.59</td>
     </tr>
     <tr>
       <th>64</th>
-      <td>Bowling Green</td>
-      <td>Mid-American</td>
-      <td>5-5</td>
+      <td>Kentucky</td>
+      <td>SEC</td>
+      <td>6-6</td>
       <td>0.50</td>
-      <td>37.53</td>
+      <td>11.76</td>
+      <td>0.75</td>
+      <td>11.0</td>
+      <td>6.24</td>
+      <td>-0.24</td>
     </tr>
     <tr>
       <th>65</th>
-      <td>Illinois</td>
-      <td>Big Ten</td>
-      <td>5-6</td>
-      <td>0.45</td>
-      <td>36.95</td>
+      <td>Notre Dame</td>
+      <td>FBS Independents</td>
+      <td>6-6</td>
+      <td>0.50</td>
+      <td>11.64</td>
+      <td>0.42</td>
+      <td>11.0</td>
+      <td>6.13</td>
+      <td>-0.13</td>
     </tr>
     <tr>
       <th>66</th>
-      <td>San José State</td>
+      <td>Hawai'i</td>
       <td>Western Athletic</td>
-      <td>6-5</td>
-      <td>0.55</td>
-      <td>36.91</td>
+      <td>7-6</td>
+      <td>0.54</td>
+      <td>11.27</td>
+      <td>-2.38</td>
+      <td>11.0</td>
+      <td>5.80</td>
+      <td>1.20</td>
     </tr>
     <tr>
       <th>67</th>
-      <td>UTEP</td>
-      <td>Conference USA</td>
-      <td>5-5</td>
+      <td>Vanderbilt</td>
+      <td>SEC</td>
+      <td>6-6</td>
       <td>0.50</td>
-      <td>36.80</td>
+      <td>11.09</td>
+      <td>-0.67</td>
+      <td>13.0</td>
+      <td>5.76</td>
+      <td>0.24</td>
     </tr>
     <tr>
       <th>68</th>
-      <td>Akron</td>
-      <td>Mid-American</td>
-      <td>5-5</td>
+      <td>Louisiana</td>
+      <td>Sun Belt</td>
+      <td>6-6</td>
       <td>0.50</td>
-      <td>36.67</td>
+      <td>10.75</td>
+      <td>-0.58</td>
+      <td>9.0</td>
+      <td>5.88</td>
+      <td>0.12</td>
     </tr>
     <tr>
       <th>69</th>
-      <td>Louisville</td>
-      <td>Big East</td>
-      <td>5-5</td>
-      <td>0.50</td>
-      <td>36.64</td>
+      <td>Illinois</td>
+      <td>Big Ten</td>
+      <td>5-7</td>
+      <td>0.42</td>
+      <td>10.56</td>
+      <td>2.08</td>
+      <td>13.0</td>
+      <td>6.54</td>
+      <td>-1.54</td>
     </tr>
     <tr>
       <th>70</th>
-      <td>Southern Mississippi</td>
-      <td>Conference USA</td>
-      <td>5-6</td>
-      <td>0.45</td>
-      <td>36.27</td>
+      <td>NC State</td>
+      <td>ACC</td>
+      <td>6-6</td>
+      <td>0.50</td>
+      <td>10.47</td>
+      <td>-2.58</td>
+      <td>13.0</td>
+      <td>5.26</td>
+      <td>0.74</td>
     </tr>
     <tr>
       <th>71</th>
-      <td>Hawai'i</td>
+      <td>San José State</td>
       <td>Western Athletic</td>
-      <td>5-5</td>
+      <td>6-6</td>
       <td>0.50</td>
-      <td>35.63</td>
+      <td>10.07</td>
+      <td>-2.92</td>
+      <td>9.0</td>
+      <td>4.98</td>
+      <td>1.02</td>
     </tr>
     <tr>
       <th>72</th>
-      <td>Florida Atlantic</td>
-      <td>Sun Belt</td>
-      <td>5-5</td>
-      <td>0.50</td>
-      <td>35.57</td>
+      <td>Tennessee</td>
+      <td>SEC</td>
+      <td>5-7</td>
+      <td>0.42</td>
+      <td>10.01</td>
+      <td>0.58</td>
+      <td>13.0</td>
+      <td>6.24</td>
+      <td>-1.24</td>
     </tr>
     <tr>
       <th>73</th>
-      <td>Stanford</td>
-      <td>Pac-10</td>
-      <td>5-6</td>
-      <td>0.45</td>
-      <td>35.55</td>
+      <td>Florida Atlantic</td>
+      <td>Sun Belt</td>
+      <td>6-6</td>
+      <td>0.50</td>
+      <td>9.99</td>
+      <td>-4.17</td>
+      <td>10.0</td>
+      <td>4.92</td>
+      <td>1.08</td>
     </tr>
     <tr>
       <th>74</th>
-      <td>Louisiana</td>
-      <td>Sun Belt</td>
-      <td>5-5</td>
+      <td>Colorado State</td>
+      <td>Mountain West</td>
+      <td>6-6</td>
       <td>0.50</td>
-      <td>35.27</td>
+      <td>9.83</td>
+      <td>-5.92</td>
+      <td>11.0</td>
+      <td>4.46</td>
+      <td>1.54</td>
     </tr>
     <tr>
       <th>75</th>
-      <td>Memphis</td>
-      <td>Conference USA</td>
-      <td>5-5</td>
-      <td>0.50</td>
-      <td>34.67</td>
+      <td>Temple</td>
+      <td>Mid-American</td>
+      <td>5-7</td>
+      <td>0.42</td>
+      <td>9.76</td>
+      <td>0.33</td>
+      <td>11.0</td>
+      <td>6.10</td>
+      <td>-1.10</td>
     </tr>
     <tr>
       <th>76</th>
-      <td>Auburn</td>
-      <td>SEC</td>
-      <td>5-6</td>
-      <td>0.45</td>
-      <td>34.27</td>
+      <td>Arizona State</td>
+      <td>Pac-10</td>
+      <td>5-7</td>
+      <td>0.42</td>
+      <td>9.63</td>
+      <td>0.17</td>
+      <td>10.0</td>
+      <td>6.05</td>
+      <td>-1.05</td>
     </tr>
     <tr>
       <th>77</th>
-      <td>UNLV</td>
-      <td>Mountain West</td>
-      <td>5-6</td>
-      <td>0.45</td>
-      <td>34.10</td>
+      <td>Auburn</td>
+      <td>SEC</td>
+      <td>5-7</td>
+      <td>0.42</td>
+      <td>9.16</td>
+      <td>-0.67</td>
+      <td>11.0</td>
+      <td>5.73</td>
+      <td>-0.73</td>
     </tr>
     <tr>
       <th>78</th>
-      <td>Arkansas State</td>
-      <td>Sun Belt</td>
-      <td>4-5</td>
-      <td>0.44</td>
-      <td>33.56</td>
+      <td>Stanford</td>
+      <td>Pac-10</td>
+      <td>5-7</td>
+      <td>0.42</td>
+      <td>9.02</td>
+      <td>-1.17</td>
+      <td>12.0</td>
+      <td>5.69</td>
+      <td>-0.69</td>
     </tr>
     <tr>
       <th>79</th>
-      <td>Colorado State</td>
-      <td>Mountain West</td>
-      <td>5-6</td>
-      <td>0.45</td>
-      <td>33.49</td>
+      <td>Kansas State</td>
+      <td>Big 12</td>
+      <td>5-7</td>
+      <td>0.42</td>
+      <td>8.95</td>
+      <td>-0.92</td>
+      <td>10.0</td>
+      <td>5.82</td>
+      <td>-0.82</td>
     </tr>
     <tr>
       <th>80</th>
-      <td>Colorado</td>
-      <td>Big 12</td>
-      <td>5-6</td>
-      <td>0.45</td>
-      <td>33.19</td>
+      <td>Akron</td>
+      <td>Mid-American</td>
+      <td>5-7</td>
+      <td>0.42</td>
+      <td>8.84</td>
+      <td>-1.25</td>
+      <td>10.0</td>
+      <td>5.71</td>
+      <td>-0.71</td>
     </tr>
     <tr>
       <th>81</th>
-      <td>Arkansas</td>
-      <td>SEC</td>
-      <td>4-6</td>
-      <td>0.40</td>
-      <td>31.98</td>
+      <td>Middle Tennessee</td>
+      <td>Sun Belt</td>
+      <td>5-7</td>
+      <td>0.42</td>
+      <td>8.50</td>
+      <td>-2.08</td>
+      <td>9.0</td>
+      <td>5.38</td>
+      <td>-0.38</td>
     </tr>
     <tr>
       <th>82</th>
-      <td>Florida International</td>
-      <td>Sun Belt</td>
-      <td>4-5</td>
-      <td>0.44</td>
-      <td>31.97</td>
+      <td>UTEP</td>
+      <td>Conference USA</td>
+      <td>5-7</td>
+      <td>0.42</td>
+      <td>8.30</td>
+      <td>-4.08</td>
+      <td>12.0</td>
+      <td>5.17</td>
+      <td>-0.17</td>
     </tr>
     <tr>
       <th>83</th>
-      <td>Duke</td>
+      <td>Virginia</td>
       <td>ACC</td>
-      <td>4-6</td>
-      <td>0.40</td>
-      <td>31.77</td>
+      <td>5-7</td>
+      <td>0.42</td>
+      <td>8.20</td>
+      <td>-5.58</td>
+      <td>13.0</td>
+      <td>3.97</td>
+      <td>1.03</td>
     </tr>
     <tr>
       <th>84</th>
-      <td>Arizona State</td>
-      <td>Pac-10</td>
-      <td>4-6</td>
-      <td>0.40</td>
-      <td>31.56</td>
+      <td>Florida International</td>
+      <td>Sun Belt</td>
+      <td>5-7</td>
+      <td>0.42</td>
+      <td>8.18</td>
+      <td>-3.67</td>
+      <td>10.0</td>
+      <td>5.02</td>
+      <td>-0.02</td>
     </tr>
     <tr>
       <th>85</th>
-      <td>NC State</td>
-      <td>ACC</td>
-      <td>4-6</td>
-      <td>0.40</td>
-      <td>31.28</td>
+      <td>Louisville</td>
+      <td>Big East</td>
+      <td>5-7</td>
+      <td>0.42</td>
+      <td>8.17</td>
+      <td>-5.17</td>
+      <td>11.0</td>
+      <td>4.67</td>
+      <td>0.33</td>
     </tr>
     <tr>
       <th>86</th>
-      <td>Baylor</td>
-      <td>Big 12</td>
-      <td>4-7</td>
-      <td>0.36</td>
-      <td>31.01</td>
+      <td>UNLV</td>
+      <td>Mountain West</td>
+      <td>5-7</td>
+      <td>0.42</td>
+      <td>7.92</td>
+      <td>-7.00</td>
+      <td>11.0</td>
+      <td>4.33</td>
+      <td>0.67</td>
     </tr>
     <tr>
       <th>87</th>
-      <td>Kansas State</td>
-      <td>Big 12</td>
-      <td>4-7</td>
-      <td>0.36</td>
-      <td>30.44</td>
+      <td>Arkansas</td>
+      <td>SEC</td>
+      <td>5-7</td>
+      <td>0.42</td>
+      <td>7.85</td>
+      <td>-9.25</td>
+      <td>14.0</td>
+      <td>3.63</td>
+      <td>1.37</td>
     </tr>
     <tr>
       <th>88</th>
-      <td>UCLA</td>
-      <td>Pac-10</td>
-      <td>4-6</td>
-      <td>0.40</td>
-      <td>30.39</td>
+      <td>Colorado</td>
+      <td>Big 12</td>
+      <td>5-7</td>
+      <td>0.42</td>
+      <td>7.77</td>
+      <td>-9.08</td>
+      <td>12.0</td>
+      <td>3.51</td>
+      <td>1.49</td>
     </tr>
     <tr>
       <th>89</th>
-      <td>Middle Tennessee</td>
-      <td>Sun Belt</td>
-      <td>4-6</td>
-      <td>0.40</td>
-      <td>30.00</td>
+      <td>Purdue</td>
+      <td>Big Ten</td>
+      <td>4-8</td>
+      <td>0.33</td>
+      <td>7.32</td>
+      <td>-0.42</td>
+      <td>13.0</td>
+      <td>5.88</td>
+      <td>-1.88</td>
     </tr>
     <tr>
       <th>90</th>
+      <td>Baylor</td>
+      <td>Big 12</td>
+      <td>4-8</td>
+      <td>0.33</td>
+      <td>6.93</td>
+      <td>-1.33</td>
+      <td>13.0</td>
+      <td>5.67</td>
+      <td>-1.67</td>
+    </tr>
+    <tr>
+      <th>91</th>
       <td>New Mexico</td>
       <td>Mountain West</td>
       <td>4-8</td>
       <td>0.33</td>
-      <td>29.94</td>
-    </tr>
-    <tr>
-      <th>91</th>
-      <td>Marshall</td>
-      <td>Conference USA</td>
-      <td>4-6</td>
-      <td>0.40</td>
-      <td>29.22</td>
+      <td>6.80</td>
+      <td>-1.67</td>
+      <td>13.0</td>
+      <td>5.46</td>
+      <td>-1.46</td>
     </tr>
     <tr>
       <th>92</th>
-      <td>Texas A&M</td>
-      <td>Big 12</td>
-      <td>4-7</td>
-      <td>0.36</td>
-      <td>28.86</td>
+      <td>Duke</td>
+      <td>ACC</td>
+      <td>4-8</td>
+      <td>0.33</td>
+      <td>6.40</td>
+      <td>-3.33</td>
+      <td>12.0</td>
+      <td>4.92</td>
+      <td>-0.92</td>
     </tr>
     <tr>
       <th>93</th>
-      <td>Tennessee</td>
-      <td>SEC</td>
-      <td>3-7</td>
-      <td>0.30</td>
-      <td>28.30</td>
+      <td>Ohio</td>
+      <td>Mid-American</td>
+      <td>4-8</td>
+      <td>0.33</td>
+      <td>6.31</td>
+      <td>-3.17</td>
+      <td>10.0</td>
+      <td>5.13</td>
+      <td>-1.13</td>
     </tr>
     <tr>
       <th>94</th>
-      <td>Temple</td>
-      <td>Mid-American</td>
-      <td>3-7</td>
-      <td>0.30</td>
-      <td>27.12</td>
+      <td>Marshall</td>
+      <td>Conference USA</td>
+      <td>4-8</td>
+      <td>0.33</td>
+      <td>5.89</td>
+      <td>-7.17</td>
+      <td>12.0</td>
+      <td>3.95</td>
+      <td>0.05</td>
     </tr>
     <tr>
       <th>95</th>
-      <td>Purdue</td>
-      <td>Big Ten</td>
-      <td>3-8</td>
-      <td>0.27</td>
-      <td>26.54</td>
+      <td>Kent State</td>
+      <td>Mid-American</td>
+      <td>4-8</td>
+      <td>0.33</td>
+      <td>5.87</td>
+      <td>-6.00</td>
+      <td>9.0</td>
+      <td>4.54</td>
+      <td>-0.54</td>
     </tr>
     <tr>
       <th>96</th>
-      <td>Michigan</td>
-      <td>Big Ten</td>
-      <td>3-8</td>
-      <td>0.27</td>
-      <td>26.02</td>
+      <td>UCF</td>
+      <td>Conference USA</td>
+      <td>4-8</td>
+      <td>0.33</td>
+      <td>5.75</td>
+      <td>-7.50</td>
+      <td>10.0</td>
+      <td>3.51</td>
+      <td>0.49</td>
     </tr>
     <tr>
       <th>97</th>
-      <td>Wyoming</td>
-      <td>Mountain West</td>
-      <td>4-7</td>
-      <td>0.36</td>
-      <td>25.78</td>
+      <td>Mississippi State</td>
+      <td>SEC</td>
+      <td>4-8</td>
+      <td>0.33</td>
+      <td>5.67</td>
+      <td>-9.42</td>
+      <td>12.0</td>
+      <td>2.91</td>
+      <td>1.09</td>
     </tr>
     <tr>
       <th>98</th>
-      <td>Mississippi State</td>
-      <td>SEC</td>
-      <td>3-7</td>
-      <td>0.30</td>
-      <td>25.47</td>
+      <td>UAB</td>
+      <td>Conference USA</td>
+      <td>4-8</td>
+      <td>0.33</td>
+      <td>5.64</td>
+      <td>-8.50</td>
+      <td>9.0</td>
+      <td>3.84</td>
+      <td>0.16</td>
     </tr>
     <tr>
       <th>99</th>
-      <td>Indiana</td>
-      <td>Big Ten</td>
-      <td>3-8</td>
-      <td>0.27</td>
-      <td>24.58</td>
+      <td>UL Monroe</td>
+      <td>Sun Belt</td>
+      <td>4-8</td>
+      <td>0.33</td>
+      <td>5.64</td>
+      <td>-7.50</td>
+      <td>8.0</td>
+      <td>4.11</td>
+      <td>-0.11</td>
     </tr>
     <tr>
       <th>100</th>
-      <td>UCF</td>
-      <td>Conference USA</td>
-      <td>3-7</td>
-      <td>0.30</td>
-      <td>24.53</td>
+      <td>UCLA</td>
+      <td>Pac-10</td>
+      <td>4-8</td>
+      <td>0.33</td>
+      <td>5.60</td>
+      <td>-11.33</td>
+      <td>13.0</td>
+      <td>2.83</td>
+      <td>1.17</td>
     </tr>
     <tr>
       <th>101</th>
-      <td>Army</td>
-      <td>FBS Independents</td>
-      <td>3-7</td>
-      <td>0.30</td>
-      <td>24.18</td>
+      <td>Texas A&M</td>
+      <td>Big 12</td>
+      <td>4-8</td>
+      <td>0.33</td>
+      <td>5.53</td>
+      <td>-12.42</td>
+      <td>13.0</td>
+      <td>3.33</td>
+      <td>0.67</td>
     </tr>
     <tr>
       <th>102</th>
-      <td>Kent State</td>
-      <td>Mid-American</td>
-      <td>3-7</td>
-      <td>0.30</td>
-      <td>23.90</td>
+      <td>Wyoming</td>
+      <td>Mountain West</td>
+      <td>4-8</td>
+      <td>0.33</td>
+      <td>5.28</td>
+      <td>-15.08</td>
+      <td>11.0</td>
+      <td>1.62</td>
+      <td>2.38</td>
     </tr>
     <tr>
       <th>103</th>
-      <td>New Mexico State</td>
-      <td>Western Athletic</td>
-      <td>3-7</td>
-      <td>0.30</td>
-      <td>23.86</td>
+      <td>Michigan</td>
+      <td>Big Ten</td>
+      <td>3-9</td>
+      <td>0.25</td>
+      <td>3.98</td>
+      <td>-8.67</td>
+      <td>14.0</td>
+      <td>3.61</td>
+      <td>-0.61</td>
     </tr>
     <tr>
       <th>104</th>
-      <td>UAB</td>
-      <td>Conference USA</td>
-      <td>3-7</td>
-      <td>0.30</td>
-      <td>22.74</td>
+      <td>Toledo</td>
+      <td>Mid-American</td>
+      <td>3-9</td>
+      <td>0.25</td>
+      <td>3.87</td>
+      <td>-9.00</td>
+      <td>11.0</td>
+      <td>3.72</td>
+      <td>-0.72</td>
     </tr>
     <tr>
       <th>105</th>
-      <td>Toledo</td>
-      <td>Mid-American</td>
-      <td>2-8</td>
-      <td>0.20</td>
-      <td>21.01</td>
+      <td>Army</td>
+      <td>FBS Independents</td>
+      <td>3-9</td>
+      <td>0.25</td>
+      <td>3.83</td>
+      <td>-8.92</td>
+      <td>9.0</td>
+      <td>2.95</td>
+      <td>0.05</td>
     </tr>
     <tr>
       <th>106</th>
-      <td>Louisiana Monroe</td>
-      <td>Sun Belt</td>
-      <td>3-8</td>
-      <td>0.27</td>
-      <td>20.68</td>
+      <td>Utah State</td>
+      <td>Western Athletic</td>
+      <td>3-9</td>
+      <td>0.25</td>
+      <td>3.81</td>
+      <td>-10.67</td>
+      <td>14.0</td>
+      <td>3.54</td>
+      <td>-0.54</td>
     </tr>
     <tr>
       <th>107</th>
-      <td>Ohio</td>
+      <td>Eastern Michigan</td>
       <td>Mid-American</td>
-      <td>2-8</td>
-      <td>0.20</td>
-      <td>20.18</td>
+      <td>3-9</td>
+      <td>0.25</td>
+      <td>3.79</td>
+      <td>-9.83</td>
+      <td>11.0</td>
+      <td>3.81</td>
+      <td>-0.81</td>
     </tr>
     <tr>
       <th>108</th>
-      <td>Syracuse</td>
-      <td>Big East</td>
-      <td>2-8</td>
-      <td>0.20</td>
-      <td>19.67</td>
+      <td>New Mexico State</td>
+      <td>Western Athletic</td>
+      <td>3-9</td>
+      <td>0.25</td>
+      <td>3.61</td>
+      <td>-11.92</td>
+      <td>10.0</td>
+      <td>3.18</td>
+      <td>-0.18</td>
     </tr>
     <tr>
       <th>109</th>
-      <td>Utah State</td>
-      <td>Western Athletic</td>
-      <td>2-9</td>
-      <td>0.18</td>
-      <td>19.52</td>
+      <td>Syracuse</td>
+      <td>Big East</td>
+      <td>3-9</td>
+      <td>0.25</td>
+      <td>3.58</td>
+      <td>-14.58</td>
+      <td>14.0</td>
+      <td>2.37</td>
+      <td>0.63</td>
     </tr>
     <tr>
       <th>110</th>
-      <td>Eastern Michigan</td>
-      <td>Mid-American</td>
-      <td>2-8</td>
-      <td>0.20</td>
-      <td>19.31</td>
+      <td>Indiana</td>
+      <td>Big Ten</td>
+      <td>3-9</td>
+      <td>0.25</td>
+      <td>3.55</td>
+      <td>-14.75</td>
+      <td>13.0</td>
+      <td>2.60</td>
+      <td>0.40</td>
     </tr>
     <tr>
       <th>111</th>
-      <td>Tulane</td>
-      <td>Conference USA</td>
-      <td>2-8</td>
-      <td>0.20</td>
-      <td>18.86</td>
+      <td>Western Kentucky</td>
+      <td>FBS Independents</td>
+      <td>2-10</td>
+      <td>0.17</td>
+      <td>1.96</td>
+      <td>-9.67</td>
+      <td>9.0</td>
+      <td>3.13</td>
+      <td>-1.13</td>
     </tr>
     <tr>
       <th>112</th>
-      <td>Miami (OH)</td>
-      <td>Mid-American</td>
-      <td>2-8</td>
-      <td>0.20</td>
-      <td>18.29</td>
+      <td>Iowa State</td>
+      <td>Big 12</td>
+      <td>2-10</td>
+      <td>0.17</td>
+      <td>1.92</td>
+      <td>-10.50</td>
+      <td>10.0</td>
+      <td>3.66</td>
+      <td>-1.66</td>
     </tr>
     <tr>
       <th>113</th>
-      <td>Iowa State</td>
-      <td>Big 12</td>
-      <td>2-9</td>
-      <td>0.18</td>
-      <td>18.04</td>
+      <td>Miami (OH)</td>
+      <td>Mid-American</td>
+      <td>2-10</td>
+      <td>0.17</td>
+      <td>1.69</td>
+      <td>-14.25</td>
+      <td>10.0</td>
+      <td>2.45</td>
+      <td>-0.45</td>
     </tr>
     <tr>
       <th>114</th>
-      <td>Western Kentucky</td>
-      <td>FBS Independents</td>
-      <td>2-9</td>
+      <td>Tulane</td>
+      <td>Conference USA</td>
+      <td>2-10</td>
+      <td>0.17</td>
+      <td>1.56</td>
+      <td>-17.83</td>
+      <td>12.0</td>
+      <td>1.82</td>
       <td>0.18</td>
-      <td>17.27</td>
     </tr>
     <tr>
       <th>115</th>
-      <td>Idaho</td>
-      <td>Western Athletic</td>
-      <td>2-9</td>
-      <td>0.18</td>
-      <td>14.63</td>
+      <td>San Diego State</td>
+      <td>Mountain West</td>
+      <td>2-10</td>
+      <td>0.17</td>
+      <td>1.53</td>
+      <td>-17.92</td>
+      <td>10.0</td>
+      <td>2.09</td>
+      <td>-0.09</td>
     </tr>
     <tr>
       <th>116</th>
-      <td>SMU</td>
-      <td>Conference USA</td>
-      <td>1-10</td>
-      <td>0.09</td>
-      <td>12.86</td>
+      <td>Idaho</td>
+      <td>Western Athletic</td>
+      <td>2-10</td>
+      <td>0.17</td>
+      <td>1.33</td>
+      <td>-23.17</td>
+      <td>10.0</td>
+      <td>1.63</td>
+      <td>0.37</td>
     </tr>
     <tr>
       <th>117</th>
-      <td>San Diego State</td>
-      <td>Mountain West</td>
-      <td>1-10</td>
-      <td>0.09</td>
-      <td>11.51</td>
+      <td>Washington State</td>
+      <td>Pac-10</td>
+      <td>2-11</td>
+      <td>0.15</td>
+      <td>0.67</td>
+      <td>-31.15</td>
+      <td>11.0</td>
+      <td>0.65</td>
+      <td>1.35</td>
     </tr>
     <tr>
       <th>118</th>
-      <td>North Texas</td>
-      <td>Sun Belt</td>
-      <td>1-9</td>
-      <td>0.10</td>
-      <td>10.35</td>
+      <td>SMU</td>
+      <td>Conference USA</td>
+      <td>1-11</td>
+      <td>0.08</td>
+      <td>-0.46</td>
+      <td>-16.83</td>
+      <td>12.0</td>
+      <td>2.41</td>
+      <td>-1.41</td>
     </tr>
     <tr>
       <th>119</th>
-      <td>Washington</td>
-      <td>Pac-10</td>
-      <td>0-10</td>
-      <td>0.00</td>
-      <td>9.13</td>
+      <td>North Texas</td>
+      <td>Sun Belt</td>
+      <td>1-11</td>
+      <td>0.08</td>
+      <td>-0.83</td>
+      <td>-27.58</td>
+      <td>11.0</td>
+      <td>1.36</td>
+      <td>-0.36</td>
     </tr>
     <tr>
       <th>120</th>
-      <td>Washington State</td>
+      <td>Washington</td>
       <td>Pac-10</td>
-      <td>1-10</td>
-      <td>0.09</td>
-      <td>8.58</td>
+      <td>0-12</td>
+      <td>0.00</td>
+      <td>-2.65</td>
+      <td>-25.33</td>
+      <td>15.0</td>
+      <td>0.88</td>
+      <td>-0.88</td>
     </tr>
   </tbody>
 </table>

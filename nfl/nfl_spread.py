@@ -13,7 +13,7 @@ def nfl_spread_prediction(home_team, away_team, venue):
     simulation_counter = 0  # counter
     spread_counter = 0  # counts up spread
 
-    # print(f"{home_team} vs. {away_team}")
+    # #print(f"{home_team} vs. {away_team}")
     while simulation_counter < SIMULATION_RUNS:
         home_rat = nfl_teams.nfl_teams[home_team]
         away_rat = nfl_teams.nfl_teams[away_team]
@@ -37,24 +37,24 @@ def nfl_spread_prediction(home_team, away_team, venue):
         # rat_spread = rat_spread
         # spread_counter += int(rat_spread)
 
-        # print(f"{home_team} {home_rat} {away_team} {away_rat} {rat_spread}")
-        # print(f"{home_team} expected points: {t1_points}")
-        # print(f"{away_team} expected points: {t2_points}")
+        # #print(f"{home_team} {home_rat} {away_team} {away_rat} {rat_spread}")
+        # #print(f"{home_team} expected points: {t1_points}")
+        # #print(f"{away_team} expected points: {t2_points}")
         # if t1_points >= t2_points:
-        # print(f"Expected score: {home_team} {t1_points} - {away_team} {t2_points}")
+        # #print(f"Expected score: {home_team} {t1_points} - {away_team} {t2_points}")
         # else:
-        # print(f"Expected score: {away_team} {t2_points} - {home_team} {t1_points}")
-        # print(f"Expected score: {home_team} {t1_points} - {away_team} {t2_points}")
+        # #print(f"Expected score: {away_team} {t2_points} - {home_team} {t1_points}")
+        # #print(f"Expected score: {home_team} {t1_points} - {away_team} {t2_points}")
 
         simulation_counter += 1
 
     avg_spread = round((spread_counter / SIMULATION_RUNS), 1)
-    # print(avg_spread)
+    # #print(avg_spread)
     if avg_spread > 0.0:
         avg_spread = "+" + str(avg_spread)
     elif avg_spread == 0.0:
         avg_spread = "PUSH"
-    print(f"{home_team} vs. {away_team} ({avg_spread})")
+    #print(f"{home_team} vs. {away_team} ({avg_spread})")
 
 
 nfl_spread_prediction("Seahawks", "Bills", "Home")

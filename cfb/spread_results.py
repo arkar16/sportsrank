@@ -29,7 +29,7 @@ def calculate_spread_result(predicted_spread_str, actual_home_score, actual_away
         return ats_correct, su_correct
         
     except Exception as e:
-        print(f"Error in calculate_spread_result: {e}")
+        #print(f"Error in calculate_spread_result: {e}")
         return None, None
 
 def analyze_last_week_spreads(year, week, division, weekly_results, timestamp):
@@ -41,13 +41,13 @@ def analyze_last_week_spreads(year, week, division, weekly_results, timestamp):
     
     # Skip if trying to analyze week 0 results
     if last_week == 0:
-        print("Skipping spread analysis for week 0")
+        #print("Skipping spread analysis for week 0")
         return
     
     try:
         spread_dir = f"{year}/spread"
         os.chdir(spread_dir)
-        print(f"\nAnalyzing spreads for {year} Week {last_week}")
+        #print(f"\nAnalyzing spreads for {year} Week {last_week}")
         
         # Read last week's spread predictions
         spread_file = f"{year}_W{last_week}_{division}_spread.html"
@@ -140,13 +140,13 @@ def analyze_last_week_spreads(year, week, division, weekly_results, timestamp):
         
         # Save results in the spread directory
         results_file = f"{year}_W{last_week}_{division}_spread_results.html"
-        print(f"\nSaving results to: {results_file}")
+        #print(f"\nSaving results to: {results_file}")
         with open(results_file, "w") as f:
             f.write(html_content)
             
-        print(f"Spread results analysis complete for Week {last_week}")
-        print(f"Week {last_week} ATS Accuracy: {ats_accuracy:.1f}%")
-        print(f"Week {last_week} SU Accuracy: {su_accuracy:.1f}%")
+        #print(f"Spread results analysis complete for Week {last_week}")
+        #print(f"Week {last_week} ATS Accuracy: {ats_accuracy:.1f}%")
+        #print(f"Week {last_week} SU Accuracy: {su_accuracy:.1f}%")
         
         # Append results to spread_results file
         os.chdir(config.owd)
@@ -157,7 +157,7 @@ def analyze_last_week_spreads(year, week, division, weekly_results, timestamp):
     except Exception as e:
         print(f"Error analyzing spreads: {str(e)}")
         print(f"No spreads to analyse for {year} Week {last_week}")
-        #raise  # Re-raise to see full traceback
+        raise  # Re-raise to see full traceback
     finally:
         os.chdir(config.owd)
 

@@ -65,4 +65,4 @@ def create_database():
 
 if __name__ == "__main__":
     create_database()
-    print("Database schema created successfully!")
+    #print("Database schema created successfully!")

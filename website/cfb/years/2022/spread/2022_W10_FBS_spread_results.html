@@ -1,0 +1,703 @@
+
+        <html>
+        <head>
+        <title>CORS v0.4.0 - 2022 W10 Spread Results - FBS</title>
+        </head>
+        <body>
+        <h1>CORS v0.4.0 - 2022 W10 Spread Results - FBS</h1>
+        <h2>Summary</h2>
+        <p>Total Games: 60</p>
+        <p>Against The Spread:</p>
+        <ul>
+            <li>Correct Predictions: 26</li>
+            <li>Accuracy: 43.3%</li>
+        </ul>
+        <p>Straight Up:</p>
+        <ul>
+            <li>Correct Predictions: 43</li>
+            <li>Accuracy: 71.7%</li>
+        </ul>
+        <hr>
+        <h2>Results</h2>
+        <table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>home_team</th>
+      <th>away_team</th>
+      <th>neutral_site_x</th>
+      <th>spread</th>
+      <th>home_score</th>
+      <th>away_score</th>
+      <th>neutral_site_y</th>
+      <th>ats_correct</th>
+      <th>su_correct</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Kent State</td>
+      <td>Ball State</td>
+      <td>False</td>
+      <td>Kent State +0.5</td>
+      <td>20</td>
+      <td>27</td>
+      <td>False</td>
+      <td>False</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Ohio</td>
+      <td>Buffalo</td>
+      <td>False</td>
+      <td>Ohio +1.0</td>
+      <td>45</td>
+      <td>24</td>
+      <td>False</td>
+      <td>True</td>
+      <td>False</td>
+    </tr>
+    <tr>
+      <td>Bowling Green</td>
+      <td>Western Michigan</td>
+      <td>False</td>
+      <td>Bowling Green -4.5</td>
+      <td>13</td>
+      <td>9</td>
+      <td>False</td>
+      <td>False</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Northern Illinois</td>
+      <td>Central Michigan</td>
+      <td>False</td>
+      <td>Northern Illinois -2.5</td>
+      <td>22</td>
+      <td>35</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+    </tr>
+    <tr>
+      <td>Rice</td>
+      <td>UTEP</td>
+      <td>False</td>
+      <td>Rice -3.5</td>
+      <td>37</td>
+      <td>30</td>
+      <td>False</td>
+      <td>True</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Coastal Carolina</td>
+      <td>App State</td>
+      <td>False</td>
+      <td>Coastal Carolina -7.5</td>
+      <td>35</td>
+      <td>28</td>
+      <td>False</td>
+      <td>False</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>UConn</td>
+      <td>Massachusetts</td>
+      <td>False</td>
+      <td>UConn -10.0</td>
+      <td>27</td>
+      <td>10</td>
+      <td>False</td>
+      <td>True</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Boston College</td>
+      <td>Duke</td>
+      <td>False</td>
+      <td>Boston College +10.0</td>
+      <td>31</td>
+      <td>38</td>
+      <td>False</td>
+      <td>True</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Washington</td>
+      <td>Oregon State</td>
+      <td>False</td>
+      <td>Washington -2.0</td>
+      <td>24</td>
+      <td>21</td>
+      <td>False</td>
+      <td>True</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Army</td>
+      <td>Air Force</td>
+      <td>True</td>
+      <td>Army +5.0</td>
+      <td>7</td>
+      <td>13</td>
+      <td>True</td>
+      <td>False</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Charlotte</td>
+      <td>Western Kentucky</td>
+      <td>False</td>
+      <td>Charlotte +10.0</td>
+      <td>7</td>
+      <td>59</td>
+      <td>False</td>
+      <td>False</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Virginia</td>
+      <td>North Carolina</td>
+      <td>False</td>
+      <td>Virginia +12.5</td>
+      <td>28</td>
+      <td>31</td>
+      <td>False</td>
+      <td>True</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>TCU</td>
+      <td>Texas Tech</td>
+      <td>False</td>
+      <td>TCU -14.0</td>
+      <td>34</td>
+      <td>24</td>
+      <td>False</td>
+      <td>False</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Purdue</td>
+      <td>Iowa</td>
+      <td>False</td>
+      <td>Purdue -6.5</td>
+      <td>3</td>
+      <td>24</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+    </tr>
+    <tr>
+      <td>Tulsa</td>
+      <td>Tulane</td>
+      <td>False</td>
+      <td>Tulsa +12.5</td>
+      <td>13</td>
+      <td>27</td>
+      <td>False</td>
+      <td>False</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Missouri</td>
+      <td>Kentucky</td>
+      <td>False</td>
+      <td>Missouri +1.5</td>
+      <td>17</td>
+      <td>21</td>
+      <td>False</td>
+      <td>False</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Northwestern</td>
+      <td>Ohio State</td>
+      <td>False</td>
+      <td>Northwestern +23.5</td>
+      <td>7</td>
+      <td>21</td>
+      <td>False</td>
+      <td>True</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Nebraska</td>
+      <td>Minnesota</td>
+      <td>False</td>
+      <td>Nebraska +7.0</td>
+      <td>13</td>
+      <td>20</td>
+      <td>False</td>
+      <td>False</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Wisconsin</td>
+      <td>Maryland</td>
+      <td>False</td>
+      <td>Wisconsin +4.0</td>
+      <td>23</td>
+      <td>10</td>
+      <td>False</td>
+      <td>True</td>
+      <td>False</td>
+    </tr>
+    <tr>
+      <td>Texas A&amp;M</td>
+      <td>Florida</td>
+      <td>False</td>
+      <td>Texas A&amp;M +0.5</td>
+      <td>24</td>
+      <td>41</td>
+      <td>False</td>
+      <td>False</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Virginia Tech</td>
+      <td>Georgia Tech</td>
+      <td>False</td>
+      <td>Virginia Tech +0.5</td>
+      <td>27</td>
+      <td>28</td>
+      <td>False</td>
+      <td>False</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Temple</td>
+      <td>South Florida</td>
+      <td>False</td>
+      <td>Temple -5.0</td>
+      <td>54</td>
+      <td>28</td>
+      <td>False</td>
+      <td>True</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Old Dominion</td>
+      <td>Marshall</td>
+      <td>False</td>
+      <td>Old Dominion +3.0</td>
+      <td>0</td>
+      <td>12</td>
+      <td>False</td>
+      <td>False</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Southern Miss</td>
+      <td>Georgia State</td>
+      <td>False</td>
+      <td>Southern Miss -10.0</td>
+      <td>14</td>
+      <td>42</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+    </tr>
+    <tr>
+      <td>Oklahoma</td>
+      <td>Baylor</td>
+      <td>False</td>
+      <td>Oklahoma -1.5</td>
+      <td>35</td>
+      <td>38</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+    </tr>
+    <tr>
+      <td>Louisiana Tech</td>
+      <td>Middle Tennessee</td>
+      <td>False</td>
+      <td>Louisiana Tech +4.5</td>
+      <td>40</td>
+      <td>24</td>
+      <td>False</td>
+      <td>True</td>
+      <td>False</td>
+    </tr>
+    <tr>
+      <td>Memphis</td>
+      <td>UCF</td>
+      <td>False</td>
+      <td>Memphis +4.5</td>
+      <td>28</td>
+      <td>35</td>
+      <td>False</td>
+      <td>False</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>UAB</td>
+      <td>UTSA</td>
+      <td>False</td>
+      <td>UAB +3.0</td>
+      <td>38</td>
+      <td>44</td>
+      <td>False</td>
+      <td>False</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Georgia</td>
+      <td>Tennessee</td>
+      <td>False</td>
+      <td>Georgia -1.5</td>
+      <td>27</td>
+      <td>13</td>
+      <td>False</td>
+      <td>True</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Kansas</td>
+      <td>Oklahoma State</td>
+      <td>False</td>
+      <td>Kansas +1.0</td>
+      <td>37</td>
+      <td>16</td>
+      <td>False</td>
+      <td>True</td>
+      <td>False</td>
+    </tr>
+    <tr>
+      <td>Stanford</td>
+      <td>Washington State</td>
+      <td>False</td>
+      <td>Stanford +3.5</td>
+      <td>14</td>
+      <td>52</td>
+      <td>False</td>
+      <td>False</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Iowa State</td>
+      <td>West Virginia</td>
+      <td>False</td>
+      <td>Iowa State -3.5</td>
+      <td>31</td>
+      <td>14</td>
+      <td>False</td>
+      <td>True</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Illinois</td>
+      <td>Michigan State</td>
+      <td>False</td>
+      <td>Illinois -16.0</td>
+      <td>15</td>
+      <td>23</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+    </tr>
+    <tr>
+      <td>Colorado</td>
+      <td>Oregon</td>
+      <td>False</td>
+      <td>Colorado +20.5</td>
+      <td>10</td>
+      <td>49</td>
+      <td>False</td>
+      <td>False</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Indiana</td>
+      <td>Penn State</td>
+      <td>False</td>
+      <td>Indiana +10.5</td>
+      <td>14</td>
+      <td>45</td>
+      <td>False</td>
+      <td>False</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Utah State</td>
+      <td>New Mexico</td>
+      <td>False</td>
+      <td>Utah State -4.5</td>
+      <td>27</td>
+      <td>10</td>
+      <td>False</td>
+      <td>True</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Pittsburgh</td>
+      <td>Syracuse</td>
+      <td>False</td>
+      <td>Pittsburgh +5.0</td>
+      <td>19</td>
+      <td>9</td>
+      <td>False</td>
+      <td>True</td>
+      <td>False</td>
+    </tr>
+    <tr>
+      <td>Georgia Southern</td>
+      <td>South Alabama</td>
+      <td>False</td>
+      <td>Georgia Southern +1.0</td>
+      <td>31</td>
+      <td>38</td>
+      <td>False</td>
+      <td>False</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Cincinnati</td>
+      <td>Navy</td>
+      <td>False</td>
+      <td>Cincinnati -13.5</td>
+      <td>20</td>
+      <td>10</td>
+      <td>False</td>
+      <td>False</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>North Texas</td>
+      <td>Florida International</td>
+      <td>False</td>
+      <td>North Texas -7.0</td>
+      <td>52</td>
+      <td>14</td>
+      <td>False</td>
+      <td>True</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Arkansas</td>
+      <td>Liberty</td>
+      <td>False</td>
+      <td>Arkansas +4.5</td>
+      <td>19</td>
+      <td>21</td>
+      <td>False</td>
+      <td>True</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>UL Monroe</td>
+      <td>Texas State</td>
+      <td>False</td>
+      <td>UL Monroe +2.0</td>
+      <td>31</td>
+      <td>30</td>
+      <td>False</td>
+      <td>True</td>
+      <td>False</td>
+    </tr>
+    <tr>
+      <td>Louisiana</td>
+      <td>Troy</td>
+      <td>False</td>
+      <td>Louisiana +4.0</td>
+      <td>17</td>
+      <td>23</td>
+      <td>False</td>
+      <td>False</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Kansas State</td>
+      <td>Texas</td>
+      <td>False</td>
+      <td>Kansas State -5.0</td>
+      <td>27</td>
+      <td>34</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+    </tr>
+    <tr>
+      <td>San Diego State</td>
+      <td>UNLV</td>
+      <td>False</td>
+      <td>San Diego State -2.0</td>
+      <td>14</td>
+      <td>10</td>
+      <td>False</td>
+      <td>True</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>LSU</td>
+      <td>Alabama</td>
+      <td>False</td>
+      <td>LSU +1.5</td>
+      <td>32</td>
+      <td>31</td>
+      <td>False</td>
+      <td>True</td>
+      <td>False</td>
+    </tr>
+    <tr>
+      <td>Boise State</td>
+      <td>BYU</td>
+      <td>False</td>
+      <td>Boise State -11.0</td>
+      <td>28</td>
+      <td>31</td>
+      <td>False</td>
+      <td>False</td>
+      <td>False</td>
+    </tr>
+    <tr>
+      <td>SMU</td>
+      <td>Houston</td>
+      <td>False</td>
+      <td>SMU +0.5</td>
+      <td>77</td>
+      <td>63</td>
+      <td>False</td>
+      <td>True</td>
+      <td>False</td>
+    </tr>
+    <tr>
+      <td>Vanderbilt</td>
+      <td>South Carolina</td>
+      <td>False</td>
+      <td>Vanderbilt +7.0</td>
+      <td>27</td>
+      <td>38</td>
+      <td>False</td>
+      <td>False</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Utah</td>
+      <td>Arizona</td>
+      <td>False</td>
+      <td>Utah -14.5</td>
+      <td>45</td>
+      <td>20</td>
+      <td>False</td>
+      <td>True</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Mississippi State</td>
+      <td>Auburn</td>
+      <td>False</td>
+      <td>Mississippi State -11.5</td>
+      <td>39</td>
+      <td>33</td>
+      <td>False</td>
+      <td>False</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Louisville</td>
+      <td>James Madison</td>
+      <td>False</td>
+      <td>Louisville +0.0</td>
+      <td>34</td>
+      <td>10</td>
+      <td>False</td>
+      <td>True</td>
+      <td>False</td>
+    </tr>
+    <tr>
+      <td>Rutgers</td>
+      <td>Michigan</td>
+      <td>False</td>
+      <td>Rutgers +13.5</td>
+      <td>17</td>
+      <td>52</td>
+      <td>False</td>
+      <td>False</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Notre Dame</td>
+      <td>Clemson</td>
+      <td>False</td>
+      <td>Notre Dame +7.0</td>
+      <td>35</td>
+      <td>14</td>
+      <td>False</td>
+      <td>True</td>
+      <td>False</td>
+    </tr>
+    <tr>
+      <td>Miami</td>
+      <td>Florida State</td>
+      <td>False</td>
+      <td>Miami +2.0</td>
+      <td>3</td>
+      <td>45</td>
+      <td>False</td>
+      <td>False</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>NC State</td>
+      <td>Wake Forest</td>
+      <td>False</td>
+      <td>NC State -2.0</td>
+      <td>30</td>
+      <td>21</td>
+      <td>False</td>
+      <td>True</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Arizona State</td>
+      <td>UCLA</td>
+      <td>False</td>
+      <td>Arizona State +12.5</td>
+      <td>36</td>
+      <td>50</td>
+      <td>False</td>
+      <td>False</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>USC</td>
+      <td>California</td>
+      <td>False</td>
+      <td>USC -17.0</td>
+      <td>41</td>
+      <td>35</td>
+      <td>False</td>
+      <td>False</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>Fresno State</td>
+      <td>Hawai'i</td>
+      <td>False</td>
+      <td>Fresno State -11.5</td>
+      <td>55</td>
+      <td>13</td>
+      <td>False</td>
+      <td>True</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <td>San José State</td>
+      <td>Colorado State</td>
+      <td>False</td>
+      <td>San José State -16.5</td>
+      <td>28</td>
+      <td>16</td>
+      <td>False</td>
+      <td>False</td>
+      <td>True</td>
+    </tr>
+  </tbody>
+</table>
+        <hr>
+        Last updated: 2024-12-12 20:18:14
+        </body>
+        </html>
+        

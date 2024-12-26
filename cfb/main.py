@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 # CONSTANTS
 YEAR = 2024  # define current year (cannot be earlier than 1897)
-START_YEAR = 2000 # define start year
+START_YEAR = 2021 # define start year
 END_YEAR = 2023 # define end year
 WEEK = 10  # define current week
 START_WEEK = 0  # define start week
