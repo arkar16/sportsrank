@@ -11,11 +11,12 @@ from nc_wt_clean import process_rankings
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # CONSTANTS
-YEAR = 2024  # define current year (cannot be earlier than 1897)
+YEAR = 2025  # define current year (cannot be earlier than 1897)
 START_YEAR = 2021 # define start year
 END_YEAR = 2023 # define end year
-WEEK = 10  # define current week
+WEEK = 0  # define current week
 START_WEEK = 0  # define start week
+end_week = 15  # define end week (max 15)
 DIVISION = "FBS"  # define division (currently only supporting FBS)
 HFA = 2  # define HFA constant for spread
 BASE_CORS = 0
@@ -25,7 +26,7 @@ def get_current_year_and_week():
     current_year = current_date.year
     
     # Get dynamic end week for current year
-    end_week = get_end_week(current_year)
+    # end_week = get_end_week(current_year)
     
     # Assuming the season starts on the first Saturday of September
     season_start = datetime(current_year, 9, 1)
@@ -40,7 +41,7 @@ def get_current_year_and_week():
 def run_calculations(calc_type, year, week, start_week, division, hfa, base_cors, timestamp):
     try:
         # Get dynamic end week for the specified year
-        end_week = get_end_week(year)
+        # end_week = get_end_week(year)
         #print(f"{year} End Week: {end_week}")
         
         if calc_type == "single_week":
@@ -66,7 +67,11 @@ def main():
     else:
         calc_type = "single_week"  # Default to weekly calculation
         year, week = get_current_year_and_week()
-    
+
+    # if week == 0:
+        # Get dynamic end week for html_grab
+        # end_week = get_end_week(year)
+        # html_grab(year, year, START_WEEK, end_week, DIVISION, timestamp)
     if calc_type == "full_season":
         logging.info(f"Starting {calc_type} calculation for year {year}")
     elif calc_type == "single_week":
@@ -86,10 +91,7 @@ def main():
         except Exception as e:
             logging.error(f"Error during additional processes: {str(e)}")
     
-    if week == 0:
-        # Get dynamic end week for html_grab
-        end_week = get_end_week(year)
-        html_grab(year, year, START_WEEK, end_week, DIVISION, timestamp)
+
     
     logging.info(f"Process finished in {time.time() - start_time:.2f} seconds")
 
