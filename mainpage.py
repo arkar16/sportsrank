@@ -1,12 +1,13 @@
 import os
 import webconfig
 import time
+from pathlib import Path
 
 timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
 start_time = time.time()
 
 def mainpage(timestamp): 
-    os.chdir("/Users/aryak/Projects/sportsrank/website")
+    os.chdir(Path(__file__).resolve().parent / "website")
     title_html = "<html>\n"
     title_html += "<head>\n"
     title_html += f"<title>sportsrank - CORS {webconfig.cors_version}</title>\n"

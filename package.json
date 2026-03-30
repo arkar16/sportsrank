@@ -4,12 +4,14 @@
   "description": "a work in process",
   "main": "index.js",
   "scripts": {
-    "build": "",
+    "build": "vite build",
+    "build:client": "vite build",
     "serve": "firebase serve --only functions",
     "shell": "firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "test": "pytest"
   },
   "repository": {
     "type": "git",
@@ -20,5 +22,9 @@
   "bugs": {
     "url": "https://github.com/arkar16/sportsrank/issues"
   },
-  "homepage": "https://github.com/arkar16/sportsrank#readme"
+  "homepage": "https://github.com/arkar16/sportsrank#readme",
+  "devDependencies": {
+    "typescript": "^6.0.2",
+    "vite": "^8.0.3"
+  }
 }

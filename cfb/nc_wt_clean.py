@@ -1,8 +1,15 @@
 import pandas as pd
-from bs4 import BeautifulSoup
 import config
 import os
 import glob
+import polars as pl
+
+try:
+    from .rankings_pipeline import legacy_html_to_rankings_frame, normalize_rankings_frame
+    from .site_paths import YEARS_ROOT, ranking_cache_path
+except ImportError:  # pragma: no cover - supports running modules as scripts
+    from rankings_pipeline import legacy_html_to_rankings_frame, normalize_rankings_frame
+    from site_paths import YEARS_ROOT, ranking_cache_path
 
 def process_rankings(division, timestamp):
     """Process all FINAL rankings files to extract national champions and worst teams in one pass."""
@@ -14,25 +21,19 @@ def process_rankings(division, timestamp):
     wt_data = []
     
     # Get all FINAL rankings files
-    years_path = f"{config.owd}/website/cfb/years"
-    for year_dir in sorted(glob.glob(f"{years_path}/*/"), reverse=True):
+    for year_dir in sorted(glob.glob(str(YEARS_ROOT / "*/")), reverse=True):
         year = os.path.basename(os.path.dirname(year_dir))
         if not year.isdigit():
             continue
-            
-        final_ranking_file = f"{year_dir}/rankings/{year}_FINAL_{division}_cors.html"
-        if not os.path.exists(final_ranking_file):
-            continue
-            
-        with open(final_ranking_file) as f:
-            soup = BeautifulSoup(f, "html.parser")
-            
-        # Find the rankings table
-        tables = soup.find_all("table")
-        if not tables:
-            continue
-            
-        df = pd.read_html(str(tables[0]))[0]
+
+        cache_path = ranking_cache_path(int(year), division, "final")
+        if cache_path.exists():
+            df = normalize_rankings_frame(pl.read_parquet(cache_path)).to_pandas()
+        else:
+            final_ranking_file = f"{year_dir}/rankings/{year}_FINAL_{division}_cors.html"
+            if not os.path.exists(final_ranking_file):
+                continue
+            df = legacy_html_to_rankings_frame(final_ranking_file).to_pandas()
         
         if len(df) == 0:
             continue
