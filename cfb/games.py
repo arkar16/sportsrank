@@ -1,14 +1,20 @@
 import cfbd
-from api import api_key
 import pandas as pd
 import os
 import config
+from cfbd_client import classification_value, create_api_client, division_classification
 
-# Configure API key authorization: ApiKeyAuth
-configuration = cfbd.Configuration()
-configuration.api_key["Authorization"] = api_key
-configuration.api_key_prefix["Authorization"] = "Bearer"
-games_api_instance = cfbd.GamesApi(cfbd.ApiClient(configuration))
+
+def fetch_games(year, division, week=None):
+    filters = {
+        "year": year,
+        "classification": division_classification(division),
+    }
+    if week is not None:
+        filters["week"] = week
+
+    with create_api_client() as api_client:
+        return cfbd.GamesApi(api_client).get_games(**filters)
 
 def get_weekly_results(year, week, division, timestamp):
     # get original working directory
@@ -20,7 +26,7 @@ def get_weekly_results(year, week, division, timestamp):
     WEEK = week
     DIVISION = division
 
-    games = games_api_instance.get_games(year=YEAR, week=WEEK, division=DIVISION)
+    games = fetch_games(YEAR, DIVISION, WEEK)
     fbs_week_results = pd.DataFrame(
         columns=["week", "home_team", "home_division", "home_score", "away_team",
                  "away_division", "away_score", "neutral_site"]
@@ -30,10 +36,10 @@ def get_weekly_results(year, week, division, timestamp):
         week = game.week
         home = game.home_team
         h_score = game.home_points
-        h_division = game.home_division
+        h_division = classification_value(game.home_classification)
         away = game.away_team
         a_score = game.away_points
-        a_division = game.away_division
+        a_division = classification_value(game.away_classification)
         neutral = game.neutral_site
 
         # add games to dataframe
@@ -78,7 +84,7 @@ def get_results(year, division, timestamp):
     YEAR = year
     DIVISION = division
 
-    games = games_api_instance.get_games(year=YEAR, division=DIVISION)
+    games = fetch_games(YEAR, DIVISION)
     fbs_results = pd.DataFrame(
         columns=["week", "home_team", "home_division", "home_score", "away_team",
                  "away_division", "away_score", "neutral_site"]
@@ -88,10 +94,10 @@ def get_results(year, division, timestamp):
         week = game.week
         home = game.home_team
         h_score = game.home_points
-        h_division = game.home_division
+        h_division = classification_value(game.home_classification)
         away = game.away_team
         a_score = game.away_points
-        a_division = game.away_division
+        a_division = classification_value(game.away_classification)
         neutral = game.neutral_site
 
         # add games to dataframe
@@ -140,7 +146,7 @@ def get_week_slate(year, week, division, timestamp):
 
     # os.chdir(f"{YEAR}_data/slate")
 
-    week_games = games_api_instance.get_games(year=YEAR, week=WEEK, division=DIVISION)
+    week_games = fetch_games(YEAR, DIVISION, WEEK)
     fbs_week_slate = pd.DataFrame(
         columns=["week", "home_team", "home_division", "away_team",
                  "away_division", "neutral_site"]
@@ -149,9 +155,9 @@ def get_week_slate(year, week, division, timestamp):
     for game in week_games:
         week = game.week
         home = game.home_team
-        h_division = game.home_division
+        h_division = classification_value(game.home_classification)
         away = game.away_team
-        a_division = game.away_division
+        a_division = classification_value(game.away_classification)
         neutral = game.neutral_site
 
         # add week_games to dataframe
@@ -196,7 +202,7 @@ def get_slate(year, division, timestamp):
     YEAR = year
     DIVISION = division
 
-    games = games_api_instance.get_games(year=YEAR, division=DIVISION)
+    games = fetch_games(YEAR, DIVISION)
     fbs_slate = pd.DataFrame(
         columns=["week", "home_team", "home_division", "away_team",
                  "away_division", "neutral_site"]
@@ -205,9 +211,9 @@ def get_slate(year, division, timestamp):
     for game in games:
         week = game.week
         home = game.home_team
-        h_division = game.home_division
+        h_division = classification_value(game.home_classification)
         away = game.away_team
-        a_division = game.away_division
+        a_division = classification_value(game.away_classification)
         neutral = game.neutral_site
 
         # add games to dataframe

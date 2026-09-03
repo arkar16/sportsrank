@@ -78,6 +78,9 @@ fabric.properties
 
 # API key
 /cfb/api.py
+.env
+.env.*
+!.env.example
 
 # Webscraper key
 /simcbb/credentials.json
@@ -85,6 +88,8 @@ fabric.properties
 # venv
 .venv
 node_modules/
+.firebase/
+firebase-debug.log
 
 # Python
 __pycache__/
@@ -107,3 +112,9 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+
+# codex-workflow-managed-start
+agent_docs/
+.codex_workflow_hidden_resources/
+AGENTS.md
+# codex-workflow-managed-end

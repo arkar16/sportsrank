@@ -1,14 +1,13 @@
 import cfbd
-from api import api_key
 import pandas as pd
 import os
 import config
+from cfbd_client import create_api_client
 
-# Configure API key authorization: ApiKeyAuth
-configuration = cfbd.Configuration()
-configuration.api_key["Authorization"] = api_key
-configuration.api_key_prefix["Authorization"] = "Bearer"
-teams_api_instance = cfbd.TeamsApi(cfbd.ApiClient(configuration))
+
+def fetch_fbs_teams(year):
+    with create_api_client() as api_client:
+        return cfbd.TeamsApi(api_client).get_fbs_teams(year=year)
 
 def get_teams(year, division, timestamp):
     # get original working directory
@@ -19,7 +18,7 @@ def get_teams(year, division, timestamp):
     YEAR = year
     DIVISION = division
 
-    fbs_teams = teams_api_instance.get_fbs_teams(year=YEAR)
+    fbs_teams = fetch_fbs_teams(YEAR)
     cfb_teams = pd.DataFrame(columns=["school", "conference"])
 
     # create dataframe of FBS teams

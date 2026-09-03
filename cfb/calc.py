@@ -2,12 +2,15 @@ import os
 import config
 from records import get_current_records
 from teams import *
+from cors import weekly_cors
 from games import *
 from spread import *
 from spread_results import analyze_last_week_spreads
+import pandas as pd
+import shutil
+from readjust import week_zero_readjust
 from bs4 import BeautifulSoup
 from end_week import get_end_week
-from rankings_pipeline import generate_rankings_through_week
 
 # TODO
 #def hfa_calc():
@@ -18,19 +21,47 @@ from rankings_pipeline import generate_rankings_through_week
 # TODO add timestamp to all files
 def if_week_zero_true(year, week, division, hfa, timestamp):
     print(f"Starting {year}")
+    # get original working directory
     os.chdir(config.owd)
-    get_teams(year, division, timestamp)
-    get_slate(year, division, timestamp)
-    get_current_records(year, week, division, timestamp)
-    rankings_frame = generate_rankings_through_week(year, week, division, timestamp)
-    weekly_spread(year, week, division, rankings_frame.to_pandas(), hfa, timestamp)
+    if year == 1897:
+        teams = get_teams(year, division, timestamp)
+        get_slate(year, division, timestamp)
+        get_current_records(year, week, division, timestamp)
+
+        # Create blank template for 1897
+        os.chdir(f"{year}/rankings")
+        week_zero_file_df = teams.copy()
+        week_zero_file_df["record"] = "0-0"
+        week_zero_file_df["win_pct"] = ""
+        week_zero_file_df["cors"] = 0.0
+        week_zero_file_df.index = range(1, week_zero_file_df.shape[0] + 1)
+        week_zero_file_df.columns.name = "rank"
+        week_zero_html = week_zero_file_df.to_html(index=True, escape=False)
+        with open(f"{year}_W0_{division}_cors.html", "w") as f:
+            f.write(week_zero_html)
+
+        week_cors = week_zero_readjust(year, division, teams, week_zero_file_df, timestamp)
+        weekly_spread(year, week, division, week_cors, hfa, timestamp)
+    else:
+        old_cors_file = f"{config.owd}/{year - 1}/rankings/{year - 1}_FINAL_{division}_cors.html"
+        dst = f"{config.owd}/{year}/rankings"
+        week_zero_cors = f"{year}_W0_{division}_cors.html"
+        teams = get_teams(year, division, timestamp)
+        get_slate(year, division, timestamp)
+        get_current_records(year, week, division, timestamp)
+        shutil.copy(old_cors_file, dst + "/" + week_zero_cors)
+        os.chdir(f"{year}/rankings")
+        week_zero_file_df = pd.read_html(f"{year}_W0_{division}_cors.html")[0].set_index("rank")
+        week_cors = week_zero_readjust(year, division, teams, week_zero_file_df, timestamp)
+        weekly_spread(year, week, division, week_cors, hfa, timestamp)
 
 def regular_season_week(year, week, end_week, division, hfa, base_cors, timestamp):
-    get_current_records(year, week, division, timestamp)
+    current_records = get_current_records(year, week, division, timestamp)
     weekly_results = get_weekly_results(year, week, division, timestamp)
-    get_results(year, division, timestamp)
-    rankings_frame = generate_rankings_through_week(year, week, division, timestamp)
-    weekly_spread(year, week, division, rankings_frame.to_pandas(), hfa, timestamp)
+    results = get_results(year, division, timestamp)
+    week_cors = weekly_cors(base_cors, year, week, end_week, division, current_records, results, weekly_results, timestamp)
+    get_week_slate(year, week, division, timestamp)
+    weekly_spread(year, week, division, week_cors, hfa, timestamp)
     
     # After calculating this week's spreads, analyze last week's results
     if week > 1:  # Only if not week 0
@@ -42,11 +73,12 @@ def regular_season_week(year, week, end_week, division, hfa, base_cors, timestam
     #print(f"Y{year} - W{week} done") 
 
 def last_regular_week(year, week, end_week, division, hfa, base_cors, timestamp):
-    get_current_records(year, week, division, timestamp)
-    get_weekly_results(year, week, division, timestamp)
-    get_results(year, division, timestamp)
-    generate_rankings_through_week(year, week, division, timestamp)
-    last_week_results = get_weekly_results(year, week - 1, division, timestamp)
+    current_records = get_current_records(year, week, division, timestamp)
+    weekly_results = get_weekly_results(year, week, division, timestamp)
+    results = get_results(year, division, timestamp)
+    weekly_cors(base_cors, year, week, end_week, division, current_records, results, weekly_results, timestamp)
+    get_week_slate(year, week, division, timestamp)
+    last_week_results = get_weekly_results(year, week-1, division, timestamp)
     analyze_last_week_spreads(year, week, division, last_week_results, timestamp)
     print(f"Y{year} done") 
 
