@@ -23,6 +23,7 @@ their respective roles; neither replaces the other.
 - Preserve existing public historical URLs or provide explicit redirects.
 - Preserve the current CORS model unless a task explicitly authorizes a model change.
 - Load the CFBD bearer token only from `CFBD_API_KEY`; keep credentials out of source, arguments, generated pages, fixtures, and logs.
+- Route every CFBD request through the metered Season Snapshot seam; enforce the 3,000-call monthly ceiling and make ordinary tests use recorded adapters rather than live calls.
 - Validate a complete candidate Release before publication and retain the last known-good public Release on failure.
 
 ## Verification standard

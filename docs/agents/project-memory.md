@@ -39,6 +39,11 @@ of whatever the code happens to do today.
 4. Update operational state through the workflow handoff.
 5. Record only qualifying durable tradeoffs as ADRs and clarified domain language in `CONTEXT.md`.
 
+When work is delegated, give each agent ownership of one Sport boundary or one
+shared infrastructure boundary. Cross-boundary changes remain explicitly
+coordinated so future sports can evolve without agents editing one another's
+domain logic by accident.
+
 Completion means a future agent can answer all three questions without
 guessing: where the project is, what its terms mean, and why its durable
 architecture was chosen.
