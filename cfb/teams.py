@@ -1,15 +1,14 @@
-import cfbd
 import pandas as pd
 import os
 import config
-from cfbd_client import create_api_client
+from cfbd_client import get_snapshot_service
 
 
-def fetch_fbs_teams(year):
-    with create_api_client() as api_client:
-        return cfbd.TeamsApi(api_client).get_fbs_teams(year=year)
+def fetch_fbs_teams(year, division="FBS", snapshot_service=None):
+    service = snapshot_service or get_snapshot_service()
+    return list(service.get(year, division).teams)
 
-def get_teams(year, division, timestamp):
+def get_teams(year, division, timestamp, snapshot_service=None):
     # get original working directory
     os.chdir(config.owd)
     sport_upper = config.sport.upper()
@@ -18,26 +17,11 @@ def get_teams(year, division, timestamp):
     YEAR = year
     DIVISION = division
 
-    fbs_teams = fetch_fbs_teams(YEAR)
-    cfb_teams = pd.DataFrame(columns=["school", "conference"])
-
-    # create dataframe of FBS teams
-    for team in fbs_teams:
-        #try:
-            #logo = team.logos[0]
-            #logo_png = f"<img src='{logo}' style='width: 20px; height: 20px;'>"
-        #except:
-            #logo_png = ""
-        school = team.school
-        try:
-            conf = team.conference
-        except:
-            conf = "FBS Independents"
-
-        # Add the data to the dataframe
-        cfb_teams = pd.concat(
-            [cfb_teams, pd.DataFrame({"school": school, "conference": conf}, index=[0])],
-            ignore_index=True)
+    fbs_teams = fetch_fbs_teams(YEAR, DIVISION, snapshot_service)
+    cfb_teams = pd.DataFrame(
+        ({"school": team.school, "conference": team.conference} for team in fbs_teams),
+        columns=["school", "conference"],
+    )
 
     teams_html = cfb_teams.to_html(index=False, escape=False)
     os.chdir(f"{YEAR}/data")

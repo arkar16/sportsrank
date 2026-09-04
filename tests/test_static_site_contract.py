@@ -28,15 +28,5 @@ class StaticSiteContractTests(unittest.TestCase):
             with self.subTest(path=relative_path):
                 self.assertFalse((REPO_ROOT / relative_path).exists())
 
-    def test_cfbd_v2_fields_feed_the_existing_static_data_shape(self):
-        games_source = (REPO_ROOT / "cfb" / "games.py").read_text()
-
-        self.assertIn('"classification": division_classification(division)', games_source)
-        self.assertIn("game.home_classification", games_source)
-        self.assertIn("game.away_classification", games_source)
-        self.assertNotIn("game.home_division", games_source)
-        self.assertNotIn("game.away_division", games_source)
-
-
 if __name__ == "__main__":
     unittest.main()

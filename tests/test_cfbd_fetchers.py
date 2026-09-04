@@ -1,9 +1,6 @@
 from pathlib import Path
 import sys
 import unittest
-from unittest.mock import MagicMock, patch
-
-import cfbd
 
 
 CFB_ROOT = Path(__file__).resolve().parents[1] / "cfb"
@@ -11,40 +8,55 @@ sys.path.insert(0, str(CFB_ROOT))
 
 import games
 import teams
+from season_source import SourceGame, SourceTeam
 
 
-class CfbdFetcherTests(unittest.TestCase):
-    @patch("games.cfbd.GamesApi")
-    @patch("games.create_api_client")
-    def test_games_use_the_v2_classification_filter(
-        self, create_api_client, games_api_type
-    ):
-        api_client = MagicMock()
-        create_api_client.return_value.__enter__.return_value = api_client
-        games_api_type.return_value.get_games.return_value = []
+class _Snapshot:
+    teams = (SourceTeam("Alpha", "Conference A"),)
+    games = (
+        SourceGame(1, "Alpha", "fbs", 21, "Beta", "fbs", 14, False),
+        SourceGame(2, "Beta", "fbs", None, "Alpha", "fbs", None, True),
+    )
 
-        self.assertEqual(games.fetch_games(2025, "FBS", 3), [])
 
-        games_api_type.assert_called_once_with(api_client)
-        games_api_type.return_value.get_games.assert_called_once_with(
-            year=2025,
-            classification=cfbd.DivisionClassification.FBS,
-            week=3,
+class _Service:
+    def __init__(self):
+        self.calls = []
+
+    def get(self, year, division, **options):
+        self.calls.append((year, division, options))
+        return _Snapshot()
+
+
+class CfbdFetcherCompatibilityTests(unittest.TestCase):
+    def test_team_fetch_delegates_to_snapshot_seam(self):
+        service = _Service()
+        result = teams.fetch_fbs_teams(2025, snapshot_service=service)
+        self.assertEqual(result[0].school, "Alpha")
+        self.assertEqual(service.calls, [(2025, "FBS", {})])
+
+    def test_week_games_are_derived_from_full_snapshot(self):
+        service = _Service()
+        result = games.fetch_games(2025, "FBS", week=2, snapshot_service=service)
+        self.assertEqual([game.week for game in result], [2])
+        self.assertEqual(service.calls, [(2025, "FBS", {
+            "refresh_games": False, "required_week": None
+        })])
+
+    def test_legacy_dataframes_preserve_columns_and_values(self):
+        results = games._results_dataframe(_Snapshot.games)
+        slate = games._slate_dataframe(_Snapshot.games)
+        self.assertEqual(
+            list(results.columns),
+            ["week", "home_team", "home_division", "home_score", "away_team",
+             "away_division", "away_score", "neutral_site"],
         )
-
-    @patch("teams.cfbd.TeamsApi")
-    @patch("teams.create_api_client")
-    def test_team_fetch_uses_the_shared_bearer_client(
-        self, create_api_client, teams_api_type
-    ):
-        api_client = MagicMock()
-        create_api_client.return_value.__enter__.return_value = api_client
-        teams_api_type.return_value.get_fbs_teams.return_value = []
-
-        self.assertEqual(teams.fetch_fbs_teams(2025), [])
-
-        teams_api_type.assert_called_once_with(api_client)
-        teams_api_type.return_value.get_fbs_teams.assert_called_once_with(year=2025)
+        self.assertEqual(results.loc[0, "home_score"], 21)
+        self.assertEqual(
+            list(slate.columns),
+            ["week", "home_team", "home_division", "away_team",
+             "away_division", "neutral_site"],
+        )
 
 
 if __name__ == "__main__":
