@@ -1,0 +1,83 @@
+name: Publish validated static site to Firebase Hosting
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref containing the candidate static site
+        required: true
+        default: main
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate reviewed website Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out reviewed ref
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v9
+        with:
+          enable-cache: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install locked Python dependencies
+        run: uv sync --locked
+
+      - name: Run offline Python tests
+        run: uv run python -m unittest discover -s tests -v
+
+      - name: Install locked hosting dependencies
+        run: npm ci
+
+      - name: Check static hosting tree
+        run: npm run build
+
+      - name: Validate reviewed website Release (offline)
+        run: uv run python -m cfb.recovery validate website --json
+
+  publish:
+    name: Publish approved candidate
+    needs: validate
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://www.sportsrank.top
+    steps:
+      - name: Check out reviewed ref
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install locked hosting dependencies
+        run: npm ci
+
+      - name: Publish static hosting site
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SPORTSRANK_837AF }}
+          channelId: live
+          projectId: sportsrank-837af

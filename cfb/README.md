@@ -1,51 +1,48 @@
-# CFB Rankings
+# CFB recovery and rankings
 
-This project calculates and generates rankings for College Football (CFB) games.
+The CFB boundary currently supports FBS data from CFBD and renders static
+HTML. The supported recovery entry point is `python -m cfb.recovery`; it keeps
+external fetching, cached snapshots, Release generation, validation, and local
+promotion as separate stages.
 
-## Setup
+## Local setup
 
-1. Ensure you have Python 3.7+ installed on your system.
-2. Install the required packages by running:
-   ```
-   pip install -r requirements.txt
-   ```
+From the repository root:
 
-## Running the Script
-
-You can run the script using the provided batch file or directly using Python.
-
-### Using the Batch File
-
-1. Double-click on `run_cfb_rankings.bat`, or
-2. Open a command prompt in the project directory and run:
-   ```
-   run_cfb_rankings.bat [calculation_type] [year] [week]
-   ```
-
-### Using Python Directly
-
-Open a command prompt in the project directory and run:
-
-```
-python main.py [calculation_type] [year] [week]
+```sh
+uv sync --locked
+export SPORTSRANK_DATA_DIR="$PWD/.sportsrank"
 ```
 
-### Command-line Arguments
+Set `CFBD_API_KEY` only in the local terminal that performs a fetch. The
+adapter reads it as a bearer token and the request meter stores credential-free
+audit rows in `$SPORTSRANK_DATA_DIR/cfbd_requests.sqlite3`.
 
-- `calculation_type`: Type of calculation to perform. Options are:
-  - `single_week`: Calculate rankings for a single week
-  - `full_season`: Calculate rankings for the full season (default)
-  - `history`: Calculate historical rankings
-- `year`: The year to calculate rankings for (default is the current year)
-- `week`: The week to calculate rankings for (default is the current week)
+## Supported commands
 
-If no arguments are provided, the script will default to a full season calculation for the current year and week.
+```sh
+uv run python -m cfb.recovery --help
+uv run python -m cfb.recovery smoke YEAR
+uv run python -m cfb.recovery fetch YEAR --classification FBS
+uv run python -m cfb.recovery refresh YEAR --classification FBS
+uv run python -m cfb.recovery build YEAR --classification FBS \
+  --release-id RELEASE_ID --output-root "$PWD/.sportsrank/releases"
+uv run python -m cfb.recovery validate CANDIDATE_PATH --json
+uv run python -m cfb.recovery promote CANDIDATE_PATH website
+```
 
-## Output
+`smoke` performs exactly one metered teams request. A first `fetch` normally
+uses one teams request and one games request; cached `build`, `validate`, and
+`promote` operations do not call CFBD. `refresh` reuses cached teams and
+refreshes games only. A failed request is recorded without exposing the API
+key.
 
-The script will generate various output files in the project directory, including:
-- Ranking files
-- HTML output for web display
-- Cleaned data files
+`build` writes only to its staging output. Review its manifest and run
+`validate` before the explicit `promote` step. Promotion is local and should
+be followed by committing the reviewed `website/` tree, then using the
+protected, manual Firebase Hosting workflow only after production approval.
+That workflow validates and deploys the checked-out `website/` path from the
+selected ref; it cannot see a Pi-local `.sportsrank/releases` path.
 
-Check the console output or log files for any errors or additional information during the execution of the script.
+The older `cfb/main.py` script and batch file are retained for historical
+compatibility; new recovery work should use the staged interface above.
