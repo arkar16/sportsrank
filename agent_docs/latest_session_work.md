@@ -13,7 +13,20 @@ reviewer's final documentation correction, is
 Scope: byte-preserving relocation of the two NFL experiments to `legacy/nfl/`,
 repository navigation, conditional cleanup roadmap, and complementary project
 memory. CFB source, tests, workflow, public artifacts, and dependency contracts
-are inherited unchanged. Final integrated offline verification is pending.
+are inherited unchanged. Independent final product verification at
+`7827602a851f5d00dea87a61fec9b7d2cbc84f1f` passes:
+
+- Full key-unset unittest suite: 193/193 tests.
+- Additional socket-blocked subset: 191/191 tests; the two local HTTP-server
+  tests are covered by the complete 193-test run.
+- Static build, `uv lock --check`, compilation, and diff checks.
+- Byte-identical NFL relocation, clean-environment direct invocation, and
+  reference checks showing no active CFB/tools/tests NFL caller.
+- Exact cleanup scope: README navigation, six workflow documents, cleanup
+  plan, legacy README, and two 100% NFL renames. CFB source, tests, workflow,
+  dependency files, and all website bytes match the accepted base.
+
+The subsequent handoff status update changes only these operational documents.
 
 The original main-based commits were `71299766` and `3ed83d62`. Their ignored
 local handoff was saved before rebase at
@@ -22,10 +35,12 @@ memory below remains canonical for Gate 1 evidence; the old eight-test baseline
 does not establish integrated recovery acceptance.
 
 The cleanup task is `01a08454-4690-7813-8d02-d5dac29d2833`; reviewer coordination
-is `01a08450-a5fb-7543-84f2-fb7d0dc178f1`. Next: complete integration onto the
-accepted boundary, run the full locked offline suite and static build, then
-open a separate cleanup PR targeting the recovery branch. Preserve PR #3's
-accepted commit and the independent Gate 2 production approval.
+is `01a08450-a5fb-7543-84f2-fb7d0dc178f1`. Integration and technical acceptance
+are complete. Review the separate cleanup PR whose head is
+`chore/repository-structure-cleanup` and base is
+`feature/season-2026-recovery`, after reviewing PR #3. Preserve PR #3's accepted
+commit and the independent Gate 2 production approval. No cleanup operation
+has rebuilt or deployed the accepted candidate or requested provider data.
 
 ## Accepted Gate 1 Baseline
 
