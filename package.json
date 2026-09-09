@@ -8,9 +8,7 @@
     "build": "npm run verify:hosting",
     "verify:hosting": "test -f website/index.html && test -f website/404.html",
     "serve": "firebase emulators:start --only hosting",
-    "deploy": "firebase deploy --only hosting",
-    "hosting:serve": "npm run serve",
-    "hosting:deploy": "npm run deploy"
+    "hosting:serve": "npm run serve"
   },
   "repository": {
     "type": "git",

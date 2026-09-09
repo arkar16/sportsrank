@@ -47,3 +47,13 @@ domain logic by accident.
 Completion means a future agent can answer all three questions without
 guessing: where the project is, what its terms mean, and why its durable
 architecture was chosen.
+
+## Consistency gate
+
+Project memory is complementary only when its sources agree within their
+roles. A contradiction among agent instructions, `CONTEXT.md`, accepted ADRs,
+active plans, workflow state, or executable interfaces is a work blocker: stop
+before implementation or publication, identify every conflicting statement,
+and reconcile the affected sources in the same change. Do not silently choose
+one source, preserve a stale command as if it were current, or weaken an
+accepted invariant to make documents agree.

@@ -20,20 +20,30 @@ A shared interpretation of CORS values across separate Classification rankings. 
 **FBS**:
 The first supported college-football classification and the initial production scope.
 
+**Classification Entrant**:
+A team with authoritative, source-cited evidence that it newly joins a Classification for a Season and therefore has no preceding FINAL in that Classification. Its declared entrant baseline is explicit Season Carryover evidence, not a fallback for a missing or mismatched returning team.
+
 **Season**:
 The named competition year whose games contribute to a sequence of weekly and final rankings.
 
+**Preseason Ranking**:
+The CORS Ranking published before a Season's scored games contribute. It is initialized through Season Carryover and is used to calculate the Week 0 slate and spreads.
+_Avoid_: Week 0 Ranking
+
 **Week**:
-A season checkpoint through which completed games are included in a ranking. Week 0 is the preseason state before scored games contribute.
+A numbered competition checkpoint through which completed games are included in a ranking. Week 0 is a normal week in which teams may play scored games.
+
+**Canceled Game**:
+A scheduled matchup that authoritative source evidence explicitly identifies as not played. It contributes no score or ranking result and does not prevent a historical Season from reaching FINAL. Missing scores alone never establish cancellation.
 
 **Season Carryover**:
-The rule that a Season's final CORS Ranking initializes the following Season's Week 0 Ranking before roster changes and regression are applied.
+The rule that a Season's final CORS Ranking initializes the following Season's Preseason Ranking before roster changes and regression are applied. A source-cited Classification Entrant uses its explicitly declared entrant baseline; every unregistered omission or identity mismatch is invalid.
 _Avoid_: Seed, previous-year copy
 
 ## Rankings and publication
 
 **CORS Ranking**:
-SportsRank's ordered assessment of teams for one sport, classification, season, and week using the CORS model.
+SportsRank's ordered assessment of teams for one sport, classification, Season, and completed checkpoint using the CORS model. A checkpoint may be PRESEASON, a numbered Week, or FINAL.
 _Avoid_: Poll, power ranking
 
 **Ranking Run**:
@@ -41,7 +51,7 @@ One attempt to calculate a CORS Ranking through a specified season week and prep
 _Avoid_: Cron, build
 
 **Season Snapshot**:
-The normalized teams and games retrieved for one Sport, Classification, and Season and shared by every calculation in a Ranking Run.
+The normalized teams and games, including explicit played or Canceled Game disposition, retrieved for one Sport, Classification, and Season and shared by every calculation in a Ranking Run.
 _Avoid_: API response, scrape
 
 **Call Budget**:

@@ -39,7 +39,12 @@ def data_directory():
 
 @lru_cache(maxsize=2)
 def get_snapshot_service(category="scheduled"):
-    """Construct the persistent production seam without reading credentials."""
+    """Construct the production seam on the shared cache/audit root.
+
+    ``category`` changes only the Request Meter budget/purpose.  Scheduled and
+    historical services intentionally point at the same ``SPORTSRANK_DATA_DIR``
+    so one recovery ledger accounts for every request.
+    """
     if __package__:
         from .request_meter import RequestMeter
         from .season_snapshot import SeasonSnapshotService

@@ -1,0 +1,50 @@
+# Project Progress
+
+## Current Goal and Position
+
+Heavy deployment `gate1_review_repairs_20260909` implements the seven review
+repairs, including the follow-up production URL and bounded smoke-retry fixes.
+Source and CI changes are frozen. The full offline suite passes 193 tests;
+fresh V5 release validation and historical-value checks pass. Isolated
+promotion passes, with the promoted bytes matching the candidate exactly.
+The actual-key scan is complete with zero matches or read errors. Local repair
+and verification are complete. Reviewer-owned acceptance of V5 was granted on
+2026-09-09, and the exact candidate is promoted into tracked `website/`.
+
+Human Gate 1 approval applies to the reviewed V4 package and reviewer final
+acceptance applies to V5. Gate 2 production approval remains pending. No further
+provider or network data calls are authorized; remote deployment remains
+blocked until PR merge and the protected production approval.
+
+## Implemented Repairs
+
+- Pick'em games retain home/away/push outcomes, with no favorite or underdog and
+  ungraded favorite-pick correctness. All 35 affected historical rows are fixed.
+- Numbered releases include or preserve PRESEASON and exactly validate it.
+- Completed-week boundaries derive from game dispositions and scores; resealed
+  snapshot metadata cannot declare an unfinished week complete.
+- Malformed manifest numeric fields return structured hard failures, and
+  inherited navigation read errors abort the build.
+- Publication pins `setup-uv@v9.0.0`, serializes runs, and carries a SHA-bound
+  smoke helper with the validated artifact. It uses the explicit production
+  URL and retries the complete six-page byte comparison within bounded limits.
+- Durable guidance records the granted V4 approval and the separate V5 review
+  and Gate 2 boundaries. Historical V4 evidence remains unchanged.
+
+## Evidence and Continuation
+
+Candidate: `.sportsrank/gate1-review-repairs-20260909/releases-v5/2026-preseason/site`.
+Review index: `.sportsrank/gate1-review-repairs-20260909/evidence/index-v5.json`.
+Human entry: `.sportsrank/gate1-review-repairs-20260909/evidence/human-review-v5.md`.
+`latest_session_work.md` owns exact identities, verification paths, and the handoff.
+
+The 2024 FINAL → 2025 FINAL → 2026 PRESEASON chain validates with zero current
+failures and zero deleted paths. All earlier history values are preserved;
+2026 contains forecasts only. Original and refreshed caches and the Published
+Site match their prior sealed identities. This repair used zero data requests;
+the audit remains nine cumulative successful requests from the earlier work.
+
+Commit and push the accepted source, tests, documentation, and promoted static
+site, then open the review PR. Existing legacy-page findings remain deferred.
+Firebase publication is still blocked by Gate 2. GitHub's publication
+concurrency does not guarantee FIFO ordering.

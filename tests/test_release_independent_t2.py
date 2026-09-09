@@ -20,7 +20,7 @@ from types import MappingProxyType
 from bs4 import BeautifulSoup
 
 from cfb.release import build_release, validate_release
-from cfb.ranking_engine import MODEL_VERSION, ranking_for_week, records_for_week
+from cfb.ranking_engine import MODEL_VERSION, PreviousFinal, ranking_for_week, records_for_week
 from cfb.request_meter import RequestMeter
 from cfb import recovery
 from cfb.season_snapshot import SeasonSnapshot
@@ -62,6 +62,21 @@ class ReleaseProvenanceIndependentTests(unittest.TestCase):
         self.service = service
         self.snapshot = service.get(2025, "FBS")
         self.root = root
+        self.base = root / "published"
+        self.base.mkdir()
+        (self.base / "index.html").write_text("legacy published bytes", encoding="utf-8")
+        for snapshot in (self.snapshot, self.service.get(2024, "FBS")):
+            prior_year = snapshot.year - 1
+            path = self.base / f"cfb/years/{prior_year}/rankings/{prior_year}_FINAL_FBS_cors.html"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            rows = "".join(
+                f"<tr><td>{team.school}</td><td>{float(index)}</td><td>0.0</td></tr>"
+                for index, team in enumerate(snapshot.teams)
+            )
+            path.write_text(
+                f"<html><body><table><thead><tr><th>school</th><th>cors</th><th>wins_vs_expected</th></tr></thead><tbody>{rows}</tbody></table></body></html>",
+                encoding="utf-8",
+            )
 
     def tearDown(self):
         self.temporary.cleanup()
@@ -74,6 +89,12 @@ class ReleaseProvenanceIndependentTests(unittest.TestCase):
             release_id="candidate",
             timestamp=FIXED,
             code_revision="independent-test",
+            published_site=self.base,
+            previous_final=PreviousFinal(
+                {team.school: float(index) for index, team in enumerate(snapshot.teams)},
+                {team.school: 0.0 for team in snapshot.teams},
+            ),
+            phase="final" if year == 2024 else "week",
         )
 
     def test_every_owned_artifact_must_have_a_checksum_entry(self):
@@ -85,7 +106,7 @@ class ReleaseProvenanceIndependentTests(unittest.TestCase):
         manifest["manifest_checksum"] = hashlib.sha256(_canonical_json(manifest).encode("utf-8")).hexdigest()
         candidate.manifest_path.write_text(_canonical_json(manifest), encoding="utf-8")
 
-        report = validate_release(candidate)
+        report = validate_release(candidate, published_site=self.base)
 
         self.assertFalse(report.valid)
         self.assertTrue(report.failures)
@@ -143,7 +164,7 @@ class ReleaseProvenanceIndependentTests(unittest.TestCase):
         snapshot_path.write_text(_canonical_json(payload), encoding="utf-8")
         _reseal_manifest(candidate)
 
-        report = validate_release(candidate)
+        report = validate_release(candidate, published_site=self.base)
 
         self.assertFalse(report.valid)
         self.assertTrue(report.failures)
@@ -158,7 +179,7 @@ class ReleaseProvenanceIndependentTests(unittest.TestCase):
         final_path.write_text(str(document), encoding="utf-8")
         _reseal_manifest(candidate)
 
-        report = validate_release(candidate)
+        report = validate_release(candidate, published_site=self.base)
 
         self.assertFalse(report.valid)
         self.assertTrue(report.failures)
@@ -188,7 +209,7 @@ class ReleaseProvenanceIndependentTests(unittest.TestCase):
         manifest["manifest_checksum"] = hashlib.sha256(_canonical_json(manifest).encode("utf-8")).hexdigest()
         candidate.manifest_path.write_text(_canonical_json(manifest), encoding="utf-8")
 
-        report = validate_release(candidate)
+        report = validate_release(candidate, published_site=self.base)
 
         self.assertFalse(report.valid)
         self.assertTrue({failure.code for failure in report.failures} & {"season.boundary", "season.completion"})

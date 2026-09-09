@@ -14,6 +14,12 @@ Codex Workflow documents describe current execution state and verified evidence.
 ADRs preserve why hard-to-reverse choices were accepted. Keep both current in
 their respective roles; neither replaces the other.
 
+If agent guidance, domain language, accepted ADRs, active plans, workflow
+state, or executable interfaces contradict one another, stop before changing
+code or publishing. Reconcile every affected source in the same change; the
+conflict is a work blocker rather than permission to select whichever source
+is convenient.
+
 ## Current architectural guardrails
 
 - Make CFB, beginning with FBS, reliable before implementing another sport or classification.
@@ -24,7 +30,9 @@ their respective roles; neither replaces the other.
 - Preserve the current CORS model unless a task explicitly authorizes a model change.
 - Load the CFBD bearer token only from `CFBD_API_KEY`; keep credentials out of source, arguments, generated pages, fixtures, and logs.
 - Route every CFBD request through the metered Season Snapshot seam; enforce the 3,000-call monthly ceiling and make ordinary tests use recorded adapters rather than live calls.
-- Validate a complete candidate Release before publication and retain the last known-good public Release on failure.
+- Publish PRESEASON before Week 0; Week 0 contains real games and W0 is the ranking after those games.
+- Build every candidate as a full overlay of the Published Site, derive its required artifacts independently, and retain the last-known-good site on failure.
+- Deploy only the immutable static-site artifact that passed validation for the reviewed commit SHA.
 
 ## Verification standard
 
