@@ -36,9 +36,11 @@ does not establish integrated recovery acceptance.
 
 The cleanup task is `01a08454-4690-7813-8d02-d5dac29d2833`; reviewer coordination
 is `01a08450-a5fb-7543-84f2-fb7d0dc178f1`. Integration and technical acceptance
-are complete. Review the separate cleanup PR whose head is
+are complete. Cleanup [PR #4](https://github.com/arkar16/sportsrank/pull/4) is
+open, non-draft, and reported mergeable. GitHub reports no checks; the completed
+offline verification above is the acceptance evidence. The PR head branch is
 `chore/repository-structure-cleanup` and base is
-`feature/season-2026-recovery`, after reviewing PR #3. Preserve PR #3's accepted
+`feature/season-2026-recovery`. Review it after PR #3. Preserve PR #3's accepted
 commit and the independent Gate 2 production approval. No cleanup operation
 has rebuilt or deployed the accepted candidate or requested provider data.
 

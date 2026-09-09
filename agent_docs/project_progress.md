@@ -16,8 +16,9 @@ documentation correction. Cleanup preserves Gate 1 source, tests, workflow,
 candidate bytes, and evidence. The larger CFB directory migration and moving
 generated HTML out of Git remain deferred under the cleanup plan.
 
-Review the cleanup as a separate PR from `chore/repository-structure-cleanup`
-into `feature/season-2026-recovery`, following the accepted recovery PR #3.
+Cleanup [PR #4](https://github.com/arkar16/sportsrank/pull/4) is open and ready
+for review from `chore/repository-structure-cleanup` into
+`feature/season-2026-recovery`, following the accepted recovery PR #3.
 Its delta leaves recovery code, tests, workflow, dependencies, and website
 artifacts unchanged. No new human design decision is required; PR review/merge
 and the later protected Gate 2 approval remain human actions.
