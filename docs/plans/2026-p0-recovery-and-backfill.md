@@ -161,7 +161,7 @@ contradiction scan across all human- and machine-facing guidance.
 
 The reviewed V4 package is approved at Gate 1, and the following seven repairs
 are implemented and verified in the sealed V5 candidate. V5 reviewer final
-acceptance remains pending:
+acceptance was granted on 2026-09-09:
 
 1. Pick’em line 0 keeps the observed result side home/away, including tie/push;
    favorite and underdog remain absent, and `ats_correct` is `null` for all

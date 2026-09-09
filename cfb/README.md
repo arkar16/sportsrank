@@ -44,6 +44,7 @@ uv run python -m cfb.recovery build YEAR --classification FBS \
   --published-site website --output-root "$PWD/.sportsrank/releases"
 uv run python -m cfb.recovery validate CANDIDATE_PATH \
   --published-site "$PWD/website" --json
+# Future reviewed candidates only; V5 is already promoted.
 uv run python -m cfb.recovery promote CANDIDATE_PATH website
 ```
 
@@ -118,10 +119,10 @@ The seven delegated repairs are implemented and verified. Reviewer final
 acceptance of V5 is complete; V4 remains the historical human-review evidence
 baseline.
 
-`build` writes only to its staging output. Review its manifest and run
-`validate` before the explicit `promote` step. Promotion is local and should
-be followed by committing the reviewed `website/` tree, then using the
-protected, manual **Publish validated static site to Firebase Hosting**
+For a future candidate, `build` writes only to its staging output. Review its
+manifest and run `validate` before the explicit `promote` step. Promotion is
+local and should be followed by committing the reviewed `website/` tree, then
+using the protected, manual **Publish validated static site to Firebase Hosting**
 workflow only after production approval.
 The isolated temporary promotion and byte comparison are complete for V5, and
 the exact candidate is now in tracked `website/`. Do not rebuild it or issue
