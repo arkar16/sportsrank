@@ -10,6 +10,9 @@ promotion passes, with the promoted bytes matching the candidate exactly.
 The actual-key scan is complete with zero matches or read errors. Local repair
 and verification are complete. Reviewer-owned acceptance of V5 was granted on
 2026-09-09, and the exact candidate is promoted into tracked `website/`.
+Reviewed implementation commit `f058ecf513db518fcf891a9369f914a827edb271`
+is pushed on `feature/season-2026-recovery`; review PR #3 is open at
+`https://github.com/arkar16/sportsrank/pull/3`.
 
 Human Gate 1 approval applies to the reviewed V4 package and reviewer final
 acceptance applies to V5. Gate 2 production approval remains pending. No further
@@ -44,7 +47,7 @@ failures and zero deleted paths. All earlier history values are preserved;
 Site match their prior sealed identities. This repair used zero data requests;
 the audit remains nine cumulative successful requests from the earlier work.
 
-Commit and push the accepted source, tests, documentation, and promoted static
-site, then open the review PR. Existing legacy-page findings remain deferred.
-Firebase publication is still blocked by Gate 2. GitHub's publication
-concurrency does not guarantee FIFO ordering.
+PR #3 now carries the accepted source, tests, documentation, and promoted static
+site for human review. Existing legacy-page findings remain deferred. Firebase
+publication is still blocked by Gate 2. GitHub's publication concurrency does
+not guarantee FIFO ordering.
