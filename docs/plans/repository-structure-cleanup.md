@@ -15,14 +15,14 @@ introduce a plugin framework.
 
 ## Acceptance
 
-Before review, verify that the NFL relocation preserves file bytes, references
-resolve from a repository-root checkout, and the documented invocation
-`python legacy/nfl/nfl_spread.py` remains portable. Run the locked test suite
-after the Gate1 repairs are integrated; its result is a later acceptance input,
-not evidence supplied by this plan. Preserve public website URLs throughout.
+Integration acceptance requires verifying that the NFL relocation preserves
+file bytes, references resolve from a repository-root checkout, and the
+documented invocation `python legacy/nfl/nfl_spread.py` remains portable. Run
+the locked test suite against the integrated recovery tree; its result remains
+an acceptance check for integration. Preserve public website URLs throughout.
 
-Gate1 correctness and review remain owned by the recovery task; this structural
-plan cannot waive that acceptance.
+Gate1 correctness and review acceptance belong to the recovery task; this
+structural plan cannot waive or supersede that acceptance.
 
 ## Sequenced roadmap
 
@@ -35,5 +35,5 @@ plan cannot waive that acceptance.
 3. Group site-generation templates and assets under `site/`, and organize tests
    around observable boundaries. Keep generated public URLs unchanged.
 4. Consider removing generated HTML from Git only after backups, immutable
-   Release archives, and URL compatibility are proven end to end under the
-   accepted SQLite/Release storage decision carried by the recovery branch.
+   Release archives, and URL compatibility are proven end to end under [ADR
+   0008](../adr/0008-use-sqlite-behind-static-releases.md).

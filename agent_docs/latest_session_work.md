@@ -1,6 +1,33 @@
 # Latest Session Work
 
-## Deployment and Disposition
+## Current Cleanup Integration
+
+Heavy deployment `sportsrank_cleanup_integration_20260909` resumes the paused
+cleanup after Gate 1 reviewer acceptance. Work is isolated in
+`/Users/aryakarnik/Developer/sportsrank-cleanup` on
+`chore/repository-structure-cleanup`. The accepted recovery base, including the
+reviewer's final documentation correction, is
+`379caab4283dacc940516be75967a0d1bbe7a4b1` on
+`feature/season-2026-recovery` (PR #3).
+
+Scope: byte-preserving relocation of the two NFL experiments to `legacy/nfl/`,
+repository navigation, conditional cleanup roadmap, and complementary project
+memory. CFB source, tests, workflow, public artifacts, and dependency contracts
+are inherited unchanged. Final integrated offline verification is pending.
+
+The original main-based commits were `71299766` and `3ed83d62`. Their ignored
+local handoff was saved before rebase at
+`/tmp/sportsrank-cleanup-agent-docs.n3yWsQ/originals/`. The accepted recovery
+memory below remains canonical for Gate 1 evidence; the old eight-test baseline
+does not establish integrated recovery acceptance.
+
+The cleanup task is `01a08454-4690-7813-8d02-d5dac29d2833`; reviewer coordination
+is `01a08450-a5fb-7543-84f2-fb7d0dc178f1`. Next: complete integration onto the
+accepted boundary, run the full locked offline suite and static build, then
+open a separate cleanup PR targeting the recovery branch. Preserve PR #3's
+accepted commit and the independent Gate 2 production approval.
+
+## Accepted Gate 1 Baseline
 
 - Deployment: `gate1_review_repairs_20260909`, Heavy route.
 - Goal: repair all seven reviewer findings, including the later CI URL/retry
@@ -134,10 +161,10 @@ bytes stayed unchanged, and the complete cache digest returned to the V4 value.
 `evidence/cache-reconciliation-v5.json` records the comparison. V4 historical
 candidate and evidence files were not rewritten.
 
-## Exact Continuation
+## Gate 1 Publication Boundary
 
 The reviewer accepted the sealed V5 candidate, promoted it byte-for-byte into
 tracked `website/`, and pushed reviewed implementation commit
 `f058ecf513db518fcf891a9369f914a827edb271`. PR #3 is open for human review.
-Do not perform further provider/network requests. Gate 2 remains separate and
+Do not perform further provider data requests. Gate 2 remains separate and
 is not authorization for Firebase deployment.

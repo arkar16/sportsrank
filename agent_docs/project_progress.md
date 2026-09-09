@@ -2,6 +2,20 @@
 
 ## Current Goal and Position
 
+Heavy deployment `sportsrank_cleanup_integration_20260909` prepares the
+conservative repository cleanup for a separate PR based on the accepted
+recovery branch. The NFL experiments move byte-for-byte to `legacy/nfl/`;
+repository navigation and the conditional cleanup roadmap document the
+supported and legacy boundaries. Final integration verification is pending.
+
+The accepted recovery boundary is
+`379caab4283dacc940516be75967a0d1bbe7a4b1`, including the reviewer's final
+documentation correction. Cleanup preserves Gate 1 source, tests, workflow,
+candidate bytes, and evidence. The larger CFB directory migration and moving
+generated HTML out of Git remain deferred under the cleanup plan.
+
+## Accepted Recovery Baseline
+
 Heavy deployment `gate1_review_repairs_20260909` implements the seven review
 repairs, including the follow-up production URL and bounded smoke-retry fixes.
 Source and CI changes are frozen. The full offline suite passes 193 tests;

@@ -1,5 +1,14 @@
 # Project Diary
 
+- 2026-09-09 — Isolate repository cleanup from an active dirty release review;
+  integrate onto its explicit accepted commit once available. Preserve accepted
+  source and public bytes, and verify the cleanup delta independently.
+- 2026-09-09 — NFL experiments can move together byte-for-byte because their
+  imports are self-contained. CFB legacy modules and root generation helpers
+  still have callers and path dependencies; consolidation belongs after the
+  first safe 2026 Publication. An eight-test main baseline cannot substitute
+  for the recovery branch's full locked suite.
+
 Record only durable decisions, discarded approaches, and reusable lessons.
 
 ## Decisions and Lessons

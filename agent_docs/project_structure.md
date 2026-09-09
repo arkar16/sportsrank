@@ -3,22 +3,23 @@
 ## Primary Boundaries
 
 ```text
-cfb/                    CFB ingestion, snapshot, calendar, ranking, release, and legacy code
+cfb/                    Supported CFB/FBS runtime, recovery, and legacy compatibility modules
 website/                Firebase-hosted static site and permanent public paths
 tests/                  Offline behavioral and release-contract verification
 docs/adr/               Durable architecture decisions
 docs/plans/             Active and superseded implementation contracts
-docs/operations/        Operator procedures; legacy recovery runbook is paused
+docs/operations/        Operator procedures and runbooks
 agent_docs/              Current Codex Workflow state and evidence
-frontend/               Optional progressive-enhancement source
-nfl/                    Unintegrated legacy helpers, outside current scope
+legacy/nfl/             Unsupported historical NFL experiments
+tools/scripts/          Checked-in publication and post-deploy helpers
+mainpage.py             Root path-sensitive legacy helper
+webconfig.py            Root path-sensitive legacy helper
 ```
 
 Ignored local state belongs under `.sportsrank/`; generated candidate Releases
-must not modify `website/` before an explicit promotion. The seven delegated
-repairs are implemented and frozen in V5; isolated temporary promotion matched
-the candidate, reviewer final acceptance was granted on 2026-09-09, and the
-exact candidate is promoted into tracked `website/`. No Firebase deploy occurred.
+must not modify `website/` before an explicit promotion. The accepted V5
+candidate is in tracked `website/`; Gate 2 still protects remote Firebase
+publication.
 
 ## Active Interfaces
 
@@ -30,28 +31,23 @@ exact candidate is promoted into tracked `website/`. No Firebase deploy occurred
 - `ranking_engine.py` owns FBS CORS semantics and Season Carryover.
 - `release.py` owns static artifact construction and validation as mandatory
   full-site overlays with independently derived artifact graphs.
-- `recovery.py` exposes explicit PRESEASON/week/FINAL phases and the original
-  six-call staged backfill; the completed metadata repair adds three games-only
-  calls in a separate root, and the V5 candidate validates 116/226/234 artifacts
-  with zero structural failures and 142 added / 93 changed / 0 deleted paths.
+- `recovery.py` exposes explicit PRESEASON/week/FINAL phases and staged
+  backfill/recovery commands; cached build, validation, and promotion keep
+  source access separate.
 - `firebase.json` points Hosting at `website/`; the manual GitHub workflow
   transports one exact validated artifact through the protected production
   gate.
 
-## Ownership During the P0 Deployment
+## Ownership
 
-Heavy-route work is bounded into CFB ranking semantics, shared release
-integrity, shared CI/publication, and independent testing. Cross-boundary
-changes are coordinated by the main agent; workers preserve one another's
-edits and escalate contradictory requirements immediately.
+The main agent owns cross-boundary integration and acceptance gates. Exact
+workflow evidence and continuation state belong in
+`agent_docs/latest_session_work.md`; this document records the repository
+boundaries and ownership map.
 
 ## Verification State
 
-The clean export passes 193 tests with portable Schema 2/3 fixtures and no
-private or ignored cache dependency; CI-focused checks pass 10/10. The original
-exact six-call ledger/cache evidence and prior nine-row audit are preserved;
-this repair made zero provider/network calls. The V5 credential scan has zero
-matches and zero read errors across all 13 scopes. The V4 human Gate 1 package
-is approved, and the seven delegated repairs are implemented, verified, and
-reviewer-accepted in V5. Gate 2 production approval is pending, so no Firebase
-publication is authorized.
+The V5 recovery candidate is reviewer-accepted and is promoted into tracked
+`website/`. Exact identities, verification results, and preserved historical
+evidence belong in `agent_docs/latest_session_work.md`. Gate 2 production
+approval remains pending, so no Firebase publication is authorized.
