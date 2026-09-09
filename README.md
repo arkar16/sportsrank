@@ -23,6 +23,18 @@ Firebase site is unchanged, and Gate 2 production approval remains pending. See
 the [V5 human review](.sportsrank/gate1-review-repairs-20260909/evidence/human-review-v5.md)
 and the finalized workflow handoff.
 
+## Repository navigation
+
+| Area | Purpose |
+| --- | --- |
+| [CFB CLI/runtime](cfb/) | Supported college-football ranking command-line interface and runtime. See [cfb/README.md](cfb/README.md) for usage. |
+| [Website](website/) | Permanent public static HTML artifacts and their supporting files. |
+| `tests/` | Automated tests for the ranking runtime and published-site contracts. |
+| [Docs](docs/) | ADRs (`docs/adr/`), plans (`docs/plans/`), and operational notes (`docs/operations/`). |
+| `agent_docs/` | Current Codex Workflow project state and handoff records. |
+| [Legacy NFL](legacy/nfl/) | Unsupported historical standalone NFL experiments and their preserved direct script entry point. |
+| [`mainpage.py`](mainpage.py), [`webconfig.py`](webconfig.py) | Path-sensitive legacy batch helpers retained at the repository root. |
+
 The authoritative implementation and live-verification handoff is
 [`docs/plans/2026-p0-recovery-and-backfill.md`](docs/plans/2026-p0-recovery-and-backfill.md).
 The operator runbook remains paused at the separate Gate 2 production boundary;
