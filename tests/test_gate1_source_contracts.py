@@ -34,6 +34,7 @@ def _games_payload():
         {
             "id": "fixture-2025-1",
             "week": 1,
+            "seasonType": "regular",
             "start_date": "2025-08-28T21:30:00Z",
             "home_team": "Alpha",
             "home_classification": "fbs",

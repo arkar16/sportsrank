@@ -29,7 +29,11 @@ try:
         validate_release_chain,
     )
     from .request_meter import RequestMeter
-    from .season_snapshot import SeasonSnapshot, SeasonSnapshotService
+    from .season_snapshot import (
+        SeasonSnapshot,
+        SeasonSnapshotService,
+        migrate_postseason_cache,
+    )
     from .season_source import FixtureSeasonSource, ProductionSeasonSource
     from .snapshot_cache import SnapshotCache
 except ImportError:  # pragma: no cover - direct execution compatibility
@@ -42,7 +46,7 @@ except ImportError:  # pragma: no cover - direct execution compatibility
         validate_release_chain,
     )
     from request_meter import RequestMeter
-    from season_snapshot import SeasonSnapshot, SeasonSnapshotService
+    from season_snapshot import SeasonSnapshot, SeasonSnapshotService, migrate_postseason_cache
     from season_source import FixtureSeasonSource, ProductionSeasonSource
     from snapshot_cache import SnapshotCache
 
@@ -59,6 +63,7 @@ COMMANDS = {
     "recover",
     "validate",
     "promote",
+    "migrate-postseason",
 }
 
 
@@ -219,6 +224,21 @@ def build_parser() -> argparse.ArgumentParser:
     )
     promote.add_argument("candidate", type=Path)
     promote.add_argument("published_site", type=Path)
+
+    migration = subparsers.add_parser(
+        "migrate-postseason",
+        help="copy immutable schema-3 snapshots into a pinned phase-aware root",
+    )
+    migration.add_argument("--source-root", type=Path, required=True)
+    migration.add_argument("--destination-root", type=Path, required=True)
+    migration.add_argument("--classification", default="FBS")
+    migration.add_argument(
+        "--season",
+        dest="seasons",
+        action="append",
+        type=int,
+        help="season to migrate; repeat for multiple seasons (defaults to 2024,2025,2026)",
+    )
 
     return parser
 
@@ -711,6 +731,37 @@ def _promote(args: argparse.Namespace) -> int:
         return 1
 
 
+def _migrate_postseason(args: argparse.Namespace) -> int:
+    try:
+        seasons = tuple(args.seasons or (2024, 2025, 2026))
+        paths = migrate_postseason_cache(
+            args.source_root,
+            args.destination_root,
+            classification=args.classification,
+            seasons=seasons,
+        )
+        print(
+            json.dumps(
+                {
+                    "stage": "migrate-postseason",
+                    "source_root": str(args.source_root),
+                    "destination_root": str(args.destination_root),
+                    "seasons": list(seasons),
+                    "snapshots": [str(path) for path in paths],
+                    "network_calls": 0,
+                },
+                sort_keys=True,
+            )
+        )
+        return 0
+    except Exception as exc:
+        print(
+            f"stage=migrate-postseason cause={type(exc).__name__}: {_safe_message(exc)}",
+            file=sys.stderr,
+        )
+        return 1
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.command in {"smoke", "prime"}:
@@ -727,6 +778,8 @@ def main(argv: list[str] | None = None) -> int:
         return _validate(args)
     if args.command == "promote":
         return _promote(args)
+    if args.command == "migrate-postseason":
+        return _migrate_postseason(args)
     return 2
 
 

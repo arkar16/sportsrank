@@ -153,18 +153,37 @@ class SeasonSourceIndependentTests(unittest.TestCase):
         teams_api.return_value.get_fbs_teams.return_value = json.loads(
             (fixture_dir / "teams.json").read_text(encoding="utf-8")
         )
-        games_api.return_value.get_games.return_value = json.loads(
+        provider_games = json.loads(
             (fixture_dir / "games.json").read_text(encoding="utf-8")
         )
+        for index, game in enumerate(provider_games, 1):
+            game.update(
+                {
+                    "id": f"fixture-provider-{index}",
+                    "startDate": f"2025-08-{27 + index:02d}T12:00:00Z",
+                    "seasonType": "regular",
+                }
+            )
+        games_api.return_value.get_games.return_value = provider_games
         create_client.return_value.__enter__.return_value = object()
         source = ProductionSeasonSource(RequestMeter(self.root / "meter.sqlite3"))
 
         self.assertEqual(
             source.fetch_teams(2025, "FBS", cache_decision="miss"), expected_teams
         )
+        actual_games = source.fetch_games(2025, "FBS", cache_decision="miss")
         self.assertEqual(
-            source.fetch_games(2025, "FBS", cache_decision="miss"), expected_games
+            [
+                (game.week, game.home_team, game.away_team, game.home_points, game.away_points)
+                for game in actual_games
+            ],
+            [
+                (game.week, game.home_team, game.away_team, game.home_points, game.away_points)
+                for game in expected_games
+            ],
         )
+        self.assertTrue(all(game.phase == "regular" for game in actual_games))
+        self.assertTrue(all(game.provider_week is not None for game in actual_games))
 
     @patch("cfb.season_source.create_api_client")
     def test_failed_production_transport_does_not_leak_secret_to_exception_db_or_cache(

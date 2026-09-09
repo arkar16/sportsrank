@@ -24,6 +24,7 @@ from cfb.week_calendar import WEEK_ONE_BOUNDARIES, canonical_week
 PROVIDER_WEEK_ONE = {
     "id": 401001,
     "week": 1,
+    "seasonType": "regular",
     "startDate": "2024-08-24T12:00:00Z",
     "completed": True,
     "neutralSite": False,

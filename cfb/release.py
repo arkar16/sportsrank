@@ -47,12 +47,25 @@ try:
     )
     from .season_snapshot import (
         SeasonSnapshot,
+        _validate_repair_metadata as _validate_snapshot_repair_metadata,
         _checksum as _snapshot_checksum,
         _complete_through as _authoritative_complete_through,
+        _game_payload as _snapshot_game_payload,
         _legacy_checksum as _legacy_snapshot_checksum,
     )
-    from .season_source import SourceGame, SourceTeam, is_explicit_non_played
-    from .week_calendar import calendar_provenance, canonical_week
+    from .season_source import (
+        SourceGame,
+        SourcePlayoff,
+        SourceTeam,
+        is_explicit_non_played,
+    )
+    from .postseason_registry import validate_recovery_classification
+    from .week_calendar import (
+        calendar_provenance,
+        canonical_postseason_week,
+        canonical_week,
+        postseason_calendar_provenance,
+    )
 except ImportError:  # Direct execution from the cfb directory.
     from carryover_registry import reconcile_previous_final
     from ranking_engine import (
@@ -73,12 +86,20 @@ except ImportError:  # Direct execution from the cfb directory.
     )
     from season_snapshot import (
         SeasonSnapshot,
+        _validate_repair_metadata as _validate_snapshot_repair_metadata,
         _checksum as _snapshot_checksum,
         _complete_through as _authoritative_complete_through,
+        _game_payload as _snapshot_game_payload,
         _legacy_checksum as _legacy_snapshot_checksum,
     )
-    from season_source import SourceGame, SourceTeam, is_explicit_non_played
-    from week_calendar import calendar_provenance, canonical_week
+    from season_source import SourceGame, SourcePlayoff, SourceTeam, is_explicit_non_played
+    from postseason_registry import validate_recovery_classification
+    from week_calendar import (
+        calendar_provenance,
+        canonical_postseason_week,
+        canonical_week,
+        postseason_calendar_provenance,
+    )
 
 
 LAST_UPDATED_RE = re.compile(r"Last updated:\s*([^<\n]+)")
@@ -266,12 +287,16 @@ def _page(title: str, timestamp: str, body: str, links: Sequence[tuple[str, str]
 
 
 def _snapshot_payload(snapshot: SeasonSnapshot) -> dict[str, Any]:
+    schema_version = int(snapshot.metadata.get("schema_version", 2) or 2)
     return {
         "sport": snapshot.sport,
         "classification": snapshot.classification,
         "year": snapshot.year,
         "teams": [asdict(team) for team in snapshot.teams],
-        "games": [asdict(game) for game in snapshot.games],
+        "games": [
+            _snapshot_game_payload(game, schema_version=schema_version)
+            for game in snapshot.games
+        ],
         "metadata": dict(snapshot.metadata),
         "checksum": snapshot.checksum,
     }
@@ -294,25 +319,48 @@ def _snapshot_from_payload(value: Mapping[str, Any]) -> SeasonSnapshot:
                 "teams_fetched_at",
                 "games_fetched_at",
                 "complete_through_week",
+                "calendar_provenance",
+                "correction_registry_provenance",
+                "migration_provenance",
             )
             if key in value
         }
 
+    # Archive snapshots are already normalized and checksummed.  Re-running
+    # the fixture compatibility adapter here would turn finite legacy scores
+    # with ``completed=None`` into completed games, changing their disposition
+    # and invalidating the archived checksum.  Preserve every stored scalar;
+    # only reconstruct the nested immutable playoff value object.
+    restored_games = []
+    for raw_game in value.get("games", []):
+        game = dict(raw_game)
+        playoff = game.get("provider_playoff")
+        if isinstance(playoff, Mapping):
+            game["provider_playoff"] = SourcePlayoff(**playoff)
+        restored_games.append(SourceGame(**game))
+    games = tuple(restored_games)
     return SeasonSnapshot(
         sport=str(value.get("sport", "cfb")),
         classification=str(value["classification"]),
         year=int(value["year"]),
         teams=tuple(SourceTeam(**team) for team in value.get("teams", [])),
-        games=tuple(SourceGame(**game) for game in value.get("games", [])),
+        games=games,
         metadata=MappingProxyType(metadata),
         checksum=str(value["checksum"]),
     )
 
 
 def _snapshot_uses_provider_metadata(snapshot: SeasonSnapshot) -> bool:
-    """Return whether the snapshot carries the v3 raw provider week field."""
+    """Return whether the snapshot carries raw provider provenance fields."""
 
-    return any(game.provider_week is not None for game in snapshot.games)
+    return any(
+        game.provider_id is not None
+        or game.date is not None
+        or game.provider_week is not None
+        or game.provider_season_type is not None
+        or game.provider_playoff is not None
+        for game in snapshot.games
+    )
 
 
 def _validate_snapshot_week_provenance(snapshot: SeasonSnapshot) -> bool:
@@ -324,6 +372,41 @@ def _validate_snapshot_week_provenance(snapshot: SeasonSnapshot) -> bool:
     response cannot quietly produce a mixed mapping.
     """
 
+    validate_recovery_classification(
+        snapshot.year,
+        snapshot.games,
+        snapshot.metadata.get("correction_registry_provenance"),
+    )
+    schema_version = int(snapshot.metadata.get("schema_version", 2) or 2)
+    if schema_version >= 4:
+        # Reconstruct the complete cache-shaped state before invoking the
+        # snapshot validator.  Migration provenance binds the repaired
+        # snapshot to the exact schema-3 source checksum, so a metadata-only
+        # subset cannot support that reverse derivation check.
+        validation_state = {
+            "schema_version": schema_version,
+            "sport": snapshot.sport,
+            "classification": snapshot.classification,
+            "year": snapshot.year,
+            "teams_fetched_at": snapshot.metadata.get("teams_fetched_at"),
+            "games_fetched_at": snapshot.metadata.get("games_fetched_at"),
+            "complete_through_week": snapshot.metadata.get("complete_through_week"),
+            "teams": [asdict(team) for team in snapshot.teams],
+            "games": [
+                _snapshot_game_payload(game, schema_version=schema_version)
+                for game in snapshot.games
+            ],
+            "calendar_provenance": snapshot.metadata.get("calendar_provenance"),
+            "correction_registry_provenance": snapshot.metadata.get(
+                "correction_registry_provenance"
+            ),
+            "migration_provenance": snapshot.metadata.get("migration_provenance"),
+        }
+        _validate_snapshot_repair_metadata(
+            validation_state,
+            snapshot.games,
+            snapshot.teams,
+        )
     provider_games = [game for game in snapshot.games if game.provider_week is not None]
     if not provider_games:
         return False
@@ -337,12 +420,25 @@ def _validate_snapshot_week_provenance(snapshot: SeasonSnapshot) -> bool:
             raise ValueError("snapshot provider metadata is missing provider_id")
         if not isinstance(game.date, str) or not game.date.strip():
             raise ValueError("snapshot provider metadata is missing date")
+        if game.phase not in {None, "regular", "postseason"}:
+            raise ValueError("snapshot phase metadata is invalid")
         try:
-            expected_week = canonical_week(snapshot.year, raw_week, game.date)
+            if game.phase == "postseason":
+                expected_week = canonical_postseason_week(snapshot.year, game.date)
+            else:
+                expected_week = canonical_week(snapshot.year, raw_week, game.date)
         except ValueError as exc:
             raise ValueError("snapshot provider calendar metadata is invalid") from exc
         if int(game.week) != int(expected_week):
             raise ValueError("snapshot canonical week does not match provider metadata")
+        if game.phase_source == "provider":
+            if game.provider_season_type != game.phase:
+                raise ValueError("snapshot provider phase does not match seasonType")
+        elif game.phase_source == "recovery_registry":
+            if game.phase != "postseason":
+                raise ValueError("snapshot recovery phase is invalid")
+        elif game.phase is not None:
+            raise ValueError("snapshot phase source is missing")
     return True
 
 
@@ -351,6 +447,11 @@ def _snapshot_week_calendar(snapshot: SeasonSnapshot) -> dict[str, object] | Non
 
     if not _validate_snapshot_week_provenance(snapshot):
         return None
+    if any(game.phase == "postseason" for game in snapshot.games):
+        return {
+            "regular": calendar_provenance(snapshot.year),
+            "postseason": postseason_calendar_provenance(snapshot.year),
+        }
     return calendar_provenance(snapshot.year)
 
 
@@ -624,6 +725,11 @@ def _canonical_snapshot_checksum(snapshot: SeasonSnapshot) -> str:
         "teams_fetched_at": snapshot.metadata.get("teams_fetched_at"),
         "games_fetched_at": snapshot.metadata.get("games_fetched_at"),
         "complete_through_week": snapshot.metadata.get("complete_through_week", -1),
+        "calendar_provenance": snapshot.metadata.get("calendar_provenance"),
+        "correction_registry_provenance": snapshot.metadata.get(
+            "correction_registry_provenance"
+        ),
+        "migration_provenance": snapshot.metadata.get("migration_provenance"),
     }
     if int(state["schema_version"] or 1) == 1:
         return _legacy_snapshot_checksum(snapshot.year, snapshot.classification, snapshot.teams, snapshot.games)
@@ -1642,6 +1748,11 @@ def _validate_release(
             "complete_through_week": snapshot.metadata.get(
                 "complete_through_week", -1
             ),
+            "calendar_provenance": snapshot.metadata.get("calendar_provenance"),
+            "correction_registry_provenance": snapshot.metadata.get(
+                "correction_registry_provenance"
+            ),
+            "migration_provenance": snapshot.metadata.get("migration_provenance"),
         }
         try:
             current_week_calendar = _snapshot_week_calendar(snapshot)

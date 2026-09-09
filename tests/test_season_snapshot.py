@@ -296,7 +296,9 @@ class ProductionAdapterBehaviorTests(unittest.TestCase):
         create_client.return_value.__enter__.return_value = client
         teams_api.return_value.get_fbs_teams.return_value = [{"school": "Alpha State", "conference": "Test"}]
         games_api.return_value.get_games.return_value = [{
-            "week": 1, "home_team": "Alpha State", "home_classification": "fbs",
+            "week": 1, "seasonType": "regular", "id": "test-2025-1",
+            "startDate": "2025-08-28T21:30:00Z",
+            "home_team": "Alpha State", "home_classification": "fbs",
             "home_points": 7, "away_team": "Beta Tech", "away_classification": "fbs",
             "away_points": 3, "neutral_site": False,
         }]

@@ -19,6 +19,15 @@ live Firebase site is unchanged; Gate 2 production approval remains pending. See
 `agent_docs/latest_session_work.md`
 for current deployment state.
 
+A P1 postseason-calendar diagnosis found 46 postseason provider Week 1 games in
+each of 2024 and 2025 incorrectly classified as canonical Week 1. The frozen V6
+baseline completed with 218/218 tests and 152/298/306 checked artifacts with
+zero current failures. The current V7 follow-up passes 225/225 tests in 17.978
+seconds and compilation. Fresh reconstruction confirms all three direct and
+immediate releases with zero failures and zero added/changed/deleted paths; exact
+site and release JSON bytes match frozen V6, so no candidate regeneration was
+needed. V7 reviewer acceptance and Gate 2 production approval remain pending.
+
 ## Local setup
 
 From the repository root:
@@ -88,18 +97,32 @@ there is no automatic retry, silent refresh, or automatic fallback. Continue
 with cache-only rebuild, verification, validation, and promotion preparation.
 
 Week normalization is an explicit SportsRank policy, not a CFBD-provided
-conversion. Only provider Week 1 games before the midnight America/New_York
-boundaries 2024-08-26, 2025-08-25, and 2026-08-31 map to Week 0; later provider
-weeks remain unchanged. Unsupported seasons and deficient legacy metadata fail
-closed. Schema 3 retains raw provider week, ID, date, and completion fields;
-`cfb/week_calendar.py` owns the explicit policy. Each Release binds the
-`week_calendar` policy identity, Season, boundary, timezone, and primary source
-URLs while independently rederiving the mapping.
+conversion. Classify each Game's phase before assigning its Week. Regular
+provider Week 1 games before the midnight America/New_York boundaries
+2024-08-26, 2025-08-25, and 2026-08-31 map to Week 0; later regular provider
+weeks remain unchanged. Positively classified postseason games use
+`canonical_week = 1 + floor((local_date - week1_boundary_date).days / 7)` on
+the same Season lattice. Mixed regular/postseason Weeks and gaps are valid;
+public Week URLs do not change, and there is no separate W17 lattice. The
+regular and postseason policy IDs are `cfb-provider-week-v1` and
+`cfb-postseason-week-lattice-v1`. The inclusive 2026 America/New_York postseason
+window is 2026-12-12 through 2027-01-25; December 12 is the FCS Celebration Bowl
+and December 15 is the first FBS bowl. Schema 3 remains the immutable source;
+Schema 4 carries raw provider week, ID, date, completion, `season_type`, and
+`playoff` fields plus migration provenance. Newly provider-backed missing or
+unknown phase, unsupported seasons, and deficient legacy metadata fail closed.
+Fresh provider-backed postseason IDs do not require membership in the historical
+92-row recovery registry, but raw provider phase mismatches fail at cache and
+Release validation. Historical recovery rows continue to use
+`phase_source=recovery_registry`.
+Each Release independently rederives the mapping and binds its policy identity,
+Season, boundary, timezone, primary source URLs, registry version, and checksum.
 
-The V5 candidate is built from the refreshed root and independently validated
-before any publication step. Real W0 counts are 4, 5, and 8 for 2024, 2025, and
-2026. Ordinary offline verification uses portable Schema 2/3 fixtures and does
-not depend on private or ignored caches.
+The historical V5 candidate was built from the refreshed root and independently
+validated before its publication step. V6 remains the frozen comparison
+candidate, and V7 reuses it after verified byte equivalence. Real W0 counts are
+4, 5, and 8 for 2024, 2025, and 2026. Ordinary offline verification uses
+portable Schema 2/3 fixtures and does not depend on private or ignored caches.
 
 `build` requires an explicit `--phase` of `preseason`, `week`, or `final`.
 Numbered weeks also require `--through-week`; there is no ambiguous weekly
@@ -115,9 +138,37 @@ recorded without exposing the API key.
 The deployment's fetch/refresh allowance is spent; use the refreshed cache for
 remaining work and do not issue another provider request.
 
-The seven delegated repairs are implemented and verified. Reviewer final
-acceptance of V5 is complete; V4 remains the historical human-review evidence
-baseline.
+## Postseason calendar migration
+
+The P1 repair uses the cache-only migration entry point below. `--source-root`
+must be the directory containing `cfb-fbs-YEAR.json`, not the parent audit root;
+`--destination-root` must be new and empty:
+
+```sh
+uv run python -m cfb.recovery migrate-postseason \
+  --source-root "$PWD/.sportsrank/gate1-recovery-20260908/metadata-refresh-data/snapshots" \
+  --destination-root "$PWD/.sportsrank/postseason-calendar-repair-20260909/data"
+```
+
+It defaults to seasons 2024, 2025, and 2026; repeat `--season` for a subset.
+The command makes zero CFBD calls and leaves the Schema 3 inputs unchanged. It
+writes derived Schema 4 snapshots with raw provider `season_type` and
+`playoff` when available, plus source schema/checksum, target schema, calendar,
+and registry provenance. Regular data uses `cfb-provider-week-v1`; postseason
+data uses `cfb-postseason-week-lattice-v1` and the pinned `postseason-recovery-v2`
+registry checksum `244b5ed82b7d0add35cae95cf48ce664639f17a9243fbda8acc83e6720467549`.
+The 92 recovery rows use `phase_source=recovery_registry`; missing or stripped
+origin provenance fails closed, and their provider phase metadata remains null.
+The P1 roots are separate:
+`.sportsrank/postseason-calendar-repair-20260909/{data,releases-v6,evidence}`.
+Deep validation reverses the migration to the full Schema 3 checksum. The V6
+chain remains the frozen baseline; V7 focused and full verification plus fresh
+reconstructed-byte equivalence pass. Reviewer acceptance remains pending.
+
+The seven delegated repairs are implemented and verified in the historical V5
+candidate. The V6 calendar correction remains the frozen comparison baseline;
+the V7 window/provider-phase correction is verified through 225/225 tests and
+exact reconstructed-byte equivalence. Reviewer acceptance remains pending.
 
 For a future candidate, `build` writes only to its staging output. Review its
 manifest and run `validate` before the explicit `promote` step. Promotion is
@@ -125,9 +176,11 @@ local and should be followed by committing the reviewed `website/` tree, then
 using the protected, manual **Publish validated static site to Firebase Hosting**
 workflow only after production approval.
 The isolated temporary promotion and byte comparison are complete for V5, and
-the exact candidate is now in tracked `website/`. Do not rebuild it or issue
-provider requests. Remote Firebase publication still requires PR merge and the
-separate Gate 2 production approval.
+the exact V5 candidate is now in tracked `website/`. The V6 candidate also
+passed isolated public-CLI promotion rehearsal and post-validation; it remains
+separate from tracked `website/` pending reviewer acceptance. Do not rebuild it
+or issue provider requests. Remote Firebase publication still requires PR merge
+and the separate Gate 2 production approval.
 For a cumulative final candidate, `validate --published-site` must name the
 original Published Site, not an intermediate Release. This invokes the
 independent cumulative-chain validator and reports added, changed, and deleted

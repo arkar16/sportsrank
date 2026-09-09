@@ -33,6 +33,10 @@ _Avoid_: Week 0 Ranking
 **Week**:
 A numbered competition checkpoint through which completed games are included in a ranking. Week 0 is a normal week in which teams may play scored games.
 
+**Game Phase**:
+A phase attached to an individual Game, such as regular season or postseason. A numbered Week may contain games from more than one phase; phase does not rename the Week.
+_Avoid_: Postseason Week
+
 **Canceled Game**:
 A scheduled matchup that authoritative source evidence explicitly identifies as not played. It contributes no score or ranking result and does not prevent a historical Season from reaching FINAL. Missing scores alone never establish cancellation.
 

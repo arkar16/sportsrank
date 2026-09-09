@@ -8,6 +8,7 @@ provider-wide conversion rule.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import date, datetime, time
 from typing import Final
 from zoneinfo import ZoneInfo
@@ -15,6 +16,7 @@ from zoneinfo import ZoneInfo
 
 EASTERN: Final = ZoneInfo("America/New_York")
 CALENDAR_POLICY_ID: Final[str] = "cfb-provider-week-v1"
+POSTSEASON_CALENDAR_POLICY_ID: Final[str] = "cfb-postseason-week-lattice-v1"
 
 # Source-backed Week 0/Week 1 evidence supplied for the Gate 1 repair:
 # 2024 FSU/Georgia Tech Week 0 schedule (Aug 24, 2024):
@@ -45,6 +47,59 @@ WEEK_ONE_BOUNDARIES: Final[dict[int, datetime]] = {
 }
 
 
+@dataclass(frozen=True)
+class PostseasonWindow:
+    """Fixed, source-backed local-date bounds for one season's postseason."""
+
+    season: int
+    start_date: date
+    end_date: date
+    source_urls: tuple[str, ...] = ()
+    policy_id: str = POSTSEASON_CALENDAR_POLICY_ID
+
+
+# The bounds are fixed local calendar dates from the verified NCAA postseason
+# scoreboards and CFP schedule pages.  They are application policy, not a
+# provider conversion rule: provider week/round values never choose these
+# dates.  A future season remains fail-closed until an equally explicit window
+# and source evidence are added.
+POSTSEASON_WINDOWS: Final[dict[int, PostseasonWindow]] = {
+    2024: PostseasonWindow(
+        season=2024,
+        start_date=date(2024, 12, 14),
+        end_date=date(2025, 1, 20),
+        source_urls=(
+            "https://www.ncaa.com/scoreboard/football/fbs/2024/P/all-conf",
+            "https://collegefootballplayoff.com/sports/football/schedule/2024-25",
+            "https://collegefootballplayoff.com/news/2023/5/2/24-25-dates",
+        ),
+    ),
+    2025: PostseasonWindow(
+        season=2025,
+        start_date=date(2025, 12, 13),
+        end_date=date(2026, 1, 19),
+        source_urls=(
+            "https://www.ncaa.com/scoreboard/football/fbs/2025/P/all-conf",
+            "https://collegefootballplayoff.com/sports/football/schedule/2025-26",
+            "https://collegefootballplayoff.com/news/2023/5/2/24-25-dates",
+        ),
+    ),
+    2026: PostseasonWindow(
+        season=2026,
+        # Bowl Season's first listed postseason date is the Dec 12
+        # Celebration Bowl (FCS); the first FBS bowl follows on Dec 15.
+        # Keep the source-backed phase window inclusive of that first date.
+        start_date=date(2026, 12, 12),
+        end_date=date(2027, 1, 25),
+        source_urls=(
+            "https://bowlseason.com/sports/bowl/schedule/2026-27?grid=true",
+            "https://www.salutetoveteransbowl.com/the-game/",
+            "https://collegefootballplayoff.com/sports/2018/8/31/cfp-games-schedule",
+        ),
+    ),
+}
+
+
 def calendar_provenance(season: int) -> dict[str, object]:
     """Return the canonical, source-backed policy identity for one season.
 
@@ -60,6 +115,37 @@ def calendar_provenance(season: int) -> dict[str, object]:
         "boundary": WEEK_ONE_BOUNDARIES[normalized].isoformat(),
         "timezone": str(EASTERN),
         "source_urls": list(WEEK_ZERO_EVIDENCE_URLS[normalized]),
+    }
+
+
+def _postseason_window(season: int) -> PostseasonWindow:
+    normalized = require_supported_season(season)
+    window = POSTSEASON_WINDOWS.get(normalized)
+    if window is None:
+        raise ValueError(
+            f"No explicit postseason date window configured for season {normalized}"
+        )
+    if window.start_date > window.end_date:
+        raise ValueError("postseason calendar window is inverted")
+    if window.start_date < WEEK_ONE_BOUNDARIES[normalized].date():
+        raise ValueError("postseason calendar window precedes the Week 1 boundary")
+    return window
+
+
+def postseason_calendar_provenance(
+    season: int,
+) -> dict[str, object]:
+    """Return the independently sealed fixed-window postseason policy."""
+
+    policy = _postseason_window(season)
+    return {
+        "policy_id": policy.policy_id,
+        "season": policy.season,
+        "start_date": policy.start_date.isoformat(),
+        "end_date": policy.end_date.isoformat(),
+        "week_one_boundary": WEEK_ONE_BOUNDARIES[policy.season].isoformat(),
+        "timezone": str(EASTERN),
+        "source_urls": list(policy.source_urls),
     }
 
 
@@ -112,3 +198,25 @@ def canonical_week(season: int, provider_week: int, start_date: object) -> int:
     if _provider_datetime(start_date) < WEEK_ONE_BOUNDARIES[normalized_season]:
         return 0
     return 1
+
+
+def canonical_postseason_week(
+    season: int,
+    start_date: object,
+) -> int:
+    """Map a positively classified postseason game onto the week lattice.
+
+    Postseason does not use provider week/round numbering.  Its canonical
+    week is one plus the number of seven-day periods from the existing local
+    Week 1 boundary.  The fixed season window is independently required so a
+    malformed or shifted date cannot create a plausible regular-week game.
+    """
+
+    policy = _postseason_window(season)
+    local_day = _provider_datetime(start_date).date()
+    if not policy.start_date <= local_day <= policy.end_date:
+        raise ValueError(
+            f"postseason game date is outside the configured window for season {policy.season}"
+        )
+    boundary = WEEK_ONE_BOUNDARIES[policy.season].date()
+    return 1 + (local_day - boundary).days // 7

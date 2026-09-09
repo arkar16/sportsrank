@@ -15,17 +15,42 @@ import cfbd
 if __package__:
     from .cfbd_client import classification_value, create_api_client, division_classification
     from .request_meter import RequestMeter
-    from .week_calendar import canonical_week, require_supported_season
+    from .week_calendar import (
+        canonical_postseason_week,
+        canonical_week,
+        require_supported_season,
+    )
 else:  # Support the existing direct execution style from cfb/.
     from cfbd_client import classification_value, create_api_client, division_classification
     from request_meter import RequestMeter
-    from week_calendar import canonical_week, require_supported_season
+    from week_calendar import canonical_postseason_week, canonical_week, require_supported_season
 
 
 @dataclass(frozen=True)
 class SourceTeam:
     school: str
     conference: str
+
+
+@dataclass(frozen=True)
+class SourcePlayoff:
+    """Provider playoff metadata retained without deriving project policy.
+
+    The CFBD ``Game.playoff`` object is an optional nested model.  Keeping the
+    known fields in a frozen value object makes the cache/checksum payload
+    deterministic while leaving round names, bracket slots, and seeds exactly
+    as supplied by the provider.  The release/calendar layers must not infer
+    a canonical week from these fields.
+    """
+
+    competition: str | None = None
+    format: str | None = None
+    round: str | None = None
+    round_name: str | None = None
+    bracket_slot: str | None = None
+    home_seed: int | None = None
+    away_seed: int | None = None
+    bowl_name: str | None = None
 
 
 @dataclass(frozen=True)
@@ -45,6 +70,10 @@ class SourceGame:
     notes: str | None = None
     disposition: str = "scheduled"
     disposition_source: str | None = None
+    provider_season_type: str | None = None
+    provider_playoff: SourcePlayoff | None = None
+    phase: str | None = None
+    phase_source: str | None = None
 
 
 @runtime_checkable
@@ -127,6 +156,65 @@ def _date_text(value: object) -> str | None:
     return text or None
 
 
+def _provider_text(value: object) -> str | None:
+    """Preserve an enum/string provider value without inventing a label."""
+
+    if value is None:
+        return None
+    value = getattr(value, "value", value)
+    text = str(value).strip()
+    return text or None
+
+
+def _provider_phase(value: object) -> str | None:
+    """Normalize only the two supported CFBD game phases."""
+
+    text = _provider_text(value)
+    if text is None:
+        return None
+    normalized = text.lower()
+    if normalized in {"regular", "postseason"}:
+        return normalized
+    return None
+
+
+def _playoff_int(item: object, name: str, *aliases: str) -> int | None:
+    value = _optional_value(item, name, *aliases)
+    if value is None:
+        return None
+    if isinstance(value, (bool, str, bytes)):
+        raise ValueError(f"CFBD payload has an invalid playoff {name}")
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"CFBD payload has an invalid playoff {name}") from exc
+    if not math.isfinite(numeric) or not numeric.is_integer():
+        raise ValueError(f"CFBD payload has an invalid playoff {name}")
+    return int(numeric)
+
+
+def _provider_playoff(value: object) -> SourcePlayoff | None:
+    """Copy known optional playoff fields from a provider object or mapping."""
+
+    if value is None:
+        return None
+    if isinstance(value, Mapping) and not value:
+        return None
+    fields = {
+        "competition": _provider_text(_optional_value(value, "competition")),
+        "format": _provider_text(_optional_value(value, "format")),
+        "round": _provider_text(_optional_value(value, "round")),
+        "round_name": _provider_text(_optional_value(value, "round_name", "roundName")),
+        "bracket_slot": _provider_text(_optional_value(value, "bracket_slot", "bracketSlot")),
+        "home_seed": _playoff_int(value, "home_seed", "homeSeed"),
+        "away_seed": _playoff_int(value, "away_seed", "awaySeed"),
+        "bowl_name": _provider_text(_optional_value(value, "bowl_name", "bowlName")),
+    }
+    if not any(field is not None for field in fields.values()):
+        raise ValueError("CFBD payload has an invalid playoff metadata object")
+    return SourcePlayoff(**fields)
+
+
 def _boolean_value(value: object, default: bool = False) -> bool:
     if value is None:
         return default
@@ -179,6 +267,16 @@ def normalize_game(
     raw_week = _week(item)
     date_value = _optional_value(item, "date", "start_date", "startDate")
     date_text = _date_text(date_value)
+    raw_season_type = _optional_value(item, "provider_season_type", "season_type", "seasonType")
+    provider_season_type = _provider_text(raw_season_type)
+    phase = _provider_phase(raw_season_type)
+    if from_provider and phase is None:
+        if provider_season_type is None:
+            raise ValueError("CFBD payload is missing seasonType")
+        raise ValueError("CFBD payload has an unsupported seasonType")
+    provider_playoff = _provider_playoff(
+        _optional_value(item, "provider_playoff", "playoff")
+    )
     if from_provider:
         if season is None:
             raise ValueError("production game normalization requires a season")
@@ -189,6 +287,9 @@ def normalize_game(
             # snapshot and therefore retain their already canonical week.
             game_week = raw_week
             provider_week = None
+        elif phase == "postseason":
+            game_week = canonical_postseason_week(season, date_value)
+            provider_week = raw_week
         else:
             game_week = canonical_week(season, raw_week, date_value)
             provider_week = raw_week
@@ -196,6 +297,19 @@ def normalize_game(
         game_week = raw_week
         raw_provider_week = _optional_value(item, "provider_week", "providerWeek")
         provider_week = _week({"week": raw_provider_week}) if raw_provider_week is not None else None
+        # Fixture payloads are already canonical and may predate phase
+        # metadata.  Preserve a supplied raw value, but do not reject an old
+        # fixture merely because it uses an enum unknown to this adapter.
+        if phase is None and provider_season_type is not None:
+            phase = _provider_phase(provider_season_type)
+
+    raw_phase = _optional_value(item, "phase")
+    phase_source_value = _optional_value(item, "phase_source")
+    if raw_phase is not None:
+        phase = _provider_text(raw_phase)
+    phase_source = _provider_text(phase_source_value)
+    if from_provider:
+        phase_source = "provider"
 
     home_points = _score(item, "home_points", "homePoints")
     away_points = _score(item, "away_points", "awayPoints")
@@ -260,6 +374,10 @@ def normalize_game(
             if _optional_value(item, "disposition_source", "source") is not None
             else None
         ),
+        provider_season_type=provider_season_type,
+        provider_playoff=provider_playoff,
+        phase=phase,
+        phase_source=phase_source,
     )
 
 

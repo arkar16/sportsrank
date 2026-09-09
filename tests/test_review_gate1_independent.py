@@ -58,7 +58,14 @@ def _independent_snapshot_checksum(state: dict[str, object], teams, games) -> st
             {
                 key: value
                 for key, value in asdict(game).items()
-                if key != "provider_week" or value is not None
+                if key
+                not in {
+                    "provider_season_type",
+                    "provider_playoff",
+                    "phase",
+                    "phase_source",
+                }
+                and (key != "provider_week" or value is not None)
             }
             for game in games
         ],

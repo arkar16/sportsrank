@@ -32,6 +32,7 @@ def _provider_game(**changes):
     payload = {
         "id": 401635525,
         "week": 1,
+        "seasonType": "regular",
         "startDate": "2024-08-24T16:00:00+00:00",
         "homeTeam": "Georgia Tech",
         "awayTeam": "Florida State",

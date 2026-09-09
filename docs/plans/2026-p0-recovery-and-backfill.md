@@ -37,7 +37,7 @@ publication approval, and no external review-thread handoff is required.
 ## Consistency gate
 
 Before editing, read `AGENTS.md`, `docs/agents/project-memory.md`, `CONTEXT.md`,
-ADRs 0001–0013, this document, current Codex Workflow state, and the decisive
+ADRs 0001–0014, this document, current Codex Workflow state, and the decisive
 source/tests. Codex Workflow records current execution and evidence;
 `CONTEXT.md` defines domain language; ADRs explain durable decisions; this plan
 defines the active implementation goal.
@@ -146,16 +146,91 @@ contradiction scan across all human- and machine-facing guidance.
   nine successful rows. No further CFBD requests are authorized for this task;
   rebuild, verification, validation, promotion, and publication are cache-only.
 - Week normalization is an explicit SportsRank policy, not a CFBD-provided
-  conversion. Only provider Week 1 games dated before the timezone-aware
-  midnight America/New_York canonical Week 1 boundary map to Week 0: 2024-08-26,
-  2025-08-25, and 2026-08-31 respectively. Other provider weeks remain
-  unchanged; unsupported seasons and deficient legacy metadata fail closed. A
-  failed refresh has no silent refresh or automatic fallback.
+  conversion. Classify each Game's phase before assigning its Week. For
+  regular-season games, provider Week 1 dates before the timezone-aware
+  midnight America/New_York boundary map to Week 0: 2024-08-26, 2025-08-25,
+  and 2026-08-31 respectively. For positively classified postseason games,
+  assign `canonical_week = 1 + floor((local_date - week1_boundary_date).days / 7)`
+  on that same America/New_York Season lattice. Mixed regular/postseason Weeks
+  and gaps are valid; do not create a separate postseason Week or change public
+  Week URLs. Unsupported seasons, deficient legacy metadata, and newly
+  provider-backed missing or unknown phase fail closed. A failed refresh has no
+  silent refresh or automatic fallback.
 - Schema 3 preserves raw `provider_week`, provider ID, date, and completion
-  fields. `cfb/week_calendar.py` owns the explicit policy. Each Release
-  independently rederives the mapping and binds the `week_calendar` policy
-  identity, Season, boundary, timezone, and primary source URLs in its
-  provenance.
+  fields and remains immutable migration input. Derived Schema 4 preserves
+  available provider `season_type` and `playoff` phase evidence plus explicit
+  migration provenance. `cfb/week_calendar.py` owns the policy. Calendar
+  policy, registry, and schema versions are separate. Each Release independently
+  rederives the mapping and binds the `week_calendar` policy identity, Season,
+  boundary, timezone, and primary source URLs in its provenance. Repairs use new
+  data and Release roots.
+
+### P1 postseason calendar blocker
+
+Post-acceptance diagnosis found 46 postseason provider Week 1 games in each of
+2024 and 2025 incorrectly classified as canonical Week 1. The resulting W1
+outputs are contaminated, and the sequential FINAL path depends on that weekly
+path. V5 Gate 1 acceptance was reopened for this affected calendar contract.
+The cache-only V6 implementation, sequential rebuild, and independent
+verification remain the frozen baseline. The V7 window/provider-phase follow-up
+passes 225/225 tests and compilation, with all three direct/immediate
+reconstructions byte-identical to V6; V7 is ready for reviewer acceptance.
+
+The settled policy is recorded in [ADR 0014](../adr/0014-preserve-postseason-chronology.md):
+phase is a Game attribute, not a Week label; positively classified postseason
+games continue the fixed America/New_York Season lattice from the existing Week
+1 boundary; mixed regular/postseason Week 16 is allowed; gaps are allowed; no
+separate W17 lattice exists; and public Week URLs remain unchanged. Historical
+recovery may classify the bounded 92 known rows only with exact Season, provider
+ID, date, notes, teams, and snapshot checksum identity plus official source
+evidence, using `phase_source=recovery_registry` rather than provider data.
+Fresh provider-backed postseason IDs do not require membership in that
+historical registry, but raw phase mismatches reject at cache and Release
+validation. Unaffected legacy rows may retain unknown phase; suspicious late
+provider Week 1 games without a supported phase fail closed; recovered rows
+retain null provider phase metadata.
+
+The completed V6 repair preserves raw phase evidence, uses new data and Release
+roots, and covers the full 2024 FINAL → 2025 FINAL → 2026 PRESEASON rebuild plus
+required deltas. This P1 task does not alter history-storage or SQLite scope;
+V6 reviewer acceptance and Gate 2 remain separate.
+
+The public migration entry point is
+`python -m cfb.recovery migrate-postseason --source-root <directory containing
+cfb-fbs-YEAR.json> --destination-root <new empty snapshots directory>` with
+repeatable `--season` selection and defaults 2024/25/26. It reads immutable
+Schema 3 snapshots from
+`.sportsrank/gate1-recovery-20260908/metadata-refresh-data/snapshots` and
+writes derived Schema 4 data under
+`.sportsrank/postseason-calendar-repair-20260909/{data,releases-v6,evidence}`;
+the parent audit root is not a valid source root. The migration makes zero
+provider calls, retains raw `season_type` and `playoff` when available, and
+binds source schema/checksum, target schema, calendar identity, and
+`postseason-recovery-v2` registry provenance. The regular and postseason
+calendar IDs are `cfb-provider-week-v1` and `cfb-postseason-week-lattice-v1`;
+the pinned registry checksum is
+`244b5ed82b7d0add35cae95cf48ce664639f17a9243fbda8acc83e6720467549`. Fixed
+postseason windows are 2024-12-14 through 2025-01-20, 2025-12-13 through
+2026-01-19, and the inclusive 2026 window 2026-12-12 through 2027-01-25 in
+America/New_York. December 12 is the FCS Celebration Bowl; December 15 is the
+first FBS bowl. Official sources and URLs are pinned by `cfb/week_calendar.py`.
+Reverse validation must reproduce the full Schema 3 checksum before fresh
+reviewer acceptance. Direct and immediate validation pass 152/298/306 artifacts
+with zero current failures; independent candidate checks and isolated CLI
+promotion also pass.
+
+The correction-chain boundary reset only cumulative run and ownership metadata
+on a staged hard-linked copy of the frozen V5 tree. The original manifest was
+unlinked before replacement and remains SHA-256
+`0ff932b26521b914de31e400aeacfa7e345008e16c581e04165effcabeb69f68`; the staged
+manifest is `14e40aa7f3e5806c0de1dc0f6b71866525c31630b49813262fb07c96bd2010e`.
+All 11,558 other base files are byte-identical. All 229 prior year-owned paths
+remain physically present; 225 were regenerated and four were byte-preserved,
+while three obsolete Schema 3 archives leave current ownership. This bounded
+full correction preserves the frozen public base and does not bypass ordinary
+weekly progression validation. The final V6 candidate has manifest SHA-256
+`4e31e2e0c367ffecffb78a78b3887d3ed986a13ae3f4a2d0615358174fba7c9a` and tree
+SHA-256 `4a17209066058439096faf7bdf83a95cee0d9a212a24c1fc6cec48029a325712`.
 
 ### Completed delegated repair scope
 
@@ -319,12 +394,10 @@ conflicts. The main agent owns architecture, integration, root-cause decisions,
 the two gates, and final evidence. Run the required Closure Steward handoff once
 after implementation and verification.
 
-The V5 local repair goal is complete: all seven findings are fixed; the full
-offline suite passes 193/193 tests; CI-focused checks pass 10/10; compile,
-locked-dependency, npm, and diff checks pass; the three V5 releases validate
-116/226/234 artifacts with zero structural failures; the final overlay has
-142 added / 93 changed / 0 deleted paths; the original six-call sequence and
-prior nine-row ledger are preserved; and this deployment made zero provider
-calls. The sealed V5 candidate has reviewer final acceptance and is promoted
-into tracked `website/`. Gate 1 is complete; Gate 2 remains the protected
-production approval.
+The V6 local repair remains the frozen baseline: its 218/218 suite and
+152/298/306 artifact validation are prior evidence. The current V7 window and
+provider-phase follow-up passes 225/225 offline tests and compilation with
+provider access blocked. All three direct/immediate reconstructions have zero
+failures and zero added/changed/deleted paths, with exact site and release JSON
+bytes matching V6. V7 reviewer acceptance remains pending; Gate 2 is the
+separate protected production approval.
