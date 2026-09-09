@@ -2,6 +2,29 @@
 
 ## Current Goal and Position
 
+Heavy deployment `sportsrank_cleanup_integration_20260909` prepares the
+conservative repository cleanup for a separate PR based on the accepted
+recovery branch. The NFL experiments move byte-for-byte to `legacy/nfl/`;
+repository navigation and the conditional cleanup roadmap document the
+supported and legacy boundaries. Independent integrated verification passes all
+193 tests, the static build, compilation, lock checks, and diff checks. The
+cleanup is ready for human PR review.
+
+The accepted recovery boundary is
+`379caab4283dacc940516be75967a0d1bbe7a4b1`, including the reviewer's final
+documentation correction. Cleanup preserves Gate 1 source, tests, workflow,
+candidate bytes, and evidence. The larger CFB directory migration and moving
+generated HTML out of Git remain deferred under the cleanup plan.
+
+Cleanup [PR #4](https://github.com/arkar16/sportsrank/pull/4) is open and ready
+for review from `chore/repository-structure-cleanup` into
+`feature/season-2026-recovery`, following the accepted recovery PR #3.
+Its delta leaves recovery code, tests, workflow, dependencies, and website
+artifacts unchanged. No new human design decision is required; PR review/merge
+and the later protected Gate 2 approval remain human actions.
+
+## Accepted Recovery Baseline
+
 Heavy deployment `gate1_review_repairs_20260909` implements the seven review
 repairs, including the follow-up production URL and bounded smoke-retry fixes.
 Source and CI changes are frozen. The full offline suite passes 193 tests;
