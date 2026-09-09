@@ -23,6 +23,17 @@ Firebase site is unchanged, and Gate 2 production approval remains pending. See
 the [V5 human review](.sportsrank/gate1-review-repairs-20260909/evidence/human-review-v5.md)
 and the finalized workflow handoff.
 
+The subsequent Gate 1 postseason repair is now reviewer-accepted and promoted
+into the tracked `website/` tree. It moves 92 misclassified 2024/2025 bowl and
+CFP games from canonical Week 1 onto the continuous Week 16–22 calendar,
+preserves provider phase/playoff metadata, and supports the official inclusive
+2026–27 postseason window (December 12, 2026 through January 25, 2027). Team
+names, seeds, bracket slots, and round labels do not determine the week, so
+later CFP matchups can appear as they become known without renumbering earlier
+releases. The full offline suite passes 225/225 tests, and a fresh three-stage
+rebuild is byte-identical to the promoted 11,634-file candidate. Gate 2 remains
+separate; the live Firebase site is unchanged.
+
 ## Repository navigation
 
 | Area | Purpose |
@@ -38,7 +49,8 @@ and the finalized workflow handoff.
 The authoritative implementation and live-verification handoff is
 [`docs/plans/2026-p0-recovery-and-backfill.md`](docs/plans/2026-p0-recovery-and-backfill.md).
 The operator runbook remains paused at the separate Gate 2 production boundary;
-Gate 1 approval applies to the repaired V5 package. The staged
+Gate 1 approval includes the repaired V5 package and the accepted postseason
+follow-up. The staged
 interface and repair evidence are documented in
 [`cfb/README.md`](cfb/README.md) and the active workflow handoff.
 
@@ -59,11 +71,28 @@ or ignored caches. The production adapter reads the project-only bearer token
 from `CFBD_API_KEY`; the value must never enter source, command arguments,
 tracked environment files, generated artifacts, logs, issues, or chat.
 
+## Postseason calendar repair
+
+Historical Schema 3 snapshots are migrated offline into new Schema 4
+snapshots with exact source-checksum, calendar, and correction-registry
+provenance. The migration makes no provider calls:
+
+```sh
+uv run python -m cfb.recovery migrate-postseason \
+  --source-root <directory-containing-cfb-fbs-YEAR.json> \
+  --destination-root <new-empty-directory>
+```
+
+The pinned registry is only for the 92 historical recovery rows. Fresh
+provider-backed postseason games use the provider's explicit phase plus the
+fixed local-date window; missing, unsupported, or contradictory phase metadata
+fails closed.
+
 ## Publication
 
 After PR review and merge, public publication is the manually dispatched
-`Publish validated static site to Firebase Hosting` workflow. Gate 1 approval
-and V5 reviewer acceptance are complete; Gate 2 production approval remains
+`Publish validated static site to Firebase Hosting` workflow. Gate 1 and
+postseason reviewer acceptance are complete; Gate 2 production approval remains
 pending. Supply the
 full 40-character `candidate_sha` for the merged candidate and `base_sha` for
 the currently deployed commit. The workflow verifies ancestry and merge

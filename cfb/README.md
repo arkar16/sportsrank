@@ -26,7 +26,8 @@ zero current failures. The current V7 follow-up passes 225/225 tests in 17.978
 seconds and compilation. Fresh reconstruction confirms all three direct and
 immediate releases with zero failures and zero added/changed/deleted paths; exact
 site and release JSON bytes match frozen V6, so no candidate regeneration was
-needed. V7 reviewer acceptance and Gate 2 production approval remain pending.
+needed. V7 reviewer acceptance is complete; Gate 2 production approval remains
+pending.
 
 ## Local setup
 
@@ -163,23 +164,23 @@ The P1 roots are separate:
 `.sportsrank/postseason-calendar-repair-20260909/{data,releases-v6,evidence}`.
 Deep validation reverses the migration to the full Schema 3 checksum. The V6
 chain remains the frozen baseline; V7 focused and full verification plus fresh
-reconstructed-byte equivalence pass. Reviewer acceptance remains pending.
+reconstructed-byte equivalence pass. Reviewer acceptance is complete.
 
 The seven delegated repairs are implemented and verified in the historical V5
 candidate. The V6 calendar correction remains the frozen comparison baseline;
 the V7 window/provider-phase correction is verified through 225/225 tests and
-exact reconstructed-byte equivalence. Reviewer acceptance remains pending.
+exact reconstructed-byte equivalence. Reviewer acceptance is complete.
 
 For a future candidate, `build` writes only to its staging output. Review its
 manifest and run `validate` before the explicit `promote` step. Promotion is
 local and should be followed by committing the reviewed `website/` tree, then
 using the protected, manual **Publish validated static site to Firebase Hosting**
 workflow only after production approval.
-The isolated temporary promotion and byte comparison are complete for V5, and
-the exact V5 candidate is now in tracked `website/`. The V6 candidate also
-passed isolated public-CLI promotion rehearsal and post-validation; it remains
-separate from tracked `website/` pending reviewer acceptance. Do not rebuild it
-or issue provider requests. Remote Firebase publication still requires PR merge
+The isolated temporary promotion and byte comparison are complete for V5. The
+V6 candidate also passed isolated public-CLI promotion rehearsal and
+post-validation; after the V7 source-equivalence review, its exact bytes are now
+in tracked `website/`. Do not rebuild it or issue provider requests. Remote
+Firebase publication still requires PR merge
 and the separate Gate 2 production approval.
 For a cumulative final candidate, `validate --published-site` must name the
 original Published Site, not an intermediate Release. This invokes the

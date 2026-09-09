@@ -148,3 +148,14 @@ Record only durable decisions, discarded approaches, and reusable lessons.
   hashes. An aggregate containing absolute-root metadata cannot establish
   equality across different directories; retain successful operational evidence
   when correcting that verification-harness assumption.
+- 2026-09-09 — Provider week numbers may restart in postseason. Preserve phase
+  separately and derive canonical weeks from the season's fixed local-date
+  lattice. An internally consistent generator/validator pair can both accept a
+  contaminated chronology, so verify representative real games independently.
+- 2026-09-09 — Unknown CFP participants do not imply an unknown calendar.
+  Published round dates can be mapped before teams advance; team identity,
+  seeds, and bracket labels must not influence the canonical week.
+- 2026-09-09 — A bounded historical recovery registry must not become a
+  permanent allowlist for fresh provider IDs. The cache and release boundary
+  accept explicit provider postseason phase while keeping legacy recovery and
+  unclassified late-Week-1 data fail-closed.

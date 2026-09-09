@@ -17,8 +17,8 @@ webconfig.py            Root path-sensitive legacy helper
 ```
 
 Ignored local state belongs under `.sportsrank/`; generated candidate Releases
-must not modify `website/` before an explicit promotion. The accepted V5
-candidate is in tracked `website/`; Gate 2 still protects remote Firebase
+must not modify `website/` before an explicit promotion. The accepted
+postseason-corrected candidate is in tracked `website/`; Gate 2 still protects remote Firebase
 publication.
 
 ## Active Interfaces
@@ -28,12 +28,14 @@ publication.
 - `week_calendar.py` owns source-backed provider-week normalization, retaining
   raw provider metadata and failing closed for unsupported seasons or deficient
   legacy metadata.
+- `postseason_registry.py` owns the pinned 92-row historical correction
+  registry; fresh provider IDs rely on explicit provider phase instead.
 - `ranking_engine.py` owns FBS CORS semantics and Season Carryover.
 - `release.py` owns static artifact construction and validation as mandatory
   full-site overlays with independently derived artifact graphs.
 - `recovery.py` exposes explicit PRESEASON/week/FINAL phases and staged
-  backfill/recovery commands; cached build, validation, and promotion keep
-  source access separate.
+  backfill/recovery commands, including cache-only Schema 3→4 postseason
+  migration; cached build, validation, and promotion keep source access separate.
 - `firebase.json` points Hosting at `website/`; the manual GitHub workflow
   transports one exact validated artifact through the protected production
   gate.
@@ -47,7 +49,7 @@ boundaries and ownership map.
 
 ## Verification State
 
-The V5 recovery candidate is reviewer-accepted and is promoted into tracked
+The Gate 1 postseason-corrected candidate is reviewer-accepted and promoted into tracked
 `website/`. Exact identities, verification results, and preserved historical
 evidence belong in `agent_docs/latest_session_work.md`. Gate 2 production
 approval remains pending, so no Firebase publication is authorized.

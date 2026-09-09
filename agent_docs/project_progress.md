@@ -2,6 +2,26 @@
 
 ## Current Goal and Position
 
+Gate 1 postseason-calendar acceptance is complete on PR #3. The source repair
+and exact V6 candidate were integrated after the cleanup merge, and the
+11,634-file candidate was promoted byte-for-byte into tracked `website/`.
+No Firebase deployment occurred; Gate 2 production approval remains pending.
+
+The repair reclassifies 46 postseason provider-Week-1 games in each of 2024 and
+2025 onto chronological Weeks 16–22. The official 2026–27 postseason window is
+December 12, 2026 through January 25, 2027 in America/New_York. Fresh provider
+IDs are accepted only with authoritative postseason phase; the historical
+registry remains mandatory for recovered legacy rows. Unknown CFP matchup
+identity does not affect week assignment.
+
+Verification passes 225/225 tests, compilation, the static build, diff checks,
+and three direct/immediate release validations. A separate full reconstruction
+matches the promoted V6 bytes at every stage with zero path delta. PR #3 is the
+remaining human review boundary; PR merge and Gate 2 are not authorized by this
+acceptance.
+
+## Prior Cleanup Integration
+
 Heavy deployment `sportsrank_cleanup_integration_20260909` prepares the
 conservative repository cleanup for a separate PR based on the accepted
 recovery branch. The NFL experiments move byte-for-byte to `legacy/nfl/`;
@@ -23,7 +43,7 @@ Its delta leaves recovery code, tests, workflow, dependencies, and website
 artifacts unchanged. No new human design decision is required; PR review/merge
 and the later protected Gate 2 approval remain human actions.
 
-## Accepted Recovery Baseline
+## Prior Accepted Recovery Baseline
 
 Heavy deployment `gate1_review_repairs_20260909` implements the seven review
 repairs, including the follow-up production URL and bounded smoke-retry fixes.

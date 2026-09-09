@@ -39,7 +39,7 @@ first FBS bowl. Official source URLs are pinned by `cfb/week_calendar.py`.
 Reverse validation must reproduce the complete Schema 3 checksum. The current
 window/provider-phase follow-up has passed 225/225 tests and compilation; all
 three direct/immediate reconstructions have zero failures and zero path deltas,
-with exact bytes matching V6. Reviewer acceptance remains pending.
+with exact bytes matching V6. Reviewer acceptance is complete.
 
 The completed V6 correction uses a bounded full-chain boundary: reset only
 cumulative run and ownership metadata on a hard-linked copy of the frozen V5
@@ -50,5 +50,5 @@ base bytes. The original and staged manifest hashes are respectively
 other files remain byte-identical. The 229 prior year-owned paths remain
 physically present while the fresh graph regenerates 225 and preserves four;
 three obsolete Schema 3 archives leave current ownership. This preserves the
-public base without bypassing ordinary weekly progression checks. V6 local
-verification is complete and reviewer acceptance remains pending.
+public base without bypassing ordinary weekly progression checks. Local
+verification and reviewer acceptance are complete.

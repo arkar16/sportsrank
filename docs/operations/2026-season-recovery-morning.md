@@ -19,8 +19,9 @@ actual W1 outputs and the sequential FINAL path. The cache-only V6 correction is
 the frozen comparison baseline: its 218/218 tests and 152/298/306-artifact
 validation remain prior evidence. The current V7 window/provider-phase follow-up
 passes 225/225 tests in 17.978 seconds and compilation; frozen V6 remains
-byte-identical while reconstructed-byte equivalence and reviewer acceptance are
-pending. See `agent_docs/latest_session_work.md` for current deployment state.
+byte-identical and reconstructed-byte equivalence passes. Reviewer acceptance
+is complete and the exact candidate is in tracked `website/`. See
+`agent_docs/latest_session_work.md` for current deployment state.
 
 The implementation and test contract is
 [`../plans/2026-p0-recovery-and-backfill.md`](../plans/2026-p0-recovery-and-backfill.md).
@@ -66,12 +67,12 @@ inputs. This repair completed from cached inputs with source, tests, and
 workflow changes frozen. The V6 candidate remains the frozen comparison
 baseline; V7 focused and full verification plus fresh reconstructed-byte
 equivalence pass with zero path deltas. No CFBD/build-transport request or
-Firebase deployment occurred. V7 reviewer acceptance and Gate 2 production
-approval remain pending.
+Firebase deployment occurred. V7 reviewer acceptance is complete; Gate 2
+production approval remains pending.
 
-## Gate 2 publication path after V7 review
+## Gate 2 publication path after PR review
 
-After V7 reviewer acceptance, PR review, and merge, use only the manually
+After PR review and merge, use only the manually
 dispatched **Publish validated static site to Firebase Hosting** workflow. Gate 1
 applies to the reviewed V7 candidate, and Gate 2 production approval remains
 separate. Enter

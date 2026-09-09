@@ -174,7 +174,7 @@ path. V5 Gate 1 acceptance was reopened for this affected calendar contract.
 The cache-only V6 implementation, sequential rebuild, and independent
 verification remain the frozen baseline. The V7 window/provider-phase follow-up
 passes 225/225 tests and compilation, with all three direct/immediate
-reconstructions byte-identical to V6; V7 is ready for reviewer acceptance.
+reconstructions byte-identical to V6; V7 reviewer acceptance is complete.
 
 The settled policy is recorded in [ADR 0014](../adr/0014-preserve-postseason-chronology.md):
 phase is a Game attribute, not a Week label; positively classified postseason
@@ -193,7 +193,7 @@ retain null provider phase metadata.
 The completed V6 repair preserves raw phase evidence, uses new data and Release
 roots, and covers the full 2024 FINAL → 2025 FINAL → 2026 PRESEASON rebuild plus
 required deltas. This P1 task does not alter history-storage or SQLite scope;
-V6 reviewer acceptance and Gate 2 remain separate.
+V7 reviewer acceptance is complete; Gate 2 remains separate.
 
 The public migration entry point is
 `python -m cfb.recovery migrate-postseason --source-root <directory containing
@@ -399,5 +399,5 @@ The V6 local repair remains the frozen baseline: its 218/218 suite and
 provider-phase follow-up passes 225/225 offline tests and compilation with
 provider access blocked. All three direct/immediate reconstructions have zero
 failures and zero added/changed/deleted paths, with exact site and release JSON
-bytes matching V6. V7 reviewer acceptance remains pending; Gate 2 is the
+bytes matching V6. V7 reviewer acceptance is complete; Gate 2 is the
 separate protected production approval.

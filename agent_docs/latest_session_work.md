@@ -1,5 +1,31 @@
 # Latest Session Work
 
+## Gate 1 Postseason Acceptance
+
+The PR #3 postseason repair is integrated and reviewer-accepted. The owning
+orchestration worked only in
+`/Users/aryakarnik/Developer/sportsrank-postseason-calendar-repair-20260909-src`
+from base `379caab4283dacc940516be75967a0d1bbe7a4b1`; the reviewer kept the main
+checkout separate, fast-forwarded it to cleanup merge `4ed68400`, and then
+integrated repair commit `68d9ec51` without overwriting cleanup work.
+
+The repair moves the 92 verified 2024/2025 postseason rows from canonical Week
+1 to chronological Weeks 16–22, retains raw provider phase/playoff metadata,
+and adds the official inclusive 2026–27 window December 12, 2026 through
+January 25, 2027. A historical recovery registry is not a future provider-ID
+allowlist: fresh games pass only with authoritative provider postseason phase,
+while missing, contradictory, or unclassified late-Week-1 data fails closed.
+CFP matchup names, seeds, bracket slots, and round labels never choose the week.
+
+The full offline suite passes 225/225 tests in 17.978 seconds, compilation and
+the static build pass, and the three release stages validate directly and
+against their immediate bases. The separate V7 reconstruction has zero added,
+changed, or deleted paths relative to V6 at all stages. The promoted final site
+has 11,634 files; `manifest.json` SHA-256 is
+`4e31e2e0c367ffecffb78a78b3887d3ed986a13ae3f4a2d0615358174fba7c9a`.
+The build and review made zero CFBD calls. Gate 2/Firebase publication remains
+pending and was not performed.
+
 ## Current Cleanup Integration
 
 Heavy deployment `sportsrank_cleanup_integration_20260909` resumes the paused

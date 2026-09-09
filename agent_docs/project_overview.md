@@ -18,9 +18,10 @@ games. This lifecycle applies to rebuilt Seasons from 2024 onward.
 
 - `cfb/season_source.py`, `season_snapshot.py`, `snapshot_cache.py`, and
   `request_meter.py` form the supported metered CFBD v2 source boundary.
-- `cfb/week_calendar.py` owns the explicit source-backed provider Week 1 to
-  canonical Week 0 policy; raw provider week, ID, date, and completion fields
-  remain in Schema 3 snapshots.
+- `cfb/week_calendar.py` owns source-backed regular and postseason calendar
+  policy. `cfb/postseason_registry.py` owns the exact historical recovery
+  registry. Schema 4 retains raw provider phase/playoff data and separately
+  seals calendar, registry, and migration provenance.
 - `cfb/ranking_engine.py` calculates CORS, records, and spreads from normalized
   snapshots; legacy orchestration remains present for compatibility.
 - `cfb/release.py` and `cfb/recovery.py` stage, independently validate, and
@@ -38,10 +39,11 @@ games. This lifecycle applies to rebuilt Seasons from 2024 onward.
 Only an explicit fetch/refresh may call CFBD; calculation, rendering,
 validation, promotion, and deployment reuse cached snapshots. The key belongs
 only in `CFBD_API_KEY`, and all source access crosses the accepted meter and
-snapshot boundary. The V4 human Gate 1 package is approved, and reviewer final
-acceptance of the sealed V5 candidate was granted on 2026-09-09; that exact
-candidate is in tracked `website/`. The detailed evidence identities and check
-results remain in `agent_docs/latest_session_work.md`. Gate 2 production
+snapshot boundary. The V4 human Gate 1 package is approved, and the subsequent
+postseason repair is reviewer-accepted in tracked `website/`. It moves the 92
+affected games to Weeks 16–22 and supports the official 2026–27 date window
+without depending on CFP matchup identity. Detailed evidence identities and
+check results remain in `agent_docs/latest_session_work.md`. Gate 2 production
 approval remains pending, and Pi/T7 provisioning, scheduling, backups, and
 notifications remain deferred as recorded in the authoritative plan.
 
