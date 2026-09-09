@@ -2,7 +2,7 @@
 
 ## Intent and current status
 
-The user endorsed addressing the legacy history regression, durable database storage, API efficiency, and code speed on 2026-09-09. ADR 0008 already accepts SQLite behind static Releases; ADRs 0014 and 0015 propose the additional provenance and reuse decisions. This is a design proposal, not a completed migration or benchmark result. Work is isolated from the Gate 1 recovery branch.
+The user endorsed addressing the legacy history regression, durable database storage, API efficiency, and code speed on 2026-09-09. ADR 0008 already accepts SQLite behind static Releases; ADRs 0015 and 0016 propose the additional provenance and reuse decisions. ADR 0014 is reserved for the independently owned postseason calendar repair. This is a design proposal, not a completed migration or benchmark result. Work is isolated from the Gate 1 recovery branch.
 
 ## Verified starting points
 
