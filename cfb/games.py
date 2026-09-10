@@ -2,6 +2,10 @@ import pandas as pd
 import os
 import config
 from cfbd_client import get_snapshot_service
+if __package__:
+    from .season_source import is_completed
+else:
+    from season_source import is_completed
 
 
 def fetch_games(
@@ -22,6 +26,7 @@ def fetch_games(
 
 
 def _results_dataframe(games):
+    completed_games = tuple(game for game in games if is_completed(game))
     frame = pd.DataFrame(
         (
             {
@@ -34,7 +39,7 @@ def _results_dataframe(games):
                 "away_score": game.away_points,
                 "neutral_site": game.neutral_site,
             }
-            for game in games
+            for game in completed_games
         ),
         columns=["week", "home_team", "home_division", "home_score", "away_team",
                  "away_division", "away_score", "neutral_site"],

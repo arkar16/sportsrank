@@ -58,6 +58,31 @@ class CfbdFetcherCompatibilityTests(unittest.TestCase):
              "away_division", "neutral_site"],
         )
 
+    def test_results_dataframe_filters_unfinished_and_canceled_games(self):
+        results = games._results_dataframe(
+            (
+                SourceGame(
+                    1, "Alpha", "fbs", 21, "Beta", "fbs", 14, False, completed=True
+                ),
+                SourceGame(
+                    2,
+                    "Gamma",
+                    "fbs",
+                    17,
+                    "Delta",
+                    "fbs",
+                    14,
+                    False,
+                    completed=False,
+                ),
+                SourceGame(
+                    3, "Epsilon", "fbs", 28, "Zeta", "fbs", 21, False, disposition="canceled"
+                ),
+            )
+        )
+        self.assertEqual(results.shape[0], 1)
+        self.assertEqual(results.iloc[0]["home_team"], "Alpha")
+
 
 if __name__ == "__main__":
     unittest.main()
