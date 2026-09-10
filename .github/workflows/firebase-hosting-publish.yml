@@ -1,0 +1,302 @@
+name: Publish validated static site to Firebase Hosting
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: Full 40-character SHA of the merged candidate commit
+        required: true
+        type: string
+      base_sha:
+        description: Full 40-character SHA of the currently deployed base commit
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+concurrency:
+  group: sportsrank-production-publication
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate and attest immutable website Release
+    runs-on: ubuntu-latest
+    outputs:
+      artifact_name: ${{ steps.package.outputs.artifact_name }}
+      artifact_sha256: ${{ steps.package.outputs.artifact_sha256 }}
+      smoke_script_sha256: ${{ steps.package.outputs.smoke_script_sha256 }}
+    steps:
+      - name: Reject mutable publication inputs
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+          BASE_SHA: ${{ inputs.base_sha }}
+        run: |
+          set -euo pipefail
+          for name in CANDIDATE_SHA BASE_SHA; do
+            value="${!name}"
+            if [[ ! "$value" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "$name must be a full lowercase 40-character commit SHA" >&2
+              exit 1
+            fi
+          done
+          if [[ "$CANDIDATE_SHA" == "$BASE_SHA" ]]; then
+            echo "candidate_sha must differ from base_sha" >&2
+            exit 1
+          fi
+
+      - name: Check out immutable candidate commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.candidate_sha }}
+          fetch-depth: 0
+          fetch-tags: false
+          persist-credentials: false
+
+      - name: Verify commit objects, ancestry, and merge status
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+          BASE_SHA: ${{ inputs.base_sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          for name in CANDIDATE_SHA BASE_SHA; do
+            sha="${!name}"
+            if [[ "$(git cat-file -t "$sha" 2>/dev/null || true)" != "commit" ]]; then
+              echo "$name is not a commit object" >&2
+              exit 1
+            fi
+            resolved="$(git rev-parse --verify "$sha^{commit}")"
+            if [[ "$resolved" != "$sha" ]]; then
+              echo "$name does not resolve to its exact commit SHA" >&2
+              exit 1
+            fi
+          done
+
+          if [[ "$(git rev-parse HEAD)" != "$CANDIDATE_SHA" ]]; then
+            echo "checkout did not produce candidate_sha" >&2
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$BASE_SHA" "$CANDIDATE_SHA"; then
+            echo "base_sha must be an ancestor of candidate_sha" >&2
+            exit 1
+          fi
+
+          default_ref="refs/remotes/origin/$DEFAULT_BRANCH"
+          if ! git show-ref --verify --quiet "$default_ref"; then
+            echo "the default branch history was not fetched" >&2
+            exit 1
+          fi
+          default_tip="$(git rev-parse --verify "$default_ref^{commit}")"
+          if ! git merge-base --is-ancestor "$CANDIDATE_SHA" "$default_tip"; then
+            echo "candidate_sha is not merged into the default branch" >&2
+            exit 1
+          fi
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install locked Python dependencies
+        run: uv sync --locked
+
+      - name: Run offline Python tests
+        run: uv run python -m unittest discover -s tests -v
+
+      - name: Install locked hosting dependencies
+        run: npm ci
+
+      - name: Check static hosting tree
+        run: npm run build
+
+      - name: Validate reviewed website Release (offline)
+        shell: bash
+        env:
+          BASE_SHA: ${{ inputs.base_sha }}
+        run: |
+          set -euo pipefail
+          base_root="$RUNNER_TEMP/sportsrank-base-${BASE_SHA}"
+          base_archive="$RUNNER_TEMP/sportsrank-base-${BASE_SHA}.tar"
+          base_site="$base_root/website"
+          rm -rf "$base_root" "$base_archive"
+          mkdir -p "$base_root"
+
+          if [[ "$(git cat-file -t "$BASE_SHA" 2>/dev/null || true)" != "commit" ]]; then
+            echo "BASE_SHA is not a verified commit object" >&2
+            exit 1
+          fi
+          resolved_base="$(git rev-parse --verify "$BASE_SHA^{commit}")"
+          if [[ "$resolved_base" != "$BASE_SHA" ]]; then
+            echo "BASE_SHA does not resolve to its exact commit SHA" >&2
+            exit 1
+          fi
+
+          git archive --format=tar --output="$base_archive" "$BASE_SHA" website
+          test -s "$base_archive"
+          tar --extract --file="$base_archive" --directory="$base_root" --no-same-owner
+          test -d "$base_site"
+          test -f "$base_site/index.html"
+
+          uv run python -m cfb.recovery validate website --published-site "$base_site" --json
+
+      - name: Package the validated site once
+        id: package
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+          BASE_SHA: ${{ inputs.base_sha }}
+        run: |
+          set -euo pipefail
+          bundle_dir="$RUNNER_TEMP/sportsrank-validated-bundle"
+          rm -rf "$bundle_dir"
+          mkdir -p "$bundle_dir"
+          staging_archive="$bundle_dir/site.tar"
+          tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 \
+            --numeric-owner --format=gnu -cf "$staging_archive" website firebase.json
+          gzip -n "$staging_archive"
+          archive="$bundle_dir/site.tar.gz"
+          digest="$(sha256sum "$archive" | cut -d' ' -f1)"
+          content_addressed_archive="$bundle_dir/sportsrank-site-${digest}.tar.gz"
+          mv "$archive" "$content_addressed_archive"
+          smoke_script_source="$GITHUB_WORKSPACE/tools/scripts/postdeploy_smoke.py"
+          smoke_script="$bundle_dir/postdeploy_smoke.py"
+          cp "$smoke_script_source" "$smoke_script"
+          test -s "$smoke_script"
+          smoke_script_sha256="$(sha256sum "$smoke_script" | cut -d' ' -f1)"
+          checksum="$content_addressed_archive.sha256"
+          printf '%s  %s\n' "$digest" "$(basename "$content_addressed_archive")" > "$checksum"
+          attestation="$bundle_dir/sportsrank-site-${digest}.attestation.json"
+          cat > "$attestation" <<EOF
+          {
+            "schemaVersion": 1,
+            "artifactName": "sportsrank-site-${digest}",
+            "artifactFile": "$(basename "$content_addressed_archive")",
+            "artifact_sha256": "${digest}",
+            "smoke_script_sha256": "${smoke_script_sha256}",
+            "candidate_sha": "${CANDIDATE_SHA}",
+            "base_sha": "${BASE_SHA}",
+            "paths": ["firebase.json", "website"]
+          }
+          EOF
+          echo "artifact_name=sportsrank-site-${digest}" >> "$GITHUB_OUTPUT"
+          echo "artifact_sha256=${digest}" >> "$GITHUB_OUTPUT"
+          echo "archive_path=${content_addressed_archive}" >> "$GITHUB_OUTPUT"
+          echo "checksum_path=${checksum}" >> "$GITHUB_OUTPUT"
+          echo "attestation_path=${attestation}" >> "$GITHUB_OUTPUT"
+          echo "smoke_script_path=${smoke_script}" >> "$GITHUB_OUTPUT"
+          echo "smoke_script_sha256=${smoke_script_sha256}" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub artifact provenance attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: ${{ steps.package.outputs.archive_path }}
+
+      - name: Upload the content-addressed artifact and attestation
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.package.outputs.artifact_name }}
+          path: |
+            ${{ steps.package.outputs.archive_path }}
+            ${{ steps.package.outputs.checksum_path }}
+            ${{ steps.package.outputs.attestation_path }}
+            ${{ steps.package.outputs.smoke_script_path }}
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Publish approved validated artifact
+    needs: validate
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://www.sportsrank.top
+    steps:
+      - name: Download the exact validated artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.validate.outputs.artifact_name }}
+          path: ${{ runner.temp }}/sportsrank-validated-bundle
+
+      - name: Verify attestation and artifact hash
+        shell: bash
+        env:
+          ARTIFACT_SHA256: ${{ needs.validate.outputs.artifact_sha256 }}
+          SMOKE_SCRIPT_SHA256: ${{ needs.validate.outputs.smoke_script_sha256 }}
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+          BASE_SHA: ${{ inputs.base_sha }}
+        run: |
+          set -euo pipefail
+          bundle_dir="$RUNNER_TEMP/sportsrank-validated-bundle"
+          archive="$bundle_dir/sportsrank-site-${ARTIFACT_SHA256}.tar.gz"
+          checksum="$archive.sha256"
+          attestation="$bundle_dir/sportsrank-site-${ARTIFACT_SHA256}.attestation.json"
+          smoke_script="$bundle_dir/postdeploy_smoke.py"
+          test -f "$archive"
+          test -f "$checksum"
+          test -f "$attestation"
+          test -f "$smoke_script"
+          cd "$bundle_dir"
+          sha256sum -c "$(basename "$checksum")"
+          actual_digest="$(sha256sum "$(basename "$archive")" | cut -d' ' -f1)"
+          test "$actual_digest" = "$ARTIFACT_SHA256"
+          actual_smoke_script_digest="$(sha256sum "$(basename "$smoke_script")" | cut -d' ' -f1)"
+          test "$actual_smoke_script_digest" = "$SMOKE_SCRIPT_SHA256"
+          jq -e \
+            --arg candidate "$CANDIDATE_SHA" \
+            --arg base "$BASE_SHA" \
+            --arg digest "$ARTIFACT_SHA256" \
+            --arg smoke_script "$SMOKE_SCRIPT_SHA256" \
+            '.candidate_sha == $candidate and .base_sha == $base and .artifact_sha256 == $digest and .smoke_script_sha256 == $smoke_script and .paths == ["firebase.json", "website"]' \
+            "$(basename "$attestation")" > /dev/null
+
+      - name: Extract the verified artifact for Firebase
+        shell: bash
+        run: |
+          set -euo pipefail
+          bundle_dir="$RUNNER_TEMP/sportsrank-validated-bundle"
+          publish_dir="$GITHUB_WORKSPACE/validated-site"
+          rm -rf "$publish_dir"
+          mkdir -p "$publish_dir"
+          archive="$bundle_dir/sportsrank-site-${{ needs.validate.outputs.artifact_sha256 }}.tar.gz"
+          tar --extract --file "$archive" --directory "$publish_dir" --no-same-owner
+          test -f "$publish_dir/firebase.json"
+          test -f "$publish_dir/website/index.html"
+
+      - name: Publish the exact validated site
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SPORTSRANK_837AF }}
+          channelId: live
+          entryPoint: ${{ github.workspace }}/validated-site
+          projectId: sportsrank-837af
+
+      - name: Verify published pages match the validated artifact
+        shell: bash
+        env:
+          PUBLISHED_URL: https://www.sportsrank.top
+        run: |
+          set -euo pipefail
+          python3 "$RUNNER_TEMP/sportsrank-validated-bundle/postdeploy_smoke.py" \
+            --base-url "$PUBLISHED_URL" \
+            --artifact-root "$GITHUB_WORKSPACE/validated-site/website" \
+            --timeout 10 \
+            --attempts 3 \
+            --retry-delay 2 \
+            --max-duration 180

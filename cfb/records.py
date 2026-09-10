@@ -5,7 +5,7 @@ from games import get_results
 import config
 
 
-def get_current_records(year, week, division, timestamp):
+def get_current_records(year, week, division, timestamp, snapshot_service=None):
     # get original working directory
     os.chdir(config.owd)
     sport_upper = config.sport.upper()
@@ -15,8 +15,8 @@ def get_current_records(year, week, division, timestamp):
     WEEK = week
     DIVISION = division
 
-    teams_df = get_teams(YEAR, DIVISION, timestamp)
-    results_df = get_results(YEAR, DIVISION, timestamp)
+    teams_df = get_teams(YEAR, DIVISION, timestamp, snapshot_service)
+    results_df = get_results(YEAR, DIVISION, timestamp, snapshot_service)
 
     cfb_records_df = teams_df.copy()
     cfb_records_df["wins"] = 0
