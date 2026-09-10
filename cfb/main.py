@@ -11,9 +11,9 @@ except ImportError:  # direct execution compatibility
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # CONSTANTS
-YEAR = 2025  # define current year (cannot be earlier than 1897)
-START_YEAR = 2021 # define start year
-END_YEAR = 2023 # define end year
+YEAR = 2025  # define current year (cannot be earlier than 2024)
+START_YEAR = 2024 # deprecated compatibility value only
+END_YEAR = 2026 # deprecated compatibility value only
 WEEK = 0  # define current week
 START_WEEK = 0  # define start week
 end_week = 15  # define end week (max 15)
@@ -72,10 +72,11 @@ def run_calculations(calc_type, year, week, start_week, division, hfa, base_cors
             else:
                 full_season_calc(year, start_week, effective_end_week, division, hfa, base_cors, timestamp, snapshot_service)
         elif calc_type == "history":
-            if snapshot_service is None:
-                history_calc(START_YEAR, END_YEAR, start_week, end_week, division, hfa, base_cors, timestamp)
-            else:
-                history_calc(START_YEAR, END_YEAR, start_week, end_week, division, hfa, base_cors, timestamp, snapshot_service)
+            raise ValueError(
+                "Legacy historical regeneration is retired. Use "
+                "`python -m cfb.recovery backfill` (or recover/p0) and explicit "
+                "`build ... --phase` commands for staged recovery."
+            )
         else:
             raise ValueError(f"Invalid calculation type: {calc_type}")
     except Exception as e:
@@ -141,6 +142,12 @@ def main():
         logging.info(f"Starting {calc_type} calculation for year {year}")
     elif calc_type == "single_week":
         logging.info(f"Starting {calc_type} calculation for year {year}, week {week}")
+    elif calc_type == "history":
+        logging.error(
+            "Legacy historical regeneration is retired. Use "
+            "`python -m cfb.recovery backfill` for staged recovery."
+        )
+        return 2
     else:
         logging.info(f"Starting {calc_type} calculation for history {START_YEAR} - {END_YEAR}")
     
