@@ -28,6 +28,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 
 try:
+    from .baseline import VerifiedBaseline
     from .carryover_registry import reconcile_previous_final
     from .ranking_engine import (
         HFA,
@@ -67,6 +68,7 @@ try:
         postseason_calendar_provenance,
     )
 except ImportError:  # Direct execution from the cfb directory.
+    from baseline import VerifiedBaseline
     from carryover_registry import reconcile_previous_final
     from ranking_engine import (
         HFA,
@@ -133,7 +135,10 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def _site_for(candidate: str | Path | "Release") -> Path:
+def _site_for(candidate: str | Path | "Release" | VerifiedBaseline) -> Path:
+    if isinstance(candidate, VerifiedBaseline):
+        candidate.assert_current()
+        return candidate.application_site
     if isinstance(candidate, Release):
         return candidate.site
     path = Path(candidate)
@@ -608,7 +613,7 @@ def _public_files(root: Path) -> dict[str, str]:
     }
 
 
-def _valid_published_site(value: str | Path | None) -> Path:
+def _valid_published_site(value: str | Path | VerifiedBaseline | None) -> Path:
     if value is None:
         raise ValueError("published_site is required for an immutable full-site overlay")
     site = _site_for(value)
