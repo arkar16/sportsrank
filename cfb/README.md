@@ -3,31 +3,10 @@
 The CFB boundary currently supports FBS data from CFBD and renders static
 HTML. The supported recovery entry point is `python -m cfb.recovery`; it keeps
 external fetching, cached snapshots, Release generation, validation, and local
-promotion as separate stages. V3 is superseded. The V4 human Gate 1 package is
-approved. The repaired V5 implementation and offline verification are complete:
-193 tests pass, CI-focused tests pass 10/10, and three V5 release validations
-check 116/226/234 artifacts with zero structural failures. The final overlay has
-142 added / 93 changed / 0 deleted paths; W0 slates are 4/5/8; and all 35
-affected pick'em rows are corrected. Reviewer final acceptance of the sealed V5
-candidate was granted on 2026-09-09; the candidate is promoted into tracked
-`website/`, with 335 inherited legacy findings deferred.
-The original six-call ledger and prior nine-row audit remain unchanged; this
-repair deployment made zero provider/network calls. The actual-key scan found
-zero matches and zero read errors across all 13 scopes. Isolated temporary
-promotion matched the candidate, and tracked promotion is byte-identical. The
-live Firebase site is unchanged; Gate 2 production approval remains pending. See
-`agent_docs/latest_session_work.md`
-for current deployment state.
-
-A P1 postseason-calendar diagnosis found 46 postseason provider Week 1 games in
-each of 2024 and 2025 incorrectly classified as canonical Week 1. The frozen V6
-baseline completed with 218/218 tests and 152/298/306 checked artifacts with
-zero current failures. The current V7 follow-up passes 225/225 tests in 17.978
-seconds and compilation. Fresh reconstruction confirms all three direct and
-immediate releases with zero failures and zero added/changed/deleted paths; exact
-site and release JSON bytes match frozen V6, so no candidate regeneration was
-needed. V7 reviewer acceptance is complete; Gate 2 production approval remains
-pending.
+promotion as separate stages. See SportsRank task SR-7 (`bb tasks show SR-7`)
+for the recorded approval boundary and [historical Gate 1 reports](../agent_docs/latest_session_work.md)
+for historical verification. Commands below describe interfaces; fetch and
+publication examples do not grant authorization to execute them.
 
 ## Local setup
 
@@ -54,7 +33,7 @@ uv run python -m cfb.recovery build YEAR --classification FBS \
   --published-site website --output-root "$PWD/.sportsrank/releases"
 uv run python -m cfb.recovery validate CANDIDATE_PATH \
   --published-site "$PWD/website" --json
-# Future reviewed candidates only; V5 is already promoted.
+# Future reviewed candidates only; consult current work before promotion.
 uv run python -m cfb.recovery promote CANDIDATE_PATH website
 ```
 
@@ -186,13 +165,14 @@ For a cumulative final candidate, `validate --published-site` must name the
 original Published Site, not an intermediate Release. This invokes the
 independent cumulative-chain validator and reports added, changed, and deleted
 public paths in JSON output before any explicit promotion.
-The workflow must be dispatched with the full 40-character `candidate_sha` of
-the merged candidate and the full 40-character `base_sha` of the currently
-deployed commit. It checks ancestry and merge status, validates `website/`
-once, packages and attests one content-addressed artifact, and deploys that
-exact artifact after the protected `production` approval; the publish job does
-not check out a ref. A Pi-local `.sportsrank/releases` path is never passed to
-a runner.
+The current workflow's `candidate_sha`/`base_sha` interface assumes a Git base.
+[ADR-0016](../docs/adr/0016-bind-publication-to-verified-live-content.md) accepts
+a verified live-content baseline and requires deployed identity to be recorded
+separately from verification. That publication behavior is not implemented yet.
+Use the [publication runbook](../docs/operations/2026-season-recovery-morning.md)
+for the required readiness sequence; the protected `production` job must carry
+the exact validated artifact, with no source re-checkout. A Pi-local
+`.sportsrank/releases` path is never passed to a runner.
 
 Local Firebase commands are for the emulator only. Public publication has no
 local npm or Firebase deployment shortcut; use the gated workflow above.

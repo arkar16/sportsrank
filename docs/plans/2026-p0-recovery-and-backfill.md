@@ -1,23 +1,10 @@
 # SportsRank P0 recovery and backfill — implementation handoff
 
-Status: authoritative implementation goal. V1–V3 are superseded. The V4
-human Gate 1 package is approved. The seven delegated repairs are implemented
-and verified in the sealed V5 candidate: Pick’em grading, the numbered-week
-PRESEASON graph, snapshot boundary trust, numeric manifest corruption, inherited
-navigation readability, CI-pin/post-deploy smoke/concurrency behavior, and
-approval-state documentation. Reviewer final acceptance of V5 was granted on
-2026-09-09, and the exact candidate is promoted into tracked `website/`.
-Metadata
-repair completed under the separate allowance with exactly three explicit
-metered GAMES-only requests—2024 historical, 2025 historical, and 2026
-scheduled—with no retries or teams calls. The original six-call ledger, cache,
-and audit bytes remain unchanged; the new
-`.sportsrank/gate1-recovery-20260908/metadata-refresh-data` root records nine
-cumulative successful rows. Schema 3 retains raw provider week, ID, date, and
-completed fields, and the explicit project calendar policy verifies real W0
-counts of 4, 5, and 8 for 2024, 2025, and 2026. The credential scan found zero
-matches and zero read errors across all required scopes. This repair deployment
-made zero provider/network calls; Gate 2 production approval remains pending.
+Status: retained recovery implementation and acceptance contract. SportsRank
+BB task SR-7 (`bb tasks show SR-7`) owns current scope, execution and acceptance.
+Earlier verification below is historical; the absent historical reconstruction
+output/log root is not fresh evidence. Original fetch budgets and completed
+steps do not authorize reruns. The owner retains merge and production approval.
 
 ## Mission
 
@@ -67,8 +54,13 @@ contradiction scan across all human- and machine-facing guidance.
   Pre-2024 public artifacts remain byte-for-byte unchanged.
 - Every public path remains addressable indefinitely. A candidate Release is a
   full overlay of the Published Site, not a partial replacement.
-- The current tracked `website/` is the publication base. Its homepage and
-  2023 FINAL were verified byte-for-byte against the live site on 2026-09-04.
+  ADR-0017 preserves the availability and app identity of exactly the two
+  Firebase-managed initialization resources separately from application bytes;
+  all other ownership and unchanged-content checks remain strict.
+- The recovery used a tracked `website/` base; homepage and 2023 FINAL matches
+  were reported on 2026-09-04. Those samples do not establish the complete live
+  tree. ADR-0016 now requires verified live-content evidence and reconciliation
+  with the preserved historical archive before first publication.
 - Human Gate 1 approval was granted for the reviewed V4 package. The seven
   delegated repairs are implemented and frozen in the V5 candidate; offline
   verification and reviewer final acceptance are complete. This repair used
@@ -295,16 +287,38 @@ Gate 2 remains pending.
 
 ### Exact-artifact publication
 
-- Replace mutable workflow input with required full `candidate_sha` and
-  `base_sha` commit identifiers. Validate their relationship and reject branch
-  names, tags, short SHAs, or an unmerged candidate.
+- Require the full immutable merged `candidate_sha` and an expected deployed
+  Firebase release/version bound to its complete verified content archive.
+  ADR-0016 replaces the historical requirement for a known deployed `base_sha`;
+  an initial capture may have unknown source-commit provenance. Reject mutable
+  candidate refs, incomplete baseline evidence and an unmerged candidate.
 - Validate and package `website/` once. Carry that content-addressed artifact
   and its attestation into the protected publish job; do not re-checkout a ref.
 - Disable direct `npm run deploy` and equivalent hosting publication bypasses.
-- After PR review and merge, validate the exact merged SHA against the currently
-  deployed base SHA. Gate 2 is the GitHub `production` environment approval.
+- Validate against the verified live base and preserve the historical archive.
+  Reconcile different base trees and provenance offline; changing a base
+  identifier alone cannot make the prepared candidate valid.
+- Gate 2 is the owner-required GitHub `production` environment approval.
+  Recheck expected live identity after approval immediately before publication;
+  reject stale or unknown state. Serialize the authorized publication path and
+  coordinate other publishers; a provider read is not an atomic write lock.
 - Deploy the already-validated artifact, then verify the homepage, 2023 FINAL,
   rebuilt 2024/2025 FINAL pages, 2026 PRESEASON, and the Week 0 slate.
+- Preserve artifact/provenance archives and deployment receipts independently
+  of short-lived workflow artifacts. Record actual deployment and verification
+  separately. Reconcile provider state after an interrupted attempt. A failed
+  post-deployment check pauses ordinary publication for owner-approved recovery;
+  rollback is an explicit approved publication, not an automatic action.
+- Use GitHub immutable release assets under ADR-0018. Seal the artifact and
+  intent before deployment, then append separate immutable provider-result and
+  verification records. Verify immutability, retrieval and hashes; mutable
+  notes or labels cannot establish state. Publish sanitized provenance while
+  retaining original provider metadata privately with explicit source binding.
+  Independent locked backup is deferred under the accepted deletion risk.
+- Before the recovery cutover, disable the legacy automatic deployment routes
+  and retire their repository-scoped deployment capability. Verify containment
+  before merge; audit shared credential use before revocation. Production
+  setup and exact-artifact approval remain distinct from planning acceptance.
 
 ## Meaningful verification
 

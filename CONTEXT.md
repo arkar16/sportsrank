@@ -79,5 +79,5 @@ _Avoid_: Temporary output
 _Avoid_: Upload, push
 
 **Published Site**:
-The last validated Release currently visible to the public. A failed Ranking Run never changes it.
+The complete site currently visible to the public, whose deployment identity is distinct from its verification status. A failed Ranking Run never changes it; failed verification after Publication does not restore the preceding site.
 _Avoid_: Build, website folder

@@ -1,27 +1,9 @@
 # 2026 recovery publication runbook
 
-Do not run the old live-fetch, promotion, or Firebase instructions. V3 is
-superseded. Metadata repair completed with exactly three explicit metered
-GAMES-only requests (2024 and 2025 historical, 2026 scheduled), no retries or
-teams calls, and nine cumulative successful audit rows in
-`.sportsrank/gate1-recovery-20260908/metadata-refresh-data`. The original
-six-call ledger, cache, and audit bytes remain unchanged. Schema 3 now retains
-raw provider week, ID, date, and completion fields; the source-backed calendar
-policy verifies W0 counts of 4, 5, and 8 for 2024, 2025, and 2026. The V4 human
-Gate 1 package is approved. V5 implementation and offline verification are
-complete: 193 tests pass, CI-focused tests pass 10/10, and three V5 validations
-check 116/226/234 artifacts with zero structural failures. Reviewer final
-acceptance of the sealed V5 candidate was granted on 2026-09-09, and the exact
-candidate is now in tracked `website/`; Gate 2 production approval remains
-pending. Post-acceptance diagnosis found 46 postseason provider Week 1 games in
-each of 2024 and 2025 incorrectly classified as canonical Week 1, contaminating
-actual W1 outputs and the sequential FINAL path. The cache-only V6 correction is
-the frozen comparison baseline: its 218/218 tests and 152/298/306-artifact
-validation remain prior evidence. The current V7 window/provider-phase follow-up
-passes 225/225 tests in 17.978 seconds and compilation; frozen V6 remains
-byte-identical and reconstructed-byte equivalence passes. Reviewer acceptance
-is complete and the exact candidate is in tracked `website/`. See
-`agent_docs/latest_session_work.md` for current deployment state.
+Before any publication action, read the authoritative SportsRank task SR-7 (`bb tasks show SR-7`) and
+verify the actual merged candidate SHA and complete live baseline. Historical acceptance
+and artifact identities are indexed in [historical Gate 1 reports](../../agent_docs/latest_session_work.md).
+This runbook is a procedure, not an approval or a current verification report.
 
 The implementation and test contract is
 [`../plans/2026-p0-recovery-and-backfill.md`](../plans/2026-p0-recovery-and-backfill.md).
@@ -29,57 +11,81 @@ The actual-key credential scan is recorded in the repair evidence and required
 no API call. The three-call metadata-repair allowance is spent; preserve the
 original six-call bytes and do not rerun that sequence or issue further CFBD
 requests. Continue from the refreshed root with cached-input review and
-validation only. The normalization is an explicit SportsRank policy, not a
-CFBD conversion: classify each Game's phase before assigning its Week. For
-regular-season games, provider Week 1 dates before the midnight
-America/New_York boundaries 2024-08-26, 2025-08-25, and 2026-08-31 map to Week 0.
-Positively classified postseason games use the same Season lattice with
-`canonical_week = 1 + floor((local_date - week1_boundary_date).days / 7)`;
-mixed regular/postseason Weeks and gaps are valid, and public Week URLs remain
-unchanged. The inclusive 2026 America/New_York postseason window is 2026-12-12
-through 2027-01-25; December 12 is the FCS Celebration Bowl and December 15 is
-the first FBS bowl. Unsupported seasons, deficient legacy metadata, and newly
-provider-backed missing or unknown phase fail closed, with no silent refresh or
-automatic fallback after a failed refresh. Fresh provider-backed postseason IDs
-do not require membership in the historical 92-row recovery registry, but raw
-phase mismatches reject at cache and Release validation. See the supported staged
-commands in
-[`../../cfb/README.md`](../../cfb/README.md) for the cache-only rebuild path.
-`cfb/week_calendar.py` owns the explicit policy; each Release independently
-rederives it and binds the policy identity, Season, boundary, timezone, and
-primary source URLs in provenance.
+validation only. Calendar semantics and migration provenance are owned by
+[ADR-0014](../adr/0014-preserve-postseason-chronology.md). Use the supported
+cache-only migration/rebuild interfaces in [CFB CLI documentation](../../cfb/README.md).
+The completed recovery used immutable inputs under
+`.sportsrank/gate1-recovery-20260908/metadata-refresh-data/snapshots`.
+The historical output/evidence root was
+`.sportsrank/postseason-calendar-repair-20260909/{data,releases-v6,evidence}`;
+its availability is recorded in the evidence index. Confirm the intended inputs,
+new output directory, and task scope before running a new migration.
 
-The P1 executor must use the cache-only
-`python -m cfb.recovery migrate-postseason --source-root <directory containing
-cfb-fbs-YEAR.json> --destination-root <new empty snapshots directory>` command,
-defaulting to 2024/25/26 with repeatable `--season` selection. The source is
-`.sportsrank/gate1-recovery-20260908/metadata-refresh-data/snapshots`, not its
-parent audit root; the new roots are
-`.sportsrank/postseason-calendar-repair-20260909/{data,releases-v6,evidence}`.
-Derived Schema 4 data retains available raw `season_type` and `playoff` and
-binds source Schema 3/checksum, target schema, calendar identity, and the
-`postseason-recovery-v2` registry checksum
-`244b5ed82b7d0add35cae95cf48ce664639f17a9243fbda8acc83e6720467549`. Regular
-and postseason IDs are `cfb-provider-week-v1` and
-`cfb-postseason-week-lattice-v1`; reverse validation must reproduce the full
-Schema 3 checksum. The command makes zero CFBD calls and does not mutate its
-inputs. This repair completed from cached inputs with source, tests, and
-workflow changes frozen. The V6 candidate remains the frozen comparison
-baseline; V7 focused and full verification plus fresh reconstructed-byte
-equivalence pass with zero path deltas. No CFBD/build-transport request or
-Firebase deployment occurred. V7 reviewer acceptance is complete; Gate 2
-production approval remains pending.
+## First-publication readiness
 
-## Gate 2 publication path after PR review
+[ADR-0016](../adr/0016-bind-publication-to-verified-live-content.md) records the
+accepted publication behavior. The current workflow still expects
+`candidate_sha`/`base_sha` Git inputs and does not implement that behavior.
+Do not run the existing dispatch procedure as a first-publication shortcut.
+The sequence below is the delivery requirement, not a claim of readiness.
 
-After PR review and merge, use only the manually
-dispatched **Publish validated static site to Firebase Hosting** workflow. Gate 1
-applies to the reviewed V7 candidate, and Gate 2 production approval remains
-separate. Enter
-the full 40-character `candidate_sha` of the merged candidate and the full
-40-character `base_sha` of the currently deployed commit. The workflow rejects
-mutable refs and unmerged candidates, validates the candidate site once,
-creates a content-addressed artifact plus attestation, and carries that exact
-artifact into the protected GitHub `production` environment. The publish job
-has no source checkout. Do not invoke local hosting publication commands; Gate
-2 is the pending production approval.
+1. Capture the current Firebase live release/version, complete file inventory,
+   recoverable content and serving configuration using authenticated read-only
+   access. Preserve a content-addressed archive and capture evidence. An unknown
+   original Git SHA is acceptable; missing content or unexplained differences
+   are not. Recheck live identity after capture to exclude a mixed baseline.
+2. Reconcile the capture with the historical repository archive and prepared
+   recovery. Preserve every public path and unchanged inherited content. If
+   the bases differ, prepare and validate a fresh offline overlay with correct
+   provenance; keep the accepted recovery bytes/evidence preserved for comparison.
+   No live CFBD allowance is implied.
+   Apply [ADR-0017](../adr/0017-preserve-firebase-managed-resource-behavior.md)
+   only to the two Firebase initialization resources: retain capture evidence,
+   preserve availability/app identity and verify their generated configuration.
+   Preserve the three never-live Schema 3 source snapshots as recovery inputs
+   outside the rebuilt application tree, with verified source-checksum lookup.
+3. Complete the publication implementation and configure `production` with the
+   owner as required reviewer, self-review allowed, bypass disabled and branch
+   `main` only. Scope deployment credentials exclusively to that environment
+   and retire the legacy publication routes. Verify the actual configuration
+   and credential capability before relying on the gate.
+   Disable legacy automatic deploy/preview workflows and remove their usable
+   repository-scoped deployment capability before the recovery merge. Audit
+   shared key use before revoking a credential; do not affect unrelated services.
+4. Enable and verify GitHub release immutability before publishing archival
+   assets under [ADR-0018](../adr/0018-retain-publication-evidence-in-github-releases.md).
+   Keep raw provider account metadata in private evidence; public derivatives
+   include explicit redaction provenance and source hashes. Retain source
+   snapshots and the original prepared recovery along with the live baseline.
+
+## Gate 2 publication and recovery
+
+After implementation, PR review and merge, use only the manually dispatched
+**Publish validated static site to Firebase Hosting** workflow. Gate 2 production
+approval remains separate from technical acceptance.
+
+1. Validate the full merged `candidate_sha` against the verified baseline and
+   package the site/configuration once. Bind its digest and provenance to the
+   expected current Firebase live release/version; retain the archive and
+   attempt evidence beyond temporary Actions artifact retention.
+   Verify durable archive retrieval and hashes before deployment. Publish the
+   artifact and intent as immutable assets, then preserve separate immutable
+   deployment and verification records; never append to a sealed release or use
+   its editable title, notes or latest label as authority.
+2. Present the exact validated artifact for the owner's `production` approval.
+   Re-read live identity after approval immediately before publication. A stale
+   or unknown base stops the attempt. Coordinate the single publication path;
+   the identity check does not lock out an uncoordinated external publisher.
+3. Publish that exact artifact without re-checking out source. Record the
+   provider release/version separately from the subsequent public-page checks.
+   If the attempt is interrupted or its result is uncertain, reconcile Firebase
+   state before any new publication.
+4. On failed post-deployment verification, pause ordinary publication and retain
+   the actual deployed identity plus failure evidence. The owner chooses recovery;
+   automatic rollback is not authorized. A verification retry need not publish.
+   A rollback or corrective deployment requires approval of its exact artifact.
+
+The suspect release can remain live while recovery is investigated. Agents never
+submit the owner's approval; GitHub account-based review cannot distinguish human
+and agent actions made through the same account. Local hosting commands remain
+emulator-only.
