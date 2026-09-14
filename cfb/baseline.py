@@ -20,6 +20,7 @@ try:
         ProviderIdentity,
         ProviderTarget,
         RecordValidationError,
+        SanitizedBaselineArchiveRecord,
         SourceProvenance,
     )
 except ImportError:  # Direct execution from the cfb directory.
@@ -29,6 +30,7 @@ except ImportError:  # Direct execution from the cfb directory.
         ProviderIdentity,
         ProviderTarget,
         RecordValidationError,
+        SanitizedBaselineArchiveRecord,
         SourceProvenance,
     )
 
@@ -54,6 +56,7 @@ class VerifiedBaseline:
     record: BaselineRecord
     application_site: Path
     evidence_archive: Path
+    sanitizer_record: SanitizedBaselineArchiveRecord | None
     _temporary: tempfile.TemporaryDirectory[str] | None = field(default=None, repr=False, compare=False)
 
     def __init__(
@@ -62,6 +65,7 @@ class VerifiedBaseline:
         application_site: Path,
         evidence_archive: Path,
         temporary: tempfile.TemporaryDirectory[str] | None = None,
+        sanitizer_record: SanitizedBaselineArchiveRecord | None = None,
         *,
         _token: object | None = None,
     ) -> None:
@@ -70,6 +74,7 @@ class VerifiedBaseline:
         object.__setattr__(self, "record", record)
         object.__setattr__(self, "application_site", application_site)
         object.__setattr__(self, "evidence_archive", evidence_archive)
+        object.__setattr__(self, "sanitizer_record", sanitizer_record)
         object.__setattr__(self, "_temporary", temporary)
 
     @classmethod
@@ -79,13 +84,23 @@ class VerifiedBaseline:
         application_site: Path,
         evidence_archive: Path,
         temporary: tempfile.TemporaryDirectory[str] | None = None,
+        sanitizer_record: SanitizedBaselineArchiveRecord | None = None,
     ) -> "VerifiedBaseline":
-        return cls(record, application_site, evidence_archive, temporary, _token=_VERIFIED_BASELINE_TOKEN)
+        return cls(record, application_site, evidence_archive, temporary, sanitizer_record, _token=_VERIFIED_BASELINE_TOKEN)
 
     def assert_current(self) -> None:
         if not self.application_site.is_dir() or _tree_digest(self.application_site) != self.record.application_tree_sha256:
             raise BaselineValidationError("verified baseline application tree was changed after import")
-        if not self.evidence_archive.is_file() or _sha256_file(self.evidence_archive) != self.record.archive_sha256:
+        expected_archive = self.record.archive_sha256
+        if self.sanitizer_record is not None:
+            provenance = self.sanitizer_record
+            if (
+                provenance.source_baseline_record_sha256 != self.record.digest
+                or provenance.source_archive_sha256 != self.record.archive_sha256
+            ):
+                raise BaselineValidationError("sanitized archive provenance no longer binds the baseline")
+            expected_archive = provenance.derivative_archive_sha256
+        if not self.evidence_archive.is_file() or _sha256_file(self.evidence_archive) != expected_archive:
             raise BaselineValidationError("verified baseline archive no longer matches its trusted identity")
 
     def close(self) -> None:
@@ -446,6 +461,203 @@ def import_baseline(
             temporary.cleanup()
             return result
         return verified
+    except BaseException:
+        temporary.cleanup()
+        raise
+
+
+_PUBLIC_CAPTURE_FIELDS = (
+    "schema_version", "site", "started_at", "completed_at", "live",
+    "source_commit", "source_commit_status", "status", "file_count",
+    "total_bytes", "files", "config_sha256", "metadata_sha256",
+)
+_PUBLIC_FILE_FIELDS = (
+    "path", "relative", "provider_sha256", "status", "sha256", "bytes",
+    "verification", "provider_payload",
+)
+
+
+def _canonical_json_file(path: Path, value: Any) -> None:
+    path.write_bytes((json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False) + "\n").encode("utf-8"))
+
+
+def _deterministic_tar_gz(source: Path, destination: Path) -> str:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with destination.open("wb") as raw:
+        with gzip.GzipFile(filename="", mode="wb", fileobj=raw, mtime=0) as compressed:
+            with tarfile.open(fileobj=compressed, mode="w", format=tarfile.PAX_FORMAT) as target:
+                for path in sorted(source.rglob("*")):
+                    relative = path.relative_to(source).as_posix()
+                    info = target.gettarinfo(str(path), arcname=relative)
+                    info.uid = info.gid = 0
+                    info.uname = info.gname = ""
+                    info.mtime = 0
+                    info.mode = 0o755 if path.is_dir() else 0o644
+                    if path.is_file():
+                        with path.open("rb") as content:
+                            target.addfile(info, content)
+                    else:
+                        target.addfile(info)
+    return _sha256_file(destination)
+
+
+def _removed_leaf_paths(source: Any, sanitized: Any, prefix: str = "") -> list[str]:
+    if isinstance(source, Mapping) and isinstance(sanitized, Mapping):
+        removed: list[str] = []
+        for key, value in source.items():
+            child = f"{prefix}/{key}"
+            if key not in sanitized:
+                if isinstance(value, Mapping):
+                    removed.extend(_removed_leaf_paths(value, {}, child))
+                else:
+                    removed.append(child)
+            else:
+                removed.extend(_removed_leaf_paths(value, sanitized[key], child))
+        return removed
+    if isinstance(source, list) and isinstance(sanitized, list):
+        removed = []
+        for index, value in enumerate(source[:len(sanitized)]):
+            removed.extend(_removed_leaf_paths(value, sanitized[index], f"{prefix}/{index}"))
+        return removed
+    return []
+
+
+def create_sanitized_baseline_archive(
+    baseline: VerifiedBaseline,
+    output: str | Path,
+) -> SanitizedBaselineArchiveRecord:
+    """Create the deterministic public derivative of a verified private capture.
+
+    Application and provider-payload bytes remain exact. Provider observations
+    are reduced to the fields needed to reconstruct and independently verify the
+    baseline; actor/account metadata never crosses this boundary.
+    """
+
+    baseline.assert_current()
+    output_path = Path(output)
+    with tempfile.TemporaryDirectory(prefix="sportsrank-baseline-sanitize-") as directory:
+        work = Path(directory)
+        private = work / "private"
+        public = work / "public"
+        _extract_archive(baseline.evidence_archive, private)
+        public.mkdir()
+        shutil.copytree(private / "site", public / "site")
+        shutil.copytree(private / "provider-payloads", public / "provider-payloads")
+
+        originals = {name: _load_json(private / name) for name in (
+            "capture.json", "channel-before.json", "channel-after.json", "version.json", "inventory.json"
+        )}
+        capture = originals["capture.json"]
+        if not isinstance(capture, Mapping) or not isinstance(capture.get("files"), list):
+            raise BaselineValidationError("private baseline capture has an invalid shape")
+        public_files = []
+        for item in capture["files"]:
+            if not isinstance(item, Mapping):
+                raise BaselineValidationError("private baseline file evidence is invalid")
+            public_files.append({name: item[name] for name in _PUBLIC_FILE_FIELDS if name in item})
+        public_capture = {name: capture[name] for name in _PUBLIC_CAPTURE_FIELDS if name in capture}
+        public_capture["files"] = public_files
+
+        def channel(value: Any) -> dict[str, Any]:
+            identity = _channel_identity(value, baseline.record.target)
+            return {"name": f"sites/{baseline.record.target.site}/channels/live", "release": {"name": identity.release, "version": {"name": identity.version}}}
+
+        version = originals["version.json"]
+        if not isinstance(version, Mapping):
+            raise BaselineValidationError("private provider version evidence is invalid")
+        public_values: dict[str, Any] = {
+            "channel-before.json": channel(originals["channel-before.json"]),
+            "channel-after.json": channel(originals["channel-after.json"]),
+            "version.json": {name: version[name] for name in ("name", "status", "config", "fileCount") if name in version},
+            "inventory.json": originals["inventory.json"],
+        }
+        derivative_hashes: dict[str, str] = {}
+        for name, value in public_values.items():
+            if name == "inventory.json":
+                # Inventory is already a public allowlist and its exact byte
+                # digest is part of the original BaselineRecord.
+                shutil.copyfile(private / name, public / name)
+            else:
+                _canonical_json_file(public / name, value)
+            derivative_hashes[name] = _sha256_file(public / name)
+        public_capture["metadata_sha256"] = derivative_hashes
+        _canonical_json_file(public / "capture.json", public_capture)
+
+        removed: list[str] = []
+        removed.extend(_removed_leaf_paths(originals["capture.json"], public_capture, "/capture.json"))
+        for name, value in public_values.items():
+            removed.extend(_removed_leaf_paths(originals[name], value, f"/{name}"))
+        if not removed:
+            # The method remains explicit even for synthetic fixtures with no
+            # private fields; these paths define the schema boundary.
+            removed = ["/channel-before.json/release/createUser", "/channel-after.json/release/createUser"]
+        derivative_sha = _deterministic_tar_gz(public, output_path)
+
+    return SanitizedBaselineArchiveRecord(
+        baseline.record.digest, baseline.record.archive_sha256, derivative_sha,
+        baseline.record.private_evidence_sha256, derivative_hashes,
+        "firebase-provider-evidence-allowlist-v1", tuple(sorted(set(removed))),
+        baseline.record.file_count, baseline.record.total_bytes,
+        baseline.record.target, baseline.record.observed,
+    )
+
+
+def import_sanitized_baseline(
+    archive: str | Path,
+    *,
+    expected_derivative_sha256: str,
+    sanitizer_record: Mapping[str, Any] | SanitizedBaselineArchiveRecord,
+    expected_sanitizer_record_sha256: str,
+    baseline_record: Mapping[str, Any] | BaselineRecord,
+    expected_baseline_record_sha256: str,
+    target: Mapping[str, Any] | ProviderTarget,
+    materialize_to: str | Path | None = None,
+) -> VerifiedBaseline:
+    """Reimport public evidence while retaining its private-source binding."""
+
+    provenance = sanitizer_record if isinstance(sanitizer_record, SanitizedBaselineArchiveRecord) else SanitizedBaselineArchiveRecord.from_dict(sanitizer_record)
+    source_record = baseline_record if isinstance(baseline_record, BaselineRecord) else BaselineRecord.from_dict(baseline_record)
+    if provenance.digest != expected_sanitizer_record_sha256:
+        raise BaselineValidationError("sanitizer record does not match its trusted digest")
+    if source_record.digest != expected_baseline_record_sha256:
+        raise BaselineValidationError("baseline record does not match its trusted digest")
+    if provenance.source_baseline_record_sha256 != source_record.digest or provenance.source_archive_sha256 != source_record.archive_sha256:
+        raise BaselineValidationError("sanitized archive is not linked to the source baseline")
+    if provenance.derivative_archive_sha256 != expected_derivative_sha256:
+        raise BaselineValidationError("sanitized archive digest is not linked to its provenance")
+    resolved_target = ProviderTarget.from_value(target)
+    if provenance.target != resolved_target or source_record.target != resolved_target:
+        raise BaselineValidationError("sanitized baseline targets another provider")
+
+    archive_path = Path(archive)
+    if not archive_path.is_file() or _sha256_file(archive_path) != expected_derivative_sha256:
+        raise BaselineValidationError("sanitized baseline archive does not match trusted evidence")
+    temporary = tempfile.TemporaryDirectory(prefix="sportsrank-public-baseline-")
+    root = Path(temporary.name)
+    try:
+        _extract_archive(archive_path, root)
+        verified = _verify_evidence_root(
+            root, target=resolved_target, archive_sha256=expected_derivative_sha256,
+            evidence_archive=archive_path,
+            materialize_to=Path(materialize_to) if materialize_to is not None else None,
+            temporary=temporary,
+        )
+        candidate = verified.record
+        semantic_fields = (
+            "target", "observed", "before", "after", "captured_at", "inventory_sha256",
+            "configuration_sha256", "application_tree_sha256", "file_count", "total_bytes",
+            "source", "managed_resources",
+        )
+        if any(getattr(candidate, name) != getattr(source_record, name) for name in semantic_fields):
+            raise BaselineValidationError("sanitized evidence cannot reconstruct the source baseline")
+        result = VerifiedBaseline._create(
+            source_record, verified.application_site, archive_path,
+            temporary if materialize_to is None else None, provenance,
+        )
+        if materialize_to is not None:
+            temporary.cleanup()
+        result.assert_current()
+        return result
     except BaseException:
         temporary.cleanup()
         raise

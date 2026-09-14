@@ -65,7 +65,8 @@ def _digest(value: Any, name: str) -> str:
 
 
 def _version(value: Mapping[str, Any], record_type: str) -> None:
-    if value.get("schema_version") != SCHEMA_VERSION:
+    schema_version = value.get("schema_version")
+    if isinstance(schema_version, bool) or not isinstance(schema_version, int) or schema_version != SCHEMA_VERSION:
         raise RecordValidationError(f"unsupported {record_type} schema_version")
     if value.get("record_type") != record_type:
         raise RecordValidationError(f"expected record_type {record_type}")
@@ -345,6 +346,140 @@ class BaselineRecord:
 
 
 @dataclass(frozen=True)
+class ArchiveReference:
+    """Stable identity of one asset in a published immutable GitHub release."""
+
+    repository: str
+    release_id: str
+    tag: str
+    target_commit: str
+    asset_id: str
+    asset_name: str
+    sha256: str
+    size: int
+    immutable: bool
+
+    def __post_init__(self) -> None:
+        if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", self.repository):
+            raise RecordValidationError("archive repository must be OWNER/REPOSITORY")
+        for name in ("release_id", "tag", "asset_id", "asset_name"):
+            _text(getattr(self, name), f"archive.{name}")
+        if not _COMMIT.fullmatch(self.target_commit):
+            raise RecordValidationError("archive.target_commit must be an immutable commit SHA")
+        if "/" in self.asset_name or self.asset_name in {".", ".."}:
+            raise RecordValidationError("archive asset_name must be a file name")
+        _digest(self.sha256, "archive.sha256")
+        if isinstance(self.size, bool) or not isinstance(self.size, int) or self.size < 0:
+            raise RecordValidationError("archive.size must be a non-negative integer")
+        if not isinstance(self.immutable, bool) or not self.immutable:
+            raise RecordValidationError("archive release must be immutable")
+
+    @classmethod
+    def from_value(cls, value: Mapping[str, Any] | "ArchiveReference") -> "ArchiveReference":
+        if isinstance(value, cls):
+            return cls.from_dict(value.to_dict())
+        return cls.from_dict(value)
+
+    @classmethod
+    def from_dict(cls, raw: Mapping[str, Any]) -> "ArchiveReference":
+        raw = _object(raw, "archive reference")
+        names = {"repository", "release_id", "tag", "target_commit", "asset_id", "asset_name", "sha256", "size", "immutable"}
+        _exact(raw, {"schema_version", "record_type", *names}, "archive reference")
+        _version(raw, "archive_reference")
+        size = raw["size"]
+        immutable = raw["immutable"]
+        if isinstance(size, bool) or not isinstance(size, int):
+            raise RecordValidationError("archive.size must be a non-negative integer")
+        if not isinstance(immutable, bool):
+            raise RecordValidationError("archive.immutable must be a boolean")
+        return cls(
+            *(_text(raw[name], f"archive.{name}") for name in ("repository", "release_id", "tag", "target_commit", "asset_id", "asset_name")),
+            _digest(raw["sha256"], "archive.sha256"), size, immutable,
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"schema_version": SCHEMA_VERSION, "record_type": "archive_reference", **{name: getattr(self, name) for name in self.__dataclass_fields__}}
+
+    @property
+    def digest(self) -> str:
+        return record_digest(self.to_dict())
+
+
+@dataclass(frozen=True)
+class SanitizedBaselineArchiveRecord:
+    source_baseline_record_sha256: str
+    source_archive_sha256: str
+    derivative_archive_sha256: str
+    source_metadata_sha256: Mapping[str, str]
+    derivative_metadata_sha256: Mapping[str, str]
+    redaction_method: str
+    removed_json_paths: tuple[str, ...]
+    file_count: int
+    total_bytes: int
+    target: ProviderTarget
+    observed: ProviderIdentity
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "source_metadata_sha256", MappingProxyType(dict(self.source_metadata_sha256)))
+        object.__setattr__(self, "derivative_metadata_sha256", MappingProxyType(dict(self.derivative_metadata_sha256)))
+        object.__setattr__(self, "removed_json_paths", tuple(self.removed_json_paths))
+        for name in ("source_baseline_record_sha256", "source_archive_sha256", "derivative_archive_sha256"):
+            _digest(getattr(self, name), name)
+        for group_name in ("source_metadata_sha256", "derivative_metadata_sha256"):
+            group = _object(getattr(self, group_name), group_name)
+            if not group:
+                raise RecordValidationError(f"{group_name} is required")
+            for name, value in group.items():
+                _text(name, f"{group_name} name")
+                _digest(value, f"{group_name}.{name}")
+        _text(self.redaction_method, "redaction_method")
+        if not self.removed_json_paths or any(not isinstance(v, str) or not v.startswith("/") for v in self.removed_json_paths):
+            raise RecordValidationError("removed_json_paths must identify removed fields")
+        for name in ("file_count", "total_bytes"):
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                raise RecordValidationError(f"{name} must be a non-negative integer")
+        if not isinstance(self.target, ProviderTarget) or not isinstance(self.observed, ProviderIdentity) or self.observed.target != self.target:
+            raise RecordValidationError("sanitized baseline provider identity is invalid")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": SCHEMA_VERSION, "record_type": "sanitized_baseline_archive",
+            "source_baseline_record_sha256": self.source_baseline_record_sha256,
+            "source_archive_sha256": self.source_archive_sha256,
+            "derivative_archive_sha256": self.derivative_archive_sha256,
+            "source_metadata_sha256": dict(self.source_metadata_sha256),
+            "derivative_metadata_sha256": dict(self.derivative_metadata_sha256),
+            "redaction_method": self.redaction_method,
+            "removed_json_paths": list(self.removed_json_paths), "file_count": self.file_count,
+            "total_bytes": self.total_bytes, "target": self.target.to_dict(),
+            "observed": self.observed.to_dict(include_target=False),
+        }
+
+    @classmethod
+    def from_dict(cls, raw: Mapping[str, Any]) -> "SanitizedBaselineArchiveRecord":
+        raw = _object(raw, "sanitized baseline archive record")
+        names = {"source_baseline_record_sha256", "source_archive_sha256", "derivative_archive_sha256", "source_metadata_sha256", "derivative_metadata_sha256", "redaction_method", "removed_json_paths", "file_count", "total_bytes", "target", "observed"}
+        _exact(raw, {"schema_version", "record_type", *names}, "sanitized baseline archive record")
+        _version(raw, "sanitized_baseline_archive")
+        removed = raw["removed_json_paths"]
+        if not isinstance(removed, list):
+            raise RecordValidationError("removed_json_paths must be an array")
+        target = ProviderTarget.from_value(raw["target"])
+        return cls(
+            *(_digest(raw[n], n) for n in ("source_baseline_record_sha256", "source_archive_sha256", "derivative_archive_sha256")),
+            _object(raw["source_metadata_sha256"], "source_metadata_sha256"),
+            _object(raw["derivative_metadata_sha256"], "derivative_metadata_sha256"),
+            _text(raw["redaction_method"], "redaction_method"), tuple(removed), raw["file_count"], raw["total_bytes"],
+            target, ProviderIdentity.from_value(raw["observed"], target=target),
+        )
+
+    @property
+    def digest(self) -> str:
+        return record_digest(self.to_dict())
+
+
+@dataclass(frozen=True)
 class ValidatedPackageRecord:
     candidate_commit: str
     bundle_sha256: str
@@ -353,6 +488,7 @@ class ValidatedPackageRecord:
     expected_baseline_sha256: str
     retained_inputs_sha256: str
     validation_sha256: str
+    expected_predecessor: ProviderIdentity
 
     def __post_init__(self) -> None:
         if not _COMMIT.fullmatch(self.candidate_commit):
@@ -362,6 +498,8 @@ class ValidatedPackageRecord:
             "expected_baseline_sha256", "retained_inputs_sha256", "validation_sha256",
         ):
             _digest(getattr(self, name), name)
+        if not isinstance(self.expected_predecessor, ProviderIdentity):
+            raise RecordValidationError("expected_predecessor must be a provider identity")
 
     @classmethod
     def create(cls, **values: str) -> "ValidatedPackageRecord":
@@ -370,7 +508,7 @@ class ValidatedPackageRecord:
     @classmethod
     def from_dict(cls, raw: Mapping[str, Any]) -> "ValidatedPackageRecord":
         raw = _object(raw, "validated package record")
-        names = {"candidate_commit", "bundle_sha256", "inventory_sha256", "configuration_sha256", "expected_baseline_sha256", "retained_inputs_sha256", "validation_sha256"}
+        names = {"candidate_commit", "bundle_sha256", "inventory_sha256", "configuration_sha256", "expected_baseline_sha256", "retained_inputs_sha256", "validation_sha256", "expected_predecessor"}
         _exact(raw, {"schema_version", "record_type", *names}, "validated package record")
         _version(raw, "validated_package")
         commit = _text(raw["candidate_commit"], "candidate_commit")
@@ -378,10 +516,19 @@ class ValidatedPackageRecord:
             raise RecordValidationError("candidate_commit must be an immutable commit SHA")
         return cls(commit, *(_digest(raw[name], name) for name in (
             "bundle_sha256", "inventory_sha256", "configuration_sha256",
-            "expected_baseline_sha256", "retained_inputs_sha256", "validation_sha256")))
+            "expected_baseline_sha256", "retained_inputs_sha256", "validation_sha256")),
+            ProviderIdentity.from_value(raw["expected_predecessor"]))
 
     def to_dict(self) -> dict[str, Any]:
-        return {"schema_version": SCHEMA_VERSION, "record_type": "validated_package", **{name: getattr(self, name) for name in self.__dataclass_fields__}}
+        return {
+            "schema_version": SCHEMA_VERSION, "record_type": "validated_package",
+            "candidate_commit": self.candidate_commit, "bundle_sha256": self.bundle_sha256,
+            "inventory_sha256": self.inventory_sha256, "configuration_sha256": self.configuration_sha256,
+            "expected_baseline_sha256": self.expected_baseline_sha256,
+            "retained_inputs_sha256": self.retained_inputs_sha256,
+            "validation_sha256": self.validation_sha256,
+            "expected_predecessor": self.expected_predecessor.to_dict(),
+        }
 
     @property
     def digest(self) -> str:
@@ -394,8 +541,8 @@ class AttemptIntentRecord:
     purpose: str
     package_sha256: str
     expected_predecessor: ProviderIdentity
-    artifact_reference: str
-    intent_reference: str
+    artifact_reference: ArchiveReference
+    evidence_references: Mapping[str, ArchiveReference]
     protected_context: Mapping[str, str]
 
     def __post_init__(self) -> None:
@@ -408,22 +555,57 @@ class AttemptIntentRecord:
         _digest(self.package_sha256, "package_sha256")
         if not isinstance(self.expected_predecessor, ProviderIdentity):
             raise RecordValidationError("expected predecessor identity is invalid")
-        _text(self.artifact_reference, "artifact_reference")
-        _text(self.intent_reference, "intent_reference")
+        if not isinstance(self.artifact_reference, ArchiveReference):
+            raise RecordValidationError("artifact reference must be an immutable archive reference")
+        evidence = _object(self.evidence_references, "evidence_references")
+        required_evidence = {"baseline", "source_inputs", "original_prepared"}
+        if set(evidence) != required_evidence:
+            raise RecordValidationError("permanent baseline, source-input, and original-prepared references are required")
+        object.__setattr__(self, "evidence_references", MappingProxyType({name: ArchiveReference.from_value(value) for name, value in evidence.items()}))
         if not self.protected_context:
             raise RecordValidationError("protected execution context is required")
+        required_context = {"repository", "workflow_ref", "workflow_sha", "run_id", "run_attempt", "environment"}
+        if set(self.protected_context) != required_context:
+            raise RecordValidationError("protected execution context fields do not match the runtime evidence schema")
         for name, value in self.protected_context.items():
             _text(str(name), "protected_context field")
             _text(value, f"protected_context.{name}")
+        repository = self.protected_context["repository"]
+        if repository != self.artifact_reference.repository or any(
+            reference.repository != repository
+            for reference in self.evidence_references.values()
+        ):
+            raise RecordValidationError("all immutable evidence must belong to the protected repository")
+        workflow_ref = self.protected_context["workflow_ref"]
+        workflow_prefix = f"{repository}/.github/workflows/"
+        if (
+            not workflow_ref.startswith(workflow_prefix)
+            or not workflow_ref.endswith("@refs/heads/main")
+            or ".." in workflow_ref
+        ):
+            raise RecordValidationError("protected workflow_ref must identify a main-branch workflow")
+        if not _COMMIT.fullmatch(self.protected_context["workflow_sha"]):
+            raise RecordValidationError("protected workflow_sha must be an immutable commit SHA")
+        for name in ("run_id", "run_attempt"):
+            if not self.protected_context[name].isdigit() or int(self.protected_context[name]) < 1:
+                raise RecordValidationError(f"protected {name} must be a positive integer")
+        if self.protected_context["environment"] != "production":
+            raise RecordValidationError("protected environment must be production")
 
     @classmethod
     def create(cls, *, package: ValidatedPackageRecord, **values: Any) -> "AttemptIntentRecord":
+        reference = ArchiveReference.from_value(values.get("artifact_reference"))
+        if reference.sha256 != package.bundle_sha256:
+            raise RecordValidationError("artifact reference does not bind the validated package bytes")
+        if reference.target_commit != package.candidate_commit:
+            raise RecordValidationError("artifact reference does not bind the validated candidate commit")
+        values["artifact_reference"] = reference.to_dict()
         return cls.from_dict({"schema_version": SCHEMA_VERSION, "record_type": "attempt_intent", "package_sha256": package.digest, **values}, package=package)
 
     @classmethod
     def from_dict(cls, raw: Mapping[str, Any], *, package: ValidatedPackageRecord | None = None) -> "AttemptIntentRecord":
         raw = _object(raw, "attempt intent record")
-        names = {"attempt_id", "purpose", "package_sha256", "expected_predecessor", "artifact_reference", "intent_reference", "protected_context"}
+        names = {"attempt_id", "purpose", "package_sha256", "expected_predecessor", "artifact_reference", "evidence_references", "protected_context"}
         _exact(raw, {"schema_version", "record_type", *names}, "attempt intent record")
         _version(raw, "attempt_intent")
         purpose = raw["purpose"]
@@ -435,19 +617,29 @@ class AttemptIntentRecord:
         predecessor = ProviderIdentity.from_value(
             _object(raw["expected_predecessor"], "expected_predecessor")
         )
+        if package is not None and predecessor != package.expected_predecessor:
+            raise RecordValidationError("attempt predecessor does not match the validated package")
         context = _object(raw["protected_context"], "protected_context")
         if not context:
             raise RecordValidationError("protected execution context is required")
+        evidence = raw["evidence_references"]
+        if not isinstance(evidence, Mapping):
+            raise RecordValidationError("evidence_references must be an object")
+        artifact = ArchiveReference.from_value(raw["artifact_reference"])
+        if package is not None and artifact.sha256 != package.bundle_sha256:
+            raise RecordValidationError("artifact reference does not bind the validated package bytes")
+        if package is not None and artifact.target_commit != package.candidate_commit:
+            raise RecordValidationError("artifact reference does not bind the validated candidate commit")
         return cls(
             _text(raw["attempt_id"], "attempt_id"), purpose, package_sha,
             predecessor,
-            _text(raw["artifact_reference"], "artifact_reference"),
-            _text(raw["intent_reference"], "intent_reference"),
+            artifact,
+            MappingProxyType({str(name): ArchiveReference.from_value(v) for name, v in evidence.items()}),
             MappingProxyType({str(name): _text(value, f"protected_context.{name}") for name, value in context.items()}),
         )
 
     def to_dict(self) -> dict[str, Any]:
-        return {"schema_version": SCHEMA_VERSION, "record_type": "attempt_intent", "attempt_id": self.attempt_id, "purpose": self.purpose, "package_sha256": self.package_sha256, "expected_predecessor": self.expected_predecessor.to_dict(), "artifact_reference": self.artifact_reference, "intent_reference": self.intent_reference, "protected_context": dict(self.protected_context)}
+        return {"schema_version": SCHEMA_VERSION, "record_type": "attempt_intent", "attempt_id": self.attempt_id, "purpose": self.purpose, "package_sha256": self.package_sha256, "expected_predecessor": self.expected_predecessor.to_dict(), "artifact_reference": self.artifact_reference.to_dict(), "evidence_references": {name: value.to_dict() for name, value in self.evidence_references.items()}, "protected_context": dict(self.protected_context)}
 
     @property
     def digest(self) -> str:

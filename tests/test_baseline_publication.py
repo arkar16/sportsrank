@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from dataclasses import asdict
 import gzip
 import hashlib
 import json
@@ -13,9 +14,17 @@ import shutil
 from types import MappingProxyType
 import unittest
 
-from cfb.baseline import BaselineValidationError, VerifiedBaseline, import_baseline
+from cfb.baseline import (
+    BaselineValidationError,
+    VerifiedBaseline,
+    create_sanitized_baseline_archive,
+    import_baseline,
+    import_sanitized_baseline,
+)
 from cfb.firebase import FakeFirebaseReadBackend, FirebaseReadAdapter
+from cfb.publication import prepare_review_package
 from cfb.publication_records import (
+    ArchiveReference,
     AttemptIntentRecord,
     BaselineRecord,
     ManagedResourceEvidence,
@@ -28,9 +37,10 @@ from cfb.publication_records import (
     VerificationRecord,
 )
 from cfb.ranking_engine import PreviousFinal
+from cfb.recovery_inputs import RecoveryInputBundle
 from cfb.release import ReleaseValidationError, build_release, promote_release, validate_release
 from cfb.season_snapshot import SeasonSnapshot, _checksum
-from cfb.season_source import SourceGame, SourceTeam
+from cfb.season_source import SourceGame, SourceTeam, normalize_game
 
 
 STAMP = "2026-09-13T12:00:00+00:00"
@@ -150,6 +160,114 @@ def _snapshot() -> SeasonSnapshot:
 
 
 class BaselineImportTests(unittest.TestCase):
+    def test_review_preparation_revalidates_and_packages_once_without_a_commit_claim(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            evidence = _evidence(root / "evidence")
+            baseline_archive = root / "baseline.tar.gz"
+            baseline_sha = _archive(evidence, baseline_archive)
+            baseline = import_baseline(
+                baseline_archive, target=TARGET, expected_archive_sha256=baseline_sha,
+                materialize_to=root / "baseline-site",
+            )
+            seed = _snapshot()
+            games = tuple(normalize_game(asdict(value)) for value in seed.games)
+            snapshot = SeasonSnapshot(
+                seed.sport, seed.classification, seed.year, seed.teams, games,
+                seed.metadata, _checksum(seed.metadata, seed.teams, games),
+            )
+            state = dict(snapshot.metadata)
+            state["teams"] = [asdict(value) for value in snapshot.teams]
+            state["games"] = [
+                {name: value for name, value in asdict(game).items() if value is not None}
+                for game in snapshot.games
+            ]
+            state["checksum"] = snapshot.checksum
+            inputs = root / "inputs"; (inputs / "snapshots").mkdir(parents=True)
+            source_path = inputs / "snapshots/cfb-fbs-2024.json"
+            _write_json(source_path, state)
+            source_sha = hashlib.sha256(source_path.read_bytes()).hexdigest()
+            _write_json(inputs / "inputs-manifest.json", {
+                "files": [{"path": "snapshots/cfb-fbs-2024.json", "sha256": source_sha, "bytes": source_path.stat().st_size}]
+            })
+            inputs_archive = root / "source-inputs.tar.gz"
+            with tarfile.open(inputs_archive, "w:gz") as archived:
+                for path in sorted(inputs.rglob("*")):
+                    archived.add(path, arcname=path.relative_to(inputs).as_posix(), recursive=False)
+            inputs_sha = hashlib.sha256(inputs_archive.read_bytes()).hexdigest()
+            source_inputs = RecoveryInputBundle.from_directory(
+                inputs, trusted_file_sha256={"snapshots/cfb-fbs-2024.json": source_sha},
+                archive=inputs_archive, expected_archive_sha256=inputs_sha,
+            )
+            candidate = build_release(
+                snapshot, root / "candidate", release_id="candidate", phase="week",
+                timestamp=STAMP, published_site=baseline, source_inputs=source_inputs,
+            )
+            firebase_json = root / "firebase.json"
+            _write_json(firebase_json, {"hosting": {"public": "website"}})
+            first = prepare_review_package(
+                candidate, baseline=baseline, firebase_json=firebase_json,
+                source_inputs=source_inputs, retained_inputs_sha256=inputs_sha,
+                validation_evidence={"accepted": True}, output=root / "first.tar.gz",
+            )
+            second = prepare_review_package(
+                candidate, baseline=baseline, firebase_json=firebase_json,
+                source_inputs=source_inputs, retained_inputs_sha256=inputs_sha,
+                validation_evidence={"accepted": True}, output=root / "second.tar.gz",
+            )
+
+            self.assertEqual(first.bundle_sha256, second.bundle_sha256)
+            self.assertEqual(first.expected_baseline_sha256, baseline.record.digest)
+            self.assertFalse(hasattr(first, "candidate_commit"))
+
+    def test_public_derivative_reconstructs_baseline_without_private_actor_metadata(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            evidence = _evidence(root / "evidence")
+            for name in ("channel-before.json", "channel-after.json"):
+                value = json.loads((evidence / name).read_text())
+                value["release"]["createUser"] = {"email": "private@example.invalid"}
+                _write_json(evidence / name, value)
+            version = json.loads((evidence / "version.json").read_text())
+            version["createUser"] = {"email": "private@example.invalid"}
+            _write_json(evidence / "version.json", version)
+            capture = json.loads((evidence / "capture.json").read_text())
+            capture["metadata_sha256"] = {
+                name: hashlib.sha256((evidence / name).read_bytes()).hexdigest()
+                for name in ("channel-before.json", "channel-after.json", "version.json", "inventory.json")
+            }
+            _write_json(evidence / "capture.json", capture)
+            private_archive = root / "baseline-private.tar.gz"
+            private_sha = _archive(evidence, private_archive)
+            baseline = import_baseline(
+                private_archive, target=TARGET, expected_archive_sha256=private_sha,
+                materialize_to=root / "private-site",
+            )
+            public_archive = root / "baseline-public.tar.gz"
+            sanitizer = create_sanitized_baseline_archive(baseline, public_archive)
+
+            with tarfile.open(public_archive, "r:gz") as archived:
+                public_evidence = b"".join(
+                    archived.extractfile(member).read()
+                    for member in archived.getmembers() if member.isfile()
+                )
+            self.assertNotIn(b"private@example.invalid", public_evidence)
+            self.assertEqual(sanitizer.source_archive_sha256, private_sha)
+            self.assertNotEqual(sanitizer.derivative_archive_sha256, private_sha)
+            imported = import_sanitized_baseline(
+                public_archive,
+                expected_derivative_sha256=sanitizer.derivative_archive_sha256,
+                sanitizer_record=sanitizer,
+                expected_sanitizer_record_sha256=sanitizer.digest,
+                baseline_record=baseline.record,
+                expected_baseline_record_sha256=baseline.record.digest,
+                target=TARGET,
+                materialize_to=root / "public-site",
+            )
+            self.assertEqual(imported.record, baseline.record)
+            self.assertEqual((imported.application_site / "index.html").read_bytes(), b"published fixture")
+            imported.assert_current()
+
     def test_verified_unknown_source_baseline_drives_existing_release_validation(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -393,6 +511,32 @@ def _evidence_bytes(relative: str) -> bytes:
     return b"published fixture"
 
 
+def _archive_ref(digest: str = "1" * 64, name: str = "package.tar.gz") -> dict[str, object]:
+    return ArchiveReference(
+        "owner/repository", "1", "evidence-1", "c" * 40,
+        "1", name, digest, 1, True,
+    ).to_dict()
+
+
+def _evidence_refs() -> dict[str, dict[str, object]]:
+    return {
+        "baseline": _archive_ref("9" * 64, "baseline.tar.gz"),
+        "source_inputs": _archive_ref("8" * 64, "source-inputs.tar.gz"),
+        "original_prepared": _archive_ref("7" * 64, "original-prepared.tar.gz"),
+    }
+
+
+def _protected_context() -> dict[str, str]:
+    return {
+        "repository": "owner/repository",
+        "workflow_ref": "owner/repository/.github/workflows/publish.yml@refs/heads/main",
+        "workflow_sha": "c" * 40,
+        "run_id": "123",
+        "run_attempt": "1",
+        "environment": "production",
+    }
+
+
 class SharedRecordTests(unittest.TestCase):
     def test_records_are_strictly_versioned_linked_and_keep_unknown_outcomes_explicit(self):
         package = ValidatedPackageRecord.create(
@@ -403,15 +547,16 @@ class SharedRecordTests(unittest.TestCase):
             expected_baseline_sha256="4" * 64,
             retained_inputs_sha256="5" * 64,
             validation_sha256="6" * 64,
+            expected_predecessor={"target": TARGET, "release": RELEASE, "version": VERSION},
         )
         intent = AttemptIntentRecord.create(
             attempt_id="attempt-1",
             purpose="normal",
             package=package,
             expected_predecessor={"target": TARGET, "release": RELEASE, "version": VERSION},
-            artifact_reference="immutable://package-1",
-            intent_reference="immutable://intent-1",
-            protected_context={"workflow_ref": "refs/heads/main"},
+            artifact_reference=_archive_ref(),
+            evidence_references=_evidence_refs(),
+            protected_context=_protected_context(),
         )
         result = ProviderResultRecord.create_unknown(
             intent=intent,
@@ -477,14 +622,15 @@ class SharedRecordTests(unittest.TestCase):
             expected_baseline_sha256="4" * 64,
             retained_inputs_sha256="5" * 64,
             validation_sha256="6" * 64,
+            expected_predecessor={"target": TARGET, "release": RELEASE, "version": VERSION},
         )
         values = {
             "purpose": "normal",
             "package": package,
             "expected_predecessor": {"target": TARGET, "release": RELEASE, "version": VERSION},
-            "artifact_reference": "immutable://package-1",
-            "intent_reference": "immutable://intent-1",
-            "protected_context": {"workflow_ref": "refs/heads/main"},
+            "artifact_reference": _archive_ref(),
+            "evidence_references": _evidence_refs(),
+            "protected_context": _protected_context(),
         }
         first = AttemptIntentRecord.create(attempt_id="attempt-1", **values)
         second = AttemptIntentRecord.create(attempt_id="attempt-2", **values)
@@ -521,19 +667,19 @@ class SharedRecordTests(unittest.TestCase):
     def test_direct_record_constructors_copy_mutable_containers(self):
         target = ProviderTarget.from_value(TARGET)
         predecessor = ProviderIdentity(target, RELEASE, VERSION)
-        context = {"workflow_ref": "refs/heads/main"}
+        context = _protected_context()
         intent = AttemptIntentRecord(
             "attempt-1",
             "normal",
             "1" * 64,
             predecessor,
-            "immutable://package-1",
-            "immutable://intent-1",
+            ArchiveReference.from_dict(_archive_ref()),
+            {name: ArchiveReference.from_dict(value) for name, value in _evidence_refs().items()},
             context,
         )
         original_digest = intent.digest
         context["workflow_ref"] = "refs/heads/attacker"
-        self.assertEqual(intent.protected_context["workflow_ref"], "refs/heads/main")
+        self.assertTrue(intent.protected_context["workflow_ref"].endswith("@refs/heads/main"))
         self.assertEqual(intent.digest, original_digest)
 
         app_identity = {
