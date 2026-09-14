@@ -581,6 +581,12 @@ class PublicationExecutionTests(unittest.TestCase):
             wrong_path, runtime = approval(fx.package.candidate_commit)
             wrong_path.run_value["path"] = ".github/workflows/other.yml"
             cases.append(("workflow", wrong_path, runtime))
+            for suffix in ("develop", "refs/heads/main", "main@extra"):
+                wrong_ref, runtime = approval(fx.package.candidate_commit)
+                wrong_ref.run_value["path"] = (
+                    ".github/workflows/firebase-hosting-publish.yml@" + suffix
+                )
+                cases.append((f"workflow-ref-{suffix}", wrong_ref, runtime))
             wrong_head, runtime = approval(fx.package.candidate_commit)
             wrong_head.run_value["head_sha"] = "d" * 40
             cases.append(("head", wrong_head, runtime))
@@ -589,6 +595,14 @@ class PublicationExecutionTests(unittest.TestCase):
                 "login": "someone-else", "id": 1,
             }
             cases.append(("owner", wrong_owner, runtime))
+            for malformed_id in (18_407_890.0, "18407890", True):
+                wrong_id, runtime = approval(fx.package.candidate_commit)
+                wrong_id.approval_values[0]["user"] = {
+                    "login": "arkar16", "id": malformed_id,
+                }
+                cases.append((
+                    f"owner-id-{type(malformed_id).__name__}", wrong_id, runtime,
+                ))
             ambiguous, runtime = approval(fx.package.candidate_commit)
             ambiguous.approval_values = (
                 *ambiguous.approval_values,
@@ -610,6 +624,22 @@ class PublicationExecutionTests(unittest.TestCase):
                         expected_repository="owner/repository",
                     )
 
+    def test_documented_workflow_path_with_exact_main_suffix_is_authorized(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fx = fixture(Path(directory))
+            fx.approval.run_value["path"] = (
+                ".github/workflows/firebase-hosting-publish.yml@main"
+            )
+            evidence = authorize_protected_execution(
+                fx.package, runtime=fx.runtime, github=fx.approval,
+                expected_repository="owner/repository",
+            )
+            self.assertEqual(
+                evidence.context["workflow_ref"],
+                "owner/repository/.github/workflows/"
+                "firebase-hosting-publish.yml@refs/heads/main",
+            )
+
     def test_concrete_rest_backend_maps_write_transport_and_http_failures(self):
         backend = FirebaseRestPublicationBackend(lambda: "offline-token")
         with patch("cfb.firebase.urlopen", side_effect=URLError("offline")):
@@ -620,6 +650,37 @@ class PublicationExecutionTests(unittest.TestCase):
         )
         with patch("cfb.firebase.urlopen", side_effect=rejected):
             with self.assertRaises(ProviderRejectedError):
+                backend.create_version(TARGET, {}, {})
+        for status in (429, 500, 503):
+            ambiguous = HTTPError(
+                "https://firebase.invalid", status, "ambiguous", {}, None
+            )
+            with self.subTest(status=status), patch(
+                "cfb.firebase.urlopen", side_effect=ambiguous
+            ):
+                with self.assertRaises(ProviderWriteUncertain):
+                    backend.create_version(TARGET, {}, {})
+
+        class AmbiguousResponse:
+            status = 503
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *arguments):
+                return False
+
+            def read(self, limit):
+                return b"{}"
+
+            def geturl(self):
+                return (
+                    "https://firebasehosting.googleapis.com/v1beta1/"
+                    "sites/fixture-site/versions"
+                )
+
+        with patch("cfb.firebase.urlopen", return_value=AmbiguousResponse()):
+            with self.assertRaises(ProviderWriteUncertain):
                 backend.create_version(TARGET, {}, {})
 
         class UnexpectedSuccess:
@@ -647,6 +708,109 @@ class PublicationExecutionTests(unittest.TestCase):
         with patch("cfb.firebase.urlopen", return_value=UnexpectedSuccess()):
             with self.assertRaises(ProviderWriteUncertain):
                 backend.upload_file(upload_url, "a" * 64, b"payload")
+
+    def test_concrete_transport_ambiguity_pauses_coordinator_without_retry(self):
+        class ConcreteFailureBackend(FakeFirebasePublicationBackend):
+            def __init__(self, *arguments, fail_step, failure, **keywords):
+                super().__init__(*arguments, **keywords)
+                self.fail_step = fail_step
+                self.failure = failure
+                self.transport_attempts = []
+                self.rest = FirebaseRestPublicationBackend(
+                    lambda: "offline-token"
+                )
+
+            def _fail(self, step, call):
+                self.transport_attempts.append(step)
+                with patch("cfb.firebase.urlopen", side_effect=self.failure):
+                    return call()
+
+            def create_version(self, target, config, labels):
+                if self.fail_step == "create":
+                    return self._fail(
+                        "create",
+                        lambda: self.rest.create_version(target, config, labels),
+                    )
+                return super().create_version(target, config, labels)
+
+            def populate_files(self, version, files):
+                if self.fail_step == "populate":
+                    return self._fail(
+                        "populate",
+                        lambda: self.rest.populate_files(version, files),
+                    )
+                return super().populate_files(version, files)
+
+            def upload_file(self, upload_url, digest, payload):
+                if self.fail_step == "upload":
+                    return self._fail(
+                        "upload",
+                        lambda: self.rest.upload_file(
+                            upload_url, digest, payload
+                        ),
+                    )
+                return super().upload_file(upload_url, digest, payload)
+
+            def finalize_version(self, version):
+                if self.fail_step == "finalize":
+                    return self._fail(
+                        "finalize",
+                        lambda: self.rest.finalize_version(version),
+                    )
+                return super().finalize_version(version)
+
+            def release_version(self, target, version):
+                if self.fail_step == "release":
+                    return self._fail(
+                        "release",
+                        lambda: self.rest.release_version(target, version),
+                    )
+                return super().release_version(target, version)
+
+        cases = (
+            ("create", HTTPError(
+                "https://firebase.invalid", 429, "rate", {}, None,
+            )),
+            ("populate", HTTPError(
+                "https://firebase.invalid", 500, "server", {}, None,
+            )),
+            ("upload", HTTPError(
+                "https://firebase.invalid", 503, "server", {}, None,
+            )),
+            ("finalize", HTTPError(
+                "https://firebase.invalid", 500, "server", {}, None,
+            )),
+            ("release", HTTPError(
+                "https://firebase.invalid", 503, "server", {}, None,
+            )),
+            ("release", URLError("lost response")),
+        )
+        for index, (step, failure) in enumerate(cases):
+            with self.subTest(step=step, failure=type(failure).__name__), \
+                    tempfile.TemporaryDirectory() as directory:
+                fx = fixture(Path(directory))
+                backend = ConcreteFailureBackend(
+                    TARGET, fx.package.expected_predecessor,
+                    managed_identity=APP_IDENTITY,
+                    fail_step=step, failure=failure,
+                )
+                result = coordinator(fx, backend).publish_normal(
+                    fx.package, prepared=fx.prepared,
+                    commit_reader=fx.reader, runtime=fx.runtime,
+                    baseline=fx.baseline,
+                    evidence_references=fx.evidence,
+                    tags=tags(f"transport-{index}"),
+                    attempt_id=f"transport-{index}",
+                    retrieval_directory=fx.root / "receipts",
+                )
+                self.assertEqual(result.state, "provider_unknown")
+                self.assertEqual(result.provider_result.outcome, "unknown")
+                self.assertTrue(result.deployment_may_have_changed)
+                self.assertEqual(
+                    result.permitted_next_operations, ("reconcile",)
+                )
+                self.assertIsNone(result.verification)
+                self.assertEqual(backend.transport_attempts, [step])
 
     def test_deterministic_payloads_and_population_batches_are_exact(self):
         with tempfile.TemporaryDirectory() as directory:

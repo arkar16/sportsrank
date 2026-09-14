@@ -139,6 +139,11 @@ class FakeGitHubApprovalReader:
 
 
 _EVIDENCE_TOKEN = object()
+_WORKFLOW_PATH = ".github/workflows/firebase-hosting-publish.yml"
+_BRANCH = "main"
+_ENVIRONMENT = "production"
+_OWNER_LOGIN = "arkar16"
+_OWNER_ID = 18_407_890
 
 
 @dataclass(frozen=True, init=False)
@@ -183,11 +188,6 @@ def authorize_protected_execution(
     runtime: GitHubRuntimeContext,
     github: ApprovalReader,
     expected_repository: str = "arkar16/sportsrank",
-    expected_workflow_path: str = ".github/workflows/firebase-hosting-publish.yml",
-    expected_branch: str = "main",
-    expected_environment: str = "production",
-    expected_owner_login: str = "arkar16",
-    expected_owner_id: int = 18_407_890,
 ) -> ProtectedExecutionEvidence:
     """Fail closed unless GitHub proves this exact first-run owner approval."""
 
@@ -196,7 +196,7 @@ def authorize_protected_execution(
         or runtime.run_attempt != "1"
         or not runtime.run_id.isdigit()
         or int(runtime.run_id) < 1
-        or runtime.ref != f"refs/heads/{expected_branch}"
+        or runtime.ref != f"refs/heads/{_BRANCH}"
         or runtime.sha != package.candidate_commit
         or runtime.event != "workflow_dispatch"
     ):
@@ -207,6 +207,11 @@ def authorize_protected_execution(
     run = github.run(expected_repository, runtime.run_id)
     run_id = run.get("id")
     run_attempt = run.get("run_attempt")
+    run_path = run.get("path")
+    accepted_run_paths = {
+        _WORKFLOW_PATH,
+        f"{_WORKFLOW_PATH}@{_BRANCH}",
+    }
     if (
         isinstance(run_id, bool)
         or not isinstance(run_id, int)
@@ -214,9 +219,10 @@ def authorize_protected_execution(
         or isinstance(run_attempt, bool)
         or not isinstance(run_attempt, int)
         or run_attempt != 1
-        or run.get("path") != expected_workflow_path
+        or not isinstance(run_path, str)
+        or run_path not in accepted_run_paths
         or run.get("event") != "workflow_dispatch"
-        or run.get("head_branch") != expected_branch
+        or run.get("head_branch") != _BRANCH
         or run.get("head_sha") != runtime.sha
     ):
         raise PublicationAuthorizationError(
@@ -237,7 +243,7 @@ def authorize_protected_execution(
             raise PublicationAuthorizationError(
                 "GitHub approval environment evidence is invalid"
             )
-        if expected_environment in names:
+        if _ENVIRONMENT in names:
             production_entries.append(entry)
     if len(production_entries) != 1:
         raise PublicationAuthorizationError(
@@ -249,18 +255,19 @@ def authorize_protected_execution(
     if (
         approval.get("state") != "approved"
         or len(environments) != 1
-        or environments[0].get("name") != expected_environment
+        or environments[0].get("name") != _ENVIRONMENT
         or not isinstance(user, Mapping)
-        or user.get("login") != expected_owner_login
+        or user.get("login") != _OWNER_LOGIN
         or isinstance(user.get("id"), bool)
-        or user.get("id") != expected_owner_id
+        or not isinstance(user.get("id"), int)
+        or user.get("id") != _OWNER_ID
     ):
         raise PublicationAuthorizationError(
             "GitHub production approval is not the required owner approval"
         )
 
     workflow_ref = (
-        f"{expected_repository}/{expected_workflow_path}@refs/heads/{expected_branch}"
+        f"{expected_repository}/{_WORKFLOW_PATH}@refs/heads/{_BRANCH}"
     )
     return ProtectedExecutionEvidence._create(
         {
@@ -269,13 +276,13 @@ def authorize_protected_execution(
             "workflow_sha": runtime.sha,
             "run_id": runtime.run_id,
             "run_attempt": runtime.run_attempt,
-            "environment": expected_environment,
+            "environment": _ENVIRONMENT,
             "event": runtime.event,
             "ref": runtime.ref,
             "head_sha": runtime.sha,
             "approval_state": "approved",
-            "approver_login": expected_owner_login,
-            "approver_id": str(expected_owner_id),
+            "approver_login": _OWNER_LOGIN,
+            "approver_id": str(_OWNER_ID),
         },
         package.digest,
         package.candidate_commit,

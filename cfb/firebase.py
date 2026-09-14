@@ -378,6 +378,25 @@ class ProviderWriteUncertain(FirebasePublicationError):
     """A write was sent but its response was lost or unreadable."""
 
 
+_DEFINITE_REJECTION_HTTP_STATUSES = frozenset({
+    400, 401, 403, 404, 405, 410, 411, 413, 414, 415, 422,
+})
+
+
+def _raise_write_http_failure(status: int) -> None:
+    """Classify only unambiguously client-rejected requests as rejected."""
+
+    if (
+        not isinstance(status, bool)
+        and isinstance(status, int)
+        and status in _DEFINITE_REJECTION_HTTP_STATUSES
+    ):
+        raise ProviderRejectedError("Firebase rejected a provider write")
+    raise ProviderWriteUncertain(
+        "Firebase write returned an ambiguous HTTP response"
+    )
+
+
 def _deterministic_gzip(value: bytes) -> bytes:
     payload = bytearray(gzip.compress(value, compresslevel=9, mtime=0))
     # Pin RFC 1952 OS to unknown so provider hashes do not vary by runner OS.
@@ -579,7 +598,10 @@ class FirebaseRestPublicationBackend:
                 status = response.status
         except HTTPError as exc:
             if write:
-                raise ProviderRejectedError("Firebase rejected a provider write") from exc
+                try:
+                    _raise_write_http_failure(exc.code)
+                except FirebasePublicationError as classified:
+                    raise classified from exc
             raise FirebasePublicationError("Firebase provider read failed") from exc
         except (URLError, TimeoutError, OSError) as exc:
             if write:
@@ -595,7 +617,7 @@ class FirebaseRestPublicationBackend:
             raise FirebasePublicationError("Firebase provider read is unsafe")
         if status < 200 or status >= 300:
             if write:
-                raise ProviderRejectedError("Firebase rejected a provider write")
+                _raise_write_http_failure(status)
             raise FirebasePublicationError("Firebase provider read failed")
         return value, final_url, status
 
