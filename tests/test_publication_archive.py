@@ -61,6 +61,23 @@ def validation(
     }))
 
 
+def protected_context(*, run_id: str = "123") -> dict[str, str]:
+    return {
+        "repository": "owner/repository",
+        "workflow_ref": "owner/repository/.github/workflows/publish.yml@refs/heads/main",
+        "workflow_sha": "c" * 40,
+        "run_id": run_id,
+        "run_attempt": "1",
+        "environment": "production",
+        "event": "workflow_dispatch",
+        "ref": "refs/heads/main",
+        "head_sha": "c" * 40,
+        "approval_state": "approved",
+        "approver_login": "arkar16",
+        "approver_id": "18407890",
+    }
+
+
 class PublicationArchiveTests(unittest.TestCase):
     def test_git_reader_accepts_only_an_exact_commit_object_sha(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -527,10 +544,8 @@ class PublicationArchiveTests(unittest.TestCase):
                 package, prepared=prepared, commit_reader=reader, archive=archive, repository="owner/repository",
                 package_tag="attempt-1-package", intent_tag="attempt-1-intent",
                 attempt_id="attempt-1", purpose="normal", evidence_references=evidence,
-                protected_context={
-                    "repository": "owner/repository", "workflow_ref": "owner/repository/.github/workflows/publish.yml@refs/heads/main",
-                    "workflow_sha": "c" * 40, "run_id": "123", "run_attempt": "1", "environment": "production",
-                }, retrieval_directory=root / "retrieved",
+                protected_context=protected_context(),
+                retrieval_directory=root / "retrieved",
             )
             self.assertEqual(sealed.retrieved_package.read_bytes(), b"package")
             self.assertEqual(
@@ -577,14 +592,7 @@ class PublicationArchiveTests(unittest.TestCase):
                         name: reference.to_dict()
                         for name, reference in evidence.items()
                     },
-                    protected_context={
-                        "repository": "owner/repository",
-                        "workflow_ref": "owner/repository/.github/workflows/publish.yml@refs/heads/main",
-                        "workflow_sha": "c" * 40,
-                        "run_id": "123",
-                        "run_attempt": "1",
-                        "environment": "production",
-                    },
+                    protected_context=protected_context(),
                 )
 
             wrong_commit_reference = sealed.package_reference.to_dict()
@@ -600,14 +608,7 @@ class PublicationArchiveTests(unittest.TestCase):
                         name: reference.to_dict()
                         for name, reference in evidence.items()
                     },
-                    protected_context={
-                        "repository": "owner/repository",
-                        "workflow_ref": "owner/repository/.github/workflows/publish.yml@refs/heads/main",
-                        "workflow_sha": "c" * 40,
-                        "run_id": "123",
-                        "run_attempt": "1",
-                        "environment": "production",
-                    },
+                    protected_context=protected_context(),
                 )
 
     def test_intent_sealing_failure_never_returns_a_ready_attempt(self):
@@ -660,10 +661,8 @@ class PublicationArchiveTests(unittest.TestCase):
                     repository="owner/repository", package_tag="retry-package",
                     intent_tag="retry-intent", attempt_id="retry", purpose="normal",
                     evidence_references=failing_evidence,
-                    protected_context={
-                        "repository": "owner/repository", "workflow_ref": "owner/repository/.github/workflows/publish.yml@refs/heads/main",
-                        "workflow_sha": "c" * 40, "run_id": "124", "run_attempt": "1", "environment": "production",
-                    }, retrieval_directory=root / "retry-retrieved",
+                    protected_context=protected_context(run_id="124"),
+                    retrieval_directory=root / "retry-retrieved",
                 )
 
     def test_archive_reference_rejects_bool_version_and_unavailable_immutability(self):
@@ -722,12 +721,7 @@ class PublicationArchiveTests(unittest.TestCase):
                 evidence_references={role: reference.to_dict() for role in (
                     "baseline", "source_inputs", "original_prepared"
                 )},
-                protected_context={
-                    "repository": "owner/repository",
-                    "workflow_ref": "owner/repository/.github/workflows/publish.yml@refs/heads/main",
-                    "workflow_sha": "c" * 40, "run_id": "1",
-                    "run_attempt": "1", "environment": "production",
-                },
+                protected_context=protected_context(run_id="1"),
             )
 
     def test_concrete_github_adapter_requires_rest_immutability_and_asset_digest(self):

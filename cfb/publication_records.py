@@ -582,7 +582,11 @@ class AttemptIntentRecord:
             raise RecordValidationError("permanent evidence roles must use distinct archive assets")
         if not self.protected_context:
             raise RecordValidationError("protected execution context is required")
-        required_context = {"repository", "workflow_ref", "workflow_sha", "run_id", "run_attempt", "environment"}
+        required_context = {
+            "repository", "workflow_ref", "workflow_sha", "run_id",
+            "run_attempt", "environment", "event", "ref", "head_sha",
+            "approval_state", "approver_login", "approver_id",
+        }
         if set(self.protected_context) != required_context:
             raise RecordValidationError("protected execution context fields do not match the runtime evidence schema")
         for name, value in self.protected_context.items():
@@ -602,13 +606,30 @@ class AttemptIntentRecord:
             or ".." in workflow_ref
         ):
             raise RecordValidationError("protected workflow_ref must identify a main-branch workflow")
-        if not _COMMIT.fullmatch(self.protected_context["workflow_sha"]):
-            raise RecordValidationError("protected workflow_sha must be an immutable commit SHA")
+        if (
+            not _COMMIT.fullmatch(self.protected_context["workflow_sha"])
+            or self.protected_context["head_sha"]
+            != self.protected_context["workflow_sha"]
+        ):
+            raise RecordValidationError(
+                "protected workflow/head SHA must identify one immutable commit"
+            )
         for name in ("run_id", "run_attempt"):
             if not self.protected_context[name].isdigit() or int(self.protected_context[name]) < 1:
                 raise RecordValidationError(f"protected {name} must be a positive integer")
         if self.protected_context["environment"] != "production":
             raise RecordValidationError("protected environment must be production")
+        if (
+            self.protected_context["event"] != "workflow_dispatch"
+            or self.protected_context["ref"] != "refs/heads/main"
+            or self.protected_context["run_attempt"] != "1"
+            or self.protected_context["approval_state"] != "approved"
+            or self.protected_context["approver_login"] != "arkar16"
+            or self.protected_context["approver_id"] != "18407890"
+        ):
+            raise RecordValidationError(
+                "protected execution is not the owner-approved first main run"
+            )
 
     @classmethod
     def create(cls, *, package: ValidatedPackageRecord, **values: Any) -> "AttemptIntentRecord":

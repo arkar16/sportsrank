@@ -588,6 +588,12 @@ def _protected_context() -> dict[str, str]:
         "run_id": "123",
         "run_attempt": "1",
         "environment": "production",
+        "event": "workflow_dispatch",
+        "ref": "refs/heads/main",
+        "head_sha": "c" * 40,
+        "approval_state": "approved",
+        "approver_login": "arkar16",
+        "approver_id": "18407890",
     }
 
 

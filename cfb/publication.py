@@ -7,6 +7,7 @@ strict record that later publication state machines may consume.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 import gzip
 import hashlib
 import json
@@ -15,15 +16,31 @@ import re
 import subprocess
 import tarfile
 import tempfile
-from typing import Mapping, Protocol
+import threading
+from typing import Callable, Mapping, Protocol
 
 from .baseline import VerifiedBaseline
-from .github_archive import ArchiveSpec, ImmutableArchive
+from .firebase import (
+    FirebaseDeployArtifact,
+    FirebasePublicationError,
+    FirebasePublicationAdapter,
+    ProviderRejectedError,
+    ProviderWriteUncertain,
+)
+from .github_archive import ArchiveError, ArchiveSpec, ImmutableArchive
+from .publication_authorization import (
+    ApprovalReader,
+    GitHubRuntimeContext,
+    authorize_protected_execution,
+)
 from .publication_records import (
     ArchiveReference,
     AttemptIntentRecord,
+    BaselineRecord,
     ProviderIdentity,
+    ProviderResultRecord,
     ValidatedPackageRecord,
+    VerificationRecord,
     canonical_json,
 )
 from .recovery_inputs import RecoveryInputBundle
@@ -395,3 +412,420 @@ def seal_attempt_evidence(
         intent_ref, retrieved_package, retrieved_package_record,
         retrieved_validation, retrieved_intent, dict(retrieved_evidence),
     )
+
+
+class PublicationExecutionError(RuntimeError):
+    """The protected publication operation could not safely make a write."""
+
+
+@dataclass(frozen=True)
+class PriorVerifiedPublication:
+    """Append-only records and archive references for a verified successor base."""
+
+    intent: AttemptIntentRecord
+    provider_result: ProviderResultRecord
+    verification: VerificationRecord
+    provider_result_reference: ArchiveReference
+    provider_result_source_reference: ArchiveReference
+    verification_reference: ArchiveReference
+    verification_source_reference: ArchiveReference
+
+
+@dataclass(frozen=True)
+class PublicationTags:
+    package: str
+    intent: str
+    provider_result: str
+    verification: str
+
+
+@dataclass(frozen=True)
+class SealedRecordEvidence:
+    record_reference: ArchiveReference
+    source_reference: ArchiveReference
+    retrieved_record: Path
+    retrieved_source: Path
+
+
+@dataclass(frozen=True)
+class PublicationRun:
+    """Truthful terminal state from SR-12; SR-13 owns state resolution."""
+
+    state: str
+    attempt: SealedAttempt
+    provider_result: ProviderResultRecord
+    provider_evidence: SealedRecordEvidence | None
+    verification: VerificationRecord | None
+    verification_evidence: SealedRecordEvidence | None
+    deployment_may_have_changed: bool
+    permitted_next_operations: tuple[str, ...]
+
+    @property
+    def ordinary_successor_allowed(self) -> bool:
+        return self.state == "verified"
+
+
+_PUBLICATION_LOCK = threading.Lock()
+
+
+def _timestamp(clock: Callable[[], datetime]) -> str:
+    value = clock()
+    if not isinstance(value, datetime):
+        raise PublicationExecutionError("publication clock did not return a datetime")
+    if value.tzinfo is None:
+        raise PublicationExecutionError("publication clock must be timezone-aware")
+    return value.astimezone(timezone.utc).isoformat()
+
+
+def _source_digest(source: Mapping[str, object]) -> str:
+    return _sha256_bytes(canonical_json(source))
+
+
+def _seal_record(
+    *,
+    archive: ImmutableArchive,
+    repository: str,
+    tag: str,
+    candidate_commit: str,
+    record_name: str,
+    record: ProviderResultRecord | VerificationRecord,
+    source_name: str,
+    source: Mapping[str, object],
+    destination: Path,
+) -> SealedRecordEvidence:
+    destination.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="sportsrank-publication-record-") as directory:
+        work = Path(directory)
+        record_path = work / record_name
+        source_path = work / source_name
+        record_path.write_bytes(canonical_json(record.to_dict()))
+        source_path.write_bytes(canonical_json(source))
+        references = archive.seal_or_reconcile(ArchiveSpec(
+            repository, tag, candidate_commit,
+            {record_name: record_path, source_name: source_path},
+            f"SportsRank {record_name.removesuffix('.json')}",
+        ))
+        try:
+            record_reference = references[record_name]
+            source_reference = references[source_name]
+        except KeyError as exc:
+            raise PublicationExecutionError(
+                "sealed publication record evidence is incomplete"
+            ) from exc
+        if record_reference.sha256 != record.digest:
+            raise PublicationExecutionError(
+                "sealed publication record digest differs from its logical record"
+            )
+        if source_reference.sha256 != _source_digest(source):
+            raise PublicationExecutionError(
+                "sealed provider source digest differs from its logical evidence"
+            )
+        retrieved_record = archive.retrieve_and_verify(
+            record_reference, destination / record_name
+        )
+        retrieved_source = archive.retrieve_and_verify(
+            source_reference, destination / source_name
+        )
+    return SealedRecordEvidence(
+        record_reference, source_reference, retrieved_record, retrieved_source
+    )
+
+
+def _verify_prior_publication(
+    package: ValidatedPackageRecord,
+    baseline: BaselineRecord,
+    prior: PriorVerifiedPublication | None,
+    *,
+    archive: ImmutableArchive,
+    destination: Path,
+) -> None:
+    if baseline.digest != package.expected_baseline_sha256:
+        raise PublicationExecutionError(
+            "baseline record does not match the validated package"
+        )
+    if baseline.observed == package.expected_predecessor:
+        # First publication: the complete stable baseline is authoritative even
+        # when its historical source commit is explicitly unknown.
+        return
+    if prior is None:
+        raise PublicationExecutionError(
+            "a successor requires sealed verified predecessor evidence"
+        )
+    result = ProviderResultRecord.from_dict(
+        prior.provider_result.to_dict(), intent=prior.intent
+    )
+    verification = VerificationRecord.from_dict(
+        prior.verification.to_dict(), intent=prior.intent,
+        provider_result=result,
+    )
+    if (
+        result.outcome != "accepted"
+        or verification.outcome != "verified"
+        or result.observed_release != package.expected_predecessor.release
+        or result.observed_version != package.expected_predecessor.version
+        or verification.observed_release != package.expected_predecessor.release
+        or verification.observed_version != package.expected_predecessor.version
+        or prior.provider_result_reference.sha256 != result.digest
+        or prior.provider_result_source_reference.sha256 != result.source_sha256
+        or prior.verification_reference.sha256 != verification.digest
+        or prior.verification_source_reference.sha256
+        != verification.source_sha256
+        or (
+            prior.provider_result_reference.release_id,
+            prior.provider_result_reference.asset_id,
+        ) == (
+            prior.verification_reference.release_id,
+            prior.verification_reference.asset_id,
+        )
+    ):
+        raise PublicationExecutionError(
+            "successor predecessor evidence is incomplete or does not match"
+        )
+    retrieved_result = archive.retrieve_and_verify(
+        prior.provider_result_reference, destination / "prior-provider-result.json"
+    )
+    archive.retrieve_and_verify(
+        prior.provider_result_source_reference,
+        destination / "prior-provider-result-source.json",
+    )
+    retrieved_verification = archive.retrieve_and_verify(
+        prior.verification_reference, destination / "prior-verification.json"
+    )
+    archive.retrieve_and_verify(
+        prior.verification_source_reference,
+        destination / "prior-verification-source.json",
+    )
+    if (
+        retrieved_result.read_bytes() != canonical_json(result.to_dict())
+        or retrieved_verification.read_bytes()
+        != canonical_json(verification.to_dict())
+    ):
+        raise PublicationExecutionError(
+            "retrieved predecessor records differ from their immutable references"
+        )
+
+
+class PublicationCoordinator:
+    """One process-serialized normal publication; external writers remain possible."""
+
+    serialization_scope = (
+        "process-only; the final provider read cannot exclude external publishers"
+    )
+
+    def __init__(
+        self,
+        *,
+        provider: FirebasePublicationAdapter,
+        archive: ImmutableArchive,
+        repository: str,
+        approval_reader: ApprovalReader,
+        clock=lambda: datetime.now(timezone.utc),
+        operation_lock: threading.Lock = _PUBLICATION_LOCK,
+    ) -> None:
+        self.provider = provider
+        self.archive = archive
+        self.repository = repository
+        self.approval_reader = approval_reader
+        self.clock = clock
+        self.operation_lock = operation_lock
+
+    def publish_normal(
+        self,
+        package: ValidatedPackageRecord,
+        *,
+        prepared: PreparedPackage,
+        commit_reader: CommitTreeReader,
+        runtime: GitHubRuntimeContext,
+        baseline: BaselineRecord,
+        evidence_references: Mapping[str, ArchiveReference],
+        tags: PublicationTags,
+        attempt_id: str,
+        retrieval_directory: str | Path,
+        prior: PriorVerifiedPublication | None = None,
+    ) -> PublicationRun:
+        """Publish once or return a truthful paused state; never retry or roll back."""
+
+        with self.operation_lock:
+            authorization = authorize_protected_execution(
+                package, runtime=runtime, github=self.approval_reader,
+                expected_repository=self.repository,
+            )
+            destination = Path(retrieval_directory)
+            attempt = seal_attempt_evidence(
+                package,
+                prepared=prepared,
+                commit_reader=commit_reader,
+                archive=self.archive,
+                repository=self.repository,
+                package_tag=tags.package,
+                intent_tag=tags.intent,
+                attempt_id=attempt_id,
+                purpose="normal",
+                evidence_references=evidence_references,
+                protected_context=authorization.context,
+                retrieval_directory=destination / "attempt",
+            )
+            artifact = FirebaseDeployArtifact.from_archive(
+                attempt.retrieved_package, package
+            )
+            _verify_prior_publication(
+                package, baseline, prior, archive=self.archive,
+                destination=destination / "predecessor",
+            )
+
+            # This is deliberately the last operation before the first provider
+            # write. The process lock does not lock Firebase against outsiders.
+            live = self.provider.observe()
+            if live != package.expected_predecessor:
+                raise PublicationExecutionError(
+                    "live provider identity changed after approval and archive work"
+                )
+
+            try:
+                receipt = self.provider.deploy(artifact, attempt_id=attempt_id)
+            except ProviderRejectedError as exc:
+                result, provider_source = self._failure_result(
+                    attempt.intent, "rejected", type(exc).__name__
+                )
+                return self._finish_without_verification(
+                    attempt, package, tags, destination, result, provider_source,
+                    state="rejected", may_have_changed=False,
+                    next_operations=("new_owner_approved_attempt",),
+                )
+            except ProviderWriteUncertain as exc:
+                result, provider_source = self._failure_result(
+                    attempt.intent, "unknown", type(exc).__name__
+                )
+                return self._finish_without_verification(
+                    attempt, package, tags, destination, result, provider_source,
+                    state="provider_unknown", may_have_changed=True,
+                    next_operations=("reconcile",),
+                )
+
+            provider_source = dict(receipt.source)
+            result = ProviderResultRecord.create(
+                intent=attempt.intent,
+                outcome="accepted",
+                observed_target=receipt.identity.target.to_dict(),
+                observed_release=receipt.identity.release,
+                observed_version=receipt.identity.version,
+                observed_at=_timestamp(self.clock),
+                source_sha256=_source_digest(provider_source),
+            )
+            try:
+                provider_evidence = _seal_record(
+                    archive=self.archive, repository=self.repository,
+                    tag=tags.provider_result,
+                    candidate_commit=package.candidate_commit,
+                    record_name="provider-result.json", record=result,
+                    source_name="provider-result-source.json", source=provider_source,
+                    destination=destination / "provider-result",
+                )
+            except (ArchiveError, PublicationExecutionError, PublicationPreparationError):
+                return PublicationRun(
+                    "provider_result_unsealed", attempt, result, None, None, None,
+                    True, ("reconcile",),
+                )
+
+            observation = self.provider.verify(
+                artifact, receipt.identity,
+                expected_managed=baseline.managed_resources,
+            )
+            verification_source = dict(observation.source)
+            verification = VerificationRecord.create(
+                intent=attempt.intent,
+                provider_result=result,
+                outcome=observation.outcome,
+                inventory_sha256=observation.inventory_sha256,
+                configuration_sha256=observation.configuration_sha256,
+                managed_resource_findings=observation.managed_findings,
+                public_page_findings=observation.public_findings,
+                findings=observation.findings,
+                observed_at=_timestamp(self.clock),
+                source_sha256=_source_digest(verification_source),
+            )
+            try:
+                verification_evidence = _seal_record(
+                    archive=self.archive, repository=self.repository,
+                    tag=tags.verification,
+                    candidate_commit=package.candidate_commit,
+                    record_name="verification.json", record=verification,
+                    source_name="verification-source.json",
+                    source=verification_source,
+                    destination=destination / "verification",
+                )
+            except (ArchiveError, PublicationExecutionError, PublicationPreparationError):
+                return PublicationRun(
+                    "verification_unsealed", attempt, result, provider_evidence,
+                    verification, None, True, ("reconcile",),
+                )
+            state = {
+                "verified": "verified",
+                "failed": "verification_failed",
+                "unknown": "verification_unknown",
+            }[verification.outcome]
+            next_operations = (
+                ("normal_successor",) if state == "verified" else ("reconcile",)
+            )
+            return PublicationRun(
+                state, attempt, result, provider_evidence, verification,
+                verification_evidence, True, next_operations,
+            )
+
+    def _failure_result(
+        self, intent: AttemptIntentRecord, outcome: str, failure: str
+    ) -> tuple[ProviderResultRecord, Mapping[str, object]]:
+        try:
+            observed = self.provider.observe()
+        except FirebasePublicationError:
+            observed = None
+        source: dict[str, object] = {
+            "schema_version": 1,
+            "record_type": "firebase_deployment_observation",
+            "outcome": outcome,
+            "failure": failure,
+            "release": observed.release if observed is not None else None,
+            "version": observed.version if observed is not None else None,
+        }
+        result = ProviderResultRecord.create(
+            intent=intent,
+            outcome=outcome,
+            observed_target=intent.expected_predecessor.target.to_dict(),
+            observed_release=observed.release if observed is not None else None,
+            observed_version=observed.version if observed is not None else None,
+            observed_at=_timestamp(self.clock),
+            source_sha256=_source_digest(source),
+        )
+        return result, source
+
+    def _finish_without_verification(
+        self,
+        attempt: SealedAttempt,
+        package: ValidatedPackageRecord,
+        tags: PublicationTags,
+        destination: Path,
+        result: ProviderResultRecord,
+        source: Mapping[str, object],
+        *,
+        state: str,
+        may_have_changed: bool,
+        next_operations: tuple[str, ...],
+    ) -> PublicationRun:
+        try:
+            evidence = _seal_record(
+                archive=self.archive, repository=self.repository,
+                tag=tags.provider_result,
+                candidate_commit=package.candidate_commit,
+                record_name="provider-result.json", record=result,
+                source_name="provider-result-source.json", source=source,
+                destination=destination / "provider-result",
+            )
+        except (ArchiveError, PublicationExecutionError, PublicationPreparationError):
+            return PublicationRun(
+                "provider_result_unsealed", attempt, result, None, None, None,
+                may_have_changed, ("reconcile",),
+            )
+        return PublicationRun(
+            state, attempt, result, evidence, None, None,
+            may_have_changed, next_operations,
+        )
