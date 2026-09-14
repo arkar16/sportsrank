@@ -615,6 +615,14 @@ class FirebaseRestPublicationBackend:
                     "Firebase write response identity is unavailable"
                 )
             raise FirebasePublicationError("Firebase provider read is unsafe")
+        if isinstance(status, bool) or not isinstance(status, int):
+            if write:
+                raise ProviderWriteUncertain(
+                    "Firebase write response status is invalid"
+                )
+            raise FirebasePublicationError(
+                "Firebase provider read status is invalid"
+            )
         if status < 200 or status >= 300:
             if write:
                 _raise_write_http_failure(status)

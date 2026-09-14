@@ -14,6 +14,7 @@ from urllib.error import HTTPError, URLError
 from cfb.firebase import (
     FakeFirebasePublicationBackend,
     FirebaseDeployArtifact,
+    FirebasePublicationError,
     FirebasePublicationAdapter,
     FirebaseRestPublicationBackend,
     ProviderRejectedError,
@@ -140,6 +141,25 @@ class Fixture:
     evidence: dict
     approval: FakeGitHubApprovalReader
     runtime: GitHubRuntimeContext
+
+
+class StubHttpResponse:
+    def __init__(self, status, url: str, body: bytes = b"{}") -> None:
+        self.status = status
+        self.url = url
+        self.body = body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *arguments):
+        return False
+
+    def read(self, limit):
+        return self.body
+
+    def geturl(self):
+        return self.url
 
 
 def fixture(
@@ -811,6 +831,75 @@ class PublicationExecutionTests(unittest.TestCase):
                 )
                 self.assertIsNone(result.verification)
                 self.assertEqual(backend.transport_attempts, [step])
+
+    def test_malformed_concrete_status_fails_closed_for_writes_and_reads(self):
+        backend = FirebaseRestPublicationBackend(lambda: "offline-token")
+        create_url = (
+            "https://firebasehosting.googleapis.com/v1beta1/"
+            "sites/fixture-site/versions"
+        )
+        for status in ("503", None, object(), 200.0, True):
+            with self.subTest(write_status=repr(status)), patch(
+                "cfb.firebase.urlopen",
+                return_value=StubHttpResponse(status, create_url),
+            ):
+                with self.assertRaises(ProviderWriteUncertain):
+                    backend.create_version(TARGET, {}, {})
+
+        channel_url = (
+            "https://firebasehosting.googleapis.com/v1beta1/"
+            "sites/fixture-site/channels/live"
+        )
+        for status in ("200", None, object(), 200.0, True):
+            with self.subTest(read_status=repr(status)), patch(
+                "cfb.firebase.urlopen",
+                return_value=StubHttpResponse(status, channel_url),
+            ):
+                with self.assertRaises(FirebasePublicationError):
+                    backend.observe(TARGET)
+
+    def test_malformed_concrete_write_status_pauses_coordinator(self):
+        class MalformedCreateBackend(FakeFirebasePublicationBackend):
+            def __init__(self, *arguments, **keywords):
+                super().__init__(*arguments, **keywords)
+                self.transport_attempts = 0
+                self.rest = FirebaseRestPublicationBackend(
+                    lambda: "offline-token"
+                )
+
+            def create_version(self, target, config, labels):
+                self.transport_attempts += 1
+                url = (
+                    "https://firebasehosting.googleapis.com/v1beta1/"
+                    "sites/fixture-site/versions"
+                )
+                with patch(
+                    "cfb.firebase.urlopen",
+                    return_value=StubHttpResponse("503", url),
+                ):
+                    return self.rest.create_version(target, config, labels)
+
+        with tempfile.TemporaryDirectory() as directory:
+            fx = fixture(Path(directory))
+            backend = MalformedCreateBackend(
+                TARGET, fx.package.expected_predecessor,
+                managed_identity=APP_IDENTITY,
+            )
+            result = coordinator(fx, backend).publish_normal(
+                fx.package, prepared=fx.prepared,
+                commit_reader=fx.reader, runtime=fx.runtime,
+                baseline=fx.baseline,
+                evidence_references=fx.evidence,
+                tags=tags("malformed-status"),
+                attempt_id="malformed-status",
+                retrieval_directory=fx.root / "receipts",
+            )
+            self.assertEqual(result.state, "provider_unknown")
+            self.assertEqual(result.provider_result.outcome, "unknown")
+            self.assertTrue(result.deployment_may_have_changed)
+            self.assertEqual(result.permitted_next_operations, ("reconcile",))
+            self.assertEqual(backend.transport_attempts, 1)
+            self.assertIsNone(result.verification)
 
     def test_deterministic_payloads_and_population_batches_are_exact(self):
         with tempfile.TemporaryDirectory() as directory:
