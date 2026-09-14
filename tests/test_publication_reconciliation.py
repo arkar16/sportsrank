@@ -15,12 +15,14 @@ from cfb.baseline import (
 from cfb.firebase import (
     FakeFirebasePublicationBackend,
     FakeFirebaseReadBackend,
+    FirebasePublicationAdapter,
     FirebaseReadAdapter,
 )
 from cfb.github_archive import ArchiveError, ArchiveSpec, FakeImmutableArchive
 from cfb.publication_records import (
     ExternalPredecessorRecord,
     ProviderIdentity,
+    ProviderTarget,
     ProviderResultRecord,
     ReconciliationRecord,
     RecordValidationError,
@@ -49,7 +51,7 @@ from tests.test_publication_execution import (
 
 
 class PublicationReconciliationTests(unittest.TestCase):
-    def test_arbitrary_sealed_sources_cannot_reconstruct_predecessor(self):
+    def test_coherent_archived_history_requires_fresh_candidate_observation(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             fx = fixture(root)
@@ -74,7 +76,17 @@ class PublicationReconciliationTests(unittest.TestCase):
             def source_digest(value):
                 return hashlib.sha256(canonical_json(value)).hexdigest()
 
-            provider_source = {"fabricated": "provider"}
+            provider_source = {
+                "schema_version": 1,
+                "record_type": "firebase_reconciled_provider_result",
+                "outcome": "accepted",
+                "release": observed.release,
+                "version": observed.version,
+                "artifact_sha256": intent.intent.artifact_reference.sha256,
+                "content_correspondence": "verified",
+                "prior_result_evidence": "missing_or_invalid",
+                "prior_verification_evidence": "missing_or_invalid",
+            }
             result = ProviderResultRecord.create(
                 intent=intent.intent, outcome="accepted",
                 observed_target=TARGET,
@@ -83,25 +95,51 @@ class PublicationReconciliationTests(unittest.TestCase):
                 observed_at=STAMP.isoformat(),
                 source_sha256=source_digest(provider_source),
             )
-            verification_source = {"fabricated": "verification"}
+            verification_source = {
+                "schema_version": 1,
+                "record_type": "firebase_verification_observation",
+                "outcome": "verified",
+                "release": observed.release,
+                "version": observed.version,
+                "inventory_sha256": fx.package.inventory_sha256,
+                "configuration_sha256": fx.package.configuration_sha256,
+                "managed_resource_findings": {
+                    "/__/firebase/init.js": "fabricated",
+                    "/__/firebase/init.json": "fabricated",
+                },
+                "public_page_findings": {"/index.html": "fabricated"},
+                "findings": ["fabricated but schema-correct"],
+            }
             verification = VerificationRecord.create(
                 intent=intent.intent, provider_result=result,
                 outcome="verified",
                 inventory_sha256=fx.package.inventory_sha256,
                 configuration_sha256=fx.package.configuration_sha256,
-                managed_resource_findings={
-                    "/__/firebase/init.js": "verified",
-                    "/__/firebase/init.json": "verified",
-                },
-                public_page_findings={"/index.html": "verified"},
-                findings=("fabricated",), observed_at=STAMP.isoformat(),
+                managed_resource_findings=verification_source[
+                    "managed_resource_findings"
+                ],
+                public_page_findings=verification_source[
+                    "public_page_findings"
+                ],
+                findings=tuple(verification_source["findings"]),
+                observed_at=STAMP.isoformat(),
                 source_sha256=source_digest(verification_source),
             )
-            reconciliation_source = {"fabricated": "reconciliation"}
+            reconciliation_source = {
+                "schema_version": 1,
+                "record_type": "firebase_reconciliation_observation",
+                "disposition": "candidate_verified",
+                "release": observed.release,
+                "version": observed.version,
+                "provider_result_sha256": result.digest,
+                "verification_sha256": verification.digest,
+                "findings": ["fabricated but schema-correct"],
+            }
             reconciliation = ReconciliationRecord.create(
                 intent=intent.intent, observed_identity=observed,
                 disposition="candidate_verified", provider_result=result,
-                verification=verification, findings=("fabricated",),
+                verification=verification,
+                findings=tuple(reconciliation_source["findings"]),
                 observed_at=STAMP.isoformat(),
                 source_sha256=source_digest(reconciliation_source),
             )
@@ -138,20 +176,149 @@ class PublicationReconciliationTests(unittest.TestCase):
             backend = FakeFirebasePublicationBackend(
                 TARGET, observed, managed_identity=APP_IDENTITY,
             )
+            reconciled = coordinator(fx, backend).reconcile(
+                RecordedPublicationAttempt(
+                    intent, result, result_evidence,
+                    verification, verification_evidence,
+                ),
+                baseline=fx.baseline,
+                tags=ReconciliationTags(
+                    "fresh-observation", "fresh-result", "fresh-verification",
+                ),
+                retrieval_directory=root / "fresh-reconciliation",
+            )
+            self.assertEqual(reconciled.state, "candidate_unverified")
+            self.assertFalse(reconciled.ordinary_successor_allowed)
+            self.assertIn(
+                "prior provider-result evidence: archive_consistent_untrusted",
+                reconciled.observation.findings,
+            )
             with self.assertRaisesRegex(
-                PublicationExecutionError, "allowlisted provider observation"
+                PublicationExecutionError, "fully sealed verified"
             ):
-                coordinator(fx, backend).reconstruct_predecessor(
-                    RecordedPublicationAttempt(
-                        intent, result, result_evidence,
-                        verification, verification_evidence,
-                    ),
-                    reconciliation=reconciliation,
-                    reconciliation_evidence=reconciliation_evidence,
-                    baseline=fx.baseline,
-                    retrieval_directory=root / "reconstruct",
-                )
+                reconciled.as_prior()
+            self.assertFalse(
+                hasattr(coordinator(fx, backend), "reconstruct_predecessor")
+            )
             self.assertEqual(backend.write_count, 0)
+
+    def test_reconciliation_preserves_the_attempt_baseline_binding(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fx = fixture(root)
+            backend = FakeFirebasePublicationBackend(
+                TARGET, fx.package.expected_predecessor,
+                managed_identity=APP_IDENTITY, lose_response_at="release",
+            )
+            interrupted = coordinator(fx, backend).publish_normal(
+                fx.package, prepared=fx.prepared, commit_reader=fx.reader,
+                runtime=fx.runtime, baseline=fx.baseline,
+                evidence_references=fx.evidence, tags=tags("baseline-binding"),
+                attempt_id="baseline-binding",
+                retrieval_directory=root / "publish",
+            )
+            writes = backend.write_count
+            substituted = replace(
+                fx.baseline,
+                captured_at="2026-09-14T12:00:00+00:00",
+            )
+
+            with self.assertRaisesRegex(
+                PublicationExecutionError,
+                "baseline does not match the attempt package",
+            ):
+                coordinator(fx, backend).reconcile(
+                    RecordedPublicationAttempt(
+                        interrupted.attempt, interrupted.provider_result,
+                        interrupted.provider_evidence,
+                    ),
+                    baseline=substituted,
+                    tags=ReconciliationTags(
+                        "substituted-observation", "substituted-result",
+                        "substituted-verification",
+                    ),
+                    retrieval_directory=root / "reconcile-substituted",
+                )
+            self.assertEqual(backend.write_count, writes)
+
+    def test_verified_predecessor_cannot_cross_provider_targets(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first = fixture(root / "first")
+            backend = FakeFirebasePublicationBackend(
+                TARGET, first.package.expected_predecessor,
+                managed_identity=APP_IDENTITY,
+            )
+            published = coordinator(first, backend).publish_normal(
+                first.package, prepared=first.prepared,
+                commit_reader=first.reader, runtime=first.runtime,
+                baseline=first.baseline, evidence_references=first.evidence,
+                tags=tags("target-first"), attempt_id="target-first",
+                retrieval_directory=first.root / "publish",
+            )
+            reconciled = coordinator(first, backend).reconcile(
+                RecordedPublicationAttempt(
+                    published.attempt, published.provider_result,
+                    published.provider_evidence, published.verification,
+                    published.verification_evidence,
+                ),
+                baseline=first.baseline,
+                tags=ReconciliationTags(
+                    "target-observation", "target-result",
+                    "target-verification",
+                ),
+                retrieval_directory=first.root / "reconcile",
+            )
+            prior = reconciled.as_prior()
+            current = reconciled.observed_identity
+            other_target = ProviderTarget(
+                "other-project", TARGET.site, TARGET.channel
+            )
+            other_identity = ProviderIdentity(
+                other_target, current.release, current.version
+            )
+            other_app = dict(APP_IDENTITY)
+            other_app["project_id"] = other_target.project
+            other_baseline = replace(
+                first.baseline,
+                target=other_target,
+                observed=other_identity,
+                before=other_identity,
+                after=other_identity,
+                managed_resources=tuple(
+                    replace(item, app_identity=other_app)
+                    for item in first.baseline.managed_resources
+                ),
+            )
+            successor = fixture(
+                root / "other-target", predecessor=other_identity,
+                baseline_record=other_baseline, marker=b"other-target",
+                archive=first.archive,
+            )
+            other_backend = FakeFirebasePublicationBackend(
+                other_target, other_identity, managed_identity=other_app,
+            )
+            other_coordinator = PublicationCoordinator(
+                provider=FirebasePublicationAdapter(
+                    other_target, other_backend
+                ),
+                archive=successor.archive, repository="owner/repository",
+                approval_reader=successor.approval, clock=lambda: STAMP,
+            )
+
+            with self.assertRaisesRegex(
+                PublicationExecutionError, "does not match"
+            ):
+                other_coordinator.publish_normal(
+                    successor.package, prepared=successor.prepared,
+                    commit_reader=successor.reader,
+                    runtime=successor.runtime, baseline=successor.baseline,
+                    evidence_references=successor.evidence,
+                    tags=tags("other-target"), attempt_id="other-target",
+                    retrieval_directory=successor.root / "publish",
+                    prior=prior,
+                )
+            self.assertEqual(other_backend.write_count, 0)
 
     def test_failed_verification_reconciles_to_paused_verification_only(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -344,19 +511,22 @@ class PublicationReconciliationTests(unittest.TestCase):
                 PublicationExecutionError, "fully sealed verified"
             ):
                 without_observation.as_prior()
-            reconstructed = coordinator(fx, backend).reconstruct_predecessor(
+            reconstructed_run = coordinator(fx, backend).reconcile(
                 RecordedPublicationAttempt(
                     interrupted.attempt, reconciled.provider_result,
                     reconciled.provider_evidence, reconciled.verification,
                     reconciled.verification_evidence,
                 ),
-                reconciliation=reconciled.observation,
-                reconciliation_evidence=reconciled.observation_evidence,
                 baseline=fx.baseline,
+                tags=ReconciliationTags(
+                    "cross-run-observation", "cross-run-result",
+                    "cross-run-verification",
+                ),
                 retrieval_directory=fx.root / "cross-run-reconstruction",
             )
+            reconstructed = reconstructed_run.as_prior()
             self.assertEqual(
-                reconstructed.provider_result, reconciled.provider_result
+                reconstructed.provider_result, reconstructed_run.provider_result
             )
             cross_repository_result = replace(
                 reconciled.provider_evidence,
@@ -365,20 +535,29 @@ class PublicationReconciliationTests(unittest.TestCase):
                     repository="attacker/repository",
                 ),
             )
-            with self.assertRaisesRegex(
-                PublicationExecutionError, "configured repository"
-            ):
-                coordinator(fx, backend).reconstruct_predecessor(
-                    RecordedPublicationAttempt(
-                        interrupted.attempt, reconciled.provider_result,
-                        cross_repository_result, reconciled.verification,
-                        reconciled.verification_evidence,
-                    ),
-                    reconciliation=reconciled.observation,
-                    reconciliation_evidence=reconciled.observation_evidence,
-                    baseline=fx.baseline,
-                    retrieval_directory=fx.root / "cross-repository-prior",
-                )
+            replacement = coordinator(fx, backend).reconcile(
+                RecordedPublicationAttempt(
+                    interrupted.attempt, reconciled.provider_result,
+                    cross_repository_result, reconciled.verification,
+                    reconciled.verification_evidence,
+                ),
+                baseline=fx.baseline,
+                tags=ReconciliationTags(
+                    "cross-repository-observation",
+                    "cross-repository-result",
+                    "cross-repository-verification",
+                ),
+                retrieval_directory=fx.root / "cross-repository-prior",
+            )
+            self.assertEqual(replacement.state, "reconciled_verified")
+            self.assertIn(
+                "prior provider-result evidence: missing_or_invalid",
+                replacement.observation.findings,
+            )
+            self.assertNotEqual(
+                replacement.provider_evidence.record_reference.repository,
+                cross_repository_result.record_reference.repository,
+            )
 
     def test_missing_or_corrupt_result_never_overrides_exact_live_correspondence(self):
         for mode in ("missing", "corrupt"):
@@ -611,7 +790,45 @@ class PublicationReconciliationTests(unittest.TestCase):
                     retrieval_directory=root / "external-private-rejected",
                 )
 
-            verified = coordinator(fx, backend).reconcile_external(
+            with self.assertRaisesRegex(
+                PublicationExecutionError, "configured provider reader"
+            ):
+                coordinator(fx, backend).reconcile_external(
+                    captured, archive_reference=capture_ref,
+                    sanitizer_reference=sanitizer_ref,
+                    observation_tag="external-no-reader",
+                    retrieval_directory=root / "external-no-reader",
+                )
+
+            mismatched_files = dict(files)
+            mismatched_files["index.html"] = b"different live content"
+            mismatched_reader = FirebaseReadAdapter(
+                TARGET,
+                FakeFirebaseReadBackend(
+                    TARGET, mismatched_files, serving_config={}
+                ),
+            )
+            with self.assertRaisesRegex(
+                PublicationExecutionError,
+                "fresh provider capture differs",
+            ):
+                coordinator(
+                    fx, backend, provider_reader=mismatched_reader
+                ).reconcile_external(
+                    captured, archive_reference=capture_ref,
+                    sanitizer_reference=sanitizer_ref,
+                    observation_tag="external-mismatch",
+                    retrieval_directory=root / "external-mismatch",
+                )
+            self.assertEqual(backend.write_count, writes)
+
+            provider_reader = FirebaseReadAdapter(
+                TARGET,
+                FakeFirebaseReadBackend(TARGET, files, serving_config={}),
+            )
+            verified = coordinator(
+                fx, backend, provider_reader=provider_reader
+            ).reconcile_external(
                 captured, archive_reference=capture_ref,
                 sanitizer_reference=sanitizer_ref,
                 observation_tag="external-verified-observation",

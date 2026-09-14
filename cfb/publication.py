@@ -6,7 +6,7 @@ strict record that later publication state machines may consume.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from datetime import datetime, timezone
 import gzip
 import hashlib
@@ -19,11 +19,12 @@ import tempfile
 import threading
 from typing import Any, Callable, Mapping, Protocol
 
-from .baseline import VerifiedBaseline
+from .baseline import BaselineValidationError, VerifiedBaseline
 from .firebase import (
     FirebaseDeployArtifact,
     FirebasePublicationError,
     FirebasePublicationAdapter,
+    FirebaseReadAdapter,
     ProviderRejectedError,
     ProviderWriteUncertain,
 )
@@ -973,6 +974,7 @@ def _verify_prior_publication(
             "inventory_sha256": baseline.inventory_sha256,
             "configuration_sha256": baseline.configuration_sha256,
             "application_tree_sha256": baseline.application_tree_sha256,
+            "fresh_capture_correspondence": "verified",
         }, "external predecessor")
         return
     if not isinstance(prior, PriorVerifiedPublication):
@@ -997,11 +999,14 @@ def _verify_prior_publication(
         or verification.redaction_method != "allowlisted-findings-v1"
         or prior.reconciliation.redaction_method
         != "allowlisted-reconciliation-v1"
+        or result.observed_target != package.expected_predecessor.target
         or result.observed_release != package.expected_predecessor.release
         or result.observed_version != package.expected_predecessor.version
         or verification.observed_release != package.expected_predecessor.release
         or verification.observed_version != package.expected_predecessor.version
         or prior.reconciliation.disposition != "candidate_verified"
+        or prior.reconciliation.observed_target
+        != package.expected_predecessor.target
         or prior.reconciliation.provider_result_sha256 != result.digest
         or prior.reconciliation.verification_sha256 != verification.digest
         or prior.reconciliation.observed_release != result.observed_release
@@ -1100,9 +1105,9 @@ def _verify_prior_publication(
         ),
     }, "provider result")
     if provider_source["prior_result_evidence"] not in {
-        "valid", "missing_or_invalid"
+        "archive_consistent_untrusted", "missing_or_invalid"
     } or provider_source["prior_verification_evidence"] not in {
-        "valid", "missing_or_invalid"
+        "archive_consistent_untrusted", "missing_or_invalid"
     }:
         raise PublicationExecutionError(
             "provider result source has an invalid prior-evidence status"
@@ -1144,6 +1149,7 @@ class PublicationCoordinator:
         self,
         *,
         provider: FirebasePublicationAdapter,
+        provider_reader: FirebaseReadAdapter | None = None,
         archive: ImmutableArchive,
         repository: str,
         approval_reader: ApprovalReader,
@@ -1151,6 +1157,14 @@ class PublicationCoordinator:
         operation_lock: threading.Lock = _PUBLICATION_LOCK,
     ) -> None:
         self.provider = provider
+        if (
+            provider_reader is not None
+            and provider_reader.target != provider.target
+        ):
+            raise PublicationExecutionError(
+                "publication and read adapters must use the same provider target"
+            )
+        self.provider_reader = provider_reader
         self.archive = archive
         self.repository = repository
         self.approval_reader = approval_reader
@@ -1470,74 +1484,6 @@ class PublicationCoordinator:
                 None, None, None, None, permitted,
             )
 
-    def reconstruct_predecessor(
-        self,
-        recorded: RecordedPublicationAttempt,
-        *,
-        reconciliation: ReconciliationRecord,
-        reconciliation_evidence: SealedRecordEvidence,
-        baseline: BaselineRecord,
-        retrieval_directory: str | Path,
-    ) -> PriorVerifiedPublication:
-        """Reconstruct a predecessor capability from immutable cross-run refs."""
-
-        with self.operation_lock:
-            destination = Path(retrieval_directory)
-            _retrieve_recorded_attempt(
-                recorded, archive=self.archive, repository=self.repository,
-                destination=destination / "attempt",
-            )
-            if (
-                recorded.provider_result is None
-                or recorded.provider_evidence is None
-                or recorded.verification is None
-                or recorded.verification_evidence is None
-                or reconciliation_evidence is None
-            ):
-                raise PublicationExecutionError(
-                    "predecessor reconstruction requires the complete sealed chain"
-                )
-            if (
-                recorded.provider_result.outcome != "accepted"
-                or recorded.provider_result.observed_release is None
-                or recorded.provider_result.observed_version is None
-                or recorded.verification.outcome != "verified"
-                or reconciliation.disposition != "candidate_verified"
-            ):
-                raise PublicationExecutionError(
-                    "predecessor reconstruction requires verified reconciled state"
-                )
-            prior = PriorVerifiedPublication._create(
-                self.repository,
-                recorded.attempt.intent,
-                recorded.provider_result,
-                recorded.verification,
-                reconciliation,
-                recorded.provider_evidence.record_reference,
-                recorded.provider_evidence.source_reference,
-                recorded.verification_evidence.record_reference,
-                recorded.verification_evidence.source_reference,
-                reconciliation_evidence.record_reference,
-                reconciliation_evidence.source_reference,
-            )
-            identity = ProviderIdentity(
-                recorded.provider_result.observed_target,
-                recorded.provider_result.observed_release,  # type: ignore[arg-type]
-                recorded.provider_result.observed_version,  # type: ignore[arg-type]
-            )
-            probe = replace(
-                recorded.attempt.package,
-                expected_baseline_sha256=baseline.digest,
-                expected_predecessor=identity,
-            )
-            _verify_prior_publication(
-                probe, baseline, prior, archive=self.archive,
-                repository=self.repository,
-                destination=destination / "predecessor",
-                require_prior=True,
-            )
-            return prior
-
     def _reconcile_changed_live(
         self,
         recorded: RecordedPublicationAttempt,
@@ -1586,10 +1532,12 @@ class PublicationCoordinator:
             "artifact_sha256": artifact.package.bundle_sha256,
             "content_correspondence": observation.outcome,
             "prior_result_evidence": (
-                "valid" if result_evidence_valid else "missing_or_invalid"
+                "archive_consistent_untrusted"
+                if result_evidence_valid else "missing_or_invalid"
             ),
             "prior_verification_evidence": (
-                "valid" if verification_evidence_valid
+                "archive_consistent_untrusted"
+                if verification_evidence_valid
                 else "missing_or_invalid"
             ),
         }
@@ -1617,8 +1565,16 @@ class PublicationCoordinator:
         )
         findings = (
             "live identity and candidate correspondence were observed directly",
-            f"prior provider-result evidence: {'valid' if result_evidence_valid else 'missing_or_invalid'}",
-            f"prior verification evidence: {'valid' if verification_evidence_valid else 'missing_or_invalid'}",
+            "prior provider-result evidence: "
+            + (
+                "archive_consistent_untrusted"
+                if result_evidence_valid else "missing_or_invalid"
+            ),
+            "prior verification evidence: "
+            + (
+                "archive_consistent_untrusted"
+                if verification_evidence_valid else "missing_or_invalid"
+            ),
         )
         reconciliation_source = {
             "schema_version": 1,
@@ -1767,10 +1723,35 @@ class PublicationCoordinator:
                 raise PublicationExecutionError(
                     "retrieved external capture differs from the verified baseline"
                 )
-            live = self.provider.observe()
-            if live != captured.record.observed:
+            if self.provider_reader is None:
                 raise PublicationExecutionError(
-                    "live provider identity changed after external capture archive work"
+                    "external reconciliation requires a configured provider reader"
+                )
+            try:
+                fresh = self.provider_reader.capture(
+                    destination / "fresh-provider-capture"
+                )
+            except BaselineValidationError as exc:
+                raise PublicationExecutionError(
+                    "fresh complete provider capture is unavailable"
+                ) from exc
+            content_fields = (
+                "target", "observed", "before", "after",
+                "inventory_sha256", "configuration_sha256",
+                "application_tree_sha256", "file_count", "total_bytes",
+                "source", "managed_resources",
+            )
+            if any(
+                getattr(fresh.record, name) != getattr(captured.record, name)
+                for name in content_fields
+            ):
+                raise PublicationExecutionError(
+                    "fresh provider capture differs from the archived external baseline"
+                )
+            live = self.provider.observe()
+            if live != fresh.record.observed or live != captured.record.observed:
+                raise PublicationExecutionError(
+                    "live provider identity changed after fresh external capture"
                 )
             source = {
                 "schema_version": 1,
@@ -1787,6 +1768,7 @@ class PublicationCoordinator:
                 "application_tree_sha256": (
                     captured.record.application_tree_sha256
                 ),
+                "fresh_capture_correspondence": "verified",
             }
             observation = ExternalPredecessorRecord.create(
                 baseline=captured.record,

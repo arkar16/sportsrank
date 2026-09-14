@@ -249,9 +249,15 @@ def tags(suffix: str) -> PublicationTags:
     )
 
 
-def coordinator(fx: Fixture, backend: FakeFirebasePublicationBackend):
+def coordinator(
+    fx: Fixture,
+    backend: FakeFirebasePublicationBackend,
+    *,
+    provider_reader=None,
+):
     return PublicationCoordinator(
         provider=FirebasePublicationAdapter(TARGET, backend),
+        provider_reader=provider_reader,
         archive=fx.archive,
         repository="owner/repository",
         approval_reader=fx.approval,
@@ -334,17 +340,20 @@ class PublicationExecutionTests(unittest.TestCase):
                 ),
                 retrieval_directory=first.root / "reconciliation",
             )
-            prior = coordinator(first, backend).reconstruct_predecessor(
+            cross_run = coordinator(first, backend).reconcile(
                 RecordedPublicationAttempt(
                     first_run.attempt, reconciled.provider_result,
                     reconciled.provider_evidence, reconciled.verification,
                     reconciled.verification_evidence,
                 ),
-                reconciliation=reconciled.observation,
-                reconciliation_evidence=reconciled.observation_evidence,
                 baseline=first.baseline,
+                tags=ReconciliationTags(
+                    "cross-run-observation", "cross-run-result",
+                    "cross-run-verification",
+                ),
                 retrieval_directory=first.root / "cross-run-predecessor",
             )
+            prior = cross_run.as_prior()
             source_bytes = prior.provider_result_source_reference
             original_source = reconciled.provider_evidence.retrieved_source.read_bytes()
             first.archive.corrupt(source_bytes, b"fabricated provider source")
