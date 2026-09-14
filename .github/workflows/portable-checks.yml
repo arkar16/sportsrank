@@ -1,0 +1,51 @@
+name: Portable offline checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Run locked offline checks
+    runs-on: ubuntu-latest
+    env:
+      CFBD_API_KEY: ""
+      UV_CACHE_DIR: ${{ runner.temp }}/sportsrank-uv-cache
+      npm_config_cache: ${{ runner.temp }}/sportsrank-npm-cache
+    steps:
+      - name: Check out the submitted tree
+        uses: actions/checkout@v6
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: true
+
+      - name: Install locked Python dependencies
+        run: uv sync --locked
+
+      - name: Run the offline Python suite
+        run: uv run --locked python -m unittest discover -s tests -v
+
+      - name: Compile the Python source
+        run: uv run --locked python -m compileall -q cfb tools tests
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install locked hosting dependencies
+        run: npm ci
+
+      - name: Check static hosting tree
+        run: npm run build

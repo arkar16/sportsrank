@@ -3,102 +3,107 @@ name: Publish validated static site to Firebase Hosting
 on:
   workflow_dispatch:
     inputs:
-      candidate_sha:
-        description: Full 40-character SHA of the merged candidate commit
+      operation:
+        description: Protected publication operation to run from main
         required: true
+        type: choice
+        options:
+          - prepare
+          - execute
+          - reconcile
+          - verify-only
+          - rollback
+          - correction
+      preparation_run_id:
+        description: Prior manual preparation run containing the exact package
+        required: false
         type: string
-      base_sha:
-        description: Full 40-character SHA of the currently deployed base commit
-        required: true
+      preparation_artifact_name:
+        description: Exact artifact name from the preparation run
+        required: false
         type: string
-
-permissions:
-  contents: read
-  id-token: write
-  attestations: write
+      input_run_id:
+        description: Read-only retained-input artifact run for prepare
+        required: false
+        type: string
+      input_artifact_name:
+        description: Read-only retained-input artifact name for prepare
+        required: false
+        type: string
+      predecessor_run_id:
+        description: Prior protected run containing the immutable attempt state
+        required: false
+        type: string
+      predecessor_artifact_name:
+        description: Exact prior protected state artifact for reconciliation or recovery
+        required: false
+        type: string
 
 concurrency:
   group: sportsrank-production-publication
   cancel-in-progress: false
 
 jobs:
-  validate:
-    name: Validate and attest immutable website Release
+  guard:
+    name: Require a fresh manual main run
     runs-on: ubuntu-latest
-    outputs:
-      artifact_name: ${{ steps.package.outputs.artifact_name }}
-      artifact_sha256: ${{ steps.package.outputs.artifact_sha256 }}
-      smoke_script_sha256: ${{ steps.package.outputs.smoke_script_sha256 }}
+    permissions:
+      contents: read
     steps:
-      - name: Reject mutable publication inputs
+      - name: Require the fixed repository, event, branch, and first attempt
         shell: bash
         env:
-          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
-          BASE_SHA: ${{ inputs.base_sha }}
+          EXPECTED_REPOSITORY: arkar16/sportsrank
+          EXPECTED_BRANCH: refs/heads/main
+          EXPECTED_EVENT: workflow_dispatch
+          EXPECTED_ATTEMPT: "1"
         run: |
           set -euo pipefail
-          for name in CANDIDATE_SHA BASE_SHA; do
-            value="${!name}"
-            if [[ ! "$value" =~ ^[0-9a-f]{40}$ ]]; then
-              echo "$name must be a full lowercase 40-character commit SHA" >&2
-              exit 1
-            fi
-          done
-          if [[ "$CANDIDATE_SHA" == "$BASE_SHA" ]]; then
-            echo "candidate_sha must differ from base_sha" >&2
-            exit 1
-          fi
+          test "$GITHUB_REPOSITORY" = "$EXPECTED_REPOSITORY"
+          test "$GITHUB_EVENT_NAME" = "$EXPECTED_EVENT"
+          test "$GITHUB_REF" = "$EXPECTED_BRANCH"
+          test "$GITHUB_RUN_ATTEMPT" = "$EXPECTED_ATTEMPT"
 
-      - name: Check out immutable candidate commit
+  prepare:
+    name: Prepare and expose the exact validated package
+    needs: guard
+    if: inputs.operation == 'prepare'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+      attestations: write
+    steps:
+      - name: Check out the exact workflow commit for preparation only
         uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.candidate_sha }}
-          fetch-depth: 0
+          ref: ${{ github.sha }}
+          fetch-depth: 1
           fetch-tags: false
           persist-credentials: false
 
-      - name: Verify commit objects, ancestry, and merge status
+      - name: Verify the immutable main candidate object
         shell: bash
         env:
-          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
-          BASE_SHA: ${{ inputs.base_sha }}
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          HEAD_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          for name in CANDIDATE_SHA BASE_SHA; do
-            sha="${!name}"
-            if [[ "$(git cat-file -t "$sha" 2>/dev/null || true)" != "commit" ]]; then
-              echo "$name is not a commit object" >&2
-              exit 1
-            fi
-            resolved="$(git rev-parse --verify "$sha^{commit}")"
-            if [[ "$resolved" != "$sha" ]]; then
-              echo "$name does not resolve to its exact commit SHA" >&2
-              exit 1
-            fi
-          done
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$HEAD_SHA" = "$GITHUB_SHA"
+          sha="$GITHUB_SHA"
+          if [[ "$(git cat-file -t "$sha" 2>/dev/null || true)" != "commit" ]]; then
+            echo "GITHUB_SHA is not a commit object" >&2
+            exit 1
+          fi
+          resolved="$(git rev-parse --verify "$sha^{commit}")"
+          if [[ "$resolved" != "$sha" ]]; then
+            echo "GITHUB_SHA does not resolve to its exact commit SHA" >&2
+            exit 1
+          fi
+          test "$(git rev-parse HEAD)" = "$sha"
 
-          if [[ "$(git rev-parse HEAD)" != "$CANDIDATE_SHA" ]]; then
-            echo "checkout did not produce candidate_sha" >&2
-            exit 1
-          fi
-          if ! git merge-base --is-ancestor "$BASE_SHA" "$CANDIDATE_SHA"; then
-            echo "base_sha must be an ancestor of candidate_sha" >&2
-            exit 1
-          fi
-
-          default_ref="refs/remotes/origin/$DEFAULT_BRANCH"
-          if ! git show-ref --verify --quiet "$default_ref"; then
-            echo "the default branch history was not fetched" >&2
-            exit 1
-          fi
-          default_tip="$(git rev-parse --verify "$default_ref^{commit}")"
-          if ! git merge-base --is-ancestor "$CANDIDATE_SHA" "$default_tip"; then
-            echo "candidate_sha is not merged into the default branch" >&2
-            exit 1
-          fi
-
-      - name: Set up Python 3.12
+      - name: Set up Python 3.12 and uv
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
@@ -108,195 +113,424 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: "22"
-          cache: npm
-
-      - name: Install locked Python dependencies
-        run: uv sync --locked
-
-      - name: Run offline Python tests
-        run: uv run python -m unittest discover -s tests -v
-
-      - name: Install locked hosting dependencies
-        run: npm ci
-
-      - name: Check static hosting tree
-        run: npm run build
-
-      - name: Validate reviewed website Release (offline)
+      - name: Retrieve retained inputs for the offline package gate
         shell: bash
         env:
-          BASE_SHA: ${{ inputs.base_sha }}
+          INPUT_RUN_ID: ${{ inputs.input_run_id }}
+          INPUT_ARTIFACT_NAME: ${{ inputs.input_artifact_name }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          base_root="$RUNNER_TEMP/sportsrank-base-${BASE_SHA}"
-          base_archive="$RUNNER_TEMP/sportsrank-base-${BASE_SHA}.tar"
-          base_site="$base_root/website"
-          rm -rf "$base_root" "$base_archive"
-          mkdir -p "$base_root"
+          [[ "$INPUT_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          [[ "$INPUT_ARTIFACT_NAME" =~ ^[A-Za-z0-9_.-]+$ ]]
+          mkdir -p "$RUNNER_TEMP/retained-inputs"
+          gh run download "$INPUT_RUN_ID" \
+            --repo arkar16/sportsrank \
+            --name "$INPUT_ARTIFACT_NAME" \
+            --dir "$RUNNER_TEMP/retained-inputs"
 
-          if [[ "$(git cat-file -t "$BASE_SHA" 2>/dev/null || true)" != "commit" ]]; then
-            echo "BASE_SHA is not a verified commit object" >&2
-            exit 1
-          fi
-          resolved_base="$(git rev-parse --verify "$BASE_SHA^{commit}")"
-          if [[ "$resolved_base" != "$BASE_SHA" ]]; then
-            echo "BASE_SHA does not resolve to its exact commit SHA" >&2
-            exit 1
-          fi
-
-          git archive --format=tar --output="$base_archive" "$BASE_SHA" website
-          test -s "$base_archive"
-          tar --extract --file="$base_archive" --directory="$base_root" --no-same-owner
-          test -d "$base_site"
-          test -f "$base_site/index.html"
-
-          uv run python -m cfb.recovery validate website --published-site "$base_site" --json
-
-      - name: Package the validated site once
-        id: package
+      - name: Run prepare_review_package and bind_merged_candidate
         shell: bash
         env:
-          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
-          BASE_SHA: ${{ inputs.base_sha }}
+          CFBD_API_KEY: ""
         run: |
           set -euo pipefail
-          bundle_dir="$RUNNER_TEMP/sportsrank-validated-bundle"
-          rm -rf "$bundle_dir"
-          mkdir -p "$bundle_dir"
-          staging_archive="$bundle_dir/site.tar"
-          tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 \
-            --numeric-owner --format=gnu -cf "$staging_archive" website firebase.json
-          gzip -n "$staging_archive"
-          archive="$bundle_dir/site.tar.gz"
-          digest="$(sha256sum "$archive" | cut -d' ' -f1)"
-          content_addressed_archive="$bundle_dir/sportsrank-site-${digest}.tar.gz"
-          mv "$archive" "$content_addressed_archive"
-          smoke_script_source="$GITHUB_WORKSPACE/tools/scripts/postdeploy_smoke.py"
-          smoke_script="$bundle_dir/postdeploy_smoke.py"
-          cp "$smoke_script_source" "$smoke_script"
-          test -s "$smoke_script"
-          smoke_script_sha256="$(sha256sum "$smoke_script" | cut -d' ' -f1)"
-          checksum="$content_addressed_archive.sha256"
-          printf '%s  %s\n' "$digest" "$(basename "$content_addressed_archive")" > "$checksum"
-          attestation="$bundle_dir/sportsrank-site-${digest}.attestation.json"
-          cat > "$attestation" <<EOF
-          {
-            "schemaVersion": 1,
-            "artifactName": "sportsrank-site-${digest}",
-            "artifactFile": "$(basename "$content_addressed_archive")",
-            "artifact_sha256": "${digest}",
-            "smoke_script_sha256": "${smoke_script_sha256}",
-            "candidate_sha": "${CANDIDATE_SHA}",
-            "base_sha": "${BASE_SHA}",
-            "paths": ["firebase.json", "website"]
-          }
-          EOF
-          echo "artifact_name=sportsrank-site-${digest}" >> "$GITHUB_OUTPUT"
-          echo "artifact_sha256=${digest}" >> "$GITHUB_OUTPUT"
-          echo "archive_path=${content_addressed_archive}" >> "$GITHUB_OUTPUT"
-          echo "checksum_path=${checksum}" >> "$GITHUB_OUTPUT"
-          echo "attestation_path=${attestation}" >> "$GITHUB_OUTPUT"
-          echo "smoke_script_path=${smoke_script}" >> "$GITHUB_OUTPUT"
-          echo "smoke_script_sha256=${smoke_script_sha256}" >> "$GITHUB_OUTPUT"
+          input_root="$RUNNER_TEMP/retained-inputs"
+          output_root="$RUNNER_TEMP/preparation"
+          mkdir -p "$output_root"
+          git bundle create "$output_root/candidate.bundle" HEAD
+          (cd "$output_root" && sha256sum candidate.bundle > candidate.bundle.sha256)
+          uv run --locked python -m cfb.publication_cli prepare \
+            --candidate-root "$GITHUB_WORKSPACE" \
+            --candidate-commit "$GITHUB_SHA" \
+            --candidate-tree-bundle "$output_root/candidate.bundle" \
+            --candidate-tree-sha256 "$(cut -d' ' -f1 "$output_root/candidate.bundle.sha256")" \
+            --firebase-json "$GITHUB_WORKSPACE/firebase.json" \
+            --baseline-archive "$input_root/baseline.tar.gz" \
+            --baseline-sha256 "$(cat "$input_root/baseline.sha256")" \
+            --source-input-root "$input_root/source-inputs" \
+            --source-input-pins "$input_root/source-input-pins.json" \
+            --source-input-archive "$input_root/source-inputs.tar.gz" \
+            --source-input-sha256 "$(cat "$input_root/source-inputs.sha256")" \
+            --retained-inputs-sha256 "$(cat "$input_root/retained-inputs.sha256")" \
+            --evidence-references "$input_root/evidence-references.json" \
+            --output-directory "$output_root"
+          jq -n \
+            --arg repository "arkar16/sportsrank" \
+            --arg workflow_path ".github/workflows/firebase-hosting-publish.yml" \
+            --arg event "$GITHUB_EVENT_NAME" \
+            --arg ref "$GITHUB_REF" \
+            --arg head_sha "$GITHUB_SHA" \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_attempt "$GITHUB_RUN_ATTEMPT" \
+            '{schema_version: 1, record_type: "publication_preparation_origin", repository: $repository, workflow_path: $workflow_path, event: $event, ref: $ref, head_sha: $head_sha, run_id: $run_id, run_attempt: $run_attempt}' \
+            > "$output_root/preparation-origin.json"
+          (cd "$output_root" && sha256sum package.json > package.json.sha256)
 
-      - name: Create GitHub artifact provenance attestation
+      - name: Create immutable execution source and preparation manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          git archive --format=tar "$GITHUB_SHA" \
+            README.md cfb tools pyproject.toml uv.lock \
+            | gzip -n > "$RUNNER_TEMP/preparation/execution-source.tar.gz"
+          (cd "$RUNNER_TEMP/preparation" && \
+            sha256sum execution-source.tar.gz > execution-source.sha256 && \
+            sha256sum package.tar.gz > package.sha256)
+          jq -cnS \
+            --arg repository "arkar16/sportsrank" \
+            --arg workflow_path ".github/workflows/firebase-hosting-publish.yml" \
+            --arg event "workflow_dispatch" \
+            --arg ref "refs/heads/main" \
+            --arg head_sha "$GITHUB_SHA" \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_attempt "$GITHUB_RUN_ATTEMPT" \
+            --arg package_archive_sha256 "$(cut -d' ' -f1 "$RUNNER_TEMP/preparation/package.sha256")" \
+            --arg package_record_sha256 "$(cut -d' ' -f1 "$RUNNER_TEMP/preparation/package.json.sha256")" \
+            '{schema_version: 1, record_type: "publication_preparation_manifest", repository: $repository, workflow_path: $workflow_path, event: $event, ref: $ref, head_sha: $head_sha, run_id: $run_id, run_attempt: $run_attempt, package_archive_sha256: $package_archive_sha256, package_record_sha256: $package_record_sha256}' \
+            > "$RUNNER_TEMP/preparation/publication-preparation-manifest.json"
+
+      - name: Expose the exact package, baseline, and approval context
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -e '{schema_version, record_type, repository, target, candidate_commit, package: {candidate_commit: .package.candidate_commit, bundle_sha256: .package.bundle_sha256, inventory_sha256: .package.inventory_sha256, configuration_sha256: .package.configuration_sha256, expected_baseline_sha256: .package.expected_baseline_sha256, retained_inputs_sha256: .package.retained_inputs_sha256, validation_sha256: .package.validation_sha256}, package_archive, candidate_tree_archive, candidate_tree_sha256, evidence_references}' \
+            "$RUNNER_TEMP/preparation/publication-context.json" >> "$GITHUB_STEP_SUMMARY"
+          echo "Package record SHA-256: $(sha256sum "$RUNNER_TEMP/preparation/package.json" | cut -d' ' -f1)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Package archive SHA-256: $(sha256sum "$RUNNER_TEMP/preparation/package.tar.gz" | cut -d' ' -f1)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Preparation manifest SHA-256: $(sha256sum "$RUNNER_TEMP/preparation/publication-preparation-manifest.json" | cut -d' ' -f1)" >> "$GITHUB_STEP_SUMMARY"
+          echo >> "$GITHUB_STEP_SUMMARY"
+          echo 'The protected operation must use a fresh workflow_dispatch run on main.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Target: sportsrank-837af channel: live' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Attest the exact preparation manifest and package digests
         uses: actions/attest-build-provenance@v2
         with:
-          subject-path: ${{ steps.package.outputs.archive_path }}
+          subject-path: ${{ runner.temp }}/preparation/publication-preparation-manifest.json
 
-      - name: Upload the content-addressed artifact and attestation
+      - name: Upload the immutable preparation transport
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.package.outputs.artifact_name }}
+          name: sportsrank-preparation-${{ github.sha }}
           path: |
-            ${{ steps.package.outputs.archive_path }}
-            ${{ steps.package.outputs.checksum_path }}
-            ${{ steps.package.outputs.attestation_path }}
-            ${{ steps.package.outputs.smoke_script_path }}
+            ${{ runner.temp }}/preparation/package.tar.gz
+            ${{ runner.temp }}/preparation/package.sha256
+            ${{ runner.temp }}/preparation/package.json
+            ${{ runner.temp }}/preparation/package.json.sha256
+            ${{ runner.temp }}/preparation/baseline.json
+            ${{ runner.temp }}/preparation/publication-context.json
+            ${{ runner.temp }}/preparation/publication-attestation.json
+            ${{ runner.temp }}/preparation/publication-preparation-manifest.json
+            ${{ runner.temp }}/preparation/preparation-origin.json
+            ${{ runner.temp }}/preparation/candidate.bundle
+            ${{ runner.temp }}/preparation/candidate.bundle.sha256
+            ${{ runner.temp }}/preparation/execution-source.tar.gz
+            ${{ runner.temp }}/preparation/execution-source.sha256
           if-no-files-found: error
           retention-days: 7
 
-  publish:
-    name: Publish approved validated artifact
-    needs: validate
+  protected:
+    name: Execute the coordinator after fresh approval and provider read
+    needs: guard
+    if: inputs.operation != 'prepare'
     runs-on: ubuntu-latest
     environment:
       name: production
       url: https://www.sportsrank.top
+    permissions:
+      contents: write
+      actions: read
     steps:
-      - name: Download the exact validated artifact
+      - name: Download the exact prepared package transport
         uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.validate.outputs.artifact_name }}
-          path: ${{ runner.temp }}/sportsrank-validated-bundle
+          name: ${{ inputs.preparation_artifact_name }}
+          run-id: ${{ inputs.preparation_run_id }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/preparation
 
-      - name: Verify attestation and artifact hash
+      - name: Verify the authenticated preparation and state run origins
         shell: bash
         env:
-          ARTIFACT_SHA256: ${{ needs.validate.outputs.artifact_sha256 }}
-          SMOKE_SCRIPT_SHA256: ${{ needs.validate.outputs.smoke_script_sha256 }}
-          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
-          BASE_SHA: ${{ inputs.base_sha }}
+          OPERATION: ${{ inputs.operation }}
+          PREPARATION_RUN_ID: ${{ inputs.preparation_run_id }}
+          PREPARATION_ARTIFACT_NAME: ${{ inputs.preparation_artifact_name }}
+          EXPECTED_SHA: ${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          bundle_dir="$RUNNER_TEMP/sportsrank-validated-bundle"
-          archive="$bundle_dir/sportsrank-site-${ARTIFACT_SHA256}.tar.gz"
-          checksum="$archive.sha256"
-          attestation="$bundle_dir/sportsrank-site-${ARTIFACT_SHA256}.attestation.json"
-          smoke_script="$bundle_dir/postdeploy_smoke.py"
-          test -f "$archive"
-          test -f "$checksum"
-          test -f "$attestation"
-          test -f "$smoke_script"
-          cd "$bundle_dir"
-          sha256sum -c "$(basename "$checksum")"
-          actual_digest="$(sha256sum "$(basename "$archive")" | cut -d' ' -f1)"
-          test "$actual_digest" = "$ARTIFACT_SHA256"
-          actual_smoke_script_digest="$(sha256sum "$(basename "$smoke_script")" | cut -d' ' -f1)"
-          test "$actual_smoke_script_digest" = "$SMOKE_SCRIPT_SHA256"
+          [[ "$PREPARATION_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          [[ "$PREPARATION_ARTIFACT_NAME" =~ ^[A-Za-z0-9_.-]+$ ]]
+          run_json="$(gh run view "$PREPARATION_RUN_ID" \
+            --repo arkar16/sportsrank \
+            --json databaseId,path,event,headBranch,headSha,runAttempt,status,conclusion)"
           jq -e \
-            --arg candidate "$CANDIDATE_SHA" \
-            --arg base "$BASE_SHA" \
-            --arg digest "$ARTIFACT_SHA256" \
-            --arg smoke_script "$SMOKE_SCRIPT_SHA256" \
-            '.candidate_sha == $candidate and .base_sha == $base and .artifact_sha256 == $digest and .smoke_script_sha256 == $smoke_script and .paths == ["firebase.json", "website"]' \
-            "$(basename "$attestation")" > /dev/null
+            --arg run_id "$PREPARATION_RUN_ID" \
+            '.databaseId == ($run_id | tonumber) and .path == ".github/workflows/firebase-hosting-publish.yml" and .event == "workflow_dispatch" and .headBranch == "main" and .runAttempt == 1 and .status == "completed" and .conclusion == "success"' \
+            <<< "$run_json" > /dev/null
+          preparation_head_sha="$(jq -r '.headSha' <<< "$run_json")"
+          [[ "$preparation_head_sha" =~ ^[0-9a-f]{40}$ ]]
+          candidate="$(jq -r '.candidate_commit' "$RUNNER_TEMP/preparation/publication-context.json")"
+          [[ "$candidate" =~ ^[0-9a-f]{40}$ ]]
+          preparation_manifest="$RUNNER_TEMP/preparation/publication-preparation-manifest.json"
+          test -s "$preparation_manifest"
+          origin_file="$RUNNER_TEMP/preparation/preparation-origin.json"
+          test -s "$origin_file"
+          origin_run_id="$(jq -r '.run_id' "$origin_file")"
+          origin_head_sha="$(jq -r '.head_sha' "$origin_file")"
+          [[ "$origin_run_id" =~ ^[1-9][0-9]*$ ]]
+          [[ "$origin_head_sha" =~ ^[0-9a-f]{40}$ ]]
+          jq -e \
+            --arg repository "arkar16/sportsrank" \
+            --arg workflow_path ".github/workflows/firebase-hosting-publish.yml" \
+            --arg origin_run_id "$origin_run_id" \
+            --arg origin_head_sha "$origin_head_sha" \
+            '.schema_version == 1 and .record_type == "publication_preparation_origin" and .repository == $repository and .workflow_path == $workflow_path and .event == "workflow_dispatch" and .ref == "refs/heads/main" and .run_id == $origin_run_id and .run_attempt == "1" and .head_sha == $origin_head_sha' \
+            "$origin_file" > /dev/null
+          origin_json="$(gh run view "$origin_run_id" \
+            --repo arkar16/sportsrank \
+            --json databaseId,path,event,headBranch,headSha,runAttempt,status,conclusion)"
+          jq -e \
+            --arg run_id "$origin_run_id" \
+            --arg head_sha "$origin_head_sha" \
+            '.databaseId == ($run_id | tonumber) and .path == ".github/workflows/firebase-hosting-publish.yml" and .event == "workflow_dispatch" and .headBranch == "main" and .headSha == $head_sha and .runAttempt == 1 and .status == "completed" and .conclusion == "success"' \
+            <<< "$origin_json" > /dev/null
+          test "$candidate" = "$origin_head_sha"
+          package_archive_sha256="$(sha256sum "$RUNNER_TEMP/preparation/package.tar.gz" | cut -d' ' -f1)"
+          package_record_sha256="$(sha256sum "$RUNNER_TEMP/preparation/package.json" | cut -d' ' -f1)"
+          jq -e \
+            --arg candidate "$candidate" \
+            --arg origin_run_id "$origin_run_id" \
+            --arg package_archive_sha256 "$package_archive_sha256" \
+            --arg package_record_sha256 "$package_record_sha256" \
+            '.schema_version == 1 and .record_type == "publication_preparation_manifest" and .repository == "arkar16/sportsrank" and .workflow_path == ".github/workflows/firebase-hosting-publish.yml" and .event == "workflow_dispatch" and .ref == "refs/heads/main" and .head_sha == $candidate and .run_id == $origin_run_id and .run_attempt == "1" and .package_archive_sha256 == $package_archive_sha256 and .package_record_sha256 == $package_record_sha256' \
+            "$preparation_manifest" > /dev/null
+          if [[ "$OPERATION" == "execute" || "$OPERATION" == "rollback" || "$OPERATION" == "correction" ]]; then
+            test "$origin_run_id" = "$PREPARATION_RUN_ID"
+          fi
+          echo "PREPARATION_HEAD_SHA=$origin_head_sha" >> "$GITHUB_ENV"
+          echo "PREPARATION_ORIGIN_RUN_ID=$origin_run_id" >> "$GITHUB_ENV"
+          echo "SOURCE_RUN_HEAD_SHA=$preparation_head_sha" >> "$GITHUB_ENV"
+          case "$OPERATION" in
+            execute|rollback|correction)
+              test "$PREPARATION_ARTIFACT_NAME" = "sportsrank-preparation-$EXPECTED_SHA"
+              test "$preparation_head_sha" = "$EXPECTED_SHA"
+              ;;
+            reconcile|verify-only)
+              test "$PREPARATION_ARTIFACT_NAME" = "sportsrank-publication-$PREPARATION_RUN_ID"
+              ;;
+            *)
+              echo "unsupported protected operation" >&2
+              exit 1
+              ;;
+          esac
 
-      - name: Extract the verified artifact for Firebase
-        shell: bash
-        run: |
-          set -euo pipefail
-          bundle_dir="$RUNNER_TEMP/sportsrank-validated-bundle"
-          publish_dir="$GITHUB_WORKSPACE/validated-site"
-          rm -rf "$publish_dir"
-          mkdir -p "$publish_dir"
-          archive="$bundle_dir/sportsrank-site-${{ needs.validate.outputs.artifact_sha256 }}.tar.gz"
-          tar --extract --file "$archive" --directory "$publish_dir" --no-same-owner
-          test -f "$publish_dir/firebase.json"
-          test -f "$publish_dir/website/index.html"
-
-      - name: Publish the exact validated site
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SPORTSRANK_837AF }}
-          channelId: live
-          entryPoint: ${{ github.workspace }}/validated-site
-          projectId: sportsrank-837af
-
-      - name: Verify published pages match the validated artifact
+      - name: Retrieve the immutable predecessor state when required
+        if: inputs.operation == 'execute' || inputs.operation == 'rollback' || inputs.operation == 'correction'
         shell: bash
         env:
-          PUBLISHED_URL: https://www.sportsrank.top
+          OPERATION: ${{ inputs.operation }}
+          PREDECESSOR_RUN_ID: ${{ inputs.predecessor_run_id }}
+          PREDECESSOR_ARTIFACT_NAME: ${{ inputs.predecessor_artifact_name }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          python3 "$RUNNER_TEMP/sportsrank-validated-bundle/postdeploy_smoke.py" \
-            --base-url "$PUBLISHED_URL" \
-            --artifact-root "$GITHUB_WORKSPACE/validated-site/website" \
-            --timeout 10 \
-            --attempts 3 \
-            --retry-delay 2 \
-            --max-duration 180
+          if [[ -z "$PREDECESSOR_RUN_ID" && -z "$PREDECESSOR_ARTIFACT_NAME" ]]; then
+            if [[ "$OPERATION" == "execute" ]]; then
+              exit 0
+            fi
+            echo "$OPERATION requires an immutable predecessor state artifact" >&2
+            exit 1
+          fi
+          [[ "$PREDECESSOR_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          [[ "$PREDECESSOR_ARTIFACT_NAME" =~ ^[A-Za-z0-9_.-]+$ ]]
+          mkdir -p "$RUNNER_TEMP/predecessor"
+          gh run download "$PREDECESSOR_RUN_ID" \
+            --repo arkar16/sportsrank \
+            --name "$PREDECESSOR_ARTIFACT_NAME" \
+            --dir "$RUNNER_TEMP/predecessor"
+
+      - name: "Verify the prepared package, fresh approval context, and channel: live target"
+        shell: bash
+        env:
+          OPERATION: ${{ inputs.operation }}
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/preparation"
+          sha256sum -c package.sha256
+          sha256sum -c package.json.sha256
+          test -s publication-preparation-manifest.json
+          sha256sum -c candidate.bundle.sha256
+          sha256sum -c execution-source.sha256
+          test -s publication-context.json
+          test -s publication-attestation.json
+          candidate="$(jq -r '.candidate_commit' publication-context.json)"
+          [[ "$candidate" =~ ^[0-9a-f]{40}$ ]]
+          case "$OPERATION" in
+            execute|rollback|correction)
+              test "$candidate" = "$EXPECTED_SHA"
+              ;;
+            reconcile|verify-only)
+              test "$candidate" = "$PREPARATION_HEAD_SHA"
+              ;;
+          esac
+          jq -e \
+            --arg candidate "$candidate" \
+            --arg repository "arkar16/sportsrank" \
+            --arg project "sportsrank-837af" \
+            '.candidate_commit == $candidate and .repository == $repository and .target.project == $project and .target.site == $project and .target.channel == "live"' \
+            publication-context.json > /dev/null
+          package_archive_sha256="$(cut -d' ' -f1 package.sha256)"
+          package_record_sha256="$(cut -d' ' -f1 package.json.sha256)"
+          jq -e \
+            --arg candidate "$candidate" \
+            --arg origin_run_id "$PREPARATION_ORIGIN_RUN_ID" \
+            --arg package_archive_sha256 "$package_archive_sha256" \
+            --arg package_record_sha256 "$package_record_sha256" \
+            '.schema_version == 1 and .record_type == "publication_preparation_manifest" and .repository == "arkar16/sportsrank" and .workflow_path == ".github/workflows/firebase-hosting-publish.yml" and .event == "workflow_dispatch" and .ref == "refs/heads/main" and .head_sha == $candidate and .run_id == $origin_run_id and .run_attempt == "1" and .package_archive_sha256 == $package_archive_sha256 and .package_record_sha256 == $package_record_sha256' \
+            publication-preparation-manifest.json > /dev/null
+
+      - name: Verify transported execution source against the authenticated Git object graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/preparation"
+          candidate="$(jq -r '.candidate_commit' publication-context.json)"
+          [[ "$candidate" =~ ^[0-9a-f]{40}$ ]]
+          trusted_repo="$RUNNER_TEMP/trusted-candidate.git"
+          git init --bare --quiet "$trusted_repo"
+          git -C "$trusted_repo" bundle verify "$RUNNER_TEMP/preparation/candidate.bundle" >/dev/null
+          heads="$(git bundle list-heads "$RUNNER_TEMP/preparation/candidate.bundle")"
+          [[ "$heads" == "$candidate "* ]]
+          git -C "$trusted_repo" fetch --quiet --no-tags \
+            "$RUNNER_TEMP/preparation/candidate.bundle" \
+            "${candidate}:refs/heads/candidate"
+          test "$(git -C "$trusted_repo" cat-file -t "$candidate")" = "commit"
+          test "$(git -C "$trusted_repo" rev-parse refs/heads/candidate)" = "$candidate"
+          git -C "$trusted_repo" archive --format=tar "$candidate" \
+            README.md cfb tools pyproject.toml uv.lock \
+            | gzip -n > "$RUNNER_TEMP/execution-source.expected.tar.gz"
+          cmp "$RUNNER_TEMP/execution-source.expected.tar.gz" \
+            "$RUNNER_TEMP/preparation/execution-source.tar.gz"
+
+      - name: Materialize the exact execution code without a source checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/execution"
+          tar --extract --file "$RUNNER_TEMP/preparation/execution-source.tar.gz" \
+            --directory "$RUNNER_TEMP/execution" --no-same-owner
+
+      - name: Set up Python 3.12 and uv for the transported source
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: true
+
+      - name: Install the transported locked runtime
+        working-directory: ${{ runner.temp }}/execution
+        run: uv sync --locked
+
+      - name: Obtain the gated Firebase access token
+        id: firebase-auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SPORTSRANK_837AF }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/cloud-platform
+
+      - name: Run the selected publication operation through the coordinator
+        working-directory: ${{ runner.temp }}/execution
+        env:
+          OPERATION: ${{ inputs.operation }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
+          FIREBASE_ACCESS_TOKEN: ${{ steps.firebase-auth.outputs.access_token }}
+          CFBD_API_KEY: ""
+        run: |
+          set -euo pipefail
+          cli=(
+            uv run --locked python -m cfb.publication_cli
+            "$OPERATION"
+            --context "$RUNNER_TEMP/preparation/publication-context.json"
+            --attempt-id "run-${GITHUB_RUN_ID}"
+            --retrieval-directory "$RUNNER_TEMP/receipts" \
+            --result "$RUNNER_TEMP/publication-run.json"
+          )
+          case "$OPERATION" in
+            reconcile|verify-only)
+              cli+=(--attempt-manifest "$RUNNER_TEMP/preparation/publication-run.json")
+              ;;
+            execute|rollback|correction)
+              if [[ -f "$RUNNER_TEMP/predecessor/publication-context.json" || -f "$RUNNER_TEMP/predecessor/publication-run.json" ]]; then
+                test -f "$RUNNER_TEMP/predecessor/publication-context.json"
+                test -f "$RUNNER_TEMP/predecessor/publication-run.json"
+                cli+=(
+                  --prior-context "$RUNNER_TEMP/predecessor/publication-context.json"
+                  --prior-manifest "$RUNNER_TEMP/predecessor/publication-run.json"
+                )
+              elif [[ "$OPERATION" != "execute" ]]; then
+                echo "$OPERATION requires predecessor context and run manifest" >&2
+                exit 1
+              fi
+              ;;
+            *)
+              echo "unsupported protected operation" >&2
+              exit 1
+              ;;
+          esac
+          "${cli[@]}"
+
+      - name: Expose only sanitized coordinator evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -e '{record_type, operation, state, deployment_may_have_changed, permitted_next_operations, attempt: {candidate_commit: .attempt.package.candidate_commit, package_sha256: .attempt.package.bundle_sha256, intent_sha256: .attempt.intent.package_sha256}, provider_result: (.provider_result | if . == null then null else {outcome, observed_release, observed_version} end), verification: (.verification | if . == null then null else {outcome, observed_release, observed_version} end)}' \
+            "$RUNNER_TEMP/publication-run.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Assemble the immutable publication state transport
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          state_root="$RUNNER_TEMP/publication-state"
+          mkdir -p "$state_root"
+          cp "$RUNNER_TEMP/publication-run.json" "$state_root/publication-run.json"
+          for name in \
+            package.tar.gz package.sha256 package.json baseline.json \
+            package.json.sha256 \
+            publication-context.json publication-attestation.json \
+            publication-preparation-manifest.json \
+            preparation-origin.json \
+            candidate.bundle candidate.bundle.sha256 \
+            execution-source.tar.gz execution-source.sha256; do
+            cp "$RUNNER_TEMP/preparation/$name" "$state_root/$name"
+          done
+
+      - name: Retain the immutable publication state for later reconciliation
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sportsrank-publication-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/publication-state/publication-run.json
+            ${{ runner.temp }}/publication-state/package.tar.gz
+            ${{ runner.temp }}/publication-state/package.sha256
+            ${{ runner.temp }}/publication-state/package.json
+            ${{ runner.temp }}/publication-state/package.json.sha256
+            ${{ runner.temp }}/publication-state/baseline.json
+            ${{ runner.temp }}/publication-state/publication-context.json
+            ${{ runner.temp }}/publication-state/publication-attestation.json
+            ${{ runner.temp }}/publication-state/publication-preparation-manifest.json
+            ${{ runner.temp }}/publication-state/preparation-origin.json
+            ${{ runner.temp }}/publication-state/candidate.bundle
+            ${{ runner.temp }}/publication-state/candidate.bundle.sha256
+            ${{ runner.temp }}/publication-state/execution-source.tar.gz
+            ${{ runner.temp }}/publication-state/execution-source.sha256
+          if-no-files-found: error
+          retention-days: 7

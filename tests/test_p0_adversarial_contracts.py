@@ -167,15 +167,27 @@ class _P0Source:
 
 
 class P0AdversarialContractTests(unittest.TestCase):
-    def test_ci_materializes_base_sha_before_recovery_validation(self):
+    def test_ci_materializes_immutable_candidate_and_retained_inputs_before_execution(self):
         source = (REPO_ROOT / ".github/workflows/firebase-hosting-publish.yml").read_text(
             encoding="utf-8"
         )
-        validation = source.split("Validate reviewed website Release", 1)[1].split(
-            "Package the validated site once", 1
-        )[0]
-        self.assertIn("--published-site", validation)
-        self.assertRegex(validation, r"git (archive|worktree|show).*BASE_SHA")
+        prepare_start = source.index("\n  prepare:")
+        protected_start = source.index("\n  protected:")
+        preparation = source[prepare_start:protected_start]
+        self.assertIn("--baseline-archive", preparation)
+        self.assertIn("--baseline-sha256", preparation)
+        self.assertIn("--source-input-archive", preparation)
+        self.assertIn("--source-input-pins", preparation)
+        self.assertIn("--source-input-sha256", preparation)
+        self.assertIn("--retained-inputs-sha256", preparation)
+        self.assertIn("--evidence-references", preparation)
+        self.assertIn("candidate.bundle", preparation)
+        self.assertIn("bind_merged_candidate", preparation)
+        self.assertIn("publication-context.json", preparation)
+        self.assertIn("package.sha256", preparation)
+        self.assertNotIn("merge-base", preparation)
+        self.assertNotIn("candidate_sha", preparation)
+        self.assertNotIn("base_sha", preparation)
 
     def test_resealed_candidate_with_wrong_finite_prior_final_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:

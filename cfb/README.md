@@ -165,14 +165,49 @@ For a cumulative final candidate, `validate --published-site` must name the
 original Published Site, not an intermediate Release. This invokes the
 independent cumulative-chain validator and reports added, changed, and deleted
 public paths in JSON output before any explicit promotion.
-The current workflow's `candidate_sha`/`base_sha` interface assumes a Git base.
-[ADR-0016](../docs/adr/0016-bind-publication-to-verified-live-content.md) accepts
-a verified live-content baseline and requires deployed identity to be recorded
-separately from verification. That publication behavior is not implemented yet.
-Use the [publication runbook](../docs/operations/2026-season-recovery-morning.md)
-for the required readiness sequence; the protected `production` job must carry
-the exact validated artifact, with no source re-checkout. A Pi-local
+The protected publication workflow is one manually dispatched
+`workflow_dispatch` path on `main` with `prepare`, `execute`, `reconcile`,
+`verify-only`, `rollback`, and `correction` operations. Preparation binds the
+exact package to the actual merged commit SHA and transports the package,
+publication context, preparation-origin record,
+`publication-preparation-manifest.json`, candidate Git bundle, runtime source,
+and their hashes. The manifest is the GitHub-attested subject binding
+`arkar16/sportsrank/.github/workflows/firebase-hosting-publish.yml`,
+`workflow_dispatch` on `refs/heads/main`, exact candidate/run/attempt
+identities, and package archive/package-record digests. The
+protected job verifies that transport and invokes the cohesive CLI without
+checking out source or rebuilding the package. A trusted bootstrap must anchor
+those hashes before runtime installation; self-asserted payload metadata cannot
+establish trust. Rehydrate verifies the attestation and actual
+`GitCommitTreeReader` before package use; preparation-origin and hash files are
+context checks, not standalone proof.
+
+Use `uv run --locked python -m cfb.publication_cli --help` for the canonical
+CLI grammar. Cross-run predecessors require fresh full reconciliation through
+the configured provider. `reconcile-external` is CLI-only and requires a
+complete fresh live capture and sanitized evidence; archived history alone
+cannot establish origin.
+The concrete adapters may make live provider, archive, and approval reads. See
+the [publication runbook](../docs/operations/2026-season-recovery-morning.md)
+for readiness and recovery procedure. [ADR-0016](../docs/adr/0016-bind-publication-to-verified-live-content.md)
+allows unknown source-commit provenance for an initial live capture while
+requiring deployed identity to be recorded separately from verification. SR-15
+setup and SR-16 final evidence remain separate readiness gates. A Pi-local
 `.sportsrank/releases` path is never passed to a runner.
+
+Protected modes use `--context`, `--attempt-id`, `--retrieval-directory`, and
+`--result`; `reconcile`/`verify-only` add `--attempt-manifest`, while
+`rollback`/`correction` add `--prior-context` and `--prior-manifest`. The
+initial `execute` may omit the predecessor pair; later successors require a
+fresh predecessor reconciliation. The
+mutating preparation artifact is `sportsrank-preparation-<GITHUB_SHA>`; sealed
+reconciliation and verification state uses `sportsrank-publication-<RUN_ID>`
+and retains `publication-preparation-manifest.json`, the original
+`preparation-origin.json`, all transport files, and `publication-run.json`.
+Summaries expose sanitized target and digest identity; retained-input/provider
+evidence stays private and is not a public release asset by default. The protected
+runtime uses `GITHUB_TOKEN` for provenance/approval reads,
+`FIREBASE_ACCESS_TOKEN` only inside production, and no `CFBD_API_KEY`.
 
 Local Firebase commands are for the emulator only. Public publication has no
 local npm or Firebase deployment shortcut; use the gated workflow above.

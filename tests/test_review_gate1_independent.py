@@ -500,10 +500,27 @@ class PostdeploySmokeIndependentTests(unittest.TestCase):
     def test_workflow_uses_exact_url_and_restarts_all_pages_after_transient_failure(self):
         workflow = Path(__file__).resolve().parents[1] / ".github" / "workflows" / "firebase-hosting-publish.yml"
         source = workflow.read_text(encoding="utf-8")
-        self.assertIn("PUBLISHED_URL: https://www.sportsrank.top", source)
         self.assertNotIn("job.environment.url", source)
-        for marker in ("--timeout 10", "--attempts 3", "--retry-delay 2", "--max-duration 180"):
-            self.assertIn(marker, source)
+        protected_start = source.index("\n  protected:")
+        protected = source[protected_start:]
+        for marker in (
+            "workflow_dispatch:",
+            "sportsrank-837af",
+            "channel: live",
+            "environment:\n      name: production",
+            "google-github-actions/auth@v2",
+            "gh run view",
+            "sha256sum -c",
+            "archive --format=tar",
+            "cmp \"$RUNNER_TEMP/execution-source.expected.tar.gz\"",
+            "python -m cfb.publication_cli",
+        ):
+            self.assertIn(marker, source if marker == "workflow_dispatch:" else protected)
+        self.assertNotIn("FirebaseExtended/action-hosting-deploy", source)
+        self.assertNotIn("npm run deploy", source)
+        self.assertNotIn("PUBLISHED_URL", source)
+        self.assertNotIn("--attempts", protected)
+        self.assertNotIn("--retry-delay", protected)
 
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -287,28 +287,84 @@ Gate 2 remains pending.
 
 ### Exact-artifact publication
 
-- Require the full immutable merged `candidate_sha` and an expected deployed
-  Firebase release/version bound to its complete verified content archive.
-  ADR-0016 replaces the historical requirement for a known deployed `base_sha`;
-  an initial capture may have unknown source-commit provenance. Reject mutable
-  candidate refs, incomplete baseline evidence and an unmerged candidate.
-- Validate and package `website/` once. Carry that content-addressed artifact
-  and its attestation into the protected publish job; do not re-checkout a ref.
-- Disable direct `npm run deploy` and equivalent hosting publication bypasses.
+- After owner merge, `prepare` must validate the complete verified live baseline
+  and retained inputs, package `website/` plus `firebase.json`, and bind those
+  exact bytes to the actual merged commit SHA through `bind_merged_candidate`.
+  A staged `PreparedPackage` has no eligible commit binding; a package with
+  `candidate_commit` absent or `null` cannot enter an approved operation. Reject
+  mutable refs, incomplete baseline evidence and an unmerged candidate. An
+  initial live capture may have unknown source-commit provenance under
+  ADR-0016; archived history alone does not establish live origin.
+- Carry the sealed package, package record/hash, baseline, publication context,
+  attestation, preparation-origin record, preparation manifest, candidate Git
+  bundle/hash, and immutable execution-source archive/hash into the protected
+  job. The preparation transport includes `package.tar.gz`/`package.sha256`,
+  `package.json`/`package.json.sha256`, `baseline.json`,
+  `publication-context.json`, `publication-attestation.json`,
+  `preparation-origin.json`, `publication-preparation-manifest.json`,
+  `candidate.bundle`/`candidate.bundle.sha256`, and
+  `execution-source.tar.gz`/`execution-source.sha256`. Its mutating artifact is
+  `sportsrank-preparation-<GITHUB_SHA>`; reconcile/verify state uses
+  `sportsrank-publication-<RUN_ID>` and retains
+  `publication-preparation-manifest.json`, original preparation origin, all
+  transport files, and `publication-run.json`.
+  The manifest is the GitHub-attested subject binding
+  `arkar16/sportsrank/.github/workflows/firebase-hosting-publish.yml`,
+  `workflow_dispatch` on `refs/heads/main`, exact candidate/run/attempt
+  identities, and package archive/package-record digests. A
+  trusted bootstrap must authenticate the preparation and state runs, verify
+  the candidate bundle as the actual Git object graph, regenerate the execution
+  source archive from that candidate and compare it before extraction, runtime
+  installation or secret authentication. `preparation-origin.json` and hash
+  files support context checks but are not standalone proof; a checksum or
+  attestation produced only by the transported runtime cannot establish trust.
+  The rehydrate path verifies the attestation and actual `GitCommitTreeReader`
+  before package use. Do not check out source or rebuild the package in the
+  publish job. Exact merged-SHA preparation and validation must be repeated
+  after the owner merges the accepted change.
+- The one cohesive CLI surface provides `prepare`, `execute`, `reconcile`,
+  `verify-only`, `rollback`, and `correction`; the workflow choices are exactly
+  those six. The CLI also provides CLI-only `reconcile-external` for an unknown
+  live predecessor. `execute` performs a
+  normal approved publication; `reconcile` makes a fresh configured-provider
+  observation; `verify-only` retries verification without a provider write; and
+  rollback/correction publish only an owner-approved exact package after fresh
+  predecessor reconciliation. `reconcile-external` requires a complete fresh
+  capture, sanitized record and immutable archive references. Protected modes
+  use `--context`, `--attempt-id`, `--retrieval-directory`, and `--result`;
+  `reconcile`/`verify-only` require `--attempt-manifest`, while
+  `rollback`/`correction` require `--prior-context` and `--prior-manifest`.
+  `execute` may omit the predecessor pair only for an initial publication.
+- Any cross-run predecessor supplied to a normal successor must be fully
+  reconciled afresh through the configured provider. Rollback and correction
+  always require both predecessor context and sealed run manifest; a missing,
+  partial, stale or unverified predecessor fails closed. The CLI's concrete
+  provider and archive adapters may make live calls; its ordinary tests remain
+  offline.
+- Use one manually dispatched workflow on `main` with the `production`
+  environment. The guard requires the fixed repository, `workflow_dispatch`,
+  `refs/heads/main`, and run attempt `1`. The protected job uses `actions: read`
+  for authenticated GitHub run/approval and artifact evidence, and deployment
+  credentials are available only there. `GITHUB_TOKEN` supplies provenance and
+  approval reads; `FIREBASE_ACCESS_TOKEN` is protected to that job and
+  `CFBD_API_KEY` is absent. The owner's production approval is required; agents
+  never approve on the owner's behalf.
+- Workflow summaries expose sanitized target, operation, state, and digest
+  identity. Retained-input and provider evidence remain private task/run
+  evidence and are not public release assets by default.
 - Validate against the verified live base and preserve the historical archive.
   Reconcile different base trees and provenance offline; changing a base
-  identifier alone cannot make the prepared candidate valid.
-- Gate 2 is the owner-required GitHub `production` environment approval.
-  Recheck expected live identity after approval immediately before publication;
-  reject stale or unknown state. Serialize the authorized publication path and
-  coordinate other publishers; a provider read is not an atomic write lock.
+  identifier alone cannot make the prepared candidate valid. Immediately after
+  approval, re-read live identity and reject stale or unknown state. Coordinate
+  the authorized publication path because a provider read is not an atomic
+  write lock.
 - Deploy the already-validated artifact, then verify the homepage, 2023 FINAL,
-  rebuilt 2024/2025 FINAL pages, 2026 PRESEASON, and the Week 0 slate.
-- Preserve artifact/provenance archives and deployment receipts independently
-  of short-lived workflow artifacts. Record actual deployment and verification
-  separately. Reconcile provider state after an interrupted attempt. A failed
-  post-deployment check pauses ordinary publication for owner-approved recovery;
-  rollback is an explicit approved publication, not an automatic action.
+  rebuilt 2024/2025 FINAL pages, 2026 PRESEASON, and the Week 0 slate. Preserve
+  artifact/provenance archives and deployment receipts independently of
+  short-lived workflow artifacts. Record actual deployment and verification
+  separately; after an interruption, reconcile provider state before any new
+  publication. A failed post-deployment check pauses ordinary publication;
+  rollback is an explicit approved publication, never an automatic action.
 - Use GitHub immutable release assets under ADR-0018. Seal the artifact and
   intent before deployment, then append separate immutable provider-result and
   verification records. Verify immutability, retrieval and hashes; mutable
@@ -317,8 +373,9 @@ Gate 2 remains pending.
   Independent locked backup is deferred under the accepted deletion risk.
 - Before the recovery cutover, disable the legacy automatic deployment routes
   and retire their repository-scoped deployment capability. Verify containment
-  before merge; audit shared credential use before revocation. Production
-  setup and exact-artifact approval remain distinct from planning acceptance.
+  before merge; audit shared credential use before revocation. Production setup,
+  final task evidence, exact-artifact approval and production execution remain
+  distinct from planning acceptance.
 
 ## Meaningful verification
 

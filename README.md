@@ -32,17 +32,20 @@ The recovery contract above owns product requirements. Use
 Python 3.12 and the locked dependencies are required:
 
 ```sh
-uv sync --locked
-uv run python -m unittest discover -s tests -v
-npm ci
-npm run build
+env -u CFBD_API_KEY uv sync --locked
+env -u CFBD_API_KEY uv run --locked python -m unittest discover -s tests -v
+env -u CFBD_API_KEY uv run --locked python -m compileall -q cfb tools tests
+env -u CFBD_API_KEY npm ci
+env -u CFBD_API_KEY npm run build
 ```
 
 These commands do not require a CFBD key and must not publish. Ordinary
 verification uses portable Schema 2/3 fixtures and does not depend on private
-or ignored caches. The production adapter reads the project-only bearer token
-from `CFBD_API_KEY`; the value must never enter source, command arguments,
-tracked environment files, generated artifacts, logs, issues, or chat.
+or ignored caches. Static hosting build success does not establish strict
+Release, link, or HTML acceptance. The production adapter reads the project-
+only bearer token from `CFBD_API_KEY`; the value must never enter source,
+command arguments, tracked environment files, generated artifacts, logs,
+issues, or chat.
 
 ## Postseason calendar repair
 
@@ -63,15 +66,105 @@ fails closed.
 
 ## Publication
 
-The intended publication path is the manually dispatched
-`Publish validated static site to Firebase Hosting` workflow after PR review
-and merge. Its current `candidate_sha`/`base_sha` interface still assumes a Git
-publication base; the accepted [live-content decision](docs/adr/0016-bind-publication-to-verified-live-content.md)
-requires implementation before the first publication. See the
-[publication runbook](docs/operations/2026-season-recovery-morning.md) and
-SportsRank task SR-7 for readiness and approval state.
-The protected `production` job must deploy the exact validated artifact after
-owner approval. Local hosting commands are emulator-only.
+The only remote publication entry point is the manually dispatched
+`Publish validated static site to Firebase Hosting` workflow after review and
+merge. Its guard requires the fixed repository, `refs/heads/main`, the
+`workflow_dispatch` event, and a first run attempt. The workflow offers
+`prepare`, `execute`, `reconcile`, `verify-only`, `rollback`, and `correction`.
+The protected job uses the `production` environment, reads GitHub approval and
+artifact evidence with `actions: read`, and exposes deployment credentials only
+inside that gated job. The owner must approve `production`; an agent cannot
+approve for the owner. Setup and production protection remain readiness work
+owned by SR-15, and final integrated evidence remains pending SR-16.
+
+Preparation checks the complete verified live baseline and retained inputs,
+packages `website/` plus `firebase.json`, and binds those exact bytes to the
+actual merged commit SHA. The workflow transports the sealed package,
+publication context, attestation, preparation-origin record, candidate Git
+bundle and their hashes, plus the immutable execution source. The preparation
+transport includes `package.tar.gz`/`package.sha256`, `package.json`/
+`package.json.sha256`, `baseline.json`, `publication-context.json`,
+`publication-attestation.json`, `preparation-origin.json`,
+`publication-preparation-manifest.json`,
+`candidate.bundle`/`candidate.bundle.sha256`, and
+`execution-source.tar.gz`/`execution-source.sha256`. A trusted workflow
+bootstrap must verify these transports before materializing or installing the
+runtime; a checksum or attestation produced only by the transported runtime
+cannot establish trust. The GitHub attestation subject binds the fixed
+`arkar16/sportsrank/.github/workflows/firebase-hosting-publish.yml`,
+`workflow_dispatch` on `refs/heads/main`, exact candidate/run/attempt
+identities, and the package archive and package-record digests.
+`preparation-origin.json` and hash files support context checks but are not
+standalone proof. The protected rehydrate path verifies the attestation and
+reads the actual Git object graph through `GitCommitTreeReader` before package
+use.
+The protected job then runs the cohesive CLI without checking out a ref or
+rebuilding the package. A staged package before commit binding (for example one
+with `candidate_commit` absent or `null`) is not eligible for an approved
+operation. After owner merge, re-run preparation and revalidate the exact
+merged SHA before presenting the package for approval.
+
+The CLI is the portable operation surface; `--help` is the canonical argument
+reference:
+
+```sh
+uv run --locked python -m cfb.publication_cli --help
+uv run --locked python -m cfb.publication_cli prepare --help
+uv run --locked python -m cfb.publication_cli execute --help
+uv run --locked python -m cfb.publication_cli reconcile --help
+uv run --locked python -m cfb.publication_cli verify-only --help
+uv run --locked python -m cfb.publication_cli rollback --help
+uv run --locked python -m cfb.publication_cli correction --help
+uv run --locked python -m cfb.publication_cli reconcile-external --help
+```
+
+`prepare` produces the strict context consumed by later modes. `execute`
+performs a normal approved publication. `reconcile` makes a fresh configured-
+provider observation of a sealed attempt. `verify-only` retries verification
+without a provider write. `rollback` and `correction` consume an exact package
+only after the supplied predecessor context and run manifest have each been
+fully reconciled afresh. `reconcile-external` is CLI-only for an unknown live
+predecessor and requires a complete fresh capture plus its sanitized evidence;
+archived history alone cannot establish origin. The concrete CLI adapters may
+make live provider, GitHub archive, and approval reads, so these are operational
+commands rather than offline tests. Local hosting commands are emulator-only.
+
+Protected modes use `--context` and `--attempt-id`; the workflow also supplies
+`--retrieval-directory` and `--result`. `reconcile` and `verify-only` require
+`--attempt-manifest`. `rollback` and `correction` require both
+`--prior-context` and `--prior-manifest`; `execute` may omit that pair only for
+an initial publication. Mutating operations consume the
+`sportsrank-preparation-<current-GITHUB_SHA>` artifact. Reconciliation and
+verification consume the `sportsrank-publication-<run-id>` state artifact,
+which retains `publication-preparation-manifest.json`, the original preparation
+origin, and all transport files alongside `publication-run.json`. The protected runtime uses
+`GITHUB_TOKEN` for run provenance/approval reads and `FIREBASE_ACCESS_TOKEN`
+only inside the gated production job; `CFBD_API_KEY` is empty. Workflow
+summaries expose sanitized target, operation, state, and digest identity.
+Retained-input and provider evidence remain private task/run evidence and are
+not public release assets by default.
+
+For the protected modes, the verified parser shape uses safe path and identity
+placeholders; consult each `--help` output before execution:
+
+```sh
+uv run --locked python -m cfb.publication_cli execute \
+  --context <publication-context.json> --attempt-id <new-attempt-id>
+uv run --locked python -m cfb.publication_cli reconcile \
+  --context <publication-context.json> --attempt-id <new-attempt-id> \
+  --attempt-manifest <sealed-publication-run.json>
+uv run --locked python -m cfb.publication_cli rollback \
+  --context <publication-context.json> --attempt-id <new-attempt-id> \
+  --prior-context <predecessor-context.json> \
+  --prior-manifest <predecessor-publication-run.json>
+```
+
+These examples do not authorize a run or supply credentials. Readiness is
+separate from planning and technical review; this documentation does not claim
+that publication is authorized, deployed, or verified. See the [publication
+runbook](docs/operations/2026-season-recovery-morning.md), [ADR-0012](docs/adr/0012-deploy-the-exact-validated-artifact.md),
+[ADR-0016](docs/adr/0016-bind-publication-to-verified-live-content.md), and
+[ADR-0018](docs/adr/0018-retain-publication-evidence-in-github-releases.md).
 
 ## Project memory
 

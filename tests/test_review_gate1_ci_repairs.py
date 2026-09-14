@@ -268,7 +268,7 @@ class PostdeploySmokeTests(unittest.TestCase):
         self.assertEqual(calls, [])
         self.assertEqual(clock.sleeps, [])
 
-    def test_workflow_pins_uv_serializes_production_and_runs_bounded_smoke_after_deploy(self):
+    def test_workflow_pins_uv_serializes_production_and_runs_bounded_coordinator(self):
         workflow = WORKFLOW_PATH.read_text(encoding="utf-8")
 
         self.assertIn("uses: astral-sh/setup-uv@v9.0.0", workflow)
@@ -277,41 +277,39 @@ class PostdeploySmokeTests(unittest.TestCase):
             "concurrency:\n  group: sportsrank-production-publication\n  cancel-in-progress: false",
             workflow,
         )
-        self.assertIn("PUBLISHED_URL: https://www.sportsrank.top", workflow)
         self.assertNotIn("job.environment.url", workflow)
+        protected_start = workflow.index("\n  protected:")
+        protected = workflow[protected_start:]
+        self.assertIn("workflow_dispatch:", workflow)
+        self.assertIn("environment:\n      name: production", protected)
+        self.assertIn("actions: read", protected)
+        self.assertIn("google-github-actions/auth@v2", protected)
+        self.assertIn("Verify the authenticated preparation and state run origins", protected)
+        self.assertIn("gh run view", protected)
+        self.assertIn("gh run download", protected)
+        self.assertIn("actions/download-artifact@v4", protected)
+        self.assertIn("actions/attest-build-provenance@v2", workflow)
+        self.assertIn("actions/upload-artifact@v4", workflow)
+        self.assertIn("sha256sum -c", protected)
+        self.assertIn("candidate.bundle.sha256", protected)
+        self.assertIn("candidate.bundle", protected)
+        self.assertIn("archive --format=tar", protected)
+        self.assertIn("cmp \"$RUNNER_TEMP/execution-source.expected.tar.gz\"", protected)
+        self.assertIn("bind_merged_candidate", workflow)
+        self.assertIn("python -m cfb.publication_cli", protected)
+        self.assertIn("predecessor_run_id", workflow)
+        self.assertIn("publication-state", protected)
+        self.assertNotIn("FirebaseExtended/action-hosting-deploy", workflow)
+        self.assertNotIn("npm run deploy", workflow)
+        self.assertNotIn("PUBLISHED_URL", workflow)
+        self.assertNotIn("candidate_sha", workflow)
+        self.assertNotIn("base_sha", workflow)
+        self.assertNotIn("continue-on-error: true", protected)
+        self.assertNotIn("|| true", protected)
 
-        deploy_marker = "uses: FirebaseExtended/action-hosting-deploy@v0"
-        smoke_marker = 'python3 "$RUNNER_TEMP/sportsrank-validated-bundle/postdeploy_smoke.py"'
-        self.assertLess(workflow.index(deploy_marker), workflow.index(smoke_marker))
-        self.assertIn("smoke_script_source=\"$GITHUB_WORKSPACE/tools/scripts/postdeploy_smoke.py\"", workflow)
-        self.assertIn("--base-url \"$PUBLISHED_URL\"", workflow)
-        self.assertIn("--artifact-root \"$GITHUB_WORKSPACE/validated-site/website\"", workflow)
-        self.assertIn("--timeout 10", workflow)
-        self.assertIn("--attempts 3", workflow)
-        self.assertIn("--retry-delay 2", workflow)
-        self.assertIn("--max-duration 180", workflow)
-        self.assertIn("SMOKE_SCRIPT_SHA256: ${{ needs.validate.outputs.smoke_script_sha256 }}", workflow)
-
-        publish_start = workflow.index("\n  publish:")
-        publish_block = workflow[publish_start:]
-        self.assertNotIn("actions/checkout@", publish_block)
-        smoke_start = workflow.index(smoke_marker)
-        smoke_block = workflow[workflow.rfind("run: |", 0, smoke_start) :]
-        self.assertIn("set -euo pipefail", smoke_block)
-        self.assertNotIn("continue-on-error: true", smoke_block)
-        self.assertNotIn("|| true", smoke_block)
-
-        for marker in (
-            "ref: ${{ inputs.candidate_sha }}",
-            "actions/attest-build-provenance@v2",
-            "actions/upload-artifact@v4",
-            "actions/download-artifact@v4",
-            "sha256sum -c",
-            "candidate_sha",
-            "base_sha",
-            "entryPoint: ${{ github.workspace }}/validated-site",
-        ):
-            self.assertIn(marker, workflow)
+        prepare_end = workflow.index("\n  protected:")
+        self.assertEqual(workflow[:prepare_end].count("actions/checkout@"), 1)
+        self.assertNotIn("actions/checkout@", protected)
 
 
 if __name__ == "__main__":

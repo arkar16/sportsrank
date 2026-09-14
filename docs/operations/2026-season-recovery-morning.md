@@ -21,71 +21,141 @@ The historical output/evidence root was
 its availability is recorded in the evidence index. Confirm the intended inputs,
 new output directory, and task scope before running a new migration.
 
-## First-publication readiness
+## Publication interface and current state
 
 [ADR-0016](../adr/0016-bind-publication-to-verified-live-content.md) records the
-accepted publication behavior. The current workflow still expects
-`candidate_sha`/`base_sha` Git inputs and does not implement that behavior.
-Do not run the existing dispatch procedure as a first-publication shortcut.
-The sequence below is the delivery requirement, not a claim of readiness.
+accepted provider-backed behavior. The integrated path remains subject to SR-15
+production-setup evidence and SR-16 final acceptance. This runbook is a
+procedure, not authorization; it does not claim that publication is authorized,
+deployed, or verified.
 
-1. Capture the current Firebase live release/version, complete file inventory,
-   recoverable content and serving configuration using authenticated read-only
-   access. Preserve a content-addressed archive and capture evidence. An unknown
-   original Git SHA is acceptable; missing content or unexplained differences
-   are not. Recheck live identity after capture to exclude a mixed baseline.
+The cohesive interface is `python -m cfb.publication_cli`; its `--help` output
+is the canonical argument reference. The CLI modes are:
+
+- `prepare` validates the complete captured baseline and retained recovery
+  inputs, packages `website/` with `firebase.json`, and binds those bytes to the
+  actual merged commit SHA in a strict preparation context.
+- `execute` performs one owner-approved normal publication from that exact
+  package.
+- `reconcile` makes a fresh configured-provider observation of a sealed attempt
+  and records the result.
+- `verify-only` rechecks a recorded deployment without a provider write.
+- `rollback` and `correction` publish an owner-approved recovery package only
+  after the predecessor context and sealed run manifest have been fully
+  reconciled afresh through the configured provider.
+- CLI-only `reconcile-external` binds an unknown live deployment to a complete, freshly
+  captured provider baseline. It requires the capture derivative, sanitizer
+  record and immutable archive references; archived history alone is not origin
+  proof.
+
+The workflow exposes `prepare`, `execute`, `reconcile`, `verify-only`,
+`rollback`, and `correction` as `workflow_dispatch` choices. Preparation
+transports the sealed `package.tar.gz`/`package.sha256`, `package.json`/
+`package.json.sha256`, `baseline.json`, `publication-context.json`,
+`publication-attestation.json`, `preparation-origin.json`,
+`publication-preparation-manifest.json`, candidate Git bundle and its hash, and
+immutable execution-source archive with its hash. Mutating preparation uses
+`sportsrank-preparation-<GITHUB_SHA>`; reconciliation and verification use
+`sportsrank-publication-<RUN_ID>` state that retains
+`publication-preparation-manifest.json`,
+original preparation origin, all transport files, and `publication-run.json`.
+The preparation manifest is the GitHub-attested subject binding
+`arkar16/sportsrank/.github/workflows/firebase-hosting-publish.yml`,
+`workflow_dispatch` on `refs/heads/main`, exact candidate/run/attempt
+identities, and package archive/package-record digests. The
+protected job's trusted bootstrap authenticates the preparation and state runs,
+verifies the candidate bundle as the actual Git object graph, and regenerates
+and compares the execution-source archive before extracting, installing the
+runtime, or authenticating the secret. `preparation-origin.json` and hash files
+support context checks but are not standalone proof; a checksum or attestation
+produced only by the transported runtime cannot establish trust. The rehydrate
+path verifies the attestation and actual `GitCommitTreeReader` before package
+use.
+The job then invokes the CLI without checking out a source ref or rebuilding the
+package. A staged package before merged-commit binding (including one with
+`candidate_commit` absent or `null`) is not eligible for execution.
+
+For a normal successor, a predecessor may be supplied. When supplied, the CLI
+requires both `--prior-context` and `--prior-manifest`, retrieves the sealed
+predecessor evidence, performs a fresh full reconciliation through the
+configured provider, and rejects the successor unless the predecessor is
+verified. `rollback` and `correction` always require that pair. The workflow's
+predecessor transport uses `predecessor_run_id` and
+`predecessor_artifact_name`; missing or incomplete recovery transport fails
+closed.
+
+Protected CLI modes use `--context`, `--attempt-id`, `--retrieval-directory`,
+and `--result`; `reconcile` and `verify-only` also require
+`--attempt-manifest`. `execute` may omit the predecessor pair only for an
+initial publication. Workflow summaries expose sanitized target, operation,
+state, and digest identity. Retained-input and provider evidence remain private
+task/run evidence and are not public release assets by default. The protected
+runtime uses `GITHUB_TOKEN` for provenance/approval reads,
+`FIREBASE_ACCESS_TOKEN` only inside production, and no `CFBD_API_KEY`.
+
+## First-publication readiness
+
+Complete these steps before presenting a package for production approval:
+
+1. Capture the current Firebase release/version, complete public file inventory,
+   recoverable content, and serving configuration through authenticated
+   read-only access. Preserve a content-addressed archive and capture evidence.
+   An unknown original Git SHA is acceptable; missing content or unexplained
+   differences are not. Re-read live identity after capture to exclude a mixed
+   baseline. Historical archives can support reconciliation but cannot establish
+   the current live origin by themselves.
 2. Reconcile the capture with the historical repository archive and prepared
-   recovery. Preserve every public path and unchanged inherited content. If
-   the bases differ, prepare and validate a fresh offline overlay with correct
-   provenance; keep the accepted recovery bytes/evidence preserved for comparison.
-   No live CFBD allowance is implied.
-   Apply [ADR-0017](../adr/0017-preserve-firebase-managed-resource-behavior.md)
-   only to the two Firebase initialization resources: retain capture evidence,
-   preserve availability/app identity and verify their generated configuration.
-   Preserve the three never-live Schema 3 source snapshots as recovery inputs
-   outside the rebuilt application tree, with verified source-checksum lookup.
-3. Complete the publication implementation and configure `production` with the
-   owner as required reviewer, self-review allowed, bypass disabled and branch
-   `main` only. Scope deployment credentials exclusively to that environment
-   and retire the legacy publication routes. Verify the actual configuration
-   and credential capability before relying on the gate.
-   Disable legacy automatic deploy/preview workflows and remove their usable
-   repository-scoped deployment capability before the recovery merge. Audit
-   shared key use before revoking a credential; do not affect unrelated services.
-4. Enable and verify GitHub release immutability before publishing archival
-   assets under [ADR-0018](../adr/0018-retain-publication-evidence-in-github-releases.md).
-   Keep raw provider account metadata in private evidence; public derivatives
-   include explicit redaction provenance and source hashes. Retain source
-   snapshots and the original prepared recovery along with the live baseline.
+   recovery. Preserve every public path and unchanged inherited byte. If the
+   bases differ, build and validate a fresh offline overlay with explicit
+   provenance while retaining the accepted recovery bytes for comparison. No
+   live CFBD allowance is implied. Apply [ADR-0017](../adr/0017-preserve-firebase-managed-resource-behavior.md)
+   only to the two Firebase initialization resources, preserving their
+   availability and app identity with verified generated configuration. Keep
+   the three never-live Schema 3 snapshots outside the rebuilt application tree
+   with source-checksum lookup.
+3. Complete SR-15 setup evidence: verify the `production` environment's actual
+   owner review requirement, self-review and bypass settings, `main` restriction,
+   credential isolation, retired automatic/alternate publication routes, and
+   immutable release configuration. YAML describes intended behavior; setup
+   acceptance must confirm the provider configuration and capability. Audit
+   shared key use before revoking any old credential.
+4. After the owner merges, prepare and independently revalidate the exact merged
+   candidate SHA against the verified baseline. Keep the package, context,
+   attestation, source transport, and sealed archive identities together for
+   review. A pre-merge or unbound staged package cannot be presented for
+   approval.
 
 ## Gate 2 publication and recovery
 
-After implementation, PR review and merge, use only the manually dispatched
-**Publish validated static site to Firebase Hosting** workflow. Gate 2 production
-approval remains separate from technical acceptance.
+After SR-15 setup evidence, SR-16 integrated acceptance, PR review, and owner
+merge, use only a fresh manually dispatched **Publish validated static site to
+Firebase Hosting** run. The workflow guard requires the fixed repository,
+`refs/heads/main`, the `workflow_dispatch` event, and run attempt `1`. The
+protected job uses the `production` environment and `actions: read` to retrieve
+artifacts and authenticated GitHub run/approval evidence. The coordinator
+requires the owner's `production` approval; agents never submit it.
 
-1. Validate the full merged `candidate_sha` against the verified baseline and
-   package the site/configuration once. Bind its digest and provenance to the
-   expected current Firebase live release/version; retain the archive and
-   attempt evidence beyond temporary Actions artifact retention.
-   Verify durable archive retrieval and hashes before deployment. Publish the
-   artifact and intent as immutable assets, then preserve separate immutable
-   deployment and verification records; never append to a sealed release or use
-   its editable title, notes or latest label as authority.
-2. Present the exact validated artifact for the owner's `production` approval.
-   Re-read live identity after approval immediately before publication. A stale
-   or unknown base stops the attempt. Coordinate the single publication path;
-   the identity check does not lock out an uncoordinated external publisher.
-3. Publish that exact artifact without re-checking out source. Record the
-   provider release/version separately from the subsequent public-page checks.
-   If the attempt is interrupted or its result is uncertain, reconcile Firebase
-   state before any new publication.
-4. On failed post-deployment verification, pause ordinary publication and retain
-   the actual deployed identity plus failure evidence. The owner chooses recovery;
-   automatic rollback is not authorized. A verification retry need not publish.
-   A rollback or corrective deployment requires approval of its exact artifact.
+1. Select the exact preparation transport and verify its hashes, candidate SHA,
+   target, context, and attestation. Persist immutable package and intent
+   evidence before any provider write under
+   [ADR-0018](../adr/0018-retain-publication-evidence-in-github-releases.md).
+   Preserve separate provider-result and verification records and verify archive
+   retrieval, hashes, and immutability. Mutable release notes, labels, or
+   workflow success do not establish state.
+2. Present that exact package for the owner's `production` approval. Immediately
+   after approval, re-read the expected live release/version and reject a stale
+   or unknown predecessor. A provider read does not lock out an external
+   publisher, so coordinate the single authorized publication path.
+3. Run `execute`, `rollback`, or `correction` through the transported CLI. The
+   provider receives the already validated package and configuration; source is
+   not checked out and the package is not rebuilt. Record the provider
+   release/version separately from subsequent public-page verification.
+4. If the attempt is interrupted or its result is uncertain, stop ordinary
+   publication and run `reconcile` against the sealed attempt. Retain the
+   observed or uncertain identity; never infer that the old site remains live.
+   On failed public checks, pause ordinary publication. `verify-only` may retry
+   verification without another provider write; a rollback or correction is a
+   new exact package with fresh predecessor reconciliation and owner approval.
 
-The suspect release can remain live while recovery is investigated. Agents never
-submit the owner's approval; GitHub account-based review cannot distinguish human
-and agent actions made through the same account. Local hosting commands remain
-emulator-only.
+The suspect release may remain live while recovery is investigated. Local
+hosting commands remain emulator-only.
