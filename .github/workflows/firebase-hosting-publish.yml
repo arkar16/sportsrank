@@ -430,7 +430,6 @@ jobs:
           [[ "$candidate" =~ ^[0-9a-f]{40}$ ]]
           test "$candidate" = "$PREPARATION_HEAD_SHA"
           authenticated_commit="$(gh api \
-            --repo arkar16/sportsrank \
             "repos/arkar16/sportsrank/commits/$candidate")"
           authenticated_sha="$(jq -r '.sha // empty' <<< "$authenticated_commit")"
           authenticated_tree="$(jq -r '.commit.tree.sha // empty' <<< "$authenticated_commit")"

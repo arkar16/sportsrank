@@ -121,11 +121,17 @@ class OperationsContractTests(unittest.TestCase):
         fake_bin.mkdir()
         (fake_bin / "gh").write_text(
             "#!/bin/sh\n"
+            "if [ \"$1\" != api ]; then exit 1; fi\n"
+            "shift\n"
+            "if [ \"$1\" = --repo ]; then\n"
+            "  echo 'unsupported gh api --repo flag' >&2\n"
+            "  exit 2\n"
+            "fi\n"
             "case \"$1\" in\n"
-            "  api)\n"
+            "  repos/arkar16/sportsrank/commits/*)\n"
             f"    printf '%s\\n' '{json.dumps({'sha': commit, 'commit': {'tree': {'sha': tree}}})}'\n"
             "    ;;\n"
-            "  *) exit 1 ;;\n"
+            "  *) exit 3 ;;\n"
             "esac\n",
             encoding="utf-8",
         )
@@ -358,6 +364,31 @@ class OperationsContractTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertTrue((runner / "trusted-candidate.git" / "refs" / "heads" / "candidate").exists())
             self.assertFalse((runner / "execution").exists())
+
+    def test_gh_api_repository_selection_is_an_explicit_offline_endpoint(self):
+        help_result = subprocess.run(
+            ["gh", "api", "--help"],
+            text=True,
+            capture_output=True,
+            timeout=30,
+        )
+        self.assertEqual(help_result.returncode, 0, help_result.stderr)
+        self.assertIn("gh api <endpoint>", help_result.stdout)
+
+        invalid_result = subprocess.run(
+            [
+                "gh",
+                "api",
+                "--repo",
+                "arkar16/sportsrank",
+                "--help",
+            ],
+            text=True,
+            capture_output=True,
+            timeout=30,
+        )
+        self.assertNotEqual(invalid_result.returncode, 0)
+        self.assertIn("--repo", invalid_result.stdout + invalid_result.stderr)
 
 
     def test_protected_production_environment_is_the_only_publish_gate(self):
