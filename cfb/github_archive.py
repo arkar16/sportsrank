@@ -87,9 +87,13 @@ class GitHubReleaseArchive:
         return value
 
     def _release_by_id(self, repository: str, release_id: object) -> Mapping[str, object]:
+        if not isinstance(release_id, (int, str)) or isinstance(release_id, bool) or not str(release_id):
+            raise ArchiveError("GitHub archive release ID is invalid")
         value = self._api_json(f"repos/{repository}/releases/{release_id}")
         if not isinstance(value, Mapping):
             raise ArchiveError("GitHub archive release response is invalid")
+        if str(value.get("id")) != str(release_id):
+            raise ArchiveError("GitHub archive release ID changed during reconciliation")
         return value
 
     def _draft(self, repository: str, tag: str) -> Mapping[str, object] | None:
@@ -162,6 +166,51 @@ class GitHubReleaseArchive:
             ])
         self._require_tag_commit(repository, tag, expected)
 
+    @staticmethod
+    def _draft_assets(
+        spec: ArchiveSpec,
+        release: Mapping[str, object],
+        *,
+        allow_missing: bool,
+    ) -> dict[str, Mapping[str, object]]:
+        if release.get("draft") is not True or release.get("tag_name") != spec.tag:
+            raise ArchiveError("draft archive identity changed during reconciliation")
+        raw_assets = release.get("assets")
+        if not isinstance(raw_assets, list):
+            raise ArchiveError("draft archive asset inventory is invalid")
+        existing = {
+            value.get("name"): value for value in raw_assets
+            if isinstance(value, Mapping) and isinstance(value.get("name"), str)
+        }
+        if len(existing) != len(raw_assets) or not set(existing).issubset(spec.assets):
+            raise ArchiveError("draft archive contains an unexpected or duplicate asset")
+        if not allow_missing and set(existing) != set(spec.assets):
+            raise ArchiveError("draft archive is missing a required asset")
+        for name, asset in existing.items():
+            value = Path(spec.assets[name]).read_bytes()
+            if (
+                asset.get("digest") != f"sha256:{_sha256(value)}"
+                or asset.get("size") != len(value)
+                or asset.get("state") != "uploaded"
+            ):
+                raise ArchiveError(f"draft archive asset differs from requested bytes: {name}")
+        return existing
+
+    def _upload_to_draft(
+        self, spec: ArchiveSpec, release_id: object, name: str, path: Path
+    ) -> None:
+        self._run([
+            "api", "--hostname", "uploads.github.com", "--method", "POST",
+            f"repos/{spec.repository}/releases/{release_id}/assets?name={quote(name, safe='')}",
+            "-H", "Content-Type: application/octet-stream", "--input", str(path),
+        ])
+
+    def _publish_draft(self, repository: str, release_id: object) -> None:
+        self._run([
+            "api", "--method", "PATCH", f"repos/{repository}/releases/{release_id}",
+            "-F", "draft=false",
+        ])
+
     def _references(self, spec: ArchiveSpec, release: Mapping[str, object]) -> dict[str, ArchiveReference]:
         if release.get("tag_name") != spec.tag:
             raise ArchiveError("immutable release tag differs from the archive specification")
@@ -202,23 +251,19 @@ class GitHubReleaseArchive:
         if release.get("draft") is True and release.get("immutable") is not True:
             if release.get("tag_name") != spec.tag:
                 raise ArchiveError("draft archive tag differs from the specification")
+            release_id = release.get("id")
+            if not isinstance(release_id, int) or isinstance(release_id, bool) or release_id <= 0:
+                raise ArchiveError("draft archive release has no stable numeric ID")
             self._require_tag_commit(spec.repository, spec.tag, spec.target_commit)
-            raw_assets = release.get("assets")
-            if not isinstance(raw_assets, list):
-                raise ArchiveError("draft archive asset inventory is invalid")
-            existing = {value.get("name"): value for value in raw_assets if isinstance(value, Mapping)}
-            if not set(existing).issubset(spec.assets):
-                raise ArchiveError("draft archive contains an unexpected asset")
-            for name, asset in existing.items():
-                value = Path(spec.assets[name]).read_bytes()
-                if asset.get("digest") != f"sha256:{_sha256(value)}" or asset.get("size") != len(value):
-                    raise ArchiveError(f"draft archive asset differs from requested bytes: {name}")
+            existing = self._draft_assets(spec, release, allow_missing=True)
             for name, path in spec.assets.items():
                 if name not in existing:
-                    self._run(["release", "upload", spec.tag, str(path), "--repo", spec.repository])
+                    self._upload_to_draft(spec, release_id, name, Path(path))
+            release = self._release_by_id(spec.repository, release_id)
+            self._draft_assets(spec, release, allow_missing=False)
             self._require_tag_commit(spec.repository, spec.tag, spec.target_commit)
-            self._run(["release", "edit", spec.tag, "--repo", spec.repository, "--draft=false"])
-            release = self._release_by_id(spec.repository, release.get("id"))
+            self._publish_draft(spec.repository, release_id)
+            release = self._release_by_id(spec.repository, release_id)
         return self._references(spec, release)
 
     def retrieve_and_verify(self, reference: ArchiveReference, destination: str | Path) -> Path:

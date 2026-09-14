@@ -80,6 +80,7 @@ class PublicationArchiveTests(unittest.TestCase):
             }
             published = {**draft, "draft": False, "immutable": True}
             creations = []
+            mutations = []
             published_state = False
 
             def gh(arguments, **kwargs):
@@ -100,7 +101,8 @@ class PublicationArchiveTests(unittest.TestCase):
                 if arguments[1:3] == ["release", "create"]:
                     creations.append(arguments)
                     return subprocess.CompletedProcess(arguments, 1, b"", b"duplicate tag")
-                if arguments[1:3] == ["release", "edit"]:
+                if arguments[1:4] == ["api", "--method", "PATCH"]:
+                    mutations.append(arguments)
                     published_state = True
                     return subprocess.CompletedProcess(arguments, 0, b"", b"")
                 raise AssertionError(arguments)
@@ -112,6 +114,122 @@ class PublicationArchiveTests(unittest.TestCase):
                 ))[asset.name]
             self.assertEqual(reference.release_id, "77")
             self.assertEqual(creations, [])
+            self.assertEqual(
+                mutations[0][4], "repos/owner/repository/releases/77"
+            )
+
+    def test_draft_upload_and_publish_use_the_exact_numeric_release_id(self):
+        with tempfile.TemporaryDirectory() as directory:
+            asset = Path(directory) / "asset.tar.gz"
+            asset.write_bytes(b"asset bytes")
+            empty = {
+                "id": 77, "tag_name": "evidence-1", "draft": True,
+                "immutable": False, "assets": [],
+            }
+            complete = {
+                **empty,
+                "assets": [{
+                    "id": 78, "name": asset.name,
+                    "digest": f"sha256:{sha(asset.read_bytes())}",
+                    "size": asset.stat().st_size, "state": "uploaded",
+                }],
+            }
+            published = {**complete, "draft": False, "immutable": True}
+            by_id_reads = 0
+            commands = []
+
+            def gh(arguments, **kwargs):
+                nonlocal by_id_reads
+                commands.append(arguments)
+                if arguments[1:4] == ["api", "--hostname", "uploads.github.com"]:
+                    return subprocess.CompletedProcess(arguments, 0, b"{}", b"")
+                if arguments[1:4] == ["api", "--method", "PATCH"]:
+                    return subprocess.CompletedProcess(arguments, 0, b"{}", b"")
+                endpoint = arguments[2]
+                if endpoint.endswith("/releases/tags/evidence-1"):
+                    return subprocess.CompletedProcess(arguments, 1, b"", b"HTTP 404")
+                if "/releases?per_page=100&page=1" in endpoint:
+                    return subprocess.CompletedProcess(arguments, 0, json.dumps([empty]).encode(), b"")
+                if endpoint.endswith("/releases/77"):
+                    states = [empty, complete, published]
+                    result = states[by_id_reads]
+                    by_id_reads += 1
+                    return subprocess.CompletedProcess(arguments, 0, json.dumps(result).encode(), b"")
+                if endpoint.endswith("/git/ref/tags/evidence-1"):
+                    tag = {"object": {"type": "commit", "sha": "c" * 40}}
+                    return subprocess.CompletedProcess(arguments, 0, json.dumps(tag).encode(), b"")
+                raise AssertionError(arguments)
+
+            with patch("cfb.github_archive.subprocess.run", side_effect=gh):
+                reference = GitHubReleaseArchive().seal_or_reconcile(ArchiveSpec(
+                    "owner/repository", "evidence-1", "c" * 40,
+                    {asset.name: asset}, "title",
+                ))[asset.name]
+
+            upload = next(command for command in commands if "uploads.github.com" in command)
+            publish = next(command for command in commands if command[1:4] == ["api", "--method", "PATCH"])
+            self.assertIn("repos/owner/repository/releases/77/assets?name=asset.tar.gz", upload)
+            self.assertEqual(publish[4], "repos/owner/repository/releases/77")
+            self.assertEqual(reference.release_id, "77")
+
+    def test_incomplete_or_changed_draft_inventory_is_never_published(self):
+        with tempfile.TemporaryDirectory() as directory:
+            asset = Path(directory) / "asset.tar.gz"
+            asset.write_bytes(b"asset bytes")
+            expected = {
+                "id": 78, "name": asset.name,
+                "digest": f"sha256:{sha(asset.read_bytes())}",
+                "size": asset.stat().st_size, "state": "uploaded",
+            }
+            cases = {
+                "missing": [],
+                "concurrent": [expected, {
+                    "id": 79, "name": "unexpected.tar.gz",
+                    "digest": f"sha256:{sha(b'unexpected')}",
+                    "size": len(b"unexpected"), "state": "uploaded",
+                }],
+                "substituted": [{**expected, "digest": f"sha256:{sha(b'substituted')}"}],
+                "wrong-size": [{**expected, "size": asset.stat().st_size + 1}],
+                "not-uploaded": [{**expected, "state": "new"}],
+            }
+            for label, refreshed_assets in cases.items():
+                with self.subTest(label=label):
+                    initial = {
+                        "id": 77, "tag_name": "evidence-1", "draft": True,
+                        "immutable": False, "assets": [],
+                    }
+                    refreshed = {**initial, "assets": refreshed_assets}
+                    by_id_reads = 0
+                    publishes = []
+
+                    def gh(arguments, **kwargs):
+                        nonlocal by_id_reads
+                        if arguments[1:4] == ["api", "--hostname", "uploads.github.com"]:
+                            return subprocess.CompletedProcess(arguments, 0, b"{}", b"")
+                        if arguments[1:4] == ["api", "--method", "PATCH"]:
+                            publishes.append(arguments)
+                            return subprocess.CompletedProcess(arguments, 0, b"{}", b"")
+                        endpoint = arguments[2]
+                        if endpoint.endswith("/releases/tags/evidence-1"):
+                            return subprocess.CompletedProcess(arguments, 1, b"", b"HTTP 404")
+                        if "/releases?per_page=100&page=1" in endpoint:
+                            return subprocess.CompletedProcess(arguments, 0, json.dumps([initial]).encode(), b"")
+                        if endpoint.endswith("/releases/77"):
+                            result = initial if by_id_reads == 0 else refreshed
+                            by_id_reads += 1
+                            return subprocess.CompletedProcess(arguments, 0, json.dumps(result).encode(), b"")
+                        if endpoint.endswith("/git/ref/tags/evidence-1"):
+                            tag = {"object": {"type": "commit", "sha": "c" * 40}}
+                            return subprocess.CompletedProcess(arguments, 0, json.dumps(tag).encode(), b"")
+                        raise AssertionError(arguments)
+
+                    with patch("cfb.github_archive.subprocess.run", side_effect=gh):
+                        with self.assertRaises(ArchiveError):
+                            GitHubReleaseArchive().seal_or_reconcile(ArchiveSpec(
+                                "owner/repository", "evidence-1", "c" * 40,
+                                {asset.name: asset}, "title",
+                            ))
+                    self.assertEqual(publishes, [])
 
     def test_release_target_hint_cannot_substitute_for_the_actual_tag_commit(self):
         with tempfile.TemporaryDirectory() as directory:
