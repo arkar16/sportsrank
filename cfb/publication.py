@@ -6,7 +6,7 @@ strict record that later publication state machines may consume.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 import gzip
 import hashlib
@@ -421,17 +421,67 @@ class PublicationExecutionError(RuntimeError):
     """The protected publication operation could not safely make a write."""
 
 
-@dataclass(frozen=True)
-class PriorVerifiedPublication:
-    """Append-only records and archive references for a verified successor base."""
+_PREDECESSOR_TOKEN = object()
 
+
+@dataclass(frozen=True, init=False)
+class PriorVerifiedPublication:
+    """Coordinator-issued capability for one fully reconciled publication."""
+
+    repository: str
     intent: AttemptIntentRecord
     provider_result: ProviderResultRecord
     verification: VerificationRecord
+    reconciliation: ReconciliationRecord
     provider_result_reference: ArchiveReference
     provider_result_source_reference: ArchiveReference
     verification_reference: ArchiveReference
     verification_source_reference: ArchiveReference
+    reconciliation_reference: ArchiveReference
+    reconciliation_source_reference: ArchiveReference
+
+    def __init__(self, *values: object, _token: object | None = None) -> None:
+        if _token is not _PREDECESSOR_TOKEN:
+            raise PublicationExecutionError(
+                "predecessor capabilities require coordinator reconstruction"
+            )
+        for name, value in zip(self.__dataclass_fields__, values, strict=True):
+            object.__setattr__(self, name, value)
+
+    @classmethod
+    def _create(cls, *values: object) -> "PriorVerifiedPublication":
+        return cls(*values, _token=_PREDECESSOR_TOKEN)
+
+
+@dataclass(frozen=True, init=False)
+class ExternalVerifiedPredecessor:
+    """Coordinator-issued capability for a complete external live capture."""
+
+    repository: str
+    baseline_sha256: str
+    observed_identity: ProviderIdentity
+    observation: ExternalPredecessorRecord
+    capture_reference: ArchiveReference
+    sanitizer_reference: ArchiveReference
+    observation_reference: ArchiveReference
+    observation_source_reference: ArchiveReference
+
+    def __init__(self, *values: object, _token: object | None = None) -> None:
+        if _token is not _PREDECESSOR_TOKEN:
+            raise PublicationExecutionError(
+                "external predecessor capabilities require coordinator reconstruction"
+            )
+        for name, value in zip(self.__dataclass_fields__, values, strict=True):
+            object.__setattr__(self, name, value)
+
+    @classmethod
+    def _create(cls, *values: object) -> "ExternalVerifiedPredecessor":
+        return cls(*values, _token=_PREDECESSOR_TOKEN)
+
+
+VerifiedPublicationPredecessor = (
+    PriorVerifiedPublication | ExternalVerifiedPredecessor
+)
 
 
 @dataclass(frozen=True)
@@ -507,6 +557,7 @@ class ReconciliationRun:
     verification: VerificationRecord | None
     verification_evidence: SealedRecordEvidence | None
     permitted_next_operations: tuple[str, ...]
+    _predecessor: PriorVerifiedPublication | None = None
 
     @property
     def ordinary_successor_allowed(self) -> bool:
@@ -515,25 +566,29 @@ class ReconciliationRun:
     def as_prior(self) -> PriorVerifiedPublication:
         if (
             not self.ordinary_successor_allowed
+            or self.observation_evidence is None
             or self.provider_result is None
             or self.provider_evidence is None
             or self.verification is None
             or self.verification_evidence is None
+            or self._predecessor is None
+            or self.observation_evidence.record_reference
+            != self._predecessor.reconciliation_reference
+            or self.observation_evidence.source_reference
+            != self._predecessor.reconciliation_source_reference
+            or self.provider_evidence.record_reference
+            != self._predecessor.provider_result_reference
+            or self.provider_evidence.source_reference
+            != self._predecessor.provider_result_source_reference
+            or self.verification_evidence.record_reference
+            != self._predecessor.verification_reference
+            or self.verification_evidence.source_reference
+            != self._predecessor.verification_source_reference
         ):
             raise PublicationExecutionError(
                 "only a fully sealed verified reconciliation is a predecessor"
             )
-        return PriorVerifiedPublication(
-            # The result/verification linkage proves the originating intent.
-            # Its immutable bytes were re-read by reconcile before this state.
-            self.intent,
-            self.provider_result,
-            self.verification,
-            self.provider_evidence.record_reference,
-            self.provider_evidence.source_reference,
-            self.verification_evidence.record_reference,
-            self.verification_evidence.source_reference,
-        )
+        return self._predecessor
 
 
 @dataclass(frozen=True)
@@ -546,10 +601,26 @@ class ExternalReconciliationRun:
     observation: ExternalPredecessorRecord
     observation_evidence: SealedRecordEvidence | None
     permitted_next_operations: tuple[str, ...]
+    _predecessor: ExternalVerifiedPredecessor | None = None
 
     @property
     def ordinary_successor_allowed(self) -> bool:
         return self.state == "external_verified"
+
+    def as_prior(self) -> ExternalVerifiedPredecessor:
+        if (
+            not self.ordinary_successor_allowed
+            or self.observation_evidence is None
+            or self._predecessor is None
+            or self.observation_evidence.record_reference
+            != self._predecessor.observation_reference
+            or self.observation_evidence.source_reference
+            != self._predecessor.observation_source_reference
+        ):
+            raise PublicationExecutionError(
+                "only a fully sealed external reconciliation is a predecessor"
+            )
+        return self._predecessor
 
 
 @dataclass(frozen=True)
@@ -567,7 +638,10 @@ class PublicationRun:
 
     @property
     def ordinary_successor_allowed(self) -> bool:
-        return self.state == "verified"
+        return (
+            self.state == "verified"
+            and "normal_successor" in self.permitted_next_operations
+        )
 
 
 _PUBLICATION_LOCK = threading.Lock()
@@ -653,11 +727,23 @@ def _retrieve_recorded_attempt(
     recorded: RecordedPublicationAttempt,
     *,
     archive: ImmutableArchive,
+    repository: str,
     destination: Path,
 ) -> FirebaseDeployArtifact:
     """Re-read the exact package and intent; local prior paths carry no trust."""
 
     attempt = recorded.attempt
+    references = (
+        attempt.package_reference,
+        attempt.package_record_reference,
+        attempt.validation_reference,
+        attempt.intent_reference,
+        *attempt.intent.evidence_references.values(),
+    )
+    if any(reference.repository != repository for reference in references):
+        raise PublicationExecutionError(
+            "attempt evidence must belong to the configured repository"
+        )
     destination.mkdir(parents=True, exist_ok=True)
     package_path = archive.retrieve_and_verify(
         attempt.package_reference,
@@ -706,9 +792,15 @@ def _record_evidence_is_valid(
     evidence: SealedRecordEvidence | None,
     *,
     archive: ImmutableArchive,
+    repository: str,
     destination: Path,
 ) -> bool:
     if record is None or evidence is None:
+        return False
+    if (
+        evidence.record_reference.repository != repository
+        or evidence.source_reference.repository != repository
+    ):
         return False
     if (
         evidence.record_reference.sha256 != record.digest
@@ -729,25 +821,167 @@ def _record_evidence_is_valid(
     return retrieved_record.read_bytes() == canonical_json(record.to_dict())
 
 
+def _evidence_json(
+    archive: ImmutableArchive,
+    reference: ArchiveReference,
+    *,
+    repository: str,
+    destination: Path,
+    name: str,
+) -> Mapping[str, Any]:
+    if reference.repository != repository:
+        raise PublicationExecutionError(
+            "predecessor evidence must belong to the configured repository"
+        )
+    try:
+        retrieved = archive.retrieve_and_verify(reference, destination)
+    except ArchiveError as exc:
+        raise PublicationExecutionError(
+            f"{name} immutable evidence is unavailable"
+        ) from exc
+    return _json_object(retrieved, name)
+
+
+def _exact_source(
+    source: Mapping[str, Any], expected: Mapping[str, Any], name: str
+) -> None:
+    if dict(source) != dict(expected):
+        raise PublicationExecutionError(
+            f"{name} source is not the allowlisted provider observation"
+        )
+
+
 def _verify_prior_publication(
     package: ValidatedPackageRecord,
     baseline: BaselineRecord,
-    prior: PriorVerifiedPublication | None,
+    prior: VerifiedPublicationPredecessor | None,
     *,
     archive: ImmutableArchive,
+    repository: str,
     destination: Path,
+    require_prior: bool = False,
 ) -> None:
     if baseline.digest != package.expected_baseline_sha256:
         raise PublicationExecutionError(
             "baseline record does not match the validated package"
         )
-    if baseline.observed == package.expected_predecessor:
+    if (
+        prior is None
+        and not require_prior
+        and baseline.observed == package.expected_predecessor
+    ):
         # First publication: the complete stable baseline is authoritative even
         # when its historical source commit is explicitly unknown.
         return
     if prior is None:
         raise PublicationExecutionError(
             "a successor requires sealed verified predecessor evidence"
+        )
+    if getattr(prior, "repository", None) != repository:
+        raise PublicationExecutionError(
+            "predecessor is not a coordinator-issued repository capability"
+        )
+    if isinstance(prior, ExternalVerifiedPredecessor):
+        if (
+            prior.baseline_sha256 != baseline.digest
+            or prior.observed_identity != package.expected_predecessor
+            or prior.observation.baseline_sha256 != baseline.digest
+            or prior.observation.consumed_archive_sha256
+            != prior.capture_reference.sha256
+            or prior.observation.archive_reference_sha256
+            != prior.capture_reference.digest
+            or prior.observation.sanitizer_reference_sha256
+            != prior.sanitizer_reference.digest
+            or prior.observation.inventory_sha256 != baseline.inventory_sha256
+            or prior.observation.configuration_sha256
+            != baseline.configuration_sha256
+            or prior.observation.application_tree_sha256
+            != baseline.application_tree_sha256
+        ):
+            raise PublicationExecutionError(
+                "external predecessor does not match the validated package baseline"
+            )
+        for reference in (
+            prior.capture_reference, prior.sanitizer_reference,
+            prior.observation_reference, prior.observation_source_reference,
+        ):
+            if reference.repository != repository:
+                raise PublicationExecutionError(
+                    "external predecessor evidence must belong to the configured repository"
+                )
+        if len({
+            (reference.release_id, reference.asset_id)
+            for reference in (
+                prior.capture_reference, prior.sanitizer_reference,
+                prior.observation_reference,
+                prior.observation_source_reference,
+            )
+        }) != 4:
+            raise PublicationExecutionError(
+                "external predecessor evidence roles must use distinct assets"
+            )
+        archive.retrieve_and_verify(
+            prior.capture_reference, destination / "external-capture.tar.gz"
+        )
+        sanitizer_raw = _evidence_json(
+            archive, prior.sanitizer_reference, repository=repository,
+            destination=destination / "external-sanitizer.json",
+            name="external sanitizer",
+        )
+        sanitizer = SanitizedBaselineArchiveRecord.from_dict(sanitizer_raw)
+        if (
+            sanitizer.digest != prior.sanitizer_reference.sha256
+            or sanitizer.source_baseline_record_sha256 != baseline.digest
+            or sanitizer.source_archive_sha256 != baseline.archive_sha256
+            or sanitizer.derivative_archive_sha256
+            != prior.capture_reference.sha256
+        ):
+            raise PublicationExecutionError(
+                "external sanitizer does not reconstruct the predecessor baseline"
+            )
+        observation_raw = _evidence_json(
+            archive, prior.observation_reference, repository=repository,
+            destination=destination / "external-predecessor.json",
+            name="external predecessor",
+        )
+        observation = ExternalPredecessorRecord.from_dict(observation_raw)
+        if (
+            observation != prior.observation
+            or prior.observation_reference.sha256 != observation.digest
+            or prior.observation_source_reference.sha256
+            != observation.source_sha256
+        ):
+            raise PublicationExecutionError(
+                "external predecessor record differs from its immutable evidence"
+            )
+        source = _evidence_json(
+            archive, prior.observation_source_reference,
+            repository=repository,
+            destination=destination / "external-predecessor-source.json",
+            name="external predecessor source",
+        )
+        _exact_source(source, {
+            "schema_version": 1,
+            "record_type": "firebase_external_predecessor_observation",
+            "target": prior.observed_identity.target.to_dict(),
+            "release": prior.observed_identity.release,
+            "version": prior.observed_identity.version,
+            "baseline_sha256": baseline.digest,
+            "archive_reference_sha256": prior.capture_reference.digest,
+            "sanitizer_reference_sha256": prior.sanitizer_reference.digest,
+            "consumed_archive_sha256": prior.capture_reference.sha256,
+            "inventory_sha256": baseline.inventory_sha256,
+            "configuration_sha256": baseline.configuration_sha256,
+            "application_tree_sha256": baseline.application_tree_sha256,
+        }, "external predecessor")
+        return
+    if not isinstance(prior, PriorVerifiedPublication):
+        raise PublicationExecutionError(
+            "predecessor requires coordinator-reconstructed evidence"
+        )
+    if prior.repository != repository:
+        raise PublicationExecutionError(
+            "predecessor belongs to another repository"
         )
     result = ProviderResultRecord.from_dict(
         prior.provider_result.to_dict(), intent=prior.intent
@@ -759,48 +993,144 @@ def _verify_prior_publication(
     if (
         result.outcome != "accepted"
         or verification.outcome != "verified"
+        or result.redaction_method != "allowlisted-fields-v1"
+        or verification.redaction_method != "allowlisted-findings-v1"
+        or prior.reconciliation.redaction_method
+        != "allowlisted-reconciliation-v1"
         or result.observed_release != package.expected_predecessor.release
         or result.observed_version != package.expected_predecessor.version
         or verification.observed_release != package.expected_predecessor.release
         or verification.observed_version != package.expected_predecessor.version
+        or prior.reconciliation.disposition != "candidate_verified"
+        or prior.reconciliation.provider_result_sha256 != result.digest
+        or prior.reconciliation.verification_sha256 != verification.digest
+        or prior.reconciliation.observed_release != result.observed_release
+        or prior.reconciliation.observed_version != result.observed_version
         or prior.provider_result_reference.sha256 != result.digest
         or prior.provider_result_source_reference.sha256 != result.source_sha256
         or prior.verification_reference.sha256 != verification.digest
         or prior.verification_source_reference.sha256
         != verification.source_sha256
-        or (
-            prior.provider_result_reference.release_id,
-            prior.provider_result_reference.asset_id,
-        ) == (
-            prior.verification_reference.release_id,
-            prior.verification_reference.asset_id,
-        )
+        or prior.reconciliation_reference.sha256
+        != prior.reconciliation.digest
+        or prior.reconciliation_source_reference.sha256
+        != prior.reconciliation.source_sha256
     ):
         raise PublicationExecutionError(
             "successor predecessor evidence is incomplete or does not match"
         )
-    retrieved_result = archive.retrieve_and_verify(
-        prior.provider_result_reference, destination / "prior-provider-result.json"
-    )
-    archive.retrieve_and_verify(
+    references = (
+        prior.intent.artifact_reference,
+        *prior.intent.evidence_references.values(),
+        prior.provider_result_reference,
         prior.provider_result_source_reference,
-        destination / "prior-provider-result-source.json",
-    )
-    retrieved_verification = archive.retrieve_and_verify(
-        prior.verification_reference, destination / "prior-verification.json"
-    )
-    archive.retrieve_and_verify(
+        prior.verification_reference,
         prior.verification_source_reference,
-        destination / "prior-verification-source.json",
+        prior.reconciliation_reference,
+        prior.reconciliation_source_reference,
+    )
+    if any(reference.repository != repository for reference in references):
+        raise PublicationExecutionError(
+            "predecessor evidence must belong to the configured repository"
+        )
+    record_references = references[-6:]
+    if len({
+        (reference.release_id, reference.asset_id)
+        for reference in record_references
+    }) != 6:
+        raise PublicationExecutionError(
+            "predecessor evidence roles must use distinct archive assets"
+        )
+    retrieved_result = _evidence_json(
+        archive, prior.provider_result_reference, repository=repository,
+        destination=destination / "prior-provider-result.json",
+        name="provider result",
+    )
+    provider_source = _evidence_json(
+        archive, prior.provider_result_source_reference, repository=repository,
+        destination=destination / "prior-provider-result-source.json",
+        name="provider result source",
+    )
+    retrieved_verification = _evidence_json(
+        archive, prior.verification_reference, repository=repository,
+        destination=destination / "prior-verification.json",
+        name="verification",
+    )
+    verification_source = _evidence_json(
+        archive, prior.verification_source_reference, repository=repository,
+        destination=destination / "prior-verification-source.json",
+        name="verification source",
+    )
+    retrieved_reconciliation = _evidence_json(
+        archive, prior.reconciliation_reference, repository=repository,
+        destination=destination / "prior-reconciliation.json",
+        name="reconciliation",
+    )
+    reconciliation_source = _evidence_json(
+        archive, prior.reconciliation_source_reference, repository=repository,
+        destination=destination / "prior-reconciliation-source.json",
+        name="reconciliation source",
     )
     if (
-        retrieved_result.read_bytes() != canonical_json(result.to_dict())
-        or retrieved_verification.read_bytes()
-        != canonical_json(verification.to_dict())
+        ProviderResultRecord.from_dict(retrieved_result, intent=prior.intent)
+        != result
+        or VerificationRecord.from_dict(
+            retrieved_verification, intent=prior.intent,
+            provider_result=result,
+        ) != verification
+        or ReconciliationRecord.from_dict(
+            retrieved_reconciliation, intent=prior.intent,
+            provider_result=result, verification=verification,
+        ) != prior.reconciliation
     ):
         raise PublicationExecutionError(
             "retrieved predecessor records differ from their immutable references"
         )
+    _exact_source(provider_source, {
+        "schema_version": 1,
+        "record_type": "firebase_reconciled_provider_result",
+        "outcome": "accepted",
+        "release": result.observed_release,
+        "version": result.observed_version,
+        "artifact_sha256": prior.intent.artifact_reference.sha256,
+        "content_correspondence": "verified",
+        "prior_result_evidence": provider_source.get("prior_result_evidence"),
+        "prior_verification_evidence": provider_source.get(
+            "prior_verification_evidence"
+        ),
+    }, "provider result")
+    if provider_source["prior_result_evidence"] not in {
+        "valid", "missing_or_invalid"
+    } or provider_source["prior_verification_evidence"] not in {
+        "valid", "missing_or_invalid"
+    }:
+        raise PublicationExecutionError(
+            "provider result source has an invalid prior-evidence status"
+        )
+    _exact_source(verification_source, {
+        "schema_version": 1,
+        "record_type": "firebase_verification_observation",
+        "outcome": "verified",
+        "release": verification.observed_release,
+        "version": verification.observed_version,
+        "inventory_sha256": verification.inventory_sha256,
+        "configuration_sha256": verification.configuration_sha256,
+        "managed_resource_findings": dict(
+            verification.managed_resource_findings
+        ),
+        "public_page_findings": dict(verification.public_page_findings),
+        "findings": list(verification.findings),
+    }, "verification")
+    _exact_source(reconciliation_source, {
+        "schema_version": 1,
+        "record_type": "firebase_reconciliation_observation",
+        "disposition": "candidate_verified",
+        "release": prior.reconciliation.observed_release,
+        "version": prior.reconciliation.observed_version,
+        "provider_result_sha256": result.digest,
+        "verification_sha256": verification.digest,
+        "findings": list(prior.reconciliation.findings),
+    }, "reconciliation")
 
 
 class PublicationCoordinator:
@@ -839,7 +1169,7 @@ class PublicationCoordinator:
         tags: PublicationTags,
         attempt_id: str,
         retrieval_directory: str | Path,
-        prior: PriorVerifiedPublication | None = None,
+        prior: VerifiedPublicationPredecessor | None = None,
     ) -> PublicationRun:
         return self._publish(
             package, purpose="normal", prepared=prepared,
@@ -854,7 +1184,7 @@ class PublicationCoordinator:
         package: ValidatedPackageRecord,
         *,
         purpose: str,
-        prior: PriorVerifiedPublication,
+        prior: VerifiedPublicationPredecessor,
         prepared: PreparedPackage,
         commit_reader: CommitTreeReader,
         runtime: GitHubRuntimeContext,
@@ -870,9 +1200,15 @@ class PublicationCoordinator:
             raise PublicationExecutionError(
                 "recovery publication purpose must be rollback or correction"
             )
-        if not isinstance(prior, PriorVerifiedPublication):
+        if not isinstance(
+            prior, (PriorVerifiedPublication, ExternalVerifiedPredecessor)
+        ):
             raise PublicationExecutionError(
                 "recovery publication requires a verified current predecessor"
+            )
+        if getattr(prior, "repository", None) != self.repository:
+            raise PublicationExecutionError(
+                "recovery predecessor is not a coordinator-issued repository capability"
             )
         if baseline.observed != package.expected_predecessor:
             raise PublicationExecutionError(
@@ -899,16 +1235,22 @@ class PublicationCoordinator:
         tags: PublicationTags,
         attempt_id: str,
         retrieval_directory: str | Path,
-        prior: PriorVerifiedPublication | None = None,
+        prior: VerifiedPublicationPredecessor | None = None,
     ) -> PublicationRun:
         """Publish once or return a truthful paused state; never retry or roll back."""
 
         with self.operation_lock:
+            destination = Path(retrieval_directory)
+            _verify_prior_publication(
+                package, baseline, prior, archive=self.archive,
+                repository=self.repository,
+                destination=destination / "predecessor",
+                require_prior=purpose != "normal",
+            )
             authorization = authorize_protected_execution(
                 package, runtime=runtime, github=self.approval_reader,
                 expected_repository=self.repository,
             )
-            destination = Path(retrieval_directory)
             attempt = seal_attempt_evidence(
                 package,
                 prepared=prepared,
@@ -926,11 +1268,6 @@ class PublicationCoordinator:
             artifact = FirebaseDeployArtifact.from_archive(
                 attempt.retrieved_package, package
             )
-            _verify_prior_publication(
-                package, baseline, prior, archive=self.archive,
-                destination=destination / "predecessor",
-            )
-
             # This is deliberately the last operation before the first provider
             # write. The process lock does not lock Firebase against outsiders.
             live = self.provider.observe()
@@ -1022,9 +1359,7 @@ class PublicationCoordinator:
                 "failed": "verification_failed",
                 "unknown": "verification_unknown",
             }[verification.outcome]
-            next_operations = (
-                ("normal_successor",) if state == "verified" else ("reconcile",)
-            )
+            next_operations = ("reconcile",)
             return PublicationRun(
                 state, attempt, result, provider_evidence, verification,
                 verification_evidence, True, next_operations,
@@ -1044,6 +1379,7 @@ class PublicationCoordinator:
             destination = Path(retrieval_directory)
             artifact = _retrieve_recorded_attempt(
                 recorded, archive=self.archive,
+                repository=self.repository,
                 destination=destination / "attempt",
             )
             package = recorded.attempt.package
@@ -1054,11 +1390,13 @@ class PublicationCoordinator:
             result_evidence_valid = _record_evidence_is_valid(
                 recorded.provider_result, recorded.provider_evidence,
                 archive=self.archive,
+                repository=self.repository,
                 destination=destination / "prior-provider-result",
             )
             verification_evidence_valid = _record_evidence_is_valid(
                 recorded.verification, recorded.verification_evidence,
                 archive=self.archive,
+                repository=self.repository,
                 destination=destination / "prior-verification",
             )
             observed = self.provider.observe()
@@ -1131,6 +1469,74 @@ class PublicationCoordinator:
                 state, recorded.attempt.intent, observed, observation, evidence,
                 None, None, None, None, permitted,
             )
+
+    def reconstruct_predecessor(
+        self,
+        recorded: RecordedPublicationAttempt,
+        *,
+        reconciliation: ReconciliationRecord,
+        reconciliation_evidence: SealedRecordEvidence,
+        baseline: BaselineRecord,
+        retrieval_directory: str | Path,
+    ) -> PriorVerifiedPublication:
+        """Reconstruct a predecessor capability from immutable cross-run refs."""
+
+        with self.operation_lock:
+            destination = Path(retrieval_directory)
+            _retrieve_recorded_attempt(
+                recorded, archive=self.archive, repository=self.repository,
+                destination=destination / "attempt",
+            )
+            if (
+                recorded.provider_result is None
+                or recorded.provider_evidence is None
+                or recorded.verification is None
+                or recorded.verification_evidence is None
+                or reconciliation_evidence is None
+            ):
+                raise PublicationExecutionError(
+                    "predecessor reconstruction requires the complete sealed chain"
+                )
+            if (
+                recorded.provider_result.outcome != "accepted"
+                or recorded.provider_result.observed_release is None
+                or recorded.provider_result.observed_version is None
+                or recorded.verification.outcome != "verified"
+                or reconciliation.disposition != "candidate_verified"
+            ):
+                raise PublicationExecutionError(
+                    "predecessor reconstruction requires verified reconciled state"
+                )
+            prior = PriorVerifiedPublication._create(
+                self.repository,
+                recorded.attempt.intent,
+                recorded.provider_result,
+                recorded.verification,
+                reconciliation,
+                recorded.provider_evidence.record_reference,
+                recorded.provider_evidence.source_reference,
+                recorded.verification_evidence.record_reference,
+                recorded.verification_evidence.source_reference,
+                reconciliation_evidence.record_reference,
+                reconciliation_evidence.source_reference,
+            )
+            identity = ProviderIdentity(
+                recorded.provider_result.observed_target,
+                recorded.provider_result.observed_release,  # type: ignore[arg-type]
+                recorded.provider_result.observed_version,  # type: ignore[arg-type]
+            )
+            probe = replace(
+                recorded.attempt.package,
+                expected_baseline_sha256=baseline.digest,
+                expected_predecessor=identity,
+            )
+            _verify_prior_publication(
+                probe, baseline, prior, archive=self.archive,
+                repository=self.repository,
+                destination=destination / "predecessor",
+                require_prior=True,
+            )
+            return prior
 
     def _reconcile_changed_live(
         self,
@@ -1275,11 +1681,26 @@ class PublicationCoordinator:
                 reconciliation_evidence, provider_result, provider_evidence,
                 verification, verification_evidence, ("reconcile",),
             )
+        predecessor = None
+        if state == "reconciled_verified":
+            predecessor = PriorVerifiedPublication._create(
+                self.repository,
+                recorded.attempt.intent,
+                provider_result,
+                verification,
+                reconciliation,
+                provider_evidence.record_reference,
+                provider_evidence.source_reference,
+                verification_evidence.record_reference,
+                verification_evidence.source_reference,
+                reconciliation_evidence.record_reference,
+                reconciliation_evidence.source_reference,
+            )
         return ReconciliationRun(
             state, recorded.attempt.intent, observed, reconciliation,
             reconciliation_evidence,
             provider_result, provider_evidence,
-            verification, verification_evidence, permitted,
+            verification, verification_evidence, permitted, predecessor,
         )
 
     def reconcile_external(
@@ -1300,6 +1721,13 @@ class PublicationCoordinator:
 
         with self.operation_lock:
             captured.assert_current()
+            if (
+                archive_reference.repository != self.repository
+                or sanitizer_reference.repository != self.repository
+            ):
+                raise PublicationExecutionError(
+                    "external evidence must belong to the configured repository"
+                )
             if captured.sanitizer_record is None:
                 raise PublicationExecutionError(
                     "external reconciliation requires the sanitized public "
@@ -1388,9 +1816,19 @@ class PublicationCoordinator:
                     "external_reconciliation_unsealed", captured, live,
                     observation, None, ("reconcile_external",),
                 )
+            predecessor = ExternalVerifiedPredecessor._create(
+                self.repository,
+                captured.record.digest,
+                live,
+                observation,
+                archive_reference,
+                sanitizer_reference,
+                evidence.record_reference,
+                evidence.source_reference,
+            )
             return ExternalReconciliationRun(
                 "external_verified", captured, live, observation, evidence,
-                ("normal_successor", "rollback", "correction"),
+                ("normal_successor", "rollback", "correction"), predecessor,
             )
 
     def verify_only(
@@ -1407,6 +1845,7 @@ class PublicationCoordinator:
             destination = Path(retrieval_directory)
             artifact = _retrieve_recorded_attempt(
                 recorded, archive=self.archive,
+                repository=self.repository,
                 destination=destination / "attempt",
             )
             result = recorded.provider_result
@@ -1417,6 +1856,7 @@ class PublicationCoordinator:
                 or not _record_evidence_is_valid(
                     result, recorded.provider_evidence,
                     archive=self.archive,
+                    repository=self.repository,
                     destination=destination / "provider-result",
                 )
             ):
@@ -1473,8 +1913,8 @@ class PublicationCoordinator:
                 "unknown": "verification_unknown",
             }[verification.outcome]
             permitted = (
-                ("normal_successor", "rollback", "correction")
-                if state == "verified" else ("verification_only", "reconcile")
+                ("reconcile",) if state == "verified"
+                else ("verification_only", "reconcile")
             )
             return PublicationRun(
                 state, recorded.attempt, result, recorded.provider_evidence,

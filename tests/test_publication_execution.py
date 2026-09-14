@@ -25,10 +25,11 @@ from cfb.github_archive import ArchiveError, ArchiveSpec, FakeImmutableArchive
 from cfb.publication import (
     GitCommitTreeReader,
     PreparedPackage,
-    PriorVerifiedPublication,
     PublicationCoordinator,
     PublicationExecutionError,
     PublicationTags,
+    ReconciliationTags,
+    RecordedPublicationAttempt,
     _deterministic_package,
     bind_merged_candidate,
 )
@@ -275,7 +276,8 @@ class PublicationExecutionTests(unittest.TestCase):
 
             self.assertEqual(result.state, "verified")
             self.assertEqual(fx.baseline.source.status, "unknown")
-            self.assertTrue(result.ordinary_successor_allowed)
+            self.assertFalse(result.ordinary_successor_allowed)
+            self.assertEqual(result.permitted_next_operations, ("reconcile",))
             self.assertEqual(result.provider_result.outcome, "accepted")
             self.assertEqual(result.verification.outcome, "verified")
             self.assertNotEqual(
@@ -318,23 +320,37 @@ class PublicationExecutionTests(unittest.TestCase):
                 baseline_record=first.baseline, marker=b"second",
                 archive=first.archive,
             )
-            prior = PriorVerifiedPublication(
-                first_run.attempt.intent, first_run.provider_result,
-                first_run.verification,
-                first_run.provider_evidence.record_reference,
-                first_run.provider_evidence.source_reference,
-                first_run.verification_evidence.record_reference,
-                first_run.verification_evidence.source_reference,
-            )
-            bad_prior = replace(
-                prior,
-                provider_result_source_reference=replace(
-                    prior.provider_result_source_reference, sha256="f" * 64
+            reconciled = coordinator(first, backend).reconcile(
+                RecordedPublicationAttempt(
+                    first_run.attempt, first_run.provider_result,
+                    first_run.provider_evidence, first_run.verification,
+                    first_run.verification_evidence,
                 ),
+                baseline=first.baseline,
+                tags=ReconciliationTags(
+                    "first-successor-observation",
+                    "first-successor-reconciled-result",
+                    "first-successor-reconciled-verification",
+                ),
+                retrieval_directory=first.root / "reconciliation",
             )
+            prior = coordinator(first, backend).reconstruct_predecessor(
+                RecordedPublicationAttempt(
+                    first_run.attempt, reconciled.provider_result,
+                    reconciled.provider_evidence, reconciled.verification,
+                    reconciled.verification_evidence,
+                ),
+                reconciliation=reconciled.observation,
+                reconciliation_evidence=reconciled.observation_evidence,
+                baseline=first.baseline,
+                retrieval_directory=first.root / "cross-run-predecessor",
+            )
+            source_bytes = prior.provider_result_source_reference
+            original_source = reconciled.provider_evidence.retrieved_source.read_bytes()
+            first.archive.corrupt(source_bytes, b"fabricated provider source")
             writes_before = backend.write_count
             with self.assertRaisesRegex(
-                PublicationExecutionError, "predecessor evidence"
+                PublicationExecutionError, "immutable evidence"
             ):
                 coordinator(second, backend).publish_normal(
                     second.package, prepared=second.prepared,
@@ -343,9 +359,10 @@ class PublicationExecutionTests(unittest.TestCase):
                     evidence_references=second.evidence,
                     tags=tags("bad-successor"), attempt_id="bad-successor",
                     retrieval_directory=second.root / "bad-receipts",
-                    prior=bad_prior,
+                    prior=prior,
                 )
             self.assertEqual(backend.write_count, writes_before)
+            first.archive.corrupt(source_bytes, original_source)
             second_run = coordinator(second, backend).publish_normal(
                 second.package, prepared=second.prepared, commit_reader=second.reader,
                 runtime=second.runtime, baseline=second.baseline,

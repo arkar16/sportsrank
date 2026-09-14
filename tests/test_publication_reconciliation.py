@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import replace
+import hashlib
 from pathlib import Path
 import tempfile
 import unittest
@@ -19,15 +21,19 @@ from cfb.github_archive import ArchiveError, ArchiveSpec, FakeImmutableArchive
 from cfb.publication_records import (
     ExternalPredecessorRecord,
     ProviderIdentity,
+    ProviderResultRecord,
     ReconciliationRecord,
     RecordValidationError,
+    VerificationRecord,
     canonical_json,
 )
 from cfb.publication import (
+    PriorVerifiedPublication,
     PublicationCoordinator,
     PublicationExecutionError,
     ReconciliationTags,
     RecordedPublicationAttempt,
+    SealedRecordEvidence,
     seal_attempt_evidence,
 )
 from cfb.publication_authorization import authorize_protected_execution
@@ -43,6 +49,110 @@ from tests.test_publication_execution import (
 
 
 class PublicationReconciliationTests(unittest.TestCase):
+    def test_arbitrary_sealed_sources_cannot_reconstruct_predecessor(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fx = fixture(root)
+            intent = seal_attempt_evidence(
+                fx.package, prepared=fx.prepared, commit_reader=fx.reader,
+                archive=fx.archive, repository="owner/repository",
+                package_tag="forged-package", intent_tag="forged-intent",
+                attempt_id="forged", purpose="normal",
+                evidence_references=fx.evidence,
+                protected_context=authorize_protected_execution(
+                    fx.package, runtime=fx.runtime, github=fx.approval,
+                    expected_repository="owner/repository",
+                ).context,
+                retrieval_directory=root / "attempt",
+            )
+            observed = ProviderIdentity(
+                TARGET,
+                "sites/fixture-site/channels/live/releases/forged-release",
+                "sites/fixture-site/versions/forged-version",
+            )
+
+            def source_digest(value):
+                return hashlib.sha256(canonical_json(value)).hexdigest()
+
+            provider_source = {"fabricated": "provider"}
+            result = ProviderResultRecord.create(
+                intent=intent.intent, outcome="accepted",
+                observed_target=TARGET,
+                observed_release=observed.release,
+                observed_version=observed.version,
+                observed_at=STAMP.isoformat(),
+                source_sha256=source_digest(provider_source),
+            )
+            verification_source = {"fabricated": "verification"}
+            verification = VerificationRecord.create(
+                intent=intent.intent, provider_result=result,
+                outcome="verified",
+                inventory_sha256=fx.package.inventory_sha256,
+                configuration_sha256=fx.package.configuration_sha256,
+                managed_resource_findings={
+                    "/__/firebase/init.js": "verified",
+                    "/__/firebase/init.json": "verified",
+                },
+                public_page_findings={"/index.html": "verified"},
+                findings=("fabricated",), observed_at=STAMP.isoformat(),
+                source_sha256=source_digest(verification_source),
+            )
+            reconciliation_source = {"fabricated": "reconciliation"}
+            reconciliation = ReconciliationRecord.create(
+                intent=intent.intent, observed_identity=observed,
+                disposition="candidate_verified", provider_result=result,
+                verification=verification, findings=("fabricated",),
+                observed_at=STAMP.isoformat(),
+                source_sha256=source_digest(reconciliation_source),
+            )
+
+            def seal(tag, record_name, record, source_name, source):
+                evidence = root / tag
+                evidence.mkdir()
+                record_path = evidence / record_name
+                source_path = evidence / source_name
+                record_path.write_bytes(canonical_json(record.to_dict()))
+                source_path.write_bytes(canonical_json(source))
+                refs = fx.archive.seal_or_reconcile(ArchiveSpec(
+                    "owner/repository", tag, fx.package.candidate_commit,
+                    {record_name: record_path, source_name: source_path}, tag,
+                ))
+                return SealedRecordEvidence(
+                    refs[record_name], refs[source_name],
+                    record_path, source_path,
+                )
+
+            result_evidence = seal(
+                "forged-result", "provider-result.json", result,
+                "provider-result-source.json", provider_source,
+            )
+            verification_evidence = seal(
+                "forged-verification", "verification.json", verification,
+                "verification-source.json", verification_source,
+            )
+            reconciliation_evidence = seal(
+                "forged-reconciliation", "reconciliation.json",
+                reconciliation, "reconciliation-source.json",
+                reconciliation_source,
+            )
+            backend = FakeFirebasePublicationBackend(
+                TARGET, observed, managed_identity=APP_IDENTITY,
+            )
+            with self.assertRaisesRegex(
+                PublicationExecutionError, "allowlisted provider observation"
+            ):
+                coordinator(fx, backend).reconstruct_predecessor(
+                    RecordedPublicationAttempt(
+                        intent, result, result_evidence,
+                        verification, verification_evidence,
+                    ),
+                    reconciliation=reconciliation,
+                    reconciliation_evidence=reconciliation_evidence,
+                    baseline=fx.baseline,
+                    retrieval_directory=root / "reconstruct",
+                )
+            self.assertEqual(backend.write_count, 0)
+
     def test_failed_verification_reconciles_to_paused_verification_only(self):
         with tempfile.TemporaryDirectory() as directory:
             fx = fixture(Path(directory))
@@ -227,6 +337,48 @@ class PublicationReconciliationTests(unittest.TestCase):
             self.assertIsNotNone(reconciled.provider_evidence)
             self.assertIsNotNone(reconciled.verification_evidence)
             self.assertEqual(backend.write_count, writes)
+            without_observation = replace(
+                reconciled, observation_evidence=None
+            )
+            with self.assertRaisesRegex(
+                PublicationExecutionError, "fully sealed verified"
+            ):
+                without_observation.as_prior()
+            reconstructed = coordinator(fx, backend).reconstruct_predecessor(
+                RecordedPublicationAttempt(
+                    interrupted.attempt, reconciled.provider_result,
+                    reconciled.provider_evidence, reconciled.verification,
+                    reconciled.verification_evidence,
+                ),
+                reconciliation=reconciled.observation,
+                reconciliation_evidence=reconciled.observation_evidence,
+                baseline=fx.baseline,
+                retrieval_directory=fx.root / "cross-run-reconstruction",
+            )
+            self.assertEqual(
+                reconstructed.provider_result, reconciled.provider_result
+            )
+            cross_repository_result = replace(
+                reconciled.provider_evidence,
+                record_reference=replace(
+                    reconciled.provider_evidence.record_reference,
+                    repository="attacker/repository",
+                ),
+            )
+            with self.assertRaisesRegex(
+                PublicationExecutionError, "configured repository"
+            ):
+                coordinator(fx, backend).reconstruct_predecessor(
+                    RecordedPublicationAttempt(
+                        interrupted.attempt, reconciled.provider_result,
+                        cross_repository_result, reconciled.verification,
+                        reconciled.verification_evidence,
+                    ),
+                    reconciliation=reconciled.observation,
+                    reconciliation_evidence=reconciled.observation_evidence,
+                    baseline=fx.baseline,
+                    retrieval_directory=fx.root / "cross-repository-prior",
+                )
 
     def test_missing_or_corrupt_result_never_overrides_exact_live_correspondence(self):
         for mode in ("missing", "corrupt"):
@@ -313,6 +465,10 @@ class PublicationReconciliationTests(unittest.TestCase):
                 )
 
                 self.assertEqual(retried.state, "verified")
+                self.assertFalse(retried.ordinary_successor_allowed)
+                self.assertEqual(
+                    retried.permitted_next_operations, ("reconcile",)
+                )
                 self.assertEqual(retried.verification.outcome, "verified")
                 self.assertIsNotNone(retried.verification_evidence)
                 self.assertEqual(
@@ -422,6 +578,28 @@ class PublicationReconciliationTests(unittest.TestCase):
             capture_ref = capture_refs[captured.evidence_archive.name]
             sanitizer_ref = capture_refs[sanitizer_path.name]
 
+            attacker_refs = fx.archive.seal_or_reconcile(ArchiveSpec(
+                "attacker/repository", "external-attacker-capture",
+                fx.package.candidate_commit,
+                {
+                    captured.evidence_archive.name: captured.evidence_archive,
+                    sanitizer_path.name: sanitizer_path,
+                },
+                "attacker external capture",
+            ))
+            with self.assertRaisesRegex(
+                PublicationExecutionError, "configured repository"
+            ):
+                coordinator(fx, backend).reconcile_external(
+                    captured,
+                    archive_reference=attacker_refs[
+                        captured.evidence_archive.name
+                    ],
+                    sanitizer_reference=attacker_refs[sanitizer_path.name],
+                    observation_tag="external-attacker-rejected",
+                    retrieval_directory=root / "external-attacker-rejected",
+                )
+
             with self.assertRaisesRegex(
                 PublicationExecutionError,
                 "sanitized public capture derivative",
@@ -450,6 +628,32 @@ class PublicationReconciliationTests(unittest.TestCase):
                 verified.observation,
             )
             self.assertEqual(backend.write_count, writes)
+            external_prior = verified.as_prior()
+            with self.assertRaisesRegex(
+                PublicationExecutionError,
+                "fully sealed external reconciliation",
+            ):
+                replace(verified, observation_evidence=None).as_prior()
+
+            recovery = fixture(
+                root / "external-correction",
+                predecessor=external_identity,
+                baseline_record=captured.record,
+                marker=b"external-corrected",
+                archive=fx.archive,
+            )
+            backend.lose_response_at = None
+            recovered = coordinator(recovery, backend).publish_recovery(
+                recovery.package, purpose="correction", prior=external_prior,
+                prepared=recovery.prepared, commit_reader=recovery.reader,
+                runtime=recovery.runtime, baseline=recovery.baseline,
+                evidence_references=recovery.evidence,
+                tags=tags("external-correction"),
+                attempt_id="external-correction",
+                retrieval_directory=recovery.root / "publish",
+            )
+            self.assertEqual(recovered.state, "verified")
+            self.assertEqual(recovered.attempt.intent.purpose, "correction")
 
     def test_correction_is_a_new_approved_attempt_against_verified_current(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -522,6 +726,31 @@ class PublicationReconciliationTests(unittest.TestCase):
                     retrieval_directory=stale.root / "publish", prior=prior,
                 )
             self.assertEqual(backend.write_count, stale_writes)
+
+    def test_empty_recovery_prior_is_rejected_before_provider_write(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fx = fixture(Path(directory))
+            backend = FakeFirebasePublicationBackend(
+                TARGET, fx.package.expected_predecessor,
+                managed_identity=APP_IDENTITY,
+            )
+            with self.assertRaisesRegex(
+                PublicationExecutionError, "coordinator reconstruction"
+            ):
+                PriorVerifiedPublication(
+                    None, None, None, None, None, None, None
+                )
+            empty = object.__new__(PriorVerifiedPublication)
+            with self.assertRaises(PublicationExecutionError):
+                coordinator(fx, backend).publish_recovery(
+                    fx.package, purpose="correction", prior=empty,
+                    prepared=fx.prepared, commit_reader=fx.reader,
+                    runtime=fx.runtime, baseline=fx.baseline,
+                    evidence_references=fx.evidence, tags=tags("empty-prior"),
+                    attempt_id="empty-prior",
+                    retrieval_directory=fx.root / "publish",
+                )
+            self.assertEqual(backend.write_count, 0)
 
 if __name__ == "__main__":
     unittest.main()
