@@ -10,7 +10,7 @@ from pathlib import Path
 import re
 import subprocess
 from types import MappingProxyType
-from typing import Any, Callable, Collection, Mapping, Protocol, Sequence
+from typing import Any, Callable, Mapping, Protocol, Sequence
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -419,20 +419,20 @@ def preparation_manifest_bytes(
     return manifest.to_bytes()
 
 
-class PreparationProvenanceReader(Protocol):
-    """Configured read authority for GitHub provenance and its originating run."""
+_PREPARATION_READER_TOKEN = object()
 
-    def verify_attestation(
-        self,
-        artifact: Path,
-        *,
-        repository: str,
-        signer_workflow: str,
-        source_ref: str,
-        source_digest: str,
-    ) -> None: ...
 
-    def run(self, repository: str, run_id: str) -> Mapping[str, Any]: ...
+def _run_attestation_command(
+    command: Sequence[str],
+) -> subprocess.CompletedProcess[bytes]:
+    """Invoke the cryptographic verifier; tests replace only this transport."""
+
+    return subprocess.run(
+        command,
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
 
 
 class GitHubPreparationProvenanceReader:
@@ -442,16 +442,22 @@ class GitHubPreparationProvenanceReader:
         self,
         github: ApprovalReader,
         *,
-        runner: Callable[..., subprocess.CompletedProcess[bytes]] = subprocess.run,
+        _token: object | None = None,
     ) -> None:
+        if _token is not _PREPARATION_READER_TOKEN:
+            raise PreparationProvenanceError(
+                "production provenance readers require owned GitHub construction"
+            )
         self._github = github
-        self._runner = runner
 
     @classmethod
     def from_github_token(
         cls, environment: Mapping[str, str] | None = None
     ) -> "GitHubPreparationProvenanceReader":
-        return cls(GitHubApprovalReader.from_github_token(environment))
+        return cls(
+            GitHubApprovalReader.from_github_token(environment),
+            _token=_PREPARATION_READER_TOKEN,
+        )
 
     def verify_attestation(
         self,
@@ -473,12 +479,7 @@ class GitHubPreparationProvenanceReader:
             "--limit", "30",
         ]
         try:
-            result = self._runner(
-                command,
-                check=False,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
+            result = _run_attestation_command(command)
         except OSError as exc:
             raise PreparationProvenanceError(
                 "GitHub preparation attestation verification is unavailable"
@@ -535,45 +536,6 @@ class GitHubPreparationProvenanceReader:
         return self._github.run(repository, run_id)
 
 
-class FakeGitHubPreparationProvenanceReader:
-    """Offline provenance authority keyed by already-verified manifest bytes."""
-
-    def __init__(
-        self,
-        verified_manifest_sha256: Collection[str],
-        run: Mapping[str, Any],
-    ) -> None:
-        self._verified = frozenset(verified_manifest_sha256)
-        self._run = dict(run)
-        self.verify_count = 0
-        self.run_count = 0
-
-    def verify_attestation(
-        self,
-        artifact: Path,
-        *,
-        repository: str,
-        signer_workflow: str,
-        source_ref: str,
-        source_digest: str,
-    ) -> None:
-        self.verify_count += 1
-        try:
-            digest = _preparation_digest(artifact.read_bytes())
-        except OSError as exc:
-            raise PreparationProvenanceError(
-                "preparation manifest is unavailable"
-            ) from exc
-        if digest not in self._verified:
-            raise PreparationProvenanceError(
-                "preparation manifest lacks verified provenance"
-            )
-
-    def run(self, repository: str, run_id: str) -> Mapping[str, Any]:
-        self.run_count += 1
-        return dict(self._run)
-
-
 _PREPARATION_EVIDENCE_TOKEN = object()
 
 
@@ -602,10 +564,15 @@ class AuthenticatedPreparationEvidence:
 def authenticate_preparation_manifest(
     path: str | Path,
     *,
-    reader: PreparationProvenanceReader,
+    reader: GitHubPreparationProvenanceReader,
     expected_candidate_commit: str,
 ) -> AuthenticatedPreparationEvidence:
     """Verify exact manifest bytes, signer identity, source, and completed run."""
+
+    if type(reader) is not GitHubPreparationProvenanceReader:
+        raise PreparationProvenanceError(
+            "preparation provenance requires the concrete GitHub verifier"
+        )
 
     manifest_path = Path(path)
     try:

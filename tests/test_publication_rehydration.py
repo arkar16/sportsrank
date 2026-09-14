@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from cfb.publication import (
     FakeCommitTreeReader,
@@ -20,7 +21,6 @@ from cfb.publication import (
     rehydrate_prepared_package,
 )
 from cfb.publication_authorization import (
-    FakeGitHubPreparationProvenanceReader,
     GitHubPreparationProvenanceReader,
     PreparationProvenanceError,
     preparation_manifest_bytes,
@@ -40,6 +40,91 @@ COMMIT_ZERO = "0" * 40
 
 def sha(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
+
+
+class StubHttpResponse:
+    def __init__(self, body: bytes) -> None:
+        self.status = 200
+        self.body = body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *arguments):
+        return False
+
+    def read(self, limit: int) -> bytes:
+        return self.body
+
+
+class ProvenanceTransport:
+    """Offline command/API transport beneath the concrete verifier."""
+
+    def __init__(
+        self,
+        manifest: Path,
+        run: dict[str, object],
+        *,
+        verified_sha256: str | None = None,
+        returncode: int = 0,
+        stderr: bytes = b"",
+        mutate_after_command: bool = False,
+    ) -> None:
+        self.manifest = manifest
+        self.run = dict(run)
+        self.verified_sha256 = (
+            sha(manifest.read_bytes())
+            if verified_sha256 is None else verified_sha256
+        )
+        self.returncode = returncode
+        self.stderr = stderr
+        self.mutate_after_command = mutate_after_command
+        self.commands: list[list[str]] = []
+        self.urls: list[str] = []
+        self._command_patch = None
+        self._url_patch = None
+
+    def _command(self, command: list[str]):
+        self.commands.append(command)
+        current = sha(self.manifest.read_bytes())
+        if self.returncode != 0 or current != self.verified_sha256:
+            return subprocess.CompletedProcess(
+                command, self.returncode or 1, b"", self.stderr
+            )
+        body = json.dumps([{
+            "verificationResult": {
+                "statement": {
+                    "subject": [{"digest": {"sha256": current}}]
+                }
+            }
+        }]).encode()
+        if self.mutate_after_command:
+            self.manifest.write_bytes(self.manifest.read_bytes() + b"\n")
+        return subprocess.CompletedProcess(command, 0, body, b"")
+
+    def _urlopen(self, request, *, timeout: float):
+        self.urls.append(request.full_url)
+        return StubHttpResponse(json.dumps(self.run).encode())
+
+    def __enter__(self):
+        self._command_patch = patch(
+            "cfb.publication_authorization._run_attestation_command",
+            side_effect=self._command,
+        )
+        self._url_patch = patch(
+            "cfb.publication_authorization.urlopen",
+            side_effect=self._urlopen,
+        )
+        self._command_patch.start()
+        self._url_patch.start()
+        return self
+
+    def __exit__(self, *arguments):
+        assert self._command_patch is not None
+        assert self._url_patch is not None
+        self._url_patch.stop()
+        self._command_patch.stop()
+        return False
 
 
 class RehydrationFixture:
@@ -136,23 +221,80 @@ class RehydrationFixture:
         value.update(overrides)
         return value
 
-    def provenance(self, *, run: dict[str, object] | None = None):
-        return FakeGitHubPreparationProvenanceReader(
-            {sha(self.manifest.read_bytes())}, run or self.run()
+    def transport(
+        self,
+        *,
+        run: dict[str, object] | None = None,
+        verified_sha256: str | None = None,
+        returncode: int = 0,
+        stderr: bytes = b"",
+        mutate_after_command: bool = False,
+    ) -> ProvenanceTransport:
+        return ProvenanceTransport(
+            self.manifest,
+            run or self.run(),
+            verified_sha256=verified_sha256,
+            returncode=returncode,
+            stderr=stderr,
+            mutate_after_command=mutate_after_command,
         )
 
-    def rehydrate(self, *, provenance=None, reader=None, destination: Path | None = None):
-        return rehydrate_prepared_package(
-            package_record=self.package_record,
-            package_archive=self.archive,
-            preparation_manifest=self.manifest,
-            candidate_reader=reader or GitCommitTreeReader(self.repository),
-            provenance_reader=provenance or self.provenance(),
-            materialize_to=destination or self.root / "materialized",
+    def rehydrate(
+        self,
+        *,
+        provenance_reader=None,
+        provenance=None,
+        transport: ProvenanceTransport | None = None,
+        reader=None,
+        destination: Path | None = None,
+    ):
+        if provenance_reader is not None and provenance is not None:
+            raise ValueError("only one provenance reader may be supplied")
+        concrete = provenance_reader or provenance or (
+            GitHubPreparationProvenanceReader.from_github_token(
+                {"GITHUB_TOKEN": "offline-fixture"}
+            )
         )
+        resolved_transport = transport or self.transport()
+        with resolved_transport:
+            return rehydrate_prepared_package(
+                package_record=self.package_record,
+                package_archive=self.archive,
+                preparation_manifest=self.manifest,
+                candidate_reader=reader or GitCommitTreeReader(self.repository),
+                provenance_reader=concrete,
+                materialize_to=destination or self.root / "materialized",
+            )
 
 
 class PublicationRehydrationTests(unittest.TestCase):
+    def test_caller_supplied_noop_provenance_reader_is_rejected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            fixture = RehydrationFixture(Path(temporary))
+
+            class CallerSuppliedProof:
+                def verify_attestation(self, artifact: Path, **unused) -> None:
+                    return None
+
+                def run(self, repository: str, run_id: str):
+                    return fixture.run()
+
+            with self.assertRaises(PublicationPreparationError):
+                fixture.rehydrate(provenance_reader=CallerSuppliedProof())
+
+    def test_provenance_reader_subclass_and_direct_construction_are_rejected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            fixture = RehydrationFixture(Path(temporary))
+
+            class ReaderSubclass(GitHubPreparationProvenanceReader):
+                pass
+
+            subclass = object.__new__(ReaderSubclass)
+            with self.assertRaises(PublicationPreparationError):
+                fixture.rehydrate(provenance_reader=subclass)
+            with self.assertRaises(PreparationProvenanceError):
+                GitHubPreparationProvenanceReader(object())
+
     def test_genuine_attested_round_trip_uses_real_commit_tree(self):
         with tempfile.TemporaryDirectory() as temporary:
             fixture = RehydrationFixture(Path(temporary))
@@ -172,7 +314,7 @@ class PublicationRehydrationTests(unittest.TestCase):
     def test_forged_record_and_self_consistent_manifest_are_not_authenticated(self):
         with tempfile.TemporaryDirectory() as temporary:
             fixture = RehydrationFixture(Path(temporary))
-            provenance = fixture.provenance()
+            transport = fixture.transport()
             forged = replace(
                 fixture.package,
                 expected_baseline_sha256="d" * 64,
@@ -182,7 +324,7 @@ class PublicationRehydrationTests(unittest.TestCase):
             fixture.write_manifest()
 
             with self.assertRaises(PreparationProvenanceError):
-                fixture.rehydrate(provenance=provenance)
+                fixture.rehydrate(transport=transport)
 
     def test_authenticated_wrong_origin_fields_fail_closed(self):
         cases = {
@@ -197,25 +339,23 @@ class PublicationRehydrationTests(unittest.TestCase):
             with self.subTest(name=name), tempfile.TemporaryDirectory() as temporary:
                 fixture = RehydrationFixture(Path(temporary))
                 fixture.write_manifest(**changes)
-                provenance = fixture.provenance()
                 with self.assertRaises(PreparationProvenanceError):
-                    fixture.rehydrate(provenance=provenance)
+                    fixture.rehydrate()
 
     def test_mismatched_manifest_artifact_digest_fails_closed(self):
         with tempfile.TemporaryDirectory() as temporary:
             fixture = RehydrationFixture(Path(temporary))
             fixture.write_manifest(package_record_sha256="f" * 64)
-            provenance = fixture.provenance()
             with self.assertRaises(PublicationPreparationError):
-                fixture.rehydrate(provenance=provenance)
+                fixture.rehydrate()
 
     def test_tampered_archive_fails_closed(self):
         with tempfile.TemporaryDirectory() as temporary:
             fixture = RehydrationFixture(Path(temporary))
-            provenance = fixture.provenance()
+            transport = fixture.transport()
             fixture.archive.write_bytes(fixture.archive.read_bytes() + b"tamper")
             with self.assertRaises(PublicationPreparationError):
-                fixture.rehydrate(provenance=provenance)
+                fixture.rehydrate(transport=transport)
 
     def test_fake_commit_reader_is_rejected(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -251,7 +391,7 @@ class PublicationRehydrationTests(unittest.TestCase):
             fixture.write_manifest()
 
             with self.assertRaises(PublicationPreparationError):
-                fixture.rehydrate(provenance=fixture.provenance())
+                fixture.rehydrate()
 
     def test_git_tree_object_is_not_accepted_as_candidate_commit(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -264,13 +404,12 @@ class PublicationRehydrationTests(unittest.TestCase):
             fixture.package = replace(fixture.package, candidate_commit=tree_sha)
             fixture.package_record.write_bytes(canonical_json(fixture.package.to_dict()))
             fixture.write_manifest(head_sha=tree_sha)
-            provenance = FakeGitHubPreparationProvenanceReader(
-                {sha(fixture.manifest.read_bytes())},
-                fixture.run(head_sha=tree_sha),
+            transport = fixture.transport(
+                run=fixture.run(head_sha=tree_sha),
             )
 
             with self.assertRaises(PublicationPreparationError):
-                fixture.rehydrate(provenance=provenance)
+                fixture.rehydrate(transport=transport)
 
     def test_authenticated_manifest_still_requires_matching_completed_run(self):
         cases = {
@@ -283,65 +422,43 @@ class PublicationRehydrationTests(unittest.TestCase):
         for name, changes in cases.items():
             with self.subTest(name=name), tempfile.TemporaryDirectory() as temporary:
                 fixture = RehydrationFixture(Path(temporary))
-                provenance = fixture.provenance(run=fixture.run(**changes))
+                transport = fixture.transport(run=fixture.run(**changes))
                 with self.assertRaises(PreparationProvenanceError):
-                    fixture.rehydrate(provenance=provenance)
+                    fixture.rehydrate(transport=transport)
 
     def test_manifest_must_remain_exact_during_provenance_verification(self):
         with tempfile.TemporaryDirectory() as temporary:
             fixture = RehydrationFixture(Path(temporary))
+            transport = fixture.transport(mutate_after_command=True)
 
-            class MutatingReader:
-                def verify_attestation(self, artifact: Path, **unused) -> None:
-                    artifact.write_bytes(artifact.read_bytes() + b"\n")
-
-                def run(self, repository: str, run_id: str):
-                    raise AssertionError("run lookup must not follow a manifest race")
-
-            with self.assertRaisesRegex(
-                PreparationProvenanceError, "changed during"
-            ):
-                fixture.rehydrate(provenance=MutatingReader())
+            with self.assertRaises(PreparationProvenanceError):
+                fixture.rehydrate(transport=transport)
+            self.assertEqual(transport.urls, [])
 
     def test_concrete_attestation_failure_does_not_expose_stderr(self):
         with tempfile.TemporaryDirectory() as temporary:
             fixture = RehydrationFixture(Path(temporary))
-
-            def runner(command, **options):
-                return subprocess.CompletedProcess(
-                    command, 1, b"", b"private transport detail"
-                )
-
-            reader = GitHubPreparationProvenanceReader(
-                fixture.provenance(), runner=runner
+            transport = fixture.transport(
+                returncode=1,
+                stderr=b"private transport detail",
             )
             with self.assertRaises(PreparationProvenanceError) as raised:
-                fixture.rehydrate(provenance=reader)
+                fixture.rehydrate(transport=transport)
             self.assertNotIn("private transport detail", str(raised.exception))
 
     def test_concrete_reader_pins_attestation_and_run_identity(self):
         with tempfile.TemporaryDirectory() as temporary:
             fixture = RehydrationFixture(Path(temporary))
-            calls: list[list[str]] = []
-
-            def runner(command, **options):
-                calls.append(command)
-                digest = sha(fixture.manifest.read_bytes())
-                body = json.dumps([{
-                    "verificationResult": {
-                        "statement": {"subject": [{"digest": {"sha256": digest}}]}
-                    }
-                }]).encode()
-                return subprocess.CompletedProcess(command, 0, body, b"")
-
-            reader = GitHubPreparationProvenanceReader(
-                fixture.provenance(), runner=runner
-            )
-            prepared = fixture.rehydrate(provenance=reader)
+            transport = fixture.transport()
+            prepared = fixture.rehydrate(transport=transport)
 
             self.assertEqual(prepared.bundle_sha256, fixture.package.bundle_sha256)
-            self.assertEqual(len(calls), 1)
-            command = calls[0]
+            self.assertEqual(len(transport.commands), 1)
+            self.assertEqual(
+                transport.urls,
+                [f"https://api.github.com/repos/{REPOSITORY}/actions/runs/101"],
+            )
+            command = transport.commands[0]
             self.assertIn("--deny-self-hosted-runners", command)
             self.assertEqual(command[command.index("--repo") + 1], REPOSITORY)
             self.assertEqual(

@@ -32,8 +32,8 @@ from .firebase import (
 from .github_archive import ArchiveError, ArchiveSpec, ImmutableArchive
 from .publication_authorization import (
     ApprovalReader,
+    GitHubPreparationProvenanceReader,
     GitHubRuntimeContext,
-    PreparationProvenanceReader,
     authenticate_preparation_manifest,
     authorize_protected_execution,
 )
@@ -318,7 +318,7 @@ def rehydrate_prepared_package(
     package_archive: str | Path,
     preparation_manifest: str | Path,
     candidate_reader: GitCommitTreeReader,
-    provenance_reader: PreparationProvenanceReader,
+    provenance_reader: GitHubPreparationProvenanceReader,
     materialize_to: str | Path,
 ) -> PreparedPackage:
     """Restore an authenticated preparation without replaying private inputs.
@@ -334,6 +334,10 @@ def rehydrate_prepared_package(
     if type(candidate_reader) is not GitCommitTreeReader:
         raise PublicationPreparationError(
             "rehydration requires the concrete Git commit-tree reader"
+        )
+    if type(provenance_reader) is not GitHubPreparationProvenanceReader:
+        raise PublicationPreparationError(
+            "rehydration requires the concrete GitHub provenance verifier"
         )
     record_path = Path(package_record).resolve()
     archive_path = Path(package_archive).resolve()
