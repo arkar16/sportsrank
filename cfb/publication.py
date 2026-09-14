@@ -11,6 +11,7 @@ import gzip
 import hashlib
 import json
 from pathlib import Path, PurePosixPath
+import re
 import subprocess
 import tarfile
 import tempfile
@@ -194,6 +195,7 @@ def prepare_review_package(
 
 
 class CommitTreeReader(Protocol):
+    def require_commit(self, commit: str) -> None: ...
     def list_files(self, commit: str, prefix: str) -> tuple[str, ...]: ...
     def read_file(self, commit: str, path: str) -> bytes: ...
 
@@ -213,6 +215,16 @@ class GitCommitTreeReader:
         except subprocess.CalledProcessError as exc:
             raise PublicationPreparationError("could not read immutable candidate commit") from exc
 
+    def require_commit(self, commit: str) -> None:
+        if not re.fullmatch(r"[0-9a-f]{40}", commit):
+            raise PublicationPreparationError(
+                "candidate commit must be an exact immutable SHA"
+            )
+        if self._run("cat-file", "-t", commit).strip() != b"commit":
+            raise PublicationPreparationError(
+                "candidate identity does not name a Git commit object"
+            )
+
     def list_files(self, commit: str, prefix: str) -> tuple[str, ...]:
         raw = self._run("ls-tree", "-r", "--name-only", "-z", commit, "--", prefix)
         return tuple(value.decode("utf-8") for value in raw.split(b"\0") if value)
@@ -226,6 +238,12 @@ class GitCommitTreeReader:
 class FakeCommitTreeReader:
     def __init__(self, commits: Mapping[str, Mapping[str, bytes]]) -> None:
         self.commits = {commit: dict(files) for commit, files in commits.items()}
+
+    def require_commit(self, commit: str) -> None:
+        if not re.fullmatch(r"[0-9a-f]{40}", commit) or commit not in self.commits:
+            raise PublicationPreparationError(
+                "candidate commit must be an exact immutable commit SHA"
+            )
 
     def list_files(self, commit: str, prefix: str) -> tuple[str, ...]:
         return tuple(sorted(path for path in self.commits.get(commit, {}) if path == prefix or path.startswith(prefix.rstrip("/") + "/")))
@@ -246,6 +264,7 @@ def bind_merged_candidate(
     """Require the merged commit to contain the exact prepared site and config."""
 
     prepared.assert_current()
+    reader.require_commit(candidate_commit)
     expected = _inventory(prepared.site)
     committed_paths = reader.list_files(candidate_commit, "website")
     if committed_paths != tuple(path for path, _digest, _size in expected):

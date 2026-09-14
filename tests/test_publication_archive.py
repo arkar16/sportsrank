@@ -14,6 +14,7 @@ from cfb.github_archive import (
 )
 from cfb.publication import (
     FakeCommitTreeReader,
+    GitCommitTreeReader,
     PreparedPackage,
     PublicationPreparationError,
     bind_merged_candidate,
@@ -61,6 +62,76 @@ def validation(
 
 
 class PublicationArchiveTests(unittest.TestCase):
+    def test_git_reader_accepts_only_an_exact_commit_object_sha(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            repository = root / "repository"
+            repository.mkdir()
+
+            def git(*arguments):
+                return subprocess.run(
+                    ["git", "-C", str(repository), *arguments], check=True,
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                ).stdout.decode().strip()
+
+            git("init", "--object-format=sha1", "-q")
+            site = repository / "website"
+            site.mkdir()
+            (site / "index.html").write_bytes(b"reviewed")
+            config = repository / "firebase.json"
+            config.write_bytes(b'{"hosting":{"public":"website"}}')
+            git("add", "website/index.html", "firebase.json")
+            git(
+                "-c", "user.name=SportsRank Test",
+                "-c", "user.email=sportsrank@example.invalid",
+                "commit", "-q", "-m", "candidate",
+            )
+            git(
+                "-c", "user.name=SportsRank Test",
+                "-c", "user.email=sportsrank@example.invalid",
+                "tag", "-a", "candidate-tag", "-m", "candidate tag",
+            )
+            commit = git("rev-parse", "HEAD")
+            tree = git("rev-parse", "HEAD^{tree}")
+            blob = git("rev-parse", "HEAD:website/index.html")
+            annotated_tag = git("rev-parse", "refs/tags/candidate-tag")
+
+            package_path = root / "candidate.tar.gz"
+            package_path.write_bytes(b"package")
+            committed = {
+                "website/index.html": b"reviewed",
+                "firebase.json": config.read_bytes(),
+            }
+            target = ProviderTarget("fixture-project", "fixture-site", "live")
+            predecessor = ProviderIdentity(
+                target,
+                "sites/fixture-site/channels/live/releases/r1",
+                "sites/fixture-site/versions/v1",
+            )
+            inventory_sha = inventory(committed)
+            configuration_sha = sha(config.read_bytes())
+            prepared = PreparedPackage._create(
+                package_path, sha(b"package"), inventory_sha,
+                configuration_sha, "4" * 64, predecessor, "5" * 64,
+                validation(inventory_sha, configuration_sha, "4" * 64, "5" * 64),
+                site, config,
+            )
+            reader = GitCommitTreeReader(repository)
+
+            accepted = bind_merged_candidate(
+                prepared, candidate_commit=commit, reader=reader
+            )
+            self.assertEqual(accepted.candidate_commit, commit)
+            for label, object_sha in {
+                "tree": tree, "blob": blob, "annotated-tag": annotated_tag,
+            }.items():
+                with self.subTest(label=label), self.assertRaises(
+                    PublicationPreparationError
+                ):
+                    bind_merged_candidate(
+                        prepared, candidate_commit=object_sha, reader=reader
+                    )
+
     def test_interrupted_draft_is_found_on_a_later_release_page_and_resumed_by_id(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -363,7 +434,7 @@ class PublicationArchiveTests(unittest.TestCase):
                 archive.retrieve_and_verify(reference, root / "bad.tar.gz")
 
             forged = reference.to_dict()
-            forged["asset_id"] = "another-asset"
+            forged["asset_id"] = "999"
             with self.assertRaises(ArchiveError):
                 archive.retrieve_and_verify(
                     ArchiveReference.from_dict(forged), root / "forged.tar.gz"
@@ -603,6 +674,17 @@ class PublicationArchiveTests(unittest.TestCase):
         raw["schema_version"] = True
         with self.assertRaises(RecordValidationError):
             ArchiveReference.from_dict(raw)
+        canonical = ArchiveReference(
+            "owner/repository", "1", "tag", "c" * 40,
+            "2", "asset", "a" * 64, 1, True,
+        ).to_dict()
+        for field in ("release_id", "asset_id"):
+            for invalid in (True, "0", "-1", "not-numeric"):
+                with self.subTest(field=field, invalid=invalid):
+                    malformed = dict(canonical)
+                    malformed[field] = invalid
+                    with self.assertRaises(RecordValidationError):
+                        ArchiveReference.from_dict(malformed)
         with tempfile.TemporaryDirectory() as directory:
             asset = Path(directory) / "asset"
             asset.write_bytes(b"x")
@@ -691,6 +773,23 @@ class PublicationArchiveTests(unittest.TestCase):
             with patch("cfb.github_archive.subprocess.run", side_effect=gh):
                 with self.assertRaises(ArchiveError):
                     adapter.seal_or_reconcile(spec)
+
+            response["immutable"] = True
+            for field, invalid in (
+                ("id", True), ("id", 0), ("id", -1), ("id", "91"),
+                ("asset.id", True), ("asset.id", 0),
+                ("asset.id", -1), ("asset.id", "92"),
+            ):
+                with self.subTest(field=field, invalid=invalid):
+                    response["id"] = 91
+                    response["assets"][0]["id"] = 92
+                    if field == "id":
+                        response["id"] = invalid
+                    else:
+                        response["assets"][0]["id"] = invalid
+                    with patch("cfb.github_archive.subprocess.run", side_effect=gh):
+                        with self.assertRaises(ArchiveError):
+                            adapter.seal_or_reconcile(spec)
 
     def test_sanitizer_record_keeps_source_and_derivative_digests_distinct(self):
         target = ProviderTarget("fixture-project", "fixture-site", "live")

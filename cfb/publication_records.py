@@ -18,6 +18,7 @@ from typing import Any, Mapping
 SCHEMA_VERSION = 1
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 _COMMIT = re.compile(r"[0-9a-f]{40}\Z")
+_POSITIVE_ID = re.compile(r"[1-9][0-9]*\Z")
 
 
 class RecordValidationError(ValueError):
@@ -364,6 +365,13 @@ class ArchiveReference:
             raise RecordValidationError("archive repository must be OWNER/REPOSITORY")
         for name in ("release_id", "tag", "asset_id", "asset_name"):
             _text(getattr(self, name), f"archive.{name}")
+        for name in ("release_id", "asset_id"):
+            if not isinstance(getattr(self, name), str) or not _POSITIVE_ID.fullmatch(
+                getattr(self, name)
+            ):
+                raise RecordValidationError(
+                    f"archive.{name} must be a positive numeric identity"
+                )
         if not _COMMIT.fullmatch(self.target_commit):
             raise RecordValidationError("archive.target_commit must be an immutable commit SHA")
         if "/" in self.asset_name or self.asset_name in {".", ".."}:

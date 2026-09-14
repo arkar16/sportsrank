@@ -23,6 +23,20 @@ def _sha256(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
 
+def _api_id(value: object, name: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise ArchiveError(f"GitHub archive {name} is not a positive numeric ID")
+    return value
+
+
+def _requested_id(value: object, name: str) -> str:
+    if isinstance(value, int) and not isinstance(value, bool) and value > 0:
+        return str(value)
+    if isinstance(value, str) and re.fullmatch(r"[1-9][0-9]*", value):
+        return value
+    raise ArchiveError(f"GitHub archive {name} is not a positive numeric ID")
+
+
 @dataclass(frozen=True)
 class ArchiveSpec:
     repository: str
@@ -87,12 +101,11 @@ class GitHubReleaseArchive:
         return value
 
     def _release_by_id(self, repository: str, release_id: object) -> Mapping[str, object]:
-        if not isinstance(release_id, (int, str)) or isinstance(release_id, bool) or not str(release_id):
-            raise ArchiveError("GitHub archive release ID is invalid")
-        value = self._api_json(f"repos/{repository}/releases/{release_id}")
+        requested = _requested_id(release_id, "release ID")
+        value = self._api_json(f"repos/{repository}/releases/{requested}")
         if not isinstance(value, Mapping):
             raise ArchiveError("GitHub archive release response is invalid")
-        if str(value.get("id")) != str(release_id):
+        if str(_api_id(value.get("id"), "release ID")) != requested:
             raise ArchiveError("GitHub archive release ID changed during reconciliation")
         return value
 
@@ -118,9 +131,7 @@ class GitHubReleaseArchive:
             raise ArchiveError("multiple draft releases claim the archive tag")
         if not matches:
             return None
-        release_id = matches[0].get("id")
-        if release_id is None:
-            raise ArchiveError("draft archive release has no stable ID")
+        release_id = _api_id(matches[0].get("id"), "release ID")
         exact = self._release_by_id(repository, release_id)
         if exact.get("id") != release_id or exact.get("draft") is not True or exact.get("tag_name") != tag:
             raise ArchiveError("draft archive identity changed during discovery")
@@ -221,8 +232,9 @@ class GitHubReleaseArchive:
         if not isinstance(raw_assets, list):
             raise ArchiveError("GitHub release has no asset inventory")
         by_name = {asset.get("name"): asset for asset in raw_assets if isinstance(asset, Mapping)}
-        if set(by_name) != set(spec.assets):
+        if len(by_name) != len(raw_assets) or set(by_name) != set(spec.assets):
             raise ArchiveError("immutable release assets differ from the archive specification")
+        release_id = _api_id(release.get("id"), "release ID")
         references: dict[str, ArchiveReference] = {}
         for name, path in spec.assets.items():
             expected_bytes = Path(path).read_bytes()
@@ -232,8 +244,8 @@ class GitHubReleaseArchive:
             if digest != f"sha256:{expected_sha}" or asset.get("size") != len(expected_bytes) or asset.get("state") != "uploaded":
                 raise ArchiveError(f"GitHub asset identity mismatch: {name}")
             references[name] = ArchiveReference(
-                spec.repository, str(release.get("id")), spec.tag, spec.target_commit,
-                str(asset.get("id")),
+                spec.repository, str(release_id), spec.tag, spec.target_commit,
+                str(_api_id(asset.get("id"), "asset ID")),
                 name, expected_sha, len(expected_bytes), True,
             )
         return references
@@ -251,9 +263,7 @@ class GitHubReleaseArchive:
         if release.get("draft") is True and release.get("immutable") is not True:
             if release.get("tag_name") != spec.tag:
                 raise ArchiveError("draft archive tag differs from the specification")
-            release_id = release.get("id")
-            if not isinstance(release_id, int) or isinstance(release_id, bool) or release_id <= 0:
-                raise ArchiveError("draft archive release has no stable numeric ID")
+            release_id = _api_id(release.get("id"), "release ID")
             self._require_tag_commit(spec.repository, spec.tag, spec.target_commit)
             existing = self._draft_assets(spec, release, allow_missing=True)
             for name, path in spec.assets.items():
@@ -279,7 +289,13 @@ class GitHubReleaseArchive:
             reference.repository, reference.tag, reference.target_commit
         )
         assets = release.get("assets")
-        match = next((v for v in assets if isinstance(v, Mapping) and str(v.get("id")) == reference.asset_id), None) if isinstance(assets, list) else None
+        match = None
+        if isinstance(assets, list):
+            for value in assets:
+                if not isinstance(value, Mapping):
+                    raise ArchiveError("archive asset inventory is invalid")
+                if str(_api_id(value.get("id"), "asset ID")) == reference.asset_id:
+                    match = value
         if match is None or match.get("name") != reference.asset_name or match.get("digest") != f"sha256:{reference.sha256}" or match.get("size") != reference.size:
             raise ArchiveError("archive asset metadata no longer matches its reference")
         value = self._run(["api", f"repos/{reference.repository}/releases/assets/{reference.asset_id}", "-H", "Accept: application/octet-stream"], binary=True)
