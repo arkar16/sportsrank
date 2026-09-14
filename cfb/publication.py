@@ -13,6 +13,7 @@ import hashlib
 import json
 from pathlib import Path, PurePosixPath
 import re
+import shutil
 import subprocess
 import tarfile
 import tempfile
@@ -32,6 +33,8 @@ from .github_archive import ArchiveError, ArchiveSpec, ImmutableArchive
 from .publication_authorization import (
     ApprovalReader,
     GitHubRuntimeContext,
+    PreparationProvenanceReader,
+    authenticate_preparation_manifest,
     authorize_protected_execution,
 )
 from .publication_records import (
@@ -42,6 +45,7 @@ from .publication_records import (
     ProviderIdentity,
     ProviderResultRecord,
     ReconciliationRecord,
+    RecordValidationError,
     SanitizedBaselineArchiveRecord,
     ValidatedPackageRecord,
     VerificationRecord,
@@ -306,6 +310,120 @@ def bind_merged_candidate(
         validation_sha256=prepared.validation_sha256,
         expected_predecessor=prepared.expected_predecessor.to_dict(),
     )
+
+
+def rehydrate_prepared_package(
+    *,
+    package_record: str | Path,
+    package_archive: str | Path,
+    preparation_manifest: str | Path,
+    candidate_reader: GitCommitTreeReader,
+    provenance_reader: PreparationProvenanceReader,
+    materialize_to: str | Path,
+) -> PreparedPackage:
+    """Restore an authenticated preparation without replaying private inputs.
+
+    The caller owns ``materialize_to`` and must keep that directory and
+    ``package_archive`` unchanged for as long as the returned package is used.
+    ``materialize_to`` must not already exist and its parent must exist. GitHub
+    provenance authenticates the exact package record (including
+    validation/input claims) and archive;
+    the real Git reader then proves those bytes are the immutable candidate.
+    """
+
+    if type(candidate_reader) is not GitCommitTreeReader:
+        raise PublicationPreparationError(
+            "rehydration requires the concrete Git commit-tree reader"
+        )
+    record_path = Path(package_record).resolve()
+    archive_path = Path(package_archive).resolve()
+    destination = Path(materialize_to).resolve()
+    try:
+        record_bytes = record_path.read_bytes()
+    except OSError as exc:
+        raise PublicationPreparationError(
+            "authenticated package record is unavailable"
+        ) from exc
+    if len(record_bytes) > 1024 * 1024:
+        raise PublicationPreparationError("authenticated package record is too large")
+    try:
+        raw_record = json.loads(record_bytes)
+        if not isinstance(raw_record, Mapping):
+            raise RecordValidationError("validated package record must be an object")
+        package = ValidatedPackageRecord.from_dict(raw_record)
+    except (UnicodeDecodeError, json.JSONDecodeError, RecordValidationError) as exc:
+        raise PublicationPreparationError(
+            "authenticated package record is invalid"
+        ) from exc
+
+    evidence = authenticate_preparation_manifest(
+        preparation_manifest,
+        reader=provenance_reader,
+        expected_candidate_commit=package.candidate_commit,
+    )
+    manifest = evidence.manifest
+    try:
+        archive_sha = _sha256_file(archive_path)
+    except OSError as exc:
+        raise PublicationPreparationError("prepared package archive is unavailable") from exc
+    if (
+        _sha256_bytes(record_bytes) != manifest.package_record_sha256
+        or archive_sha != manifest.package_archive_sha256
+        or archive_sha != package.bundle_sha256
+    ):
+        raise PublicationPreparationError(
+            "authenticated preparation artifacts do not match their manifest"
+        )
+    if destination.exists():
+        raise PublicationPreparationError(
+            "rehydration destination must not already exist"
+        )
+    created_destination = False
+    try:
+        artifact = FirebaseDeployArtifact.from_archive(archive_path, package)
+        destination.mkdir()
+        created_destination = True
+        site = destination / "website"
+        site.mkdir()
+        for relative, value in artifact.files.items():
+            output = site / relative
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_bytes(value)
+        firebase_json = destination / "firebase.json"
+        firebase_json.write_bytes(artifact.firebase_json)
+        prepared = PreparedPackage._create(
+            archive_path,
+            package.bundle_sha256,
+            package.inventory_sha256,
+            package.configuration_sha256,
+            package.expected_baseline_sha256,
+            package.expected_predecessor,
+            package.retained_inputs_sha256,
+            package.validation_sha256,
+            site,
+            firebase_json,
+        )
+        prepared.assert_current()
+        rebound = bind_merged_candidate(
+            prepared,
+            candidate_commit=package.candidate_commit,
+            reader=candidate_reader,
+        )
+        if rebound != package:
+            raise PublicationPreparationError(
+                "candidate Git tree does not bind the authenticated package record"
+            )
+        return prepared
+    except (FirebasePublicationError, OSError) as exc:
+        if created_destination:
+            shutil.rmtree(destination, ignore_errors=True)
+        raise PublicationPreparationError(
+            "authenticated preparation could not be materialized"
+        ) from exc
+    except Exception:
+        if created_destination:
+            shutil.rmtree(destination, ignore_errors=True)
+        raise
 
 
 @dataclass(frozen=True)
