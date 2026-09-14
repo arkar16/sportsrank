@@ -54,11 +54,13 @@ transports the sealed `package.tar.gz`/`package.sha256`, `package.json`/
 `package.json.sha256`, `baseline.json`, `publication-context.json`,
 `publication-attestation.json`, `preparation-origin.json`,
 `publication-preparation-manifest.json`, candidate Git bundle and its hash, and
-immutable execution-source archive with its hash. Mutating preparation uses
+`baseline-public.tar.gz`, `baseline-sanitizer.json`, immutable execution-source
+archive with its hash. Mutating preparation uses
 `sportsrank-preparation-<GITHUB_SHA>`; reconciliation and verification use
 `sportsrank-publication-<RUN_ID>` state that retains
 `publication-preparation-manifest.json`,
-original preparation origin, all transport files, and `publication-run.json`.
+original preparation origin, all allowlisted transport files, and
+`publication-run.json`.
 The preparation manifest is the GitHub-attested subject binding
 `arkar16/sportsrank/.github/workflows/firebase-hosting-publish.yml`,
 `workflow_dispatch` on `refs/heads/main`, exact candidate/run/attempt
@@ -70,7 +72,18 @@ runtime, or authenticating the secret. `preparation-origin.json` and hash files
 support context checks but are not standalone proof; a checksum or attestation
 produced only by the transported runtime cannot establish trust. The rehydrate
 path verifies the attestation and actual `GitCommitTreeReader` before package
-use.
+use. `baseline-public.tar.gz` is the allowlisted public baseline derivative,
+paired with the schema-1 `baseline-sanitizer.json` record. The committed
+schema-1 `config/sr7-recovery-inputs.json` manifest (`record_type`
+`sr7_recovery_input_trust`) from the exact candidate tree independently pins
+the baseline private/public/sanitizer and source-input
+identities; downloaded artifact metadata cannot replace those pins.
+`source-inputs.tar.gz` is excluded from this publication transport; its
+separately retained archive is intentional public historical evidence under
+SR-11. Raw `baseline.tar.gz` and provider actor/auth metadata remain private
+task evidence and are never uploaded here. Public IDs, digests, `baseline.json`,
+and accepted sanitized records are intentional evidence in the repository's
+public Actions artifacts.
 The job then invokes the CLI without checking out a source ref or rebuilding the
 package. A staged package before merged-commit binding (including one with
 `candidate_commit` absent or `null`) is not eligible for execution.
@@ -88,8 +101,13 @@ Protected CLI modes use `--context`, `--attempt-id`, `--retrieval-directory`,
 and `--result`; `reconcile` and `verify-only` also require
 `--attempt-manifest`. `execute` may omit the predecessor pair only for an
 initial publication. Workflow summaries expose sanitized target, operation,
-state, and digest identity. Retained-input and provider evidence remain private
-task/run evidence and are not public release assets by default. The protected
+state, and digest identity. The state artifact is uploaded only after a
+successful protected run; durable recovery after a failure before that upload
+remains unresolved pending the owner's two-dispatch decision, and no workaround
+is implemented. Raw provider actor/auth evidence and the original
+`baseline.tar.gz` remain private task evidence and are never uploaded as public
+artifacts. The separately retained source-input archive is public historical
+evidence under SR-11 and is outside this publication transport. The protected
 runtime uses `GITHUB_TOKEN` for provenance/approval reads,
 `FIREBASE_ACCESS_TOKEN` only inside production, and no `CFBD_API_KEY`.
 
@@ -153,6 +171,9 @@ requires the owner's `production` approval; agents never submit it.
 4. If the attempt is interrupted or its result is uncertain, stop ordinary
    publication and run `reconcile` against the sealed attempt. Retain the
    observed or uncertain identity; never infer that the old site remains live.
+   The current state artifact is emitted only after a successful protected run;
+   durable recovery when that upload is skipped remains unresolved pending the
+   owner's two-dispatch decision.
    On failed public checks, pause ordinary publication. `verify-only` may retry
    verification without another provider write; a rollback or correction is a
    new exact package with fresh predecessor reconciliation and owner approval.

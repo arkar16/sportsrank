@@ -86,18 +86,33 @@ transport includes `package.tar.gz`/`package.sha256`, `package.json`/
 `package.json.sha256`, `baseline.json`, `publication-context.json`,
 `publication-attestation.json`, `preparation-origin.json`,
 `publication-preparation-manifest.json`,
+`baseline-public.tar.gz`, `baseline-sanitizer.json`,
 `candidate.bundle`/`candidate.bundle.sha256`, and
-`execution-source.tar.gz`/`execution-source.sha256`. A trusted workflow
-bootstrap must verify these transports before materializing or installing the
-runtime; a checksum or attestation produced only by the transported runtime
-cannot establish trust. The GitHub attestation subject binds the fixed
+`execution-source.tar.gz`/`execution-source.sha256`. A shell bootstrap must
+authenticate the preparation/state workflow runs, verify the GitHub attestation
+and candidate Git bundle against the authenticated commit/tree, and compare
+regenerated execution-source bytes before extraction, dependency installation,
+or secret authentication; a checksum or attestation produced only by the
+transported runtime cannot establish trust. The GitHub attestation subject
+binds the fixed
 `arkar16/sportsrank/.github/workflows/firebase-hosting-publish.yml`,
 `workflow_dispatch` on `refs/heads/main`, exact candidate/run/attempt
 identities, and the package archive and package-record digests.
 `preparation-origin.json` and hash files support context checks but are not
 standalone proof. The protected rehydrate path verifies the attestation and
 reads the actual Git object graph through `GitCommitTreeReader` before package
-use.
+use. `baseline-public.tar.gz` is the allowlisted public baseline derivative,
+paired with the schema-1 `baseline-sanitizer.json` record. The committed
+schema-1 `config/sr7-recovery-inputs.json` manifest (`record_type`
+`sr7_recovery_input_trust`) from the exact candidate tree pins the baseline
+private/public/sanitizer digests and source-input identities;
+downloaded artifact metadata cannot replace those pins. Raw `baseline.tar.gz`,
+`source-inputs.tar.gz` is excluded from this publication transport. The
+separately retained source-input archive is intentional public historical
+evidence under SR-11; raw `baseline.tar.gz` and provider actor/auth metadata
+remain private task evidence and are never uploaded here.
+Because repository Actions artifacts are public, IDs, digests, `baseline.json`,
+and accepted sanitized records are intentional public evidence.
 The protected job then runs the cohesive CLI without checking out a ref or
 rebuilding the package. A staged package before commit binding (for example one
 with `candidate_commit` absent or `null`) is not eligible for an approved
@@ -137,12 +152,18 @@ an initial publication. Mutating operations consume the
 `sportsrank-preparation-<current-GITHUB_SHA>` artifact. Reconciliation and
 verification consume the `sportsrank-publication-<run-id>` state artifact,
 which retains `publication-preparation-manifest.json`, the original preparation
-origin, and all transport files alongside `publication-run.json`. The protected runtime uses
+origin, and all allowlisted transport files alongside `publication-run.json`.
+The state artifact is uploaded only after a successful protected run; durable
+recovery when a run fails before that upload remains unresolved pending the
+owner's two-dispatch decision, and no second-dispatch workaround is documented
+as implemented. The protected runtime uses
 `GITHUB_TOKEN` for run provenance/approval reads and `FIREBASE_ACCESS_TOKEN`
 only inside the gated production job; `CFBD_API_KEY` is empty. Workflow
 summaries expose sanitized target, operation, state, and digest identity.
-Retained-input and provider evidence remain private task/run evidence and are
-not public release assets by default.
+Raw provider actor/auth evidence and the original `baseline.tar.gz` remain
+private task evidence and are never uploaded as public artifacts. The
+separately retained source-input archive is public historical evidence under
+SR-11 and is outside this publication transport.
 
 For the protected modes, the verified parser shape uses safe path and identity
 placeholders; consult each `--help` output before execution:

@@ -302,6 +302,7 @@ Gate 2 remains pending.
   `package.json`/`package.json.sha256`, `baseline.json`,
   `publication-context.json`, `publication-attestation.json`,
   `preparation-origin.json`, `publication-preparation-manifest.json`,
+  `baseline-public.tar.gz`, `baseline-sanitizer.json`,
   `candidate.bundle`/`candidate.bundle.sha256`, and
   `execution-source.tar.gz`/`execution-source.sha256`. Its mutating artifact is
   `sportsrank-preparation-<GITHUB_SHA>`; reconcile/verify state uses
@@ -321,7 +322,22 @@ Gate 2 remains pending.
   The rehydrate path verifies the attestation and actual `GitCommitTreeReader`
   before package use. Do not check out source or rebuild the package in the
   publish job. Exact merged-SHA preparation and validation must be repeated
-  after the owner merges the accepted change.
+  after the owner merges the accepted change. `baseline-public.tar.gz` is the
+  allowlisted public baseline derivative paired with the schema-1
+  `baseline-sanitizer.json` record. The committed schema-1
+  `config/sr7-recovery-inputs.json` manifest (`record_type`
+  `sr7_recovery_input_trust`) from the exact candidate tree independently pins
+  baseline private/public/sanitizer and source-input
+  identities; downloaded artifact metadata cannot replace those pins.
+  `source-inputs.tar.gz` is excluded from this publication transport; its
+  separately retained archive is intentional public historical evidence under
+  SR-11. Raw `baseline.tar.gz` and provider actor/auth metadata remain private
+  task evidence and are never uploaded here. Public IDs, digests, `baseline.json`,
+  and accepted sanitized records are intentional evidence in public Actions
+  artifacts.
+  The state artifact is uploaded only after a successful protected run;
+  durable recovery after a failure before that upload remains unresolved
+  pending the owner's two-dispatch decision, and no workaround is implemented.
 - The one cohesive CLI surface provides `prepare`, `execute`, `reconcile`,
   `verify-only`, `rollback`, and `correction`; the workflow choices are exactly
   those six. The CLI also provides CLI-only `reconcile-external` for an unknown
@@ -350,8 +366,12 @@ Gate 2 remains pending.
   `CFBD_API_KEY` is absent. The owner's production approval is required; agents
   never approve on the owner's behalf.
 - Workflow summaries expose sanitized target, operation, state, and digest
-  identity. Retained-input and provider evidence remain private task/run
-  evidence and are not public release assets by default.
+  identity. Raw provider actor/auth evidence and the original
+  `baseline.tar.gz` remain private task evidence and are never uploaded as
+  public artifacts. The separately retained source-input archive is public
+  historical evidence under SR-11 and is outside this publication transport.
+  IDs, digests, `baseline.json`, and accepted sanitized records are intentionally
+  public evidence.
 - Validate against the verified live base and preserve the historical archive.
   Reconcile different base trees and provenance offline; changing a base
   identifier alone cannot make the prepared candidate valid. Immediately after
@@ -368,8 +388,10 @@ Gate 2 remains pending.
 - Use GitHub immutable release assets under ADR-0018. Seal the artifact and
   intent before deployment, then append separate immutable provider-result and
   verification records. Verify immutability, retrieval and hashes; mutable
-  notes or labels cannot establish state. Publish sanitized provenance while
-  retaining original provider metadata privately with explicit source binding.
+  notes or labels cannot establish state. Publish only the allowlisted
+  sanitized provenance while retaining original provider actor/auth metadata
+  privately with explicit source binding; those originals never enter public
+  Actions artifacts.
   Independent locked backup is deferred under the accepted deletion risk.
 - Before the recovery cutover, disable the legacy automatic deployment routes
   and retire their repository-scoped deployment capability. Verify containment

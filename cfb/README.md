@@ -171,16 +171,30 @@ The protected publication workflow is one manually dispatched
 exact package to the actual merged commit SHA and transports the package,
 publication context, preparation-origin record,
 `publication-preparation-manifest.json`, candidate Git bundle, runtime source,
-and their hashes. The manifest is the GitHub-attested subject binding
+and their hashes, plus `baseline.json`, `baseline-public.tar.gz`, and
+`baseline-sanitizer.json`. The manifest is the GitHub-attested subject binding
 `arkar16/sportsrank/.github/workflows/firebase-hosting-publish.yml`,
 `workflow_dispatch` on `refs/heads/main`, exact candidate/run/attempt
 identities, and package archive/package-record digests. The
 protected job verifies that transport and invokes the cohesive CLI without
-checking out source or rebuilding the package. A trusted bootstrap must anchor
-those hashes before runtime installation; self-asserted payload metadata cannot
-establish trust. Rehydrate verifies the attestation and actual
+checking out source or rebuilding the package. A shell bootstrap must anchor
+those hashes before extraction, dependency installation, or secret
+authentication. It authenticates the workflow runs, verifies the GitHub
+attestation and candidate Git bundle against the authenticated commit/tree, and
+compares regenerated execution-source bytes; self-asserted payload metadata
+cannot establish trust. Rehydrate verifies the attestation and actual
 `GitCommitTreeReader` before package use; preparation-origin and hash files are
-context checks, not standalone proof.
+context checks, not standalone proof. The schema-1 `baseline-sanitizer.json`
+record and `baseline-public.tar.gz` are the accepted allowlisted public baseline
+derivative. The committed schema-1 `config/sr7-recovery-inputs.json` manifest
+(`record_type` `sr7_recovery_input_trust`) from the exact candidate tree
+independently pins baseline and source-input identities; raw
+download metadata cannot replace those pins. `source-inputs.tar.gz` is excluded
+from this publication transport; its separately retained archive is intentional
+public historical evidence under SR-11. Raw `baseline.tar.gz` and provider
+actor/auth metadata remain private task evidence and are never uploaded here.
+Public IDs, digests, `baseline.json`, and accepted sanitized records are
+intentional evidence in the public Actions transport.
 
 Use `uv run --locked python -m cfb.publication_cli --help` for the canonical
 CLI grammar. Cross-run predecessors require fresh full reconciliation through
@@ -204,8 +218,14 @@ mutating preparation artifact is `sportsrank-preparation-<GITHUB_SHA>`; sealed
 reconciliation and verification state uses `sportsrank-publication-<RUN_ID>`
 and retains `publication-preparation-manifest.json`, the original
 `preparation-origin.json`, all transport files, and `publication-run.json`.
-Summaries expose sanitized target and digest identity; retained-input/provider
-evidence stays private and is not a public release asset by default. The protected
+The state artifact is uploaded only after a successful protected run; durable
+recovery after a failure before that upload remains unresolved pending the
+owner's two-dispatch decision, and no workaround is implemented. Summaries
+expose sanitized target and digest identity; raw provider actor/auth evidence
+and the original `baseline.tar.gz` remain private task evidence and are never
+uploaded as public artifacts. The separately retained source-input archive is
+public historical evidence under SR-11 and is outside this publication
+transport. The protected
 runtime uses `GITHUB_TOKEN` for provenance/approval reads,
 `FIREBASE_ACCESS_TOKEN` only inside production, and no `CFBD_API_KEY`.
 
