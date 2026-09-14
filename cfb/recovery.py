@@ -16,8 +16,9 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import sys
-from typing import Iterable, Mapping
+from typing import Any, Iterable, Mapping
 
 try:
     from .cfbd_client import get_snapshot_service
@@ -29,6 +30,7 @@ try:
         validate_release_chain,
     )
     from .request_meter import RequestMeter
+    from .recovery_inputs import RecoveryInputBundle
     from .season_snapshot import (
         SeasonSnapshot,
         SeasonSnapshotService,
@@ -46,6 +48,7 @@ except ImportError:  # pragma: no cover - direct execution compatibility
         validate_release_chain,
     )
     from request_meter import RequestMeter
+    from recovery_inputs import RecoveryInputBundle
     from season_snapshot import SeasonSnapshot, SeasonSnapshotService, migrate_postseason_cache
     from season_source import FixtureSeasonSource, ProductionSeasonSource
     from snapshot_cache import SnapshotCache
@@ -86,6 +89,7 @@ P0_EXPECTED_REQUESTS: tuple[ExpectedRequest, ...] = (
     ExpectedRequest("scheduled", 2026, "games", "miss"),
 )
 P0_EXPECTED_CALLS = P0_EXPECTED_REQUESTS
+LAST_UPDATED_RE = re.compile(r"Last updated:\s*([^<\n]+)")
 
 
 class RecoveryContractError(RuntimeError):
@@ -157,6 +161,52 @@ def _identity_args(parser: argparse.ArgumentParser, *, cache: bool = True) -> No
     parser.add_argument("--fixture-root", type=Path)
 
 
+def _source_input_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--source-input-root",
+        type=Path,
+        help="external bundle root containing inputs-manifest.json and snapshots/",
+    )
+    parser.add_argument(
+        "--source-input-pin",
+        action="append",
+        default=[],
+        metavar="PATH=SHA256",
+        help="trusted raw source file pin; repeat once per manifest file",
+    )
+    parser.add_argument("--source-input-archive", type=Path)
+    parser.add_argument("--source-input-archive-sha256")
+
+
+def _source_inputs(args: argparse.Namespace) -> RecoveryInputBundle | None:
+    root = getattr(args, "source_input_root", None)
+    pins = getattr(args, "source_input_pin", None) or []
+    archive = getattr(args, "source_input_archive", None)
+    archive_sha256 = getattr(args, "source_input_archive_sha256", None)
+    if root is None:
+        if pins or archive is not None or archive_sha256 is not None:
+            raise ValueError("source input pins require --source-input-root")
+        return None
+    parsed_pins: dict[str, str] = {}
+    for value in pins:
+        if not isinstance(value, str) or "=" not in value:
+            raise ValueError("--source-input-pin must be PATH=SHA256")
+        relative, digest = value.rsplit("=", 1)
+        if not relative or not digest:
+            raise ValueError("--source-input-pin must be PATH=SHA256")
+        if relative in parsed_pins:
+            raise ValueError(f"duplicate --source-input-pin: {relative}")
+        parsed_pins[relative] = digest
+    if not parsed_pins:
+        raise ValueError("--source-input-root requires at least one --source-input-pin")
+    return RecoveryInputBundle.from_directory(
+        root,
+        trusted_file_sha256=parsed_pins,
+        archive=archive,
+        expected_archive_sha256=archive_sha256,
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m cfb.recovery",
@@ -196,6 +246,7 @@ def build_parser() -> argparse.ArgumentParser:
     build.add_argument("--published-site", type=Path, required=True)
     build.add_argument("--timestamp")
     build.add_argument("--code-revision", default="working-tree")
+    _source_input_args(build)
 
     backfill = subparsers.add_parser(
         "backfill",
@@ -218,12 +269,19 @@ def build_parser() -> argparse.ArgumentParser:
     validate.add_argument("candidate", type=Path)
     validate.add_argument("--published-site", type=Path)
     validate.add_argument("--json", action="store_true", dest="as_json")
+    _source_input_args(validate)
 
     promote = subparsers.add_parser(
         "promote", help="explicitly validate then atomically promote a local Release"
     )
     promote.add_argument("candidate", type=Path)
     promote.add_argument("published_site", type=Path)
+    promote.add_argument(
+        "--validation-base",
+        type=Path,
+        help="independent Published Site used for validation; defaults to destination",
+    )
+    _source_input_args(promote)
 
     migration = subparsers.add_parser(
         "migrate-postseason",
@@ -239,6 +297,7 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         help="season to migrate; repeat for multiple seasons (defaults to 2024,2025,2026)",
     )
+    _source_input_args(migration)
 
     return parser
 
@@ -377,6 +436,179 @@ def _public_hashes(root: Path) -> dict[str, str]:
         for path in sorted(root.rglob("*"))
         if path.is_file()
     }
+
+
+_PROVENANCE_JSON_KEYS = frozenset(
+    {
+        "last_updated",
+        "created_at",
+        "captured_at",
+        "started_at",
+        "completed_at",
+        "timestamp",
+        "code_revision",
+        "manifest_checksum",
+        "base_tree_sha256",
+        "immediate_base_tree_sha256",
+        "baseline_provenance",
+        "source_input_provenance",
+        "source_snapshot",
+        "snapshot_checksum",
+        "snapshot_archive_checksum",
+        "migration_provenance",
+        "calendar_provenance",
+        "correction_registry_provenance",
+    }
+)
+
+
+def _comparison_site(value: str | Path | Release) -> Path:
+    if isinstance(value, Release):
+        return value.site
+    path = Path(value)
+    return path / "site" if (path / "site").is_dir() else path
+
+
+def _public_tree_digest(root: Path) -> str:
+    digest = hashlib.sha256()
+    for relative in sorted(_public_hashes(root)):
+        path = root / relative
+        digest.update(relative.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+    return digest.hexdigest()
+
+
+def _normalized_declared_provenance(path: Path) -> bytes | None:
+    """Return comparable bytes with declared timestamp/provenance removed."""
+
+    raw = path.read_bytes()
+    if path.suffix.lower() in {".html", ".htm"}:
+        text = raw.decode("utf-8", errors="replace")
+        if LAST_UPDATED_RE.search(text) is None:
+            return None
+        return LAST_UPDATED_RE.sub(lambda match: f"{match.group(0).split(':', 1)[0]}:<timestamp>", text).encode(
+            "utf-8"
+        )
+    if path.suffix.lower() != ".json":
+        return None
+    try:
+        value = json.loads(raw)
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    found = False
+
+    def scrub(item: Any) -> Any:
+        nonlocal found
+        if isinstance(item, Mapping):
+            result: dict[str, Any] = {}
+            for key, child in item.items():
+                if str(key).lower() in _PROVENANCE_JSON_KEYS:
+                    found = True
+                    continue
+                result[str(key)] = scrub(child)
+            return result
+        if isinstance(item, list):
+            return [scrub(child) for child in item]
+        return item
+
+    normalized = scrub(value)
+    if not found:
+        return None
+    return json.dumps(normalized, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode(
+        "utf-8"
+    )
+
+
+def _is_timestamp_or_provenance_difference(
+    candidate_root: Path,
+    reference_root: Path,
+    relative: str,
+) -> bool:
+    candidate_path = candidate_root / relative
+    reference_path = reference_root / relative
+    try:
+        candidate_normalized = _normalized_declared_provenance(candidate_path)
+        reference_normalized = _normalized_declared_provenance(reference_path)
+    except OSError:
+        return False
+    return (
+        candidate_normalized is not None
+        and reference_normalized is not None
+        and candidate_normalized == reference_normalized
+    )
+
+
+def compare_site_trees(
+    candidate: str | Path | Release,
+    references: Mapping[str, str | Path | Release],
+    *,
+    explanation_ledger: Mapping[str, Mapping[str, str]] | None = None,
+) -> dict[str, dict[str, Any]]:
+    """Produce complete, classified public-tree diffs for retained references.
+
+    Every added/deleted path and every changed file is classified.  A changed
+    file is ``timestamp_or_provenance`` only when removing explicitly declared
+    metadata leaves the remaining bytes equivalent; all other differences are
+    ``numerical_or_content``.  Classification does not explain a difference:
+    callers must provide an explicit per-reference, per-path explanation
+    ledger to close the ``unexplained`` set.  The function never consults
+    Release ownership, so comparison evidence remains independent of the
+    candidate manifest.
+    """
+
+    candidate_root = _comparison_site(candidate)
+    candidate_files = _public_hashes(candidate_root)
+    candidate_paths = set(candidate_files)
+    result: dict[str, dict[str, Any]] = {}
+    for name, reference in references.items():
+        reference_root = _comparison_site(reference)
+        reference_files = _public_hashes(reference_root)
+        reference_paths = set(reference_files)
+        added = sorted(candidate_paths - reference_paths)
+        deleted = sorted(reference_paths - candidate_paths)
+        changed = sorted(
+            relative
+            for relative in candidate_paths & reference_paths
+            if candidate_files[relative] != reference_files[relative]
+        )
+        unchanged = sorted(
+            relative
+            for relative in candidate_paths & reference_paths
+            if candidate_files[relative] == reference_files[relative]
+        )
+        timestamp_or_provenance = sorted(
+            relative
+            for relative in changed
+            if _is_timestamp_or_provenance_difference(
+                candidate_root, reference_root, relative
+            )
+        )
+        numerical_or_content = sorted(
+            set(added)
+            | set(deleted)
+            | (set(changed) - set(timestamp_or_provenance))
+        )
+        all_differences = set(added) | set(deleted) | set(changed)
+        supplied_ledger = dict((explanation_ledger or {}).get(str(name), {}))
+        explained = all_differences & set(supplied_ledger)
+        invalid_explanations = sorted(set(supplied_ledger) - all_differences)
+        result[str(name)] = {
+            "candidate_tree_sha256": _public_tree_digest(candidate_root),
+            "reference_tree_sha256": _public_tree_digest(reference_root),
+            "added": added,
+            "changed": changed,
+            "deleted": deleted,
+            "unchanged": unchanged,
+            "timestamp_or_provenance": timestamp_or_provenance,
+            "numerical_or_content": numerical_or_content,
+            "explanation_ledger": {
+                relative: supplied_ledger[relative] for relative in sorted(explained)
+            },
+            "unexplained": sorted(all_differences - explained),
+            "invalid_explanations": invalid_explanations,
+        }
+    return result
 
 
 def _public_delta(original_site: str | Path, candidate_site: str | Path) -> dict[str, list[str]]:
@@ -612,6 +844,7 @@ def _build(args: argparse.Namespace) -> int:
             raise ValueError("preseason does not accept --through-week")
         if args.phase == "week" and args.through_week is None:
             raise ValueError("week requires --through-week")
+        source_inputs = _source_inputs(args)
         service = _service(args)
         snapshot = service.load_cached(args.year, args.classification)
         release = build_release(
@@ -624,8 +857,13 @@ def _build(args: argparse.Namespace) -> int:
             timestamp=_timestamp(args.timestamp),
             code_revision=args.code_revision,
             published_site=args.published_site,
+            source_inputs=source_inputs,
         )
-        report = validate_release(release, published_site=args.published_site)
+        report = validate_release(
+            release,
+            published_site=args.published_site,
+            source_inputs=source_inputs,
+        )
         report.raise_for_failure()
         print(
             json.dumps(
@@ -678,11 +916,16 @@ def _backfill(args: argparse.Namespace) -> int:
 
 
 def _validate(args: argparse.Namespace) -> int:
+    source_inputs = _source_inputs(args)
     if args.published_site is None:
-        report = validate_release(args.candidate)
+        report = validate_release(args.candidate, source_inputs=source_inputs)
         delta = None
     else:
-        report = validate_release_chain(args.candidate, args.published_site)
+        report = validate_release_chain(
+            args.candidate,
+            args.published_site,
+            source_inputs=source_inputs,
+        )
         delta = _public_delta(args.published_site, args.candidate)
     if args.as_json:
         payload = {
@@ -713,7 +956,13 @@ def _validate(args: argparse.Namespace) -> int:
 
 def _promote(args: argparse.Namespace) -> int:
     try:
-        result = promote_release(args.candidate, args.published_site)
+        source_inputs = _source_inputs(args)
+        result = promote_release(
+            args.candidate,
+            args.published_site,
+            validation_base=args.validation_base,
+            source_inputs=source_inputs,
+        )
         print(
             json.dumps(
                 {
@@ -734,11 +983,13 @@ def _promote(args: argparse.Namespace) -> int:
 def _migrate_postseason(args: argparse.Namespace) -> int:
     try:
         seasons = tuple(args.seasons or (2024, 2025, 2026))
+        source_inputs = _source_inputs(args)
         paths = migrate_postseason_cache(
             args.source_root,
             args.destination_root,
             classification=args.classification,
             seasons=seasons,
+            source_inputs=source_inputs,
         )
         print(
             json.dumps(

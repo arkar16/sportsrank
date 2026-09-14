@@ -8,7 +8,10 @@ import hashlib
 import json
 from pathlib import Path
 from types import MappingProxyType
-from typing import Callable, Mapping
+from typing import TYPE_CHECKING, Callable, Mapping
+
+if TYPE_CHECKING:
+    from .recovery_inputs import RecoveryInputBundle
 
 if __package__:
     from .game_dispositions import apply_cancellation_registry
@@ -540,6 +543,7 @@ def migrate_postseason_cache(
     *,
     classification: str = "FBS",
     seasons: tuple[int, ...] = (2024, 2025, 2026),
+    source_inputs: "RecoveryInputBundle | None" = None,
 ) -> tuple[Path, ...]:
     """Copy validated legacy snapshots into a new phase-aware schema-4 root.
 
@@ -556,6 +560,13 @@ def migrate_postseason_cache(
     destination_path = Path(destination_root).resolve()
     if source_path == destination_path:
         raise ValueError("postseason migration source and destination must differ")
+    if source_inputs is not None:
+        source_inputs.assert_current()
+        if source_path != source_inputs.source_root.resolve():
+            raise ValueError(
+                "postseason migration source root must match the trusted source input bundle"
+            )
+        source_inputs.assert_external_to(destination_path)
     if destination_path.exists() and any(destination_path.iterdir()):
         raise ValueError("postseason migration destination must be new and empty")
     destination_path.mkdir(parents=True, exist_ok=True)
@@ -572,6 +583,12 @@ def migrate_postseason_cache(
                 state, season=season, classification=classification
             )
             source_checksum = str(state["checksum"])
+            if source_inputs is not None:
+                identity = source_inputs.resolve(season, classification)
+                if identity.source_snapshot_checksum != source_checksum:
+                    raise ValueError(
+                        "postseason migration source checksum disagrees with the trusted input bundle"
+                    )
             corrected_games = _migrate_postseason_games(
                 season, games, source_checksum, pinned
             )

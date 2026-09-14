@@ -61,6 +61,7 @@ try:
         is_explicit_non_played,
     )
     from .postseason_registry import validate_recovery_classification
+    from .recovery_inputs import RecoveryInputBundle, RecoveryInputError
     from .week_calendar import (
         calendar_provenance,
         canonical_postseason_week,
@@ -96,6 +97,7 @@ except ImportError:  # Direct execution from the cfb directory.
     )
     from season_source import SourceGame, SourcePlayoff, SourceTeam, is_explicit_non_played
     from postseason_registry import validate_recovery_classification
+    from recovery_inputs import RecoveryInputBundle, RecoveryInputError
     from week_calendar import (
         calendar_provenance,
         canonical_postseason_week,
@@ -583,11 +585,31 @@ class ReleaseValidationError(RuntimeError):
 class ReleaseValidator:
     """Object facade for callers that keep a validator dependency."""
 
-    def validate(self, candidate: str | Path | Release, *, published_site: str | Path | None = None) -> ValidationReport:
-        return validate_release(candidate, published_site=published_site)
+    def validate(
+        self,
+        candidate: str | Path | Release,
+        *,
+        published_site: str | Path | VerifiedBaseline | None = None,
+        source_inputs: RecoveryInputBundle | None = None,
+    ) -> ValidationReport:
+        return validate_release(
+            candidate,
+            published_site=published_site,
+            source_inputs=source_inputs,
+        )
 
-    def validate_or_raise(self, candidate: str | Path | Release, *, published_site: str | Path | None = None) -> ValidationReport:
-        return self.validate(candidate, published_site=published_site).raise_for_failure()
+    def validate_or_raise(
+        self,
+        candidate: str | Path | Release,
+        *,
+        published_site: str | Path | VerifiedBaseline | None = None,
+        source_inputs: RecoveryInputBundle | None = None,
+    ) -> ValidationReport:
+        return self.validate(
+            candidate,
+            published_site=published_site,
+            source_inputs=source_inputs,
+        ).raise_for_failure()
 
 
 @dataclass(frozen=True)
@@ -620,6 +642,33 @@ def _valid_published_site(value: str | Path | VerifiedBaseline | None) -> Path:
     if not site.is_dir() or not any(site.rglob("*")):
         raise ValueError("published_site must be an existing non-empty directory")
     return site
+
+
+def _baseline_provenance(
+    baseline: VerifiedBaseline | None,
+) -> dict[str, Any] | None:
+    """Return the sanitized, stable identity of a verified baseline.
+
+    A path-backed Published Site has no provider provenance claim.  A
+    ``VerifiedBaseline`` does: its record is already redacted by the frozen
+    publication-record API, and the application/archive digests are checked
+    again before this value is emitted or compared.  The returned structure is
+    descriptive metadata only; validation still requires the caller to supply
+    the verified object.
+    """
+
+    if baseline is None:
+        return None
+    baseline.assert_current()
+    record = baseline.record
+    return {
+        "schema_version": 1,
+        "record_digest": record.digest,
+        "record": record.to_dict(),
+        "identity": record.observed.to_dict(),
+        "application_tree_sha256": record.application_tree_sha256,
+        "archive_sha256": record.archive_sha256,
+    }
 
 
 def _phase_target(snapshot: SeasonSnapshot, phase: str | None, target_week: int | None) -> tuple[str, int]:
@@ -756,6 +805,35 @@ def _snapshot_archive_relative(snapshot: SeasonSnapshot) -> str:
     return f"cfb/years/{snapshot.year}/data/snapshots/{checksum}.json"
 
 
+def _source_input_provenance(
+    snapshot: SeasonSnapshot,
+    source_inputs: RecoveryInputBundle | None,
+) -> dict[str, Any] | None:
+    """Bind a migrated snapshot to a re-checkable external source bundle."""
+
+    migration = snapshot.metadata.get("migration_provenance")
+    if not isinstance(migration, Mapping):
+        return None
+    if source_inputs is None:
+        raise ValueError(
+            "trusted external source inputs are required for migrated snapshots"
+        )
+    source_inputs.assert_current()
+    identity = source_inputs.resolve(snapshot.year, snapshot.classification)
+    expected = identity.to_dict()
+    expected.update(
+        {
+            "manifest_sha256": source_inputs.manifest_sha256,
+            "bundle_sha256": source_inputs.bundle_sha256,
+        }
+    )
+    if migration.get("source_snapshot_checksum") != identity.source_snapshot_checksum:
+        raise ValueError(
+            "migrated snapshot source checksum does not match the trusted bundle"
+        )
+    return expected
+
+
 def _checkpoint_order(phase: str, target_week: int) -> tuple[int, int]:
     """Order checkpoints within one Season for cumulative run validation."""
 
@@ -860,7 +938,8 @@ class ReleaseBuilder:
         model_version: str = MODEL_VERSION,
         code_revision: str = "working-tree",
         timestamp: str | None = None,
-        published_site: str | Path | None = None,
+        published_site: str | Path | VerifiedBaseline | None = None,
+        source_inputs: RecoveryInputBundle | None = None,
         clone_published: bool = True,
         hfa: float = HFA,
     ) -> None:
@@ -882,7 +961,16 @@ class ReleaseBuilder:
         self.model_version = model_version
         self.code_revision = code_revision
         self.timestamp = timestamp or datetime.now(timezone.utc).isoformat()
+        self.published_baseline = (
+            published_site if isinstance(published_site, VerifiedBaseline) else None
+        )
         self.published_site = _valid_published_site(published_site)
+        self.baseline_provenance = _baseline_provenance(self.published_baseline)
+        self.source_inputs = source_inputs
+        if self.source_inputs is not None:
+            self.source_inputs.assert_current()
+            self.source_inputs.assert_external_to(self.published_site)
+            self.source_inputs.assert_external_to(self.root)
         if clone_published is False:
             raise ValueError("clone_published=False is not supported; Releases are full-site overlays")
         self.clone_published = True
@@ -898,11 +986,15 @@ class ReleaseBuilder:
     ) -> Release:
         if self.model_version != MODEL_VERSION:
             raise ValueError(f"Unsupported CORS model version: {self.model_version}")
+        source_input_provenance = _source_input_provenance(
+            snapshot, self.source_inputs
+        )
         snapshot_week_calendar = _snapshot_week_calendar(snapshot)
         immediate_base_digest = _tree_digest(self.published_site)
         inherited_runs: list[dict[str, Any]] = []
         inherited_owned: set[str] = set()
         origin_base_digest = immediate_base_digest
+        baseline_provenance = self.baseline_provenance
         inherited_manifest_path = self.published_site / "manifest.json"
         if inherited_manifest_path.is_file():
             try:
@@ -918,6 +1010,17 @@ class ReleaseBuilder:
                 origin_base_digest = str(inherited_manifest.get("base_tree_sha256", ""))
                 if not origin_base_digest:
                     raise ValueError("Published Site Release manifest has no original base identity")
+                inherited_baseline = inherited_manifest.get("baseline_provenance")
+                if baseline_provenance is None and isinstance(inherited_baseline, Mapping):
+                    baseline_provenance = dict(inherited_baseline)
+                elif (
+                    baseline_provenance is not None
+                    and inherited_baseline is not None
+                    and baseline_provenance != inherited_baseline
+                ):
+                    raise ValueError(
+                        "Published Site Release manifest is bound to another verified baseline"
+                    )
         phase, target_week = _phase_target(snapshot, phase, target_week)
         complete_through_week = _authoritative_complete_through(snapshot.games)
         scheduled_end = scheduled_season_end_week(snapshot)
@@ -1426,6 +1529,10 @@ class ReleaseBuilder:
             "base_tree_sha256": origin_base_digest,
             "immediate_base_tree_sha256": immediate_base_digest,
         }
+        if baseline_provenance is not None:
+            metadata["baseline_provenance"] = baseline_provenance
+        if source_input_provenance is not None:
+            metadata["source_input_provenance"] = source_input_provenance
         run_evidence = {
             "sport": snapshot.sport,
             "classification": classification,
@@ -1439,6 +1546,10 @@ class ReleaseBuilder:
             "source_snapshot": snapshot.checksum,
             "carryover": carryover_provenance,
         }
+        if baseline_provenance is not None:
+            run_evidence["baseline_provenance"] = baseline_provenance
+        if source_input_provenance is not None:
+            run_evidence["source_input_provenance"] = source_input_provenance
         if snapshot_week_calendar is not None:
             run_evidence["week_calendar"] = snapshot_week_calendar
         metadata["runs"] = inherited_runs + [run_evidence]
@@ -1483,7 +1594,8 @@ def build_release(
     model_version: str = MODEL_VERSION,
     code_revision: str = "working-tree",
     timestamp: str | None = None,
-    published_site: str | Path | None = None,
+    published_site: str | Path | VerifiedBaseline | None = None,
+    source_inputs: RecoveryInputBundle | None = None,
     clone_published: bool = True,
     hfa: float = HFA,
 ) -> Release:
@@ -1496,6 +1608,7 @@ def build_release(
         code_revision=code_revision,
         timestamp=timestamp,
         published_site=published_site,
+        source_inputs=source_inputs,
         clone_published=clone_published,
         hfa=hfa,
     ).build(snapshot, target_week=target_week, phase=phase, previous_final=previous_final)
@@ -1520,7 +1633,8 @@ def _failure(failures: list[ValidationFailure], code: str, message: str, path: P
 def _validate_release(
     candidate: str | Path | Release,
     strict: bool = True,
-    published_site: str | Path | None = None,
+    published_site: str | Path | VerifiedBaseline | None = None,
+    source_inputs: RecoveryInputBundle | None = None,
 ) -> ValidationReport:
     """Validate owned artifacts and return structured failures.
 
@@ -1542,8 +1656,20 @@ def _validate_release(
         _failure(failures, "base.required", str(exc))
         report.valid = False
         return report
+    trusted_baseline_provenance = _baseline_provenance(
+        published_site if isinstance(published_site, VerifiedBaseline) else None
+    )
     manifest_path = site / "manifest.json"
     release_path = site / "release.json"
+    source_inputs_ready = True
+    if source_inputs is not None:
+        try:
+            source_inputs.assert_current()
+            source_inputs.assert_external_to(base)
+            source_inputs.assert_external_to(site)
+        except (OSError, TypeError, ValueError) as exc:
+            source_inputs_ready = False
+            _failure(failures, "source.input", str(exc), manifest_path)
     if not manifest_path.exists():
         _failure(failures, "metadata.missing", "manifest.json is required", manifest_path)
         report.valid = False
@@ -1610,6 +1736,13 @@ def _validate_release(
             _failure(failures, "metadata.checksum", "manifest checksum verification failed", manifest_path)
     if manifest.get("model_version") != MODEL_VERSION:
         _failure(failures, "model.version", f"expected {MODEL_VERSION}, got {manifest.get('model_version')}", manifest_path)
+    if trusted_baseline_provenance is not None and manifest.get("baseline_provenance") != trusted_baseline_provenance:
+        _failure(
+            failures,
+            "baseline.provenance",
+            "manifest baseline provenance does not match the supplied VerifiedBaseline",
+            manifest_path,
+        )
     run_contexts: list[tuple[dict[str, Any], SeasonSnapshot]] = []
     cumulative_expected: set[str] = set()
     raw_runs = manifest.get("runs")
@@ -1622,6 +1755,16 @@ def _validate_release(
             continue
         try:
             run = dict(raw_run)
+            if (
+                trusted_baseline_provenance is not None
+                and run.get("baseline_provenance") != trusted_baseline_provenance
+            ):
+                _failure(
+                    failures,
+                    "baseline.provenance",
+                    f"run {index} baseline provenance does not match the supplied VerifiedBaseline",
+                    manifest_path,
+                )
             run_year = int(run["season"])
             run_phase = str(run["phase"]).lower()
             run_target = int(run["target_week"])
@@ -1724,6 +1867,37 @@ def _validate_release(
                 failures,
                 "runs.chain",
                 "cross-season runs must be consecutive and every predecessor must be FINAL",
+                manifest_path,
+            )
+    for index, (run, run_snapshot) in enumerate(run_contexts):
+        if not isinstance(run_snapshot.metadata.get("migration_provenance"), Mapping):
+            continue
+        if source_inputs is None:
+            _failure(
+                failures,
+                "source.input.required",
+                f"run {index} requires a trusted external source input bundle",
+                manifest_path,
+            )
+            continue
+        if not source_inputs_ready:
+            continue
+        try:
+            expected_source_input = _source_input_provenance(
+                run_snapshot, source_inputs
+            )
+            if run.get("source_input_provenance") != expected_source_input:
+                _failure(
+                    failures,
+                    "source.input.provenance",
+                    f"run {index} source input provenance disagrees with the trusted bundle",
+                    manifest_path,
+                )
+        except (OSError, TypeError, ValueError, RecoveryInputError) as exc:
+            _failure(
+                failures,
+                "source.input",
+                f"run {index}: {exc}",
                 manifest_path,
             )
     if run_contexts:
@@ -1871,6 +2045,28 @@ def _validate_release(
             _failure(failures, "snapshot.identity", "snapshot sport mismatch")
         if snapshot.year != int(manifest.get("season", snapshot.year)):
             _failure(failures, "snapshot.identity", "snapshot season mismatch")
+        if isinstance(snapshot.metadata.get("migration_provenance"), Mapping):
+            if source_inputs is None:
+                _failure(
+                    failures,
+                    "source.input.required",
+                    "migrated releases require a trusted external source input bundle",
+                    manifest_path,
+                )
+            elif source_inputs_ready:
+                try:
+                    expected_source_input = _source_input_provenance(
+                        snapshot, source_inputs
+                    )
+                    if manifest.get("source_input_provenance") != expected_source_input:
+                        _failure(
+                            failures,
+                            "source.input.provenance",
+                            "manifest source input provenance disagrees with the trusted bundle",
+                            manifest_path,
+                        )
+                except (OSError, TypeError, ValueError, RecoveryInputError) as exc:
+                    _failure(failures, "source.input", str(exc), manifest_path)
         schools = [team.school for team in snapshot.teams]
         if len(schools) != len(set(schools)):
             _failure(failures, "teams.duplicate", "snapshot contains duplicate FBS teams")
@@ -2250,7 +2446,8 @@ def _validate_release(
 def validate_release(
     candidate: str | Path | Release,
     strict: bool = True,
-    published_site: str | Path | None = None,
+    published_site: str | Path | VerifiedBaseline | None = None,
+    source_inputs: RecoveryInputBundle | None = None,
 ) -> ValidationReport:
     """Validate a candidate and surface malformed metadata as a report.
 
@@ -2260,7 +2457,12 @@ def validate_release(
     """
 
     try:
-        return _validate_release(candidate, strict=strict, published_site=published_site)
+        return _validate_release(
+            candidate,
+            strict=strict,
+            published_site=published_site,
+            source_inputs=source_inputs,
+        )
     except (OSError, TypeError, ValueError, OverflowError) as exc:
         try:
             site = _site_for(candidate)
@@ -2677,7 +2879,13 @@ def _scan_legacy(site: Path, owned: set[str], failures: list[ValidationFailure])
             failures.append(ValidationFailure("legacy.read", "could not inspect inherited page", relative))
 
 
-def promote_release(candidate: str | Path | Release, published_site: str | Path) -> PromotionResult:
+def promote_release(
+    candidate: str | Path | Release,
+    published_site: str | Path,
+    *,
+    validation_base: str | Path | VerifiedBaseline | None = None,
+    source_inputs: RecoveryInputBundle | None = None,
+) -> PromotionResult:
     """Validate and atomically promote a candidate site locally.
 
     The target is untouched on validation failure.  A byte-identical target is
@@ -2686,7 +2894,12 @@ def promote_release(candidate: str | Path | Release, published_site: str | Path)
     """
 
     target = _valid_published_site(published_site)
-    report = validate_release(candidate, published_site=target)
+    validation_target = validation_base if validation_base is not None else target
+    report = validate_release(
+        candidate,
+        published_site=validation_target,
+        source_inputs=source_inputs,
+    )
     report.raise_for_failure()
     source = report.site
     assert source is not None
@@ -2698,7 +2911,7 @@ def promote_release(candidate: str | Path | Release, published_site: str | Path)
         relative for relative in set(source_files) & set(target_files)
         if source_files[relative] != target_files[relative]
     ))
-    if deleted:
+    if deleted and validation_base is None:
         raise ReleaseValidationError(f"promotion refuses {len(deleted)} deleted public paths", report)
     if not added and not changed_paths:
         return PromotionResult(False, target, None, "unchanged", added, changed_paths, deleted)
@@ -2737,18 +2950,49 @@ def _tree_digest(path: Path) -> str:
     return digest.hexdigest()
 
 
-def validate(candidate: str | Path | Release, strict: bool = True, published_site: str | Path | None = None) -> ValidationReport:
-    return validate_release(candidate, strict, published_site)
+def validate(
+    candidate: str | Path | Release,
+    strict: bool = True,
+    published_site: str | Path | VerifiedBaseline | None = None,
+    *,
+    source_inputs: RecoveryInputBundle | None = None,
+) -> ValidationReport:
+    return validate_release(
+        candidate,
+        strict,
+        published_site,
+        source_inputs=source_inputs,
+    )
 
 
-def validate_release_chain(candidate: str | Path | Release, original_published_site: str | Path) -> ValidationReport:
+def validate_release_chain(
+    candidate: str | Path | Release,
+    original_published_site: str | Path | VerifiedBaseline,
+    *,
+    source_inputs: RecoveryInputBundle | None = None,
+) -> ValidationReport:
     """Validate a cumulative candidate directly against its original base."""
 
-    return validate_release(candidate, published_site=original_published_site)
+    return validate_release(
+        candidate,
+        published_site=original_published_site,
+        source_inputs=source_inputs,
+    )
 
 
-def promote(candidate: str | Path | Release, published_site: str | Path) -> PromotionResult:
-    return promote_release(candidate, published_site)
+def promote(
+    candidate: str | Path | Release,
+    published_site: str | Path,
+    *,
+    validation_base: str | Path | VerifiedBaseline | None = None,
+    source_inputs: RecoveryInputBundle | None = None,
+) -> PromotionResult:
+    return promote_release(
+        candidate,
+        published_site,
+        validation_base=validation_base,
+        source_inputs=source_inputs,
+    )
 
 
 # Naming aliases make the seam convenient for orchestration code while

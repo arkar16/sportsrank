@@ -280,7 +280,7 @@ class RecoveryOrchestrationTests(unittest.TestCase):
             with redirect_stdout(output):
                 self.assertEqual(recovery._validate(args), 0)
 
-        chain.assert_called_once_with(candidate, self.published)
+        chain.assert_called_once_with(candidate, self.published, source_inputs=None)
         payload = json.loads(output.getvalue())
         self.assertEqual(payload["added"], ["new.html"])
         self.assertEqual(payload["changed"], ["index.html"])

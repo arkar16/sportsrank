@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 import tempfile
 import tarfile
+import shutil
 from types import MappingProxyType
 import unittest
 
@@ -27,7 +28,7 @@ from cfb.publication_records import (
     VerificationRecord,
 )
 from cfb.ranking_engine import PreviousFinal
-from cfb.release import build_release, validate_release
+from cfb.release import ReleaseValidationError, build_release, promote_release, validate_release
 from cfb.season_snapshot import SeasonSnapshot, _checksum
 from cfb.season_source import SourceGame, SourceTeam
 
@@ -181,6 +182,88 @@ class BaselineImportTests(unittest.TestCase):
             )
             report = validate_release(candidate, published_site=baseline)
             self.assertTrue(report.valid, [str(failure) for failure in report.failures])
+            manifest = json.loads(candidate.manifest_path.read_text(encoding="utf-8"))
+            self.assertEqual(
+                manifest["baseline_provenance"]["record_digest"],
+                baseline.record.digest,
+            )
+            self.assertEqual(
+                manifest["baseline_provenance"]["record"],
+                baseline.record.to_dict(),
+            )
+            self.assertEqual(
+                manifest["baseline_provenance"]["identity"],
+                baseline.record.observed.to_dict(),
+            )
+            self.assertEqual(manifest["runs"][0]["baseline_provenance"], manifest["baseline_provenance"])
+            self.assertEqual(manifest["baseline_provenance"]["record"]["source"]["status"], "unknown")
+
+    def test_promotion_can_validate_against_verified_baseline_not_destination(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            evidence = _evidence(root / "evidence")
+            archive = root / "baseline.tar.gz"
+            archive_sha = _archive(evidence, archive)
+            baseline = import_baseline(
+                archive,
+                target=TARGET,
+                expected_archive_sha256=archive_sha,
+                materialize_to=root / "application-site",
+            )
+            candidate = build_release(
+                _snapshot(),
+                root / "candidate",
+                release_id="candidate",
+                phase="week",
+                timestamp=STAMP,
+                published_site=baseline,
+                previous_final=PreviousFinal({"Alpha": 10.0, "Beta": 9.0}, {}),
+            )
+            destination = root / "tracked-site"
+            shutil.copytree(baseline.application_site, destination)
+            obsolete = destination / "cfb/years/2024/data/cfb-fbs-2024.json"
+            obsolete.parent.mkdir(parents=True, exist_ok=True)
+            obsolete.write_text("never-live Schema 3 copy", encoding="utf-8")
+            before_failed_attempt = {
+                path.relative_to(destination).as_posix(): path.read_bytes()
+                for path in destination.rglob("*")
+                if path.is_file()
+            }
+
+            ranking = candidate.site / "cfb/years/2024/rankings/2024_W1_FBS_cors.html"
+            ranking.write_text("tampered", encoding="utf-8")
+            with self.assertRaises(ReleaseValidationError):
+                promote_release(
+                    candidate,
+                    destination,
+                    validation_base=baseline,
+                )
+            after_failed_attempt = {
+                path.relative_to(destination).as_posix(): path.read_bytes()
+                for path in destination.rglob("*")
+                if path.is_file()
+            }
+            self.assertEqual(before_failed_attempt, after_failed_attempt)
+
+            # Restore the candidate-owned artifact, then allow exact replacement
+            # because validation remains anchored to the verified baseline.
+            candidate = build_release(
+                _snapshot(),
+                root / "candidate-rebuilt",
+                release_id="candidate-rebuilt",
+                phase="week",
+                timestamp=STAMP,
+                published_site=baseline,
+                previous_final=PreviousFinal({"Alpha": 10.0, "Beta": 9.0}, {}),
+            )
+            result = promote_release(
+                candidate,
+                destination,
+                validation_base=baseline,
+            )
+            self.assertTrue(result.changed)
+            self.assertFalse(obsolete.exists())
+            self.assertTrue((destination / "index.html").is_file())
 
     def test_import_rejects_corruption_mixed_observations_and_extra_reserved_resources(self):
         attacks = ("missing", "raw", "payload", "mixed", "config", "extra-managed")
