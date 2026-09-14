@@ -43,6 +43,7 @@ from typing import Any, Mapping, Sequence
 from .baseline import (
     BaselineValidationError,
     VerifiedBaseline,
+    create_sanitized_baseline_archive,
     import_baseline,
     import_sanitized_baseline,
 )
@@ -89,6 +90,7 @@ from .publication_records import (
     BaselineRecord,
     ProviderTarget,
     ProviderResultRecord,
+    SanitizedBaselineArchiveRecord,
     ValidatedPackageRecord,
     VerificationRecord,
     canonical_json,
@@ -115,6 +117,16 @@ _CONTEXT_FIELDS = {
     "candidate_tree_archive",
     "candidate_tree_sha256",
     "evidence_references",
+    "baseline_public_archive",
+    "baseline_public_archive_sha256",
+    "baseline_sanitizer_record",
+    "baseline_sanitizer_record_sha256",
+}
+_LEGACY_CONTEXT_FIELDS = _CONTEXT_FIELDS - {
+    "baseline_public_archive",
+    "baseline_public_archive_sha256",
+    "baseline_sanitizer_record",
+    "baseline_sanitizer_record_sha256",
 }
 _RUN_FIELDS = {
     "schema_version",
@@ -159,6 +171,33 @@ class PreparationContext:
     candidate_tree_archive: Path
     candidate_tree_sha256: str
     evidence_references: Mapping[str, ArchiveReference]
+    baseline_public_archive: Path | None = None
+    baseline_public_archive_sha256: str | None = None
+    baseline_sanitizer_record: Path | None = None
+    baseline_sanitizer_record_sha256: str | None = None
+
+
+@dataclass(frozen=True)
+class TrustedRecoveryInputs:
+    """Reviewed SR7 input identities loaded from the exact candidate tree.
+
+    The downloaded input artifact remains transport only.  Its bytes are
+    accepted only when they match this tracked manifest; no digest or byte
+    count from the downloaded artifact becomes an authority.
+    """
+
+    path: Path
+    baseline_private_archive_sha256: str
+    baseline_record_sha256: str
+    baseline_public_archive_sha256: str
+    baseline_sanitizer_record_sha256: str
+    source_archive_sha256: str
+    source_manifest_sha256: str
+    source_file_sha256: Mapping[str, str]
+    source_file_bytes: Mapping[str, int]
+    source_snapshot_checksum: Mapping[str, str]
+    original_prepared_archive_sha256: str
+    evidence_archive_sha256: Mapping[str, str]
 
 
 @dataclass(frozen=True)
@@ -213,6 +252,156 @@ def _require_commit(value: Any, name: str) -> str:
     if not isinstance(value, str) or _COMMIT.fullmatch(value) is None:
         raise PublicationCLIError(f"{name} must be a lowercase 40-character commit SHA")
     return value
+
+
+def _load_trusted_recovery_inputs(path: str | Path) -> TrustedRecoveryInputs:
+    """Load the reviewed SR7 input identities from the candidate source tree.
+
+    This file is intentionally separate from the retained-input artifact.  A
+    caller may choose the artifact run and filename, but cannot choose the
+    archive, raw snapshot, or public baseline identities accepted by prepare.
+    The workflow supplies this path from the attested, immutable execution
+    source; callers cannot override it through dispatch text.
+    """
+
+    manifest_path = Path(path).resolve()
+    raw = _json_object(manifest_path, "trusted recovery-input manifest")
+    if set(raw) != {
+        "schema_version", "record_type", "target", "baseline",
+        "source_inputs", "original_prepared", "evidence_archives",
+    }:
+        raise PublicationCLIError(
+            "trusted recovery-input manifest fields do not match its schema"
+        )
+    if raw.get("schema_version") != 1 or raw.get("record_type") != "sr7_recovery_input_trust":
+        raise PublicationCLIError("trusted recovery-input manifest schema is unsupported")
+    try:
+        if ProviderTarget.from_value(raw["target"]) != TARGET:
+            raise PublicationCLIError("trusted recovery-input target is not SportsRank live")
+        baseline = raw["baseline"]
+        if not isinstance(baseline, Mapping) or set(baseline) != {
+            "private_archive_sha256", "record_sha256", "public_archive_sha256",
+            "sanitizer_record_sha256",
+        }:
+            raise PublicationCLIError("trusted baseline identities are incomplete")
+        baseline_private = _require_sha(
+            baseline["private_archive_sha256"], "trusted baseline archive"
+        )
+        baseline_record = _require_sha(
+            baseline["record_sha256"], "trusted baseline record"
+        )
+        baseline_public = _require_sha(
+            baseline["public_archive_sha256"], "trusted public baseline archive"
+        )
+        baseline_sanitizer = _require_sha(
+            baseline["sanitizer_record_sha256"], "trusted baseline sanitizer record"
+        )
+
+        source = raw["source_inputs"]
+        if not isinstance(source, Mapping) or set(source) != {
+            "archive_sha256", "manifest_sha256", "files"
+        }:
+            raise PublicationCLIError("trusted source-input identities are incomplete")
+        source_archive = _require_sha(
+            source["archive_sha256"], "trusted source-input archive"
+        )
+        source_manifest = _require_sha(
+            source["manifest_sha256"], "trusted source-input manifest"
+        )
+        files = source["files"]
+        if not isinstance(files, Mapping) or not files:
+            raise PublicationCLIError("trusted source-input file identities are empty")
+        file_sha256: dict[str, str] = {}
+        file_bytes: dict[str, int] = {}
+        file_checksums: dict[str, str] = {}
+        for relative, value in files.items():
+            safe = _safe_relative(relative, "trusted source-input path")
+            if safe != relative or not isinstance(value, Mapping) or set(value) != {
+                "sha256", "bytes", "snapshot_checksum"
+            }:
+                raise PublicationCLIError(
+                    f"trusted source-input identity is invalid: {relative}"
+                )
+            file_sha256[safe] = _require_sha(
+                value["sha256"], f"trusted source-input digest {safe}"
+            )
+            byte_count = value["bytes"]
+            if isinstance(byte_count, bool) or not isinstance(byte_count, int) or byte_count < 0:
+                raise PublicationCLIError(
+                    f"trusted source-input byte count is invalid: {safe}"
+                )
+            file_bytes[safe] = byte_count
+            file_checksums[safe] = _require_sha(
+                value["snapshot_checksum"],
+                f"trusted source-input snapshot checksum {safe}",
+            )
+
+        original = raw["original_prepared"]
+        if not isinstance(original, Mapping) or set(original) != {"archive_sha256"}:
+            raise PublicationCLIError("trusted original-prepared identity is incomplete")
+        original_prepared = _require_sha(
+            original["archive_sha256"], "trusted original-prepared archive"
+        )
+
+        evidence = raw["evidence_archives"]
+        required_roles = {"baseline", "source_inputs", "original_prepared"}
+        if not isinstance(evidence, Mapping) or set(evidence) != required_roles:
+            raise PublicationCLIError("trusted evidence archive roles are incomplete")
+        evidence_sha256 = {
+            str(role): _require_sha(value, f"trusted evidence archive {role}")
+            for role, value in evidence.items()
+        }
+    except PublicationCLIError:
+        raise
+    except (TypeError, ValueError, KeyError) as exc:
+        raise PublicationCLIError("trusted recovery-input manifest is invalid") from exc
+
+    if evidence_sha256 != {
+        "baseline": baseline_private,
+        "source_inputs": source_archive,
+        "original_prepared": original_prepared,
+    }:
+        raise PublicationCLIError(
+            "trusted evidence archive roles do not match retained input identities"
+        )
+    return TrustedRecoveryInputs(
+        manifest_path,
+        baseline_private,
+        baseline_record,
+        baseline_public,
+        baseline_sanitizer,
+        source_archive,
+        source_manifest,
+        file_sha256,
+        file_bytes,
+        file_checksums,
+        original_prepared,
+        evidence_sha256,
+    )
+
+
+def _assert_trusted_source_bundle(
+    source_inputs: RecoveryInputBundle, trusted: TrustedRecoveryInputs
+) -> None:
+    """Compare every strict source identity with the tracked trust manifest."""
+
+    if (
+        source_inputs.manifest_sha256 != trusted.source_manifest_sha256
+        or source_inputs.bundle_sha256 != trusted.source_archive_sha256
+        or len(source_inputs.identities) != len(trusted.source_file_sha256)
+    ):
+        raise PublicationCLIError("source input bundle does not match the trusted manifest")
+    for identity in source_inputs.identities:
+        relative = identity.relative_path
+        if (
+            trusted.source_file_sha256.get(relative) != identity.source_file_sha256
+            or trusted.source_file_bytes.get(relative) != identity.source_file_bytes
+            or trusted.source_snapshot_checksum.get(relative)
+            != identity.source_snapshot_checksum
+        ):
+            raise PublicationCLIError(
+                f"source input identity is not the reviewed SR7 input: {relative}"
+            )
 
 
 def _safe_relative(value: Any, name: str) -> str:
@@ -282,8 +471,11 @@ def _load_digest_pins(path: Path) -> Mapping[str, str]:
     return result
 
 
-def _load_evidence_references(path: Path) -> Mapping[str, ArchiveReference]:
-    raw = _json_object(path, "immutable evidence references")
+def _parse_evidence_references(
+    raw: Mapping[str, Any],
+    *,
+    expected_sha256: Mapping[str, str] | None = None,
+) -> Mapping[str, ArchiveReference]:
     required = {"baseline", "source_inputs", "original_prepared"}
     if set(raw) != required:
         raise PublicationCLIError("immutable evidence references must contain the three required roles")
@@ -293,13 +485,37 @@ def _load_evidence_references(path: Path) -> Mapping[str, ArchiveReference]:
     }
     if len({(value.release_id, value.asset_id) for value in result.values()}) != len(result):
         raise PublicationCLIError("immutable evidence roles must identify distinct assets")
+    if expected_sha256 is not None:
+        for role, reference in result.items():
+            if reference.sha256 != expected_sha256[role]:
+                raise PublicationCLIError(
+                    f"evidence {role} does not match the reviewed retained archive"
+                )
     return result
 
 
-def _load_context(path: str | Path) -> PreparationContext:
+def _load_evidence_references(
+    path: Path, *, expected_sha256: Mapping[str, str] | None = None
+) -> Mapping[str, ArchiveReference]:
+    return _parse_evidence_references(
+        _json_object(path, "immutable evidence references"),
+        expected_sha256=expected_sha256,
+    )
+
+
+def _load_context(
+    path: str | Path,
+    *,
+    trusted_manifest: str | Path | None = None,
+) -> PreparationContext:
     context_path = Path(path).resolve()
     raw = _json_object(context_path, "publication context")
-    if set(raw) != _CONTEXT_FIELDS:
+    trusted = (
+        _load_trusted_recovery_inputs(trusted_manifest)
+        if trusted_manifest is not None else None
+    )
+    expected_fields = _CONTEXT_FIELDS if trusted is not None else _LEGACY_CONTEXT_FIELDS
+    if set(raw) != expected_fields:
         raise PublicationCLIError("publication context fields do not match its schema")
     if raw.get("schema_version") != 1 or raw.get("record_type") != "publication_preparation":
         raise PublicationCLIError("publication context schema is unsupported")
@@ -312,10 +528,10 @@ def _load_context(path: str | Path) -> PreparationContext:
         raw_refs = raw["evidence_references"]
         if not isinstance(raw_refs, Mapping):
             raise PublicationCLIError("publication context evidence references are invalid")
-        refs = {
-            str(role): ArchiveReference.from_value(value)
-            for role, value in raw_refs.items()
-        }
+        refs = _parse_evidence_references(
+            raw_refs,
+            expected_sha256=trusted.evidence_archive_sha256 if trusted else None,
+        )
     except PublicationCLIError:
         raise
     except (TypeError, ValueError, KeyError) as exc:
@@ -327,6 +543,15 @@ def _load_context(path: str | Path) -> PreparationContext:
         raise PublicationCLIError("publication context candidate does not match its package")
     if package.expected_baseline_sha256 != baseline.digest:
         raise PublicationCLIError("publication context baseline does not match its package")
+    if trusted is not None:
+        if baseline.digest != trusted.baseline_record_sha256:
+            raise PublicationCLIError(
+                "publication context baseline is not the reviewed SR7 baseline"
+            )
+        if package.retained_inputs_sha256 != trusted.source_archive_sha256:
+            raise PublicationCLIError(
+                "publication context retained inputs are not the reviewed SR7 bundle"
+            )
     package_record_path = _context_sibling(context_path, "package.json")
     if not package_record_path.is_file():
         raise PublicationCLIError("validated package record is missing")
@@ -352,6 +577,66 @@ def _load_context(path: str | Path) -> PreparationContext:
         raise PublicationCLIError("baseline record is invalid") from exc
     if _sha256_file(baseline_record_path) != baseline.digest or stored_baseline != baseline:
         raise PublicationCLIError("baseline record does not match its context")
+    if trusted is not None and _sha256_file(baseline_record_path) != trusted.baseline_record_sha256:
+        raise PublicationCLIError("baseline record is not the reviewed SR7 baseline")
+
+    baseline_public_archive: Path | None = None
+    baseline_public_archive_sha256: str | None = None
+    baseline_sanitizer_record: Path | None = None
+    baseline_sanitizer_record_sha256: str | None = None
+    if trusted is not None:
+        baseline_public_name = _safe_relative(
+            raw.get("baseline_public_archive"), "baseline_public_archive"
+        )
+        baseline_public_archive = _under(
+            context_path.parent, baseline_public_name, "baseline_public_archive"
+        )
+        if not baseline_public_archive.is_file():
+            raise PublicationCLIError("public baseline derivative is missing")
+        baseline_public_archive_sha256 = _require_sha(
+            raw.get("baseline_public_archive_sha256"),
+            "baseline_public_archive_sha256",
+        )
+        if baseline_public_archive_sha256 != trusted.baseline_public_archive_sha256:
+            raise PublicationCLIError(
+                "public baseline derivative digest is not reviewed"
+            )
+        if _sha256_file(baseline_public_archive) != baseline_public_archive_sha256:
+            raise PublicationCLIError("public baseline derivative digest does not match")
+        baseline_sanitizer_name = _safe_relative(
+            raw.get("baseline_sanitizer_record"), "baseline_sanitizer_record"
+        )
+        baseline_sanitizer_record = _under(
+            context_path.parent, baseline_sanitizer_name, "baseline_sanitizer_record"
+        )
+        if not baseline_sanitizer_record.is_file():
+            raise PublicationCLIError("baseline sanitizer record is missing")
+        baseline_sanitizer_record_sha256 = _require_sha(
+            raw.get("baseline_sanitizer_record_sha256"),
+            "baseline_sanitizer_record_sha256",
+        )
+        if baseline_sanitizer_record_sha256 != trusted.baseline_sanitizer_record_sha256:
+            raise PublicationCLIError("baseline sanitizer record digest is not reviewed")
+        if _sha256_file(baseline_sanitizer_record) != baseline_sanitizer_record_sha256:
+            raise PublicationCLIError("baseline sanitizer record digest does not match")
+        try:
+            public_baseline = import_sanitized_baseline(
+                baseline_public_archive,
+                expected_derivative_sha256=baseline_public_archive_sha256,
+                sanitizer_record=_json_object(
+                    baseline_sanitizer_record, "baseline sanitizer record"
+                ),
+                expected_sanitizer_record_sha256=baseline_sanitizer_record_sha256,
+                baseline_record=baseline,
+                expected_baseline_record_sha256=trusted.baseline_record_sha256,
+                target=TARGET,
+            )
+        except (BaselineValidationError, OSError, ValueError) as exc:
+            raise PublicationCLIError(
+                "public baseline derivative cannot reconstruct the reviewed baseline"
+            ) from exc
+        else:
+            public_baseline.close()
     preparation_manifest_path = _context_sibling(
         context_path, PREPARATION_MANIFEST_NAME
     )
@@ -431,6 +716,10 @@ def _load_context(path: str | Path) -> PreparationContext:
         candidate_tree_archive,
         candidate_tree_sha256,
         refs,
+        baseline_public_archive,
+        baseline_public_archive_sha256,
+        baseline_sanitizer_record,
+        baseline_sanitizer_record_sha256,
     )
 
 
@@ -449,9 +738,13 @@ def _context_dict(
     candidate_tree_sha256: str,
     evidence_references: Mapping[str, ArchiveReference],
     output_root: Path,
+    baseline_public_archive: Path | None = None,
+    baseline_public_archive_sha256: str | None = None,
+    baseline_sanitizer_record: Path | None = None,
+    baseline_sanitizer_record_sha256: str | None = None,
 ) -> dict[str, Any]:
     relative_archive = package_archive.resolve().relative_to(output_root.resolve()).as_posix()
-    return {
+    context = {
         "schema_version": 1,
         "record_type": "publication_preparation",
         "repository": REPOSITORY,
@@ -469,6 +762,34 @@ def _context_dict(
             for role, reference in evidence_references.items()
         },
     }
+    public_values = (
+        baseline_public_archive,
+        baseline_public_archive_sha256,
+        baseline_sanitizer_record,
+        baseline_sanitizer_record_sha256,
+    )
+    if any(value is not None for value in public_values):
+        if any(value is None for value in public_values):
+            raise PublicationCLIError(
+                "public baseline derivative fields must be supplied together"
+            )
+        assert baseline_public_archive is not None
+        assert baseline_public_archive_sha256 is not None
+        assert baseline_sanitizer_record is not None
+        assert baseline_sanitizer_record_sha256 is not None
+        context.update(
+            {
+                "baseline_public_archive": baseline_public_archive.resolve()
+                .relative_to(output_root.resolve())
+                .as_posix(),
+                "baseline_public_archive_sha256": baseline_public_archive_sha256,
+                "baseline_sanitizer_record": baseline_sanitizer_record.resolve()
+                .relative_to(output_root.resolve())
+                .as_posix(),
+                "baseline_sanitizer_record_sha256": baseline_sanitizer_record_sha256,
+            }
+        )
+    return context
 
 
 def _attestation_dict(
@@ -510,6 +831,7 @@ def prepare_operation(args: argparse.Namespace) -> Path:
     baseline_archive = Path(args.baseline_archive).resolve()
     source_root = Path(args.source_input_root).resolve()
     candidate_commit = _candidate_commit(args.candidate_commit)
+    trusted = _load_trusted_recovery_inputs(args.trusted_input_manifest)
     candidate_tree_archive = Path(args.candidate_tree_bundle).resolve()
     if not candidate_tree_archive.is_file():
         raise PublicationCLIError("candidate Git bundle is missing")
@@ -523,25 +845,48 @@ def prepare_operation(args: argparse.Namespace) -> Path:
         Path(args.source_input_archive).resolve()
         if args.source_input_archive is not None else None
     )
-    evidence = _load_evidence_references(Path(args.evidence_references).resolve())
+    evidence = _load_evidence_references(
+        Path(args.evidence_references).resolve(),
+        expected_sha256=trusted.evidence_archive_sha256,
+    )
     retained_sha = _require_sha(args.retained_inputs_sha256, "retained_inputs_sha256")
+    if retained_sha != trusted.source_archive_sha256:
+        raise PublicationCLIError(
+            "retained input digest is not the reviewed SR7 source bundle"
+        )
+    baseline_sha = _require_sha(args.baseline_sha256, "baseline_sha256")
+    if baseline_sha != trusted.baseline_private_archive_sha256:
+        raise PublicationCLIError(
+            "baseline archive digest is not the reviewed SR7 baseline"
+        )
+    if source_archive is None or args.source_input_sha256 is None:
+        raise PublicationCLIError(
+            "trusted preparation requires the complete source-input archive and digest"
+        )
+    source_sha = _require_sha(args.source_input_sha256, "source_input_sha256")
+    if source_sha != trusted.source_archive_sha256:
+        raise PublicationCLIError(
+            "source input archive digest is not the reviewed SR7 bundle"
+        )
+    pins = _load_digest_pins(Path(args.source_input_pins).resolve())
+    if pins != dict(trusted.source_file_sha256):
+        raise PublicationCLIError(
+            "source input pins must match the tracked SR7 trust manifest"
+        )
 
     try:
         baseline = import_baseline(
             baseline_archive,
             target=TARGET,
-            expected_archive_sha256=_require_sha(args.baseline_sha256, "baseline_sha256"),
+            expected_archive_sha256=trusted.baseline_private_archive_sha256,
         )
-        pins = _load_digest_pins(Path(args.source_input_pins).resolve())
         source_inputs = RecoveryInputBundle.from_directory(
             source_root,
             trusted_file_sha256=pins,
             archive=source_archive,
-            expected_archive_sha256=(
-                _require_sha(args.source_input_sha256, "source_input_sha256")
-                if args.source_input_sha256 is not None else None
-            ),
+            expected_archive_sha256=trusted.source_archive_sha256,
         )
+        _assert_trusted_source_bundle(source_inputs, trusted)
         source_inputs.assert_external_to(candidate_root)
         package_archive = output / "package.tar.gz"
         prepared = prepare_review_package(
@@ -557,8 +902,29 @@ def prepare_operation(args: argparse.Namespace) -> Path:
         package = bind_merged_candidate(
             prepared, candidate_commit=candidate_commit, reader=reader
         )
+        if baseline.record.digest != trusted.baseline_record_sha256:
+            raise PublicationCLIError(
+                "imported baseline record is not the reviewed SR7 baseline"
+            )
+        public_baseline_archive = output / "baseline-public.tar.gz"
+        sanitizer = create_sanitized_baseline_archive(
+            baseline, public_baseline_archive
+        )
+        if (
+            sanitizer.source_baseline_record_sha256 != trusted.baseline_record_sha256
+            or sanitizer.source_archive_sha256
+            != trusted.baseline_private_archive_sha256
+            or sanitizer.derivative_archive_sha256
+            != trusted.baseline_public_archive_sha256
+            or sanitizer.digest != trusted.baseline_sanitizer_record_sha256
+        ):
+            raise PublicationCLIError(
+                "generated public baseline derivative is not the reviewed SR7 derivative"
+            )
+        public_sanitizer_record = output / "baseline-sanitizer.json"
         _write_json(output / "package.json", package.to_dict())
         _write_json(output / "baseline.json", baseline.record.to_dict())
+        _write_json(public_sanitizer_record, sanitizer.to_dict())
         _write_json(
             output / "publication-context.json",
             _context_dict(
@@ -569,6 +935,10 @@ def prepare_operation(args: argparse.Namespace) -> Path:
                 candidate_tree_sha256=candidate_tree_sha256,
                 evidence_references=evidence,
                 output_root=output,
+                baseline_public_archive=public_baseline_archive,
+                baseline_public_archive_sha256=trusted.baseline_public_archive_sha256,
+                baseline_sanitizer_record=public_sanitizer_record,
+                baseline_sanitizer_record_sha256=trusted.baseline_sanitizer_record_sha256,
             ),
         )
         _write_json(output / "publication-attestation.json", _attestation_dict(
@@ -989,7 +1359,9 @@ def execute_operation(
     *,
     coordinator: PublicationCoordinator | None = None,
 ) -> Path:
-    context = _load_context(args.context)
+    context = _load_context(
+        args.context, trusted_manifest=getattr(args, "trusted_input_manifest", None)
+    )
     coordinator = build_coordinator() if coordinator is None else coordinator
     rehydrated = _rehydrate_package(context)
     destination = Path(args.retrieval_directory or context.path.parent / "receipts").resolve()
@@ -1077,7 +1449,9 @@ def reconcile_operation(
     *,
     coordinator: PublicationCoordinator | None = None,
 ) -> Path:
-    context = _load_context(args.context)
+    context = _load_context(
+        args.context, trusted_manifest=getattr(args, "trusted_input_manifest", None)
+    )
     coordinator = build_coordinator() if coordinator is None else coordinator
     destination = Path(args.retrieval_directory or context.path.parent / "reconciliation").resolve()
     recorded, rehydrated = _load_recorded_attempt(
@@ -1120,7 +1494,9 @@ def verify_only_operation(
     *,
     coordinator: PublicationCoordinator | None = None,
 ) -> Path:
-    context = _load_context(args.context)
+    context = _load_context(
+        args.context, trusted_manifest=getattr(args, "trusted_input_manifest", None)
+    )
     coordinator = build_coordinator() if coordinator is None else coordinator
     destination = Path(args.retrieval_directory or context.path.parent / "verification-only").resolve()
     recorded, rehydrated = _load_recorded_attempt(
@@ -1164,7 +1540,9 @@ def reconcile_external_operation(
     coordinator: PublicationCoordinator | None = None,
 ) -> Path:
     coordinator = build_coordinator() if coordinator is None else coordinator
-    context = _load_context(args.context)
+    context = _load_context(
+        args.context, trusted_manifest=getattr(args, "trusted_input_manifest", None)
+    )
     baseline_record = context.baseline
     derivative_archive = Path(args.derivative_archive).resolve()
     sanitizer_record = _json_object(args.sanitizer_record, "sanitizer record")
@@ -1210,6 +1588,11 @@ def reconcile_external_operation(
 
 def _common_context(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--context", type=Path, required=True, help="strict preparation context JSON")
+    parser.add_argument(
+        "--trusted-input-manifest",
+        type=Path,
+        help="tracked SR7 input identities from the attested execution source",
+    )
     parser.add_argument("--attempt-id", required=True, help="new evidence identity, not authorization")
     parser.add_argument("--attempt-manifest", type=Path, help="sealed prior publication run JSON")
     parser.add_argument("--prior-context", type=Path, help="predecessor preparation context")
@@ -1244,6 +1627,12 @@ def build_parser() -> argparse.ArgumentParser:
     prepare.add_argument("--source-input-sha256")
     prepare.add_argument("--retained-inputs-sha256", required=True)
     prepare.add_argument("--evidence-references", type=Path, required=True)
+    prepare.add_argument(
+        "--trusted-input-manifest",
+        type=Path,
+        required=True,
+        help="tracked SR7 input identities from the exact candidate checkout",
+    )
     prepare.add_argument("--output-directory", type=Path, required=True)
 
     for name, help_text in (

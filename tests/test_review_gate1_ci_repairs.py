@@ -290,6 +290,16 @@ class PostdeploySmokeTests(unittest.TestCase):
         self.assertIn("actions/download-artifact@v4", protected)
         self.assertIn("actions/attest-build-provenance@v2", workflow)
         self.assertIn("actions/upload-artifact@v4", workflow)
+        self.assertIn("gh attestation verify", protected)
+        self.assertIn("--signer-workflow", protected)
+        self.assertIn("--source-ref", protected)
+        self.assertIn("--source-digest", protected)
+        self.assertIn("--deny-self-hosted-runners", protected)
+        self.assertIn("gh api", protected)
+        self.assertIn("commit.tree.sha", protected)
+        self.assertIn("fsck --strict --full --no-dangling", protected)
+        self.assertIn("config/sr7-recovery-inputs.json", workflow)
+        self.assertIn("--trusted-input-manifest", workflow)
         self.assertIn("sha256sum -c", protected)
         self.assertIn("candidate.bundle.sha256", protected)
         self.assertIn("candidate.bundle", protected)
@@ -306,6 +316,27 @@ class PostdeploySmokeTests(unittest.TestCase):
         self.assertNotIn("base_sha", workflow)
         self.assertNotIn("continue-on-error: true", protected)
         self.assertNotIn("|| true", protected)
+
+        attestation = protected.index(
+            "Verify the preparation attestation before runtime materialization"
+        )
+        materialize = protected.index(
+            "Materialize the exact execution code without a source checkout"
+        )
+        install = protected.index("Install the transported locked runtime")
+        firebase_auth = protected.index("Obtain the gated Firebase access token")
+        self.assertLess(attestation, materialize)
+        self.assertLess(attestation, install)
+        self.assertLess(attestation, firebase_auth)
+
+        summary_start = workflow.index(
+            "      - name: Expose the exact package, baseline, and approval context"
+        )
+        summary_end = workflow.index(
+            "      - name: Attest the exact preparation manifest and package digests",
+            summary_start,
+        )
+        self.assertNotIn("evidence_references", workflow[summary_start:summary_end])
 
         prepare_end = workflow.index("\n  protected:")
         self.assertEqual(workflow[:prepare_end].count("actions/checkout@"), 1)

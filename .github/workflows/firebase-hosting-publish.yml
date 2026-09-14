@@ -121,6 +121,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          trusted_manifest="$GITHUB_WORKSPACE/config/sr7-recovery-inputs.json"
+          test -s "$trusted_manifest"
+          jq -e '.schema_version == 1 and .record_type == "sr7_recovery_input_trust" and .target.project == "sportsrank-837af" and .target.site == "sportsrank-837af" and .target.channel == "live"' "$trusted_manifest" >/dev/null
           [[ "$INPUT_RUN_ID" =~ ^[1-9][0-9]*$ ]]
           [[ "$INPUT_ARTIFACT_NAME" =~ ^[A-Za-z0-9_.-]+$ ]]
           mkdir -p "$RUNNER_TEMP/retained-inputs"
@@ -147,13 +150,14 @@ jobs:
             --candidate-tree-sha256 "$(cut -d' ' -f1 "$output_root/candidate.bundle.sha256")" \
             --firebase-json "$GITHUB_WORKSPACE/firebase.json" \
             --baseline-archive "$input_root/baseline.tar.gz" \
-            --baseline-sha256 "$(cat "$input_root/baseline.sha256")" \
+            --baseline-sha256 "$(jq -r '.baseline.private_archive_sha256' "$GITHUB_WORKSPACE/config/sr7-recovery-inputs.json")" \
             --source-input-root "$input_root/source-inputs" \
             --source-input-pins "$input_root/source-input-pins.json" \
             --source-input-archive "$input_root/source-inputs.tar.gz" \
-            --source-input-sha256 "$(cat "$input_root/source-inputs.sha256")" \
-            --retained-inputs-sha256 "$(cat "$input_root/retained-inputs.sha256")" \
+            --source-input-sha256 "$(jq -r '.source_inputs.archive_sha256' "$GITHUB_WORKSPACE/config/sr7-recovery-inputs.json")" \
+            --retained-inputs-sha256 "$(jq -r '.source_inputs.archive_sha256' "$GITHUB_WORKSPACE/config/sr7-recovery-inputs.json")" \
             --evidence-references "$input_root/evidence-references.json" \
+            --trusted-input-manifest "$GITHUB_WORKSPACE/config/sr7-recovery-inputs.json" \
             --output-directory "$output_root"
           jq -n \
             --arg repository "arkar16/sportsrank" \
@@ -172,7 +176,7 @@ jobs:
         run: |
           set -euo pipefail
           git archive --format=tar "$GITHUB_SHA" \
-            README.md cfb tools pyproject.toml uv.lock \
+            README.md cfb tools pyproject.toml uv.lock config \
             | gzip -n > "$RUNNER_TEMP/preparation/execution-source.tar.gz"
           (cd "$RUNNER_TEMP/preparation" && \
             sha256sum execution-source.tar.gz > execution-source.sha256 && \
@@ -194,7 +198,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          jq -e '{schema_version, record_type, repository, target, candidate_commit, package: {candidate_commit: .package.candidate_commit, bundle_sha256: .package.bundle_sha256, inventory_sha256: .package.inventory_sha256, configuration_sha256: .package.configuration_sha256, expected_baseline_sha256: .package.expected_baseline_sha256, retained_inputs_sha256: .package.retained_inputs_sha256, validation_sha256: .package.validation_sha256}, package_archive, candidate_tree_archive, candidate_tree_sha256, evidence_references}' \
+          jq -e '{schema_version, record_type, repository, target, candidate_commit, package: {candidate_commit: .package.candidate_commit, bundle_sha256: .package.bundle_sha256, inventory_sha256: .package.inventory_sha256, configuration_sha256: .package.configuration_sha256, expected_baseline_sha256: .package.expected_baseline_sha256, retained_inputs_sha256: .package.retained_inputs_sha256, validation_sha256: .package.validation_sha256}, package_archive, candidate_tree_archive, candidate_tree_sha256}' \
             "$RUNNER_TEMP/preparation/publication-context.json" >> "$GITHUB_STEP_SUMMARY"
           echo "Package record SHA-256: $(sha256sum "$RUNNER_TEMP/preparation/package.json" | cut -d' ' -f1)" >> "$GITHUB_STEP_SUMMARY"
           echo "Package archive SHA-256: $(sha256sum "$RUNNER_TEMP/preparation/package.tar.gz" | cut -d' ' -f1)" >> "$GITHUB_STEP_SUMMARY"
@@ -218,6 +222,8 @@ jobs:
             ${{ runner.temp }}/preparation/package.json
             ${{ runner.temp }}/preparation/package.json.sha256
             ${{ runner.temp }}/preparation/baseline.json
+            ${{ runner.temp }}/preparation/baseline-public.tar.gz
+            ${{ runner.temp }}/preparation/baseline-sanitizer.json
             ${{ runner.temp }}/preparation/publication-context.json
             ${{ runner.temp }}/preparation/publication-attestation.json
             ${{ runner.temp }}/preparation/publication-preparation-manifest.json
@@ -391,13 +397,46 @@ jobs:
             '.schema_version == 1 and .record_type == "publication_preparation_manifest" and .repository == "arkar16/sportsrank" and .workflow_path == ".github/workflows/firebase-hosting-publish.yml" and .event == "workflow_dispatch" and .ref == "refs/heads/main" and .head_sha == $candidate and .run_id == $origin_run_id and .run_attempt == "1" and .package_archive_sha256 == $package_archive_sha256 and .package_record_sha256 == $package_record_sha256' \
             publication-preparation-manifest.json > /dev/null
 
+      - name: Verify the preparation attestation before runtime materialization
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          manifest="$RUNNER_TEMP/preparation/publication-preparation-manifest.json"
+          test -s "$manifest"
+          manifest_sha256="$(sha256sum "$manifest" | cut -d' ' -f1)"
+          attestation_json="$(gh attestation verify "$manifest" \
+            --repo arkar16/sportsrank \
+            --signer-workflow "arkar16/sportsrank/.github/workflows/firebase-hosting-publish.yml" \
+            --source-ref "refs/heads/main" \
+            --source-digest "$PREPARATION_HEAD_SHA" \
+            --predicate-type "https://slsa.dev/provenance/v1" \
+            --deny-self-hosted-runners \
+            --format json)"
+          jq -e \
+            --arg manifest_sha256 "$manifest_sha256" \
+            'type == "array" and length > 0 and any(.[]; any(.verificationResult.statement.subject[]?; .digest.sha256 == $manifest_sha256))' \
+            <<< "$attestation_json" >/dev/null
+
       - name: Verify transported execution source against the authenticated Git object graph
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           cd "$RUNNER_TEMP/preparation"
           candidate="$(jq -r '.candidate_commit' publication-context.json)"
           [[ "$candidate" =~ ^[0-9a-f]{40}$ ]]
+          test "$candidate" = "$PREPARATION_HEAD_SHA"
+          authenticated_commit="$(gh api \
+            --repo arkar16/sportsrank \
+            "repos/arkar16/sportsrank/commits/$candidate")"
+          authenticated_sha="$(jq -r '.sha // empty' <<< "$authenticated_commit")"
+          authenticated_tree="$(jq -r '.commit.tree.sha // empty' <<< "$authenticated_commit")"
+          [[ "$authenticated_sha" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$authenticated_tree" =~ ^[0-9a-f]{40}$ ]]
+          test "$authenticated_sha" = "$candidate"
           trusted_repo="$RUNNER_TEMP/trusted-candidate.git"
           git init --bare --quiet "$trusted_repo"
           git -C "$trusted_repo" bundle verify "$RUNNER_TEMP/preparation/candidate.bundle" >/dev/null
@@ -408,8 +447,10 @@ jobs:
             "${candidate}:refs/heads/candidate"
           test "$(git -C "$trusted_repo" cat-file -t "$candidate")" = "commit"
           test "$(git -C "$trusted_repo" rev-parse refs/heads/candidate)" = "$candidate"
+          test "$(git -C "$trusted_repo" rev-parse "$candidate^{tree}")" = "$authenticated_tree"
+          git -C "$trusted_repo" fsck --strict --full --no-dangling >/dev/null
           git -C "$trusted_repo" archive --format=tar "$candidate" \
-            README.md cfb tools pyproject.toml uv.lock \
+            README.md cfb tools pyproject.toml uv.lock config \
             | gzip -n > "$RUNNER_TEMP/execution-source.expected.tar.gz"
           cmp "$RUNNER_TEMP/execution-source.expected.tar.gz" \
             "$RUNNER_TEMP/preparation/execution-source.tar.gz"
@@ -458,6 +499,7 @@ jobs:
             uv run --locked python -m cfb.publication_cli
             "$OPERATION"
             --context "$RUNNER_TEMP/preparation/publication-context.json"
+            --trusted-input-manifest "$RUNNER_TEMP/execution/config/sr7-recovery-inputs.json"
             --attempt-id "run-${GITHUB_RUN_ID}"
             --retrieval-directory "$RUNNER_TEMP/receipts" \
             --result "$RUNNER_TEMP/publication-run.json"
@@ -503,6 +545,7 @@ jobs:
           cp "$RUNNER_TEMP/publication-run.json" "$state_root/publication-run.json"
           for name in \
             package.tar.gz package.sha256 package.json baseline.json \
+            baseline-public.tar.gz baseline-sanitizer.json \
             package.json.sha256 \
             publication-context.json publication-attestation.json \
             publication-preparation-manifest.json \
@@ -524,6 +567,8 @@ jobs:
             ${{ runner.temp }}/publication-state/package.json
             ${{ runner.temp }}/publication-state/package.json.sha256
             ${{ runner.temp }}/publication-state/baseline.json
+            ${{ runner.temp }}/publication-state/baseline-public.tar.gz
+            ${{ runner.temp }}/publication-state/baseline-sanitizer.json
             ${{ runner.temp }}/publication-state/publication-context.json
             ${{ runner.temp }}/publication-state/publication-attestation.json
             ${{ runner.temp }}/publication-state/publication-preparation-manifest.json

@@ -510,10 +510,20 @@ class PostdeploySmokeIndependentTests(unittest.TestCase):
             "environment:\n      name: production",
             "google-github-actions/auth@v2",
             "gh run view",
+            "gh attestation verify",
+            "--signer-workflow",
+            "--source-ref",
+            "--source-digest",
+            "--deny-self-hosted-runners",
+            "gh api",
+            "commit.tree.sha",
+            "fsck --strict --full --no-dangling",
             "sha256sum -c",
             "archive --format=tar",
             "cmp \"$RUNNER_TEMP/execution-source.expected.tar.gz\"",
             "python -m cfb.publication_cli",
+            "config/sr7-recovery-inputs.json",
+            "--trusted-input-manifest",
         ):
             self.assertIn(marker, source if marker == "workflow_dispatch:" else protected)
         self.assertNotIn("FirebaseExtended/action-hosting-deploy", source)
@@ -521,6 +531,27 @@ class PostdeploySmokeIndependentTests(unittest.TestCase):
         self.assertNotIn("PUBLISHED_URL", source)
         self.assertNotIn("--attempts", protected)
         self.assertNotIn("--retry-delay", protected)
+
+        attestation = protected.index(
+            "Verify the preparation attestation before runtime materialization"
+        )
+        materialize = protected.index(
+            "Materialize the exact execution code without a source checkout"
+        )
+        install = protected.index("Install the transported locked runtime")
+        auth = protected.index("Obtain the gated Firebase access token")
+        self.assertLess(attestation, materialize)
+        self.assertLess(attestation, install)
+        self.assertLess(attestation, auth)
+
+        summary_start = source.index(
+            "      - name: Expose the exact package, baseline, and approval context"
+        )
+        summary_end = source.index(
+            "      - name: Attest the exact preparation manifest and package digests",
+            summary_start,
+        )
+        self.assertNotIn("evidence_references", source[summary_start:summary_end])
 
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

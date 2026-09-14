@@ -181,6 +181,9 @@ class P0AdversarialContractTests(unittest.TestCase):
         self.assertIn("--source-input-sha256", preparation)
         self.assertIn("--retained-inputs-sha256", preparation)
         self.assertIn("--evidence-references", preparation)
+        self.assertIn("--trusted-input-manifest", preparation)
+        self.assertNotIn('cat "$input_root/baseline.sha256"', preparation)
+        self.assertNotIn('cat "$input_root/source-inputs.sha256"', preparation)
         self.assertIn("candidate.bundle", preparation)
         self.assertIn("bind_merged_candidate", preparation)
         self.assertIn("publication-context.json", preparation)
@@ -188,6 +191,35 @@ class P0AdversarialContractTests(unittest.TestCase):
         self.assertNotIn("merge-base", preparation)
         self.assertNotIn("candidate_sha", preparation)
         self.assertNotIn("base_sha", preparation)
+
+        trust = json.loads(
+            (REPO_ROOT / "config" / "sr7-recovery-inputs.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(trust["record_type"], "sr7_recovery_input_trust")
+        self.assertEqual(
+            trust["target"],
+            {"project": "sportsrank-837af", "site": "sportsrank-837af", "channel": "live"},
+        )
+        self.assertEqual(
+            set(trust["source_inputs"]["files"]),
+            {
+                "snapshots/cfb-fbs-2024.json",
+                "snapshots/cfb-fbs-2025.json",
+                "snapshots/cfb-fbs-2026.json",
+            },
+        )
+        self.assertNotEqual(
+            trust["baseline"]["private_archive_sha256"],
+            trust["baseline"]["public_archive_sha256"],
+        )
+        upload_start = source.index("      - name: Upload the immutable preparation transport")
+        upload = source[upload_start:protected_start]
+        self.assertIn("baseline-public.tar.gz", upload)
+        self.assertIn("baseline-sanitizer.json", upload)
+        self.assertNotIn("baseline.tar.gz", upload)
+        self.assertNotIn("source-inputs.tar.gz", upload)
 
     def test_resealed_candidate_with_wrong_finite_prior_final_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:

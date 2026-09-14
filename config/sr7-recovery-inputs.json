@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "record_type": "sr7_recovery_input_trust",
+  "target": {
+    "project": "sportsrank-837af",
+    "site": "sportsrank-837af",
+    "channel": "live"
+  },
+  "baseline": {
+    "private_archive_sha256": "453faf935e8d2a363b3f6b83637ff19c38d32db5246d177cd947cae69efb425d",
+    "record_sha256": "37dbba4d5c17d5a4b215950bf22459d055b327f3e291716ab1dddbe3470ea44f",
+    "public_archive_sha256": "b7a292cb61de3de8646950b0a3fe1cdbe53e066b348a6f656074ab4b8622a711",
+    "sanitizer_record_sha256": "f5fc504345c02c4e75bcd01148beb7832c4e6ea36148a22364b7af5af1d4c40e"
+  },
+  "source_inputs": {
+    "archive_sha256": "dbf2bc29a3025fddbda3b3417435549e6207f0274eaf2ff256de29b2e515d3eb",
+    "manifest_sha256": "e5dd9c7b34e062b76e1fe1ece94ceab8cc37e72e1c56a25e5562fcc34d3eb8f9",
+    "files": {
+      "snapshots/cfb-fbs-2024.json": {
+        "sha256": "81202378ba0a862a92a8e168e00f5df0f3c1827b3f5ac2876c7e8efd4d7a5633",
+        "bytes": 314911,
+        "snapshot_checksum": "35b3783a78ca6fa64905a802be51e82b0b5006fae17ee475bd3cd3c45a3905a1"
+      },
+      "snapshots/cfb-fbs-2025.json": {
+        "sha256": "8f9e919d81fbaf71a23c67cd2da73d59d9225513c115f08d5060bb1caf300f47",
+        "bytes": 319204,
+        "snapshot_checksum": "7663694144e27034bab79a4db4a7a37ce27d0f0dede34704654cd74d02171853"
+      },
+      "snapshots/cfb-fbs-2026.json": {
+        "sha256": "80bb51885ff59e95155965f71ca5771d9d57f337acc33a6e86446109478c1d1d",
+        "bytes": 308765,
+        "snapshot_checksum": "ae033bc7cb24cc3202791fb21b1d0bee2d2976d88b9e10c9d986513c03fe6f3d"
+      }
+    }
+  },
+  "original_prepared": {
+    "archive_sha256": "c9246cfe49ec4a57abf34b60fa5bc6e2f2d42fd6c0087155bc41102f77a271b5"
+  },
+  "evidence_archives": {
+    "baseline": "453faf935e8d2a363b3f6b83637ff19c38d32db5246d177cd947cae69efb425d",
+    "source_inputs": "dbf2bc29a3025fddbda3b3417435549e6207f0274eaf2ff256de29b2e515d3eb",
+    "original_prepared": "c9246cfe49ec4a57abf34b60fa5bc6e2f2d42fd6c0087155bc41102f77a271b5"
+  }
+}

@@ -14,6 +14,16 @@ WORKFLOW_ROOT = REPO_ROOT / ".github" / "workflows"
 
 class OperationsContractTests(unittest.TestCase):
     @staticmethod
+    def _attestation_bootstrap_script() -> str:
+        source = (WORKFLOW_ROOT / "firebase-hosting-publish.yml").read_text(encoding="utf-8")
+        start = source.index(
+            "      - name: Verify the preparation attestation before runtime materialization"
+        )
+        body_start = source.index("        run: |\n", start) + len("        run: |\n")
+        body_end = source.index("\n      - name:", body_start)
+        return textwrap.dedent(source[body_start:body_end])
+
+    @staticmethod
     def _transport_bootstrap_script() -> str:
         source = (WORKFLOW_ROOT / "firebase-hosting-publish.yml").read_text(encoding="utf-8")
         start = source.index(
@@ -33,6 +43,7 @@ class OperationsContractTests(unittest.TestCase):
             ("README.md", "# fixture\n"),
             ("pyproject.toml", "[project]\nname='fixture'\nversion='0.0.0'\n"),
             ("uv.lock", "version = 1\n"),
+            ("config/sr7-recovery-inputs.json", '{"schema_version":1}\n'),
         ):
             path = repository / relative
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -45,7 +56,16 @@ class OperationsContractTests(unittest.TestCase):
             stderr=subprocess.PIPE,
         )
         subprocess.run(
-            ["git", "add", "README.md", "cfb", "tools", "pyproject.toml", "uv.lock"],
+            [
+                "git",
+                "add",
+                "README.md",
+                "cfb",
+                "tools",
+                "pyproject.toml",
+                "uv.lock",
+                "config",
+            ],
             cwd=repository,
             check=True,
             stdout=subprocess.PIPE,
@@ -65,6 +85,9 @@ class OperationsContractTests(unittest.TestCase):
         commit = subprocess.check_output(
             ["git", "rev-parse", "HEAD"], cwd=repository, text=True
         ).strip()
+        tree = subprocess.check_output(
+            ["git", "rev-parse", "HEAD^{tree}"], cwd=repository, text=True
+        ).strip()
         preparation = root / "runner" / "preparation"
         preparation.mkdir(parents=True)
         subprocess.run(
@@ -75,7 +98,18 @@ class OperationsContractTests(unittest.TestCase):
             stderr=subprocess.PIPE,
         )
         archive = subprocess.check_output(
-            ["git", "archive", "--format=tar", commit, "README.md", "cfb", "tools", "pyproject.toml", "uv.lock"],
+            [
+                "git",
+                "archive",
+                "--format=tar",
+                commit,
+                "README.md",
+                "cfb",
+                "tools",
+                "pyproject.toml",
+                "uv.lock",
+                "config",
+            ],
             cwd=repository,
         )
         with (preparation / "execution-source.tar.gz").open("wb") as output:
@@ -83,12 +117,35 @@ class OperationsContractTests(unittest.TestCase):
         (preparation / "publication-context.json").write_text(
             json.dumps({"candidate_commit": commit}), encoding="utf-8"
         )
+        fake_bin = root / "fake-bin"
+        fake_bin.mkdir()
+        (fake_bin / "gh").write_text(
+            "#!/bin/sh\n"
+            "case \"$1\" in\n"
+            "  api)\n"
+            f"    printf '%s\\n' '{json.dumps({'sha': commit, 'commit': {'tree': {'sha': tree}}})}'\n"
+            "    ;;\n"
+            "  *) exit 1 ;;\n"
+            "esac\n",
+            encoding="utf-8",
+        )
+        (fake_bin / "gh").chmod(0o755)
         return root / "runner", preparation, commit
 
     def _run_transport_bootstrap(self, runner: Path) -> subprocess.CompletedProcess[str]:
+        candidate = json.loads(
+            (runner / "preparation" / "publication-context.json").read_text(
+                encoding="utf-8"
+            )
+        )["candidate_commit"]
         return subprocess.run(
             ["bash", "-c", self._transport_bootstrap_script()],
-            env={"RUNNER_TEMP": str(runner), "PATH": "/usr/bin:/bin"},
+            env={
+                "RUNNER_TEMP": str(runner),
+                "PREPARATION_HEAD_SHA": candidate,
+                "GH_TOKEN": "fixture-token",
+                "PATH": f"{runner.parent / 'fake-bin'}:/usr/bin:/bin",
+            },
             text=True,
             capture_output=True,
             timeout=30,
@@ -169,6 +226,14 @@ class OperationsContractTests(unittest.TestCase):
         self.assertIn("package.json", protected)
         self.assertIn("package.json.sha256", protected)
         self.assertIn("publication-preparation-manifest.json", protected)
+        self.assertIn("gh attestation verify", protected)
+        self.assertIn("gh api", protected)
+        self.assertIn("commit.tree.sha", protected)
+        self.assertIn("fsck --strict --full --no-dangling", protected)
+        self.assertIn("--signer-workflow", protected)
+        self.assertIn("--source-ref", protected)
+        self.assertIn("--source-digest", protected)
+        self.assertIn("--deny-self-hosted-runners", protected)
         self.assertIn("publication_cli", protected)
         self.assertIn("Verify the authenticated preparation and state run origins", protected)
         self.assertIn("gh run view", protected)
@@ -188,6 +253,9 @@ class OperationsContractTests(unittest.TestCase):
         self.assertIn("rev-parse refs/heads/candidate", protected)
         self.assertIn("FIREBASE_ACCESS_TOKEN", protected)
         self.assertIn("google-github-actions/auth@v2", protected)
+        attestation = protected.index(
+            "Verify the preparation attestation before runtime materialization"
+        )
         self.assertNotIn("actions/checkout", protected)
         self.assertNotIn("npm ci", protected)
         self.assertNotIn("FirebaseExtended/action-hosting-deploy", protected)
@@ -198,6 +266,55 @@ class OperationsContractTests(unittest.TestCase):
         self.assertIn("gh run download", protected)
         self.assertIn("publication-state", protected)
         self.assertIn("sportsrank-publication-", protected)
+        self.assertLess(attestation, extraction)
+        self.assertLess(attestation, runtime_install)
+
+    def test_attestation_failure_stops_before_runtime_execution_install_or_auth(self):
+        """The trusted shell gate must fail before any transported code is run."""
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            runner = root / "runner"
+            preparation = runner / "preparation"
+            preparation.mkdir(parents=True)
+            manifest = preparation / "publication-preparation-manifest.json"
+            manifest.write_text("{}\n", encoding="utf-8")
+            fake_bin = root / "fake-bin"
+            fake_bin.mkdir()
+            fake_gh = fake_bin / "gh"
+            fake_gh.write_text(
+                "#!/bin/sh\n"
+                "printf 'attestation attempted\\n' > \"$RUNNER_TEMP/gh-called\"\n"
+                "exit 42\n",
+                encoding="utf-8",
+            )
+            fake_gh.chmod(0o755)
+            # GitHub's hosted Linux runner provides sha256sum.  The local
+            # macOS test host does not, so provide the equivalent command in
+            # the fake tool directory while keeping the workflow gate intact.
+            fake_sha256sum = fake_bin / "sha256sum"
+            fake_sha256sum.write_text(
+                "#!/bin/sh\nexec shasum -a 256 \"$@\"\n",
+                encoding="utf-8",
+            )
+            fake_sha256sum.chmod(0o755)
+            result = subprocess.run(
+                ["bash", "-c", self._attestation_bootstrap_script()],
+                env={
+                    "RUNNER_TEMP": str(runner),
+                    "PREPARATION_HEAD_SHA": "a" * 40,
+                    "PATH": f"{fake_bin}:/usr/bin:/bin",
+                },
+                text=True,
+                capture_output=True,
+                timeout=30,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertTrue((runner / "gh-called").exists())
+            self.assertFalse((runner / "execution").exists())
+            self.assertFalse((runner / "uv-sync").exists())
+            self.assertFalse((runner / "firebase-auth").exists())
 
     def test_transport_bootstrap_rejects_corrupt_runtime_before_materialization(self):
         with TemporaryDirectory() as directory:
@@ -221,6 +338,25 @@ class OperationsContractTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertTrue((runner / "trusted-candidate.git").exists())
             self.assertFalse((runner / "trusted-candidate.git" / "refs" / "heads" / "candidate").exists())
+            self.assertFalse((runner / "execution").exists())
+
+    def test_transport_bootstrap_rejects_bundle_tree_mismatch_against_authenticated_commit(self):
+        with TemporaryDirectory() as directory:
+            runner, _preparation, _commit = self._transport_fixture(Path(directory))
+            repository = runner.parent / "candidate"
+            tree = subprocess.check_output(
+                ["git", "rev-parse", "HEAD^{tree}"], cwd=repository, text=True
+            ).strip()
+            fake_gh = runner.parent / "fake-bin" / "gh"
+            fake_gh.write_text(
+                fake_gh.read_text(encoding="utf-8").replace(tree, "0" * 40),
+                encoding="utf-8",
+            )
+
+            result = self._run_transport_bootstrap(runner)
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertTrue((runner / "trusted-candidate.git" / "refs" / "heads" / "candidate").exists())
             self.assertFalse((runner / "execution").exists())
 
 
