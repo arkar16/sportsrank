@@ -10,6 +10,7 @@ import re
 import subprocess
 from types import MappingProxyType
 from typing import Mapping, Protocol
+from urllib.parse import quote
 
 from .publication_records import ArchiveReference
 
@@ -54,38 +55,119 @@ class GitHubReleaseArchive:
     """Concrete `gh` adapter; release notes and labels carry no authority."""
 
     def _run(self, arguments: list[str], *, binary: bool = False) -> bytes:
-        try:
-            return subprocess.run(
-                ["gh", *arguments], check=True, stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            ).stdout
-        except subprocess.CalledProcessError as exc:
-            message = exc.stderr.decode("utf-8", errors="replace").strip()
-            raise ArchiveError(f"GitHub archive operation failed: {message}") from exc
-
-    def _release(self, repository: str, tag: str) -> Mapping[str, object] | None:
         result = subprocess.run(
-            ["gh", "api", f"repos/{repository}/releases/tags/{tag}"],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            ["gh", *arguments], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         )
         if result.returncode != 0:
-            if b"404" in result.stderr or b"Not Found" in result.stderr:
+            raise ArchiveError("GitHub archive command failed")
+        return result.stdout
+
+    def _api_json(self, endpoint: str, *, not_found: bool = False) -> object | None:
+        result = subprocess.run(
+            ["gh", "api", endpoint], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        )
+        if result.returncode != 0:
+            if not_found and (b"404" in result.stderr or b"Not Found" in result.stderr):
                 return None
-            raise ArchiveError("could not inspect GitHub archive release")
+            raise ArchiveError("GitHub archive API request failed")
         try:
-            value = json.loads(result.stdout)
+            return json.loads(result.stdout)
         except json.JSONDecodeError as exc:
             raise ArchiveError("GitHub archive response is invalid") from exc
+
+    def _release(self, repository: str, tag: str) -> Mapping[str, object] | None:
+        value = self._api_json(
+            f"repos/{repository}/releases/tags/{quote(tag, safe='')}",
+            not_found=True,
+        )
+        if value is None:
+            return None
         if not isinstance(value, Mapping):
             raise ArchiveError("GitHub archive response is invalid")
         return value
 
-    @staticmethod
-    def _references(spec: ArchiveSpec, release: Mapping[str, object]) -> dict[str, ArchiveReference]:
-        if release.get("tag_name") != spec.tag or release.get("target_commitish") != spec.target_commit:
-            raise ArchiveError("immutable release target or tag differs from the archive specification")
+    def _release_by_id(self, repository: str, release_id: object) -> Mapping[str, object]:
+        value = self._api_json(f"repos/{repository}/releases/{release_id}")
+        if not isinstance(value, Mapping):
+            raise ArchiveError("GitHub archive release response is invalid")
+        return value
+
+    def _draft(self, repository: str, tag: str) -> Mapping[str, object] | None:
+        matches: list[Mapping[str, object]] = []
+        for page in range(1, 1001):
+            value = self._api_json(
+                f"repos/{repository}/releases?per_page=100&page={page}"
+            )
+            if not isinstance(value, list):
+                raise ArchiveError("GitHub release listing response is invalid")
+            matches.extend(
+                item for item in value
+                if isinstance(item, Mapping)
+                and item.get("draft") is True
+                and item.get("tag_name") == tag
+            )
+            if len(value) < 100:
+                break
+        else:
+            raise ArchiveError("GitHub release listing exceeded the safety limit")
+        if len(matches) > 1:
+            raise ArchiveError("multiple draft releases claim the archive tag")
+        if not matches:
+            return None
+        release_id = matches[0].get("id")
+        if release_id is None:
+            raise ArchiveError("draft archive release has no stable ID")
+        exact = self._release_by_id(repository, release_id)
+        if exact.get("id") != release_id or exact.get("draft") is not True or exact.get("tag_name") != tag:
+            raise ArchiveError("draft archive identity changed during discovery")
+        return exact
+
+    def _tag_commit(self, repository: str, tag: str) -> str | None:
+        value = self._api_json(
+            f"repos/{repository}/git/ref/tags/{quote(tag, safe='')}",
+            not_found=True,
+        )
+        if value is None:
+            return None
+        if not isinstance(value, Mapping) or not isinstance(value.get("object"), Mapping):
+            raise ArchiveError("archive tag reference is invalid")
+        target = value["object"]
+        seen: set[str] = set()
+        for _ in range(16):
+            kind = target.get("type")
+            sha = target.get("sha")
+            if not isinstance(sha, str) or not re.fullmatch(r"[0-9a-f]{40}", sha):
+                raise ArchiveError("archive tag object has an invalid identity")
+            if kind == "commit":
+                return sha
+            if kind != "tag" or sha in seen:
+                raise ArchiveError("archive tag does not resolve to one commit")
+            seen.add(sha)
+            annotated = self._api_json(f"repos/{repository}/git/tags/{sha}")
+            if not isinstance(annotated, Mapping) or not isinstance(annotated.get("object"), Mapping):
+                raise ArchiveError("annotated archive tag object is invalid")
+            target = annotated["object"]
+        raise ArchiveError("archive tag indirection exceeds the safety limit")
+
+    def _require_tag_commit(self, repository: str, tag: str, expected: str) -> None:
+        if self._tag_commit(repository, tag) != expected:
+            raise ArchiveError("archive tag does not resolve to the expected commit")
+
+    def _ensure_tag_commit(self, repository: str, tag: str, expected: str) -> None:
+        actual = self._tag_commit(repository, tag)
+        if actual is None:
+            self._run([
+                "api", "--method", "POST", f"repos/{repository}/git/refs",
+                "-f", f"ref=refs/tags/{tag}", "-f", f"sha={expected}",
+            ])
+        self._require_tag_commit(repository, tag, expected)
+
+    def _references(self, spec: ArchiveSpec, release: Mapping[str, object]) -> dict[str, ArchiveReference]:
+        if release.get("tag_name") != spec.tag:
+            raise ArchiveError("immutable release tag differs from the archive specification")
         if release.get("draft") is not False or release.get("immutable") is not True:
             raise ArchiveError("GitHub release is not published and immutable")
+        self._require_tag_commit(spec.repository, spec.tag, spec.target_commit)
         raw_assets = release.get("assets")
         if not isinstance(raw_assets, list):
             raise ArchiveError("GitHub release has no asset inventory")
@@ -110,16 +192,17 @@ class GitHubReleaseArchive:
     def seal_or_reconcile(self, spec: ArchiveSpec) -> Mapping[str, ArchiveReference]:
         release = self._release(spec.repository, spec.tag)
         if release is None:
+            release = self._draft(spec.repository, spec.tag)
+        if release is None:
+            self._ensure_tag_commit(spec.repository, spec.tag, spec.target_commit)
             self._run(["release", "create", spec.tag, "--repo", spec.repository, "--target", spec.target_commit, "--title", spec.title, "--notes", "Immutable SportsRank publication evidence", "--draft"])
-            for name, path in spec.assets.items():
-                self._run(["release", "upload", spec.tag, str(path), "--repo", spec.repository])
-            self._run(["release", "edit", spec.tag, "--repo", spec.repository, "--draft=false"])
-            release = self._release(spec.repository, spec.tag)
+            release = self._draft(spec.repository, spec.tag)
             if release is None:
-                raise ArchiveError("published GitHub release cannot be retrieved")
-        elif release.get("draft") is True and release.get("immutable") is not True:
-            if release.get("tag_name") != spec.tag or release.get("target_commitish") != spec.target_commit:
-                raise ArchiveError("draft archive target or tag differs from the specification")
+                raise ArchiveError("created draft archive cannot be discovered by stable ID")
+        if release.get("draft") is True and release.get("immutable") is not True:
+            if release.get("tag_name") != spec.tag:
+                raise ArchiveError("draft archive tag differs from the specification")
+            self._require_tag_commit(spec.repository, spec.tag, spec.target_commit)
             raw_assets = release.get("assets")
             if not isinstance(raw_assets, list):
                 raise ArchiveError("draft archive asset inventory is invalid")
@@ -133,22 +216,23 @@ class GitHubReleaseArchive:
             for name, path in spec.assets.items():
                 if name not in existing:
                     self._run(["release", "upload", spec.tag, str(path), "--repo", spec.repository])
+            self._require_tag_commit(spec.repository, spec.tag, spec.target_commit)
             self._run(["release", "edit", spec.tag, "--repo", spec.repository, "--draft=false"])
-            release = self._release(spec.repository, spec.tag)
-            if release is None:
-                raise ArchiveError("published GitHub release cannot be retrieved")
+            release = self._release_by_id(spec.repository, release.get("id"))
         return self._references(spec, release)
 
     def retrieve_and_verify(self, reference: ArchiveReference, destination: str | Path) -> Path:
         reference = ArchiveReference.from_value(reference)
-        release = self._release(reference.repository, reference.tag)
+        release = self._release_by_id(reference.repository, reference.release_id)
         if (
-            release is None
-            or release.get("immutable") is not True
+            release.get("immutable") is not True
             or str(release.get("id")) != reference.release_id
-            or release.get("target_commitish") != reference.target_commit
+            or release.get("tag_name") != reference.tag
         ):
             raise ArchiveError("archive release identity or immutability is unavailable")
+        self._require_tag_commit(
+            reference.repository, reference.tag, reference.target_commit
+        )
         assets = release.get("assets")
         match = next((v for v in assets if isinstance(v, Mapping) and str(v.get("id")) == reference.asset_id), None) if isinstance(assets, list) else None
         if match is None or match.get("name") != reference.asset_name or match.get("digest") != f"sha256:{reference.sha256}" or match.get("size") != reference.size:

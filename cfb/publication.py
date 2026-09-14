@@ -65,6 +65,26 @@ def _inventory_digest(entries: tuple[tuple[str, str, int], ...]) -> str:
     return _sha256_bytes(canonical_json({"files": [{"path": p, "sha256": h, "size": s} for p, h, s in entries]}))
 
 
+def _validation_evidence(
+    *,
+    inventory_sha256: str,
+    configuration_sha256: str,
+    expected_baseline_sha256: str,
+    retained_inputs_sha256: str,
+) -> bytes:
+    """Return the reconstructible record emitted by the fresh package gate."""
+
+    return canonical_json({
+        "schema_version": 1,
+        "record_type": "package_validation",
+        "outcome": "valid",
+        "inventory_sha256": inventory_sha256,
+        "configuration_sha256": configuration_sha256,
+        "expected_baseline_sha256": expected_baseline_sha256,
+        "retained_inputs_sha256": retained_inputs_sha256,
+    })
+
+
 def _deterministic_package(site: Path, firebase_json: Path, output: Path) -> str:
     output.parent.mkdir(parents=True, exist_ok=True)
     entries = [(firebase_json, "firebase.json")]
@@ -134,7 +154,6 @@ def prepare_review_package(
     firebase_json: str | Path,
     source_inputs: RecoveryInputBundle,
     retained_inputs_sha256: str,
-    validation_evidence: Mapping[str, object] | str | Path,
     output: str | Path,
 ) -> PreparedPackage:
     """Revalidate and package staged bytes without asserting Git eligibility."""
@@ -154,18 +173,19 @@ def prepare_review_package(
         raise PublicationPreparationError("firebase.json is unreadable") from exc
     if not isinstance(config, Mapping) or not isinstance(config.get("hosting"), Mapping) or config["hosting"].get("public") != "website":
         raise PublicationPreparationError("firebase.json must publish the packaged website directory")
-    if isinstance(validation_evidence, Mapping):
-        validation_bytes = canonical_json(validation_evidence)
-    else:
-        evidence_path = Path(validation_evidence)
-        validation_bytes = evidence_path.read_bytes()
-    validation_sha = _sha256_bytes(validation_bytes)
     inventory = _inventory(site)
     inventory_sha = _inventory_digest(inventory)
+    configuration_sha = _sha256_file(config_path)
+    validation_sha = _sha256_bytes(_validation_evidence(
+        inventory_sha256=inventory_sha,
+        configuration_sha256=configuration_sha,
+        expected_baseline_sha256=baseline.record.digest,
+        retained_inputs_sha256=retained_inputs_sha256,
+    ))
     output_path = Path(output).resolve()
     bundle_sha = _deterministic_package(site, config_path, output_path)
     prepared = PreparedPackage._create(
-        output_path, bundle_sha, inventory_sha, _sha256_file(config_path),
+        output_path, bundle_sha, inventory_sha, configuration_sha,
         baseline.record.digest, baseline.record.observed, retained_inputs_sha256,
         validation_sha, site, config_path,
     )
@@ -254,9 +274,11 @@ class SealedAttempt:
     intent: AttemptIntentRecord
     package_reference: ArchiveReference
     package_record_reference: ArchiveReference
+    validation_reference: ArchiveReference
     intent_reference: ArchiveReference
     retrieved_package: Path
     retrieved_package_record: Path
+    retrieved_validation: Path
     retrieved_intent: Path
     retrieved_evidence: Mapping[str, Path]
 
@@ -292,9 +314,17 @@ def seal_attempt_evidence(
         work = Path(directory)
         package_record_path = work / "validated-package.json"
         package_record_path.write_bytes(canonical_json(package.to_dict()))
+        validation_path = work / "package-validation.json"
+        validation_path.write_bytes(_validation_evidence(
+            inventory_sha256=prepared.inventory_sha256,
+            configuration_sha256=prepared.configuration_sha256,
+            expected_baseline_sha256=prepared.expected_baseline_sha256,
+            retained_inputs_sha256=prepared.retained_inputs_sha256,
+        ))
         package_assets = {
             prepared.archive.name: prepared.archive,
             package_record_path.name: package_record_path,
+            validation_path.name: validation_path,
         }
         package_refs = archive.seal_or_reconcile(ArchiveSpec(
             repository, package_tag, package.candidate_commit, package_assets,
@@ -303,15 +333,21 @@ def seal_attempt_evidence(
         try:
             package_ref = package_refs[prepared.archive.name]
             package_record_ref = package_refs[package_record_path.name]
+            validation_ref = package_refs[validation_path.name]
         except KeyError as exc:
             raise PublicationPreparationError("sealed package evidence is incomplete") from exc
         if package_ref.sha256 != package.bundle_sha256:
             raise PublicationPreparationError("sealed package digest differs from the validated package")
         if package_record_ref.sha256 != package.digest:
             raise PublicationPreparationError("sealed package record digest differs from its logical record")
+        if validation_ref.sha256 != package.validation_sha256:
+            raise PublicationPreparationError("sealed validation evidence differs from the validated package")
         retrieved_package = archive.retrieve_and_verify(package_ref, destination / prepared.archive.name)
         retrieved_package_record = archive.retrieve_and_verify(
             package_record_ref, destination / package_record_path.name
+        )
+        retrieved_validation = archive.retrieve_and_verify(
+            validation_ref, destination / validation_path.name
         )
         retrieved_evidence = {
             role: archive.retrieve_and_verify(ArchiveReference.from_value(reference), destination / f"{role}-{reference.asset_name}")
@@ -336,7 +372,7 @@ def seal_attempt_evidence(
             raise PublicationPreparationError("sealed intent digest differs from its logical record")
         retrieved_intent = archive.retrieve_and_verify(intent_ref, destination / intent_path.name)
     return SealedAttempt(
-        package, intent, package_ref, package_record_ref, intent_ref,
-        retrieved_package, retrieved_package_record, retrieved_intent,
-        dict(retrieved_evidence),
+        package, intent, package_ref, package_record_ref, validation_ref,
+        intent_ref, retrieved_package, retrieved_package_record,
+        retrieved_validation, retrieved_intent, dict(retrieved_evidence),
     )

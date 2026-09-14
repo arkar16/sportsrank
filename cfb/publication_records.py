@@ -562,6 +562,16 @@ class AttemptIntentRecord:
         if set(evidence) != required_evidence:
             raise RecordValidationError("permanent baseline, source-input, and original-prepared references are required")
         object.__setattr__(self, "evidence_references", MappingProxyType({name: ArchiveReference.from_value(value) for name, value in evidence.items()}))
+        evidence_identities = {
+            (reference.release_id, reference.asset_id)
+            for reference in self.evidence_references.values()
+        }
+        artifact_identity = (
+            self.artifact_reference.release_id,
+            self.artifact_reference.asset_id,
+        )
+        if len(evidence_identities) != len(required_evidence) or artifact_identity in evidence_identities:
+            raise RecordValidationError("permanent evidence roles must use distinct archive assets")
         if not self.protected_context:
             raise RecordValidationError("protected execution context is required")
         required_context = {"repository", "workflow_ref", "workflow_sha", "run_id", "run_attempt", "environment"}

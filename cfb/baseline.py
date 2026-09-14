@@ -475,6 +475,10 @@ _PUBLIC_FILE_FIELDS = (
     "path", "relative", "provider_sha256", "status", "sha256", "bytes",
     "verification", "provider_payload",
 )
+_PUBLIC_INVENTORY_FIELDS = ("path", "relative", "provider_sha256", "status")
+_SANITIZED_METADATA_FILES = (
+    "channel-before.json", "channel-after.json", "version.json", "inventory.json",
+)
 
 
 def _canonical_json_file(path: Path, value: Any) -> None:
@@ -522,6 +526,19 @@ def _removed_leaf_paths(source: Any, sanitized: Any, prefix: str = "") -> list[s
     return []
 
 
+def _metadata_digests(root: Path) -> dict[str, str]:
+    return {name: _sha256_file(root / name) for name in _SANITIZED_METADATA_FILES}
+
+
+def _recomputed_removed_paths(source: Path, derivative: Path) -> tuple[str, ...]:
+    removed: list[str] = []
+    for name in ("capture.json", *_SANITIZED_METADATA_FILES):
+        removed.extend(_removed_leaf_paths(
+            _load_json(source / name), _load_json(derivative / name), f"/{name}"
+        ))
+    return tuple(sorted(set(removed)))
+
+
 def create_sanitized_baseline_archive(
     baseline: VerifiedBaseline,
     output: str | Path,
@@ -545,7 +562,7 @@ def create_sanitized_baseline_archive(
         shutil.copytree(private / "provider-payloads", public / "provider-payloads")
 
         originals = {name: _load_json(private / name) for name in (
-            "capture.json", "channel-before.json", "channel-after.json", "version.json", "inventory.json"
+            "capture.json", *_SANITIZED_METADATA_FILES,
         )}
         capture = originals["capture.json"]
         if not isinstance(capture, Mapping) or not isinstance(capture.get("files"), list):
@@ -565,28 +582,27 @@ def create_sanitized_baseline_archive(
         version = originals["version.json"]
         if not isinstance(version, Mapping):
             raise BaselineValidationError("private provider version evidence is invalid")
+        inventory = originals["inventory.json"]
+        if not isinstance(inventory, list) or any(not isinstance(item, Mapping) for item in inventory):
+            raise BaselineValidationError("private provider inventory evidence is invalid")
+        public_inventory = [
+            {name: item[name] for name in _PUBLIC_INVENTORY_FIELDS if name in item}
+            for item in inventory
+        ]
         public_values: dict[str, Any] = {
             "channel-before.json": channel(originals["channel-before.json"]),
             "channel-after.json": channel(originals["channel-after.json"]),
             "version.json": {name: version[name] for name in ("name", "status", "config", "fileCount") if name in version},
-            "inventory.json": originals["inventory.json"],
+            "inventory.json": public_inventory,
         }
         derivative_hashes: dict[str, str] = {}
         for name, value in public_values.items():
-            if name == "inventory.json":
-                # Inventory is already a public allowlist and its exact byte
-                # digest is part of the original BaselineRecord.
-                shutil.copyfile(private / name, public / name)
-            else:
-                _canonical_json_file(public / name, value)
+            _canonical_json_file(public / name, value)
             derivative_hashes[name] = _sha256_file(public / name)
         public_capture["metadata_sha256"] = derivative_hashes
         _canonical_json_file(public / "capture.json", public_capture)
 
-        removed: list[str] = []
-        removed.extend(_removed_leaf_paths(originals["capture.json"], public_capture, "/capture.json"))
-        for name, value in public_values.items():
-            removed.extend(_removed_leaf_paths(originals[name], value, f"/{name}"))
+        removed = list(_recomputed_removed_paths(private, public))
         if not removed:
             # The method remains explicit even for synthetic fixtures with no
             # private fields; these paths define the schema boundary.
@@ -612,6 +628,7 @@ def import_sanitized_baseline(
     expected_baseline_record_sha256: str,
     target: Mapping[str, Any] | ProviderTarget,
     materialize_to: str | Path | None = None,
+    source_archive: str | Path | None = None,
 ) -> VerifiedBaseline:
     """Reimport public evidence while retaining its private-source binding."""
 
@@ -623,6 +640,8 @@ def import_sanitized_baseline(
         raise BaselineValidationError("baseline record does not match its trusted digest")
     if provenance.source_baseline_record_sha256 != source_record.digest or provenance.source_archive_sha256 != source_record.archive_sha256:
         raise BaselineValidationError("sanitized archive is not linked to the source baseline")
+    if dict(provenance.source_metadata_sha256) != dict(source_record.private_evidence_sha256):
+        raise BaselineValidationError("sanitizer source metadata digests do not match the private baseline record")
     if provenance.derivative_archive_sha256 != expected_derivative_sha256:
         raise BaselineValidationError("sanitized archive digest is not linked to its provenance")
     resolved_target = ProviderTarget.from_value(target)
@@ -636,6 +655,17 @@ def import_sanitized_baseline(
     root = Path(temporary.name)
     try:
         _extract_archive(archive_path, root)
+        if dict(provenance.derivative_metadata_sha256) != _metadata_digests(root):
+            raise BaselineValidationError("sanitizer derivative metadata digests do not match the public archive")
+        if source_archive is not None:
+            source_path = Path(source_archive)
+            if not source_path.is_file() or _sha256_file(source_path) != provenance.source_archive_sha256:
+                raise BaselineValidationError("private source archive does not match sanitizer provenance")
+            with tempfile.TemporaryDirectory(prefix="sportsrank-private-baseline-audit-") as source_directory:
+                source_root = Path(source_directory)
+                _extract_archive(source_path, source_root)
+                if provenance.removed_json_paths != _recomputed_removed_paths(source_root, root):
+                    raise BaselineValidationError("sanitizer removed-field provenance does not match the archives")
         verified = _verify_evidence_root(
             root, target=resolved_target, archive_sha256=expected_derivative_sha256,
             evidence_archive=archive_path,
@@ -644,12 +674,14 @@ def import_sanitized_baseline(
         )
         candidate = verified.record
         semantic_fields = (
-            "target", "observed", "before", "after", "captured_at", "inventory_sha256",
+            "target", "observed", "before", "after", "captured_at",
             "configuration_sha256", "application_tree_sha256", "file_count", "total_bytes",
             "source", "managed_resources",
         )
         if any(getattr(candidate, name) != getattr(source_record, name) for name in semantic_fields):
             raise BaselineValidationError("sanitized evidence cannot reconstruct the source baseline")
+        if candidate.inventory_sha256 != provenance.derivative_metadata_sha256["inventory.json"]:
+            raise BaselineValidationError("sanitized inventory does not match its consumed digest")
         result = VerifiedBaseline._create(
             source_record, verified.application_site, archive_path,
             temporary if materialize_to is None else None, provenance,

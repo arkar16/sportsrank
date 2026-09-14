@@ -32,6 +32,7 @@ from cfb.publication_records import (
     ProviderIdentity,
     ProviderTarget,
     RecordValidationError,
+    SanitizedBaselineArchiveRecord,
     SourceProvenance,
     ValidatedPackageRecord,
     VerificationRecord,
@@ -208,16 +209,28 @@ class BaselineImportTests(unittest.TestCase):
             first = prepare_review_package(
                 candidate, baseline=baseline, firebase_json=firebase_json,
                 source_inputs=source_inputs, retained_inputs_sha256=inputs_sha,
-                validation_evidence={"accepted": True}, output=root / "first.tar.gz",
+                output=root / "first.tar.gz",
             )
             second = prepare_review_package(
                 candidate, baseline=baseline, firebase_json=firebase_json,
                 source_inputs=source_inputs, retained_inputs_sha256=inputs_sha,
-                validation_evidence={"accepted": True}, output=root / "second.tar.gz",
+                output=root / "second.tar.gz",
             )
 
             self.assertEqual(first.bundle_sha256, second.bundle_sha256)
             self.assertEqual(first.expected_baseline_sha256, baseline.record.digest)
+            self.assertEqual(
+                first.validation_sha256,
+                hashlib.sha256(_canonical({
+                    "schema_version": 1,
+                    "record_type": "package_validation",
+                    "outcome": "valid",
+                    "inventory_sha256": first.inventory_sha256,
+                    "configuration_sha256": first.configuration_sha256,
+                    "expected_baseline_sha256": first.expected_baseline_sha256,
+                    "retained_inputs_sha256": first.retained_inputs_sha256,
+                })).hexdigest(),
+            )
             self.assertFalse(hasattr(first, "candidate_commit"))
 
     def test_public_derivative_reconstructs_baseline_without_private_actor_metadata(self):
@@ -231,6 +244,9 @@ class BaselineImportTests(unittest.TestCase):
             version = json.loads((evidence / "version.json").read_text())
             version["createUser"] = {"email": "private@example.invalid"}
             _write_json(evidence / "version.json", version)
+            inventory = json.loads((evidence / "inventory.json").read_text())
+            inventory[0]["private_actor"] = "private@example.invalid"
+            _write_json(evidence / "inventory.json", inventory)
             capture = json.loads((evidence / "capture.json").read_text())
             capture["metadata_sha256"] = {
                 name: hashlib.sha256((evidence / name).read_bytes()).hexdigest()
@@ -267,6 +283,40 @@ class BaselineImportTests(unittest.TestCase):
             self.assertEqual(imported.record, baseline.record)
             self.assertEqual((imported.application_site / "index.html").read_bytes(), b"published fixture")
             imported.assert_current()
+
+            for field, mutate in (
+                (
+                    "source_metadata_sha256",
+                    lambda value: value["source_metadata_sha256"].__setitem__(
+                        "inventory.json", "0" * 64
+                    ),
+                ),
+                (
+                    "derivative_metadata_sha256",
+                    lambda value: value["derivative_metadata_sha256"].__setitem__(
+                        "inventory.json", "0" * 64
+                    ),
+                ),
+                (
+                    "removed_json_paths",
+                    lambda value: value["removed_json_paths"].pop(),
+                ),
+            ):
+                with self.subTest(field=field):
+                    forged = sanitizer.to_dict()
+                    mutate(forged)
+                    forged_record = SanitizedBaselineArchiveRecord.from_dict(forged)
+                    with self.assertRaises(BaselineValidationError):
+                        import_sanitized_baseline(
+                            public_archive,
+                            expected_derivative_sha256=sanitizer.derivative_archive_sha256,
+                            sanitizer_record=forged_record,
+                            expected_sanitizer_record_sha256=forged_record.digest,
+                            baseline_record=baseline.record,
+                            expected_baseline_record_sha256=baseline.record.digest,
+                            target=TARGET,
+                            source_archive=private_archive,
+                        )
 
     def test_verified_unknown_source_baseline_drives_existing_release_validation(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -519,11 +569,15 @@ def _archive_ref(digest: str = "1" * 64, name: str = "package.tar.gz") -> dict[s
 
 
 def _evidence_refs() -> dict[str, dict[str, object]]:
-    return {
+    values = {
         "baseline": _archive_ref("9" * 64, "baseline.tar.gz"),
         "source_inputs": _archive_ref("8" * 64, "source-inputs.tar.gz"),
         "original_prepared": _archive_ref("7" * 64, "original-prepared.tar.gz"),
     }
+    for index, reference in enumerate(values.values(), 2):
+        reference["release_id"] = str(index)
+        reference["asset_id"] = str(index)
+    return values
 
 
 def _protected_context() -> dict[str, str]:
