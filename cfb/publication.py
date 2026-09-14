@@ -17,7 +17,7 @@ import subprocess
 import tarfile
 import tempfile
 import threading
-from typing import Callable, Mapping, Protocol
+from typing import Any, Callable, Mapping, Protocol
 
 from .baseline import VerifiedBaseline
 from .firebase import (
@@ -37,8 +37,11 @@ from .publication_records import (
     ArchiveReference,
     AttemptIntentRecord,
     BaselineRecord,
+    ExternalPredecessorRecord,
     ProviderIdentity,
     ProviderResultRecord,
+    ReconciliationRecord,
+    SanitizedBaselineArchiveRecord,
     ValidatedPackageRecord,
     VerificationRecord,
     canonical_json,
@@ -448,6 +451,108 @@ class SealedRecordEvidence:
 
 
 @dataclass(frozen=True)
+class RecordedPublicationAttempt:
+    """An interrupted attempt reconstructed from append-only record evidence."""
+
+    attempt: SealedAttempt
+    provider_result: ProviderResultRecord | None = None
+    provider_evidence: SealedRecordEvidence | None = None
+    verification: VerificationRecord | None = None
+    verification_evidence: SealedRecordEvidence | None = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.attempt, SealedAttempt):
+            raise PublicationExecutionError("recorded attempt is invalid")
+        if (self.provider_result is None) != (self.provider_evidence is None):
+            raise PublicationExecutionError(
+                "provider result and evidence must be supplied together"
+            )
+        if (self.verification is None) != (self.verification_evidence is None):
+            raise PublicationExecutionError(
+                "verification and evidence must be supplied together"
+            )
+        if self.provider_result is not None and (
+            self.provider_result.attempt_id != self.attempt.intent.attempt_id
+            or self.provider_result.intent_sha256 != self.attempt.intent.digest
+        ):
+            raise PublicationExecutionError(
+                "provider result does not link to the recorded intent"
+            )
+        if self.verification is not None and (
+            self.provider_result is None
+            or self.verification.provider_result_sha256
+            != self.provider_result.digest
+        ):
+            raise PublicationExecutionError(
+                "verification does not link to the recorded provider result"
+            )
+
+
+@dataclass(frozen=True)
+class ReconciliationTags:
+    observation: str
+    provider_result: str
+    verification: str
+
+
+@dataclass(frozen=True)
+class ReconciliationRun:
+    state: str
+    intent: AttemptIntentRecord
+    observed_identity: ProviderIdentity
+    observation: ReconciliationRecord
+    observation_evidence: SealedRecordEvidence | None
+    provider_result: ProviderResultRecord | None
+    provider_evidence: SealedRecordEvidence | None
+    verification: VerificationRecord | None
+    verification_evidence: SealedRecordEvidence | None
+    permitted_next_operations: tuple[str, ...]
+
+    @property
+    def ordinary_successor_allowed(self) -> bool:
+        return self.state == "reconciled_verified"
+
+    def as_prior(self) -> PriorVerifiedPublication:
+        if (
+            not self.ordinary_successor_allowed
+            or self.provider_result is None
+            or self.provider_evidence is None
+            or self.verification is None
+            or self.verification_evidence is None
+        ):
+            raise PublicationExecutionError(
+                "only a fully sealed verified reconciliation is a predecessor"
+            )
+        return PriorVerifiedPublication(
+            # The result/verification linkage proves the originating intent.
+            # Its immutable bytes were re-read by reconcile before this state.
+            self.intent,
+            self.provider_result,
+            self.verification,
+            self.provider_evidence.record_reference,
+            self.provider_evidence.source_reference,
+            self.verification_evidence.record_reference,
+            self.verification_evidence.source_reference,
+        )
+
+
+@dataclass(frozen=True)
+class ExternalReconciliationRun:
+    """A complete immutable capture of a previously unknown live predecessor."""
+
+    state: str
+    baseline: VerifiedBaseline
+    observed_identity: ProviderIdentity
+    observation: ExternalPredecessorRecord
+    observation_evidence: SealedRecordEvidence | None
+    permitted_next_operations: tuple[str, ...]
+
+    @property
+    def ordinary_successor_allowed(self) -> bool:
+        return self.state == "external_verified"
+
+
+@dataclass(frozen=True)
 class PublicationRun:
     """Truthful terminal state from SR-12; SR-13 owns state resolution."""
 
@@ -488,7 +593,10 @@ def _seal_record(
     tag: str,
     candidate_commit: str,
     record_name: str,
-    record: ProviderResultRecord | VerificationRecord,
+    record: (
+        ProviderResultRecord | VerificationRecord | ReconciliationRecord
+        | ExternalPredecessorRecord
+    ),
     source_name: str,
     source: Mapping[str, object],
     destination: Path,
@@ -529,6 +637,96 @@ def _seal_record(
     return SealedRecordEvidence(
         record_reference, source_reference, retrieved_record, retrieved_source
     )
+
+
+def _json_object(path: Path, name: str) -> Mapping[str, Any]:
+    try:
+        value = json.loads(path.read_bytes())
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise PublicationExecutionError(f"retrieved {name} is invalid") from exc
+    if not isinstance(value, Mapping):
+        raise PublicationExecutionError(f"retrieved {name} is not an object")
+    return value
+
+
+def _retrieve_recorded_attempt(
+    recorded: RecordedPublicationAttempt,
+    *,
+    archive: ImmutableArchive,
+    destination: Path,
+) -> FirebaseDeployArtifact:
+    """Re-read the exact package and intent; local prior paths carry no trust."""
+
+    attempt = recorded.attempt
+    destination.mkdir(parents=True, exist_ok=True)
+    package_path = archive.retrieve_and_verify(
+        attempt.package_reference,
+        destination / attempt.package_reference.asset_name,
+    )
+    package_record_path = archive.retrieve_and_verify(
+        attempt.package_record_reference,
+        destination / attempt.package_record_reference.asset_name,
+    )
+    validation_path = archive.retrieve_and_verify(
+        attempt.validation_reference,
+        destination / attempt.validation_reference.asset_name,
+    )
+    intent_path = archive.retrieve_and_verify(
+        attempt.intent_reference,
+        destination / attempt.intent_reference.asset_name,
+    )
+    for role, reference in attempt.intent.evidence_references.items():
+        archive.retrieve_and_verify(
+            reference, destination / f"{role}-{reference.asset_name}"
+        )
+    package = ValidatedPackageRecord.from_dict(
+        _json_object(package_record_path, "validated package record")
+    )
+    intent = AttemptIntentRecord.from_dict(
+        _json_object(intent_path, "attempt intent"), package=package
+    )
+    if package != attempt.package or intent != attempt.intent:
+        raise PublicationExecutionError(
+            "retrieved attempt records differ from the supplied identities"
+        )
+    if validation_path.read_bytes() != _validation_evidence(
+        inventory_sha256=package.inventory_sha256,
+        configuration_sha256=package.configuration_sha256,
+        expected_baseline_sha256=package.expected_baseline_sha256,
+        retained_inputs_sha256=package.retained_inputs_sha256,
+    ):
+        raise PublicationExecutionError(
+            "retrieved validation evidence differs from the package"
+        )
+    return FirebaseDeployArtifact.from_archive(package_path, package)
+
+
+def _record_evidence_is_valid(
+    record: ProviderResultRecord | VerificationRecord | None,
+    evidence: SealedRecordEvidence | None,
+    *,
+    archive: ImmutableArchive,
+    destination: Path,
+) -> bool:
+    if record is None or evidence is None:
+        return False
+    if (
+        evidence.record_reference.sha256 != record.digest
+        or evidence.source_reference.sha256 != record.source_sha256
+    ):
+        return False
+    try:
+        retrieved_record = archive.retrieve_and_verify(
+            evidence.record_reference,
+            destination / evidence.record_reference.asset_name,
+        )
+        archive.retrieve_and_verify(
+            evidence.source_reference,
+            destination / evidence.source_reference.asset_name,
+        )
+    except ArchiveError:
+        return False
+    return retrieved_record.read_bytes() == canonical_json(record.to_dict())
 
 
 def _verify_prior_publication(
@@ -643,6 +841,66 @@ class PublicationCoordinator:
         retrieval_directory: str | Path,
         prior: PriorVerifiedPublication | None = None,
     ) -> PublicationRun:
+        return self._publish(
+            package, purpose="normal", prepared=prepared,
+            commit_reader=commit_reader, runtime=runtime, baseline=baseline,
+            evidence_references=evidence_references, tags=tags,
+            attempt_id=attempt_id, retrieval_directory=retrieval_directory,
+            prior=prior,
+        )
+
+    def publish_recovery(
+        self,
+        package: ValidatedPackageRecord,
+        *,
+        purpose: str,
+        prior: PriorVerifiedPublication,
+        prepared: PreparedPackage,
+        commit_reader: CommitTreeReader,
+        runtime: GitHubRuntimeContext,
+        baseline: BaselineRecord,
+        evidence_references: Mapping[str, ArchiveReference],
+        tags: PublicationTags,
+        attempt_id: str,
+        retrieval_directory: str | Path,
+    ) -> PublicationRun:
+        """Publish a fresh approved rollback/correction; never reuse an attempt."""
+
+        if purpose not in {"rollback", "correction"}:
+            raise PublicationExecutionError(
+                "recovery publication purpose must be rollback or correction"
+            )
+        if not isinstance(prior, PriorVerifiedPublication):
+            raise PublicationExecutionError(
+                "recovery publication requires a verified current predecessor"
+            )
+        if baseline.observed != package.expected_predecessor:
+            raise PublicationExecutionError(
+                "recovery package must be validated against a capture of the "
+                "current predecessor"
+            )
+        return self._publish(
+            package, purpose=purpose, prior=prior, prepared=prepared,
+            commit_reader=commit_reader, runtime=runtime, baseline=baseline,
+            evidence_references=evidence_references, tags=tags,
+            attempt_id=attempt_id, retrieval_directory=retrieval_directory,
+        )
+
+    def _publish(
+        self,
+        package: ValidatedPackageRecord,
+        *,
+        purpose: str,
+        prepared: PreparedPackage,
+        commit_reader: CommitTreeReader,
+        runtime: GitHubRuntimeContext,
+        baseline: BaselineRecord,
+        evidence_references: Mapping[str, ArchiveReference],
+        tags: PublicationTags,
+        attempt_id: str,
+        retrieval_directory: str | Path,
+        prior: PriorVerifiedPublication | None = None,
+    ) -> PublicationRun:
         """Publish once or return a truthful paused state; never retry or roll back."""
 
         with self.operation_lock:
@@ -660,7 +918,7 @@ class PublicationCoordinator:
                 package_tag=tags.package,
                 intent_tag=tags.intent,
                 attempt_id=attempt_id,
-                purpose="normal",
+                purpose=purpose,
                 evidence_references=evidence_references,
                 protected_context=authorization.context,
                 retrieval_directory=destination / "attempt",
@@ -770,6 +1028,457 @@ class PublicationCoordinator:
             return PublicationRun(
                 state, attempt, result, provider_evidence, verification,
                 verification_evidence, True, next_operations,
+            )
+
+    def reconcile(
+        self,
+        recorded: RecordedPublicationAttempt,
+        *,
+        baseline: BaselineRecord,
+        tags: ReconciliationTags,
+        retrieval_directory: str | Path,
+    ) -> ReconciliationRun:
+        """Observe and append evidence for one interrupted publication attempt."""
+
+        with self.operation_lock:
+            destination = Path(retrieval_directory)
+            artifact = _retrieve_recorded_attempt(
+                recorded, archive=self.archive,
+                destination=destination / "attempt",
+            )
+            package = recorded.attempt.package
+            if baseline.digest != package.expected_baseline_sha256:
+                raise PublicationExecutionError(
+                    "reconciliation baseline does not match the attempt package"
+                )
+            result_evidence_valid = _record_evidence_is_valid(
+                recorded.provider_result, recorded.provider_evidence,
+                archive=self.archive,
+                destination=destination / "prior-provider-result",
+            )
+            verification_evidence_valid = _record_evidence_is_valid(
+                recorded.verification, recorded.verification_evidence,
+                archive=self.archive,
+                destination=destination / "prior-verification",
+            )
+            observed = self.provider.observe()
+            if (
+                observed == package.expected_predecessor
+                and recorded.provider_result is None
+                and recorded.verification is None
+            ):
+                disposition = "prewrite_interrupted"
+                state = "prewrite_interrupted"
+                findings = (
+                    "live identity remains the sealed expected predecessor; "
+                    "no candidate deployment is evidenced",
+                )
+                permitted = ("new_owner_approved_attempt",)
+            elif observed != package.expected_predecessor:
+                return self._reconcile_changed_live(
+                    recorded, artifact, observed, baseline,
+                    tags=tags, destination=destination,
+                    result_evidence_valid=result_evidence_valid,
+                    verification_evidence_valid=verification_evidence_valid,
+                )
+            else:
+                disposition = "evidence_conflict"
+                state = "reconciliation_required"
+                findings = (
+                    "live identity or retained records require content reconciliation",
+                )
+                permitted = ("reconcile",)
+            source = {
+                "schema_version": 1,
+                "record_type": "firebase_reconciliation_observation",
+                "disposition": disposition,
+                "release": observed.release,
+                "version": observed.version,
+                "provider_result_sha256": None,
+                "verification_sha256": None,
+                "findings": list(findings),
+            }
+            observation = ReconciliationRecord.create(
+                intent=recorded.attempt.intent,
+                observed_identity=observed,
+                disposition=disposition,
+                findings=findings,
+                observed_at=_timestamp(self.clock),
+                source_sha256=_source_digest(source),
+            )
+            try:
+                evidence = _seal_record(
+                    archive=self.archive,
+                    repository=self.repository,
+                    tag=tags.observation,
+                    candidate_commit=package.candidate_commit,
+                    record_name="reconciliation.json",
+                    record=observation,
+                    source_name="reconciliation-source.json",
+                    source=source,
+                    destination=destination / "observation",
+                )
+            except (
+                ArchiveError, PublicationExecutionError,
+                PublicationPreparationError,
+            ):
+                return ReconciliationRun(
+                    "reconciliation_unsealed", recorded.attempt.intent,
+                    observed, observation, None,
+                    None, None, None, None, ("reconcile",),
+                )
+            return ReconciliationRun(
+                state, recorded.attempt.intent, observed, observation, evidence,
+                None, None, None, None, permitted,
+            )
+
+    def _reconcile_changed_live(
+        self,
+        recorded: RecordedPublicationAttempt,
+        artifact: FirebaseDeployArtifact,
+        observed: ProviderIdentity,
+        baseline: BaselineRecord,
+        *,
+        tags: ReconciliationTags,
+        destination: Path,
+        result_evidence_valid: bool,
+        verification_evidence_valid: bool,
+    ) -> ReconciliationRun:
+        observation = self.provider.verify(
+            artifact, observed, expected_managed=baseline.managed_resources
+        )
+        candidate_verified = observation.outcome == "verified"
+        prior_claims_observed = (
+            result_evidence_valid
+            and recorded.provider_result is not None
+            and recorded.provider_result.outcome == "accepted"
+            and recorded.provider_result.observed_release == observed.release
+            and recorded.provider_result.observed_version == observed.version
+        )
+        if candidate_verified:
+            disposition = "candidate_verified"
+            state = "reconciled_verified"
+            permitted = ("normal_successor", "rollback", "correction")
+            result_outcome = "accepted"
+        elif prior_claims_observed:
+            disposition = "candidate_unverified"
+            state = "candidate_unverified"
+            permitted = ("verification_only", "reconcile")
+            result_outcome = recorded.provider_result.outcome
+        else:
+            disposition = "external_unverified"
+            state = "external_unverified"
+            permitted = ("capture_external", "reconcile")
+            result_outcome = "unknown"
+
+        provider_source = {
+            "schema_version": 1,
+            "record_type": "firebase_reconciled_provider_result",
+            "outcome": result_outcome,
+            "release": observed.release,
+            "version": observed.version,
+            "artifact_sha256": artifact.package.bundle_sha256,
+            "content_correspondence": observation.outcome,
+            "prior_result_evidence": (
+                "valid" if result_evidence_valid else "missing_or_invalid"
+            ),
+            "prior_verification_evidence": (
+                "valid" if verification_evidence_valid
+                else "missing_or_invalid"
+            ),
+        }
+        provider_result = ProviderResultRecord.create(
+            intent=recorded.attempt.intent,
+            outcome=result_outcome,
+            observed_target=observed.target.to_dict(),
+            observed_release=observed.release,
+            observed_version=observed.version,
+            observed_at=_timestamp(self.clock),
+            source_sha256=_source_digest(provider_source),
+        )
+        verification_source = dict(observation.source)
+        verification = VerificationRecord.create(
+            intent=recorded.attempt.intent,
+            provider_result=provider_result,
+            outcome=observation.outcome,
+            inventory_sha256=observation.inventory_sha256,
+            configuration_sha256=observation.configuration_sha256,
+            managed_resource_findings=observation.managed_findings,
+            public_page_findings=observation.public_findings,
+            findings=observation.findings,
+            observed_at=_timestamp(self.clock),
+            source_sha256=_source_digest(verification_source),
+        )
+        findings = (
+            "live identity and candidate correspondence were observed directly",
+            f"prior provider-result evidence: {'valid' if result_evidence_valid else 'missing_or_invalid'}",
+            f"prior verification evidence: {'valid' if verification_evidence_valid else 'missing_or_invalid'}",
+        )
+        reconciliation_source = {
+            "schema_version": 1,
+            "record_type": "firebase_reconciliation_observation",
+            "disposition": disposition,
+            "release": observed.release,
+            "version": observed.version,
+            "provider_result_sha256": provider_result.digest,
+            "verification_sha256": verification.digest,
+            "findings": list(findings),
+        }
+        reconciliation = ReconciliationRecord.create(
+            intent=recorded.attempt.intent,
+            observed_identity=observed,
+            disposition=disposition,
+            provider_result=provider_result,
+            verification=verification,
+            observed_at=_timestamp(self.clock),
+            findings=findings,
+            source_sha256=_source_digest(reconciliation_source),
+        )
+        provider_evidence: SealedRecordEvidence | None = None
+        verification_evidence: SealedRecordEvidence | None = None
+        reconciliation_evidence: SealedRecordEvidence | None = None
+        try:
+            provider_evidence = _seal_record(
+                archive=self.archive, repository=self.repository,
+                tag=tags.provider_result,
+                candidate_commit=artifact.package.candidate_commit,
+                record_name="provider-result.json", record=provider_result,
+                source_name="provider-result-source.json",
+                source=provider_source,
+                destination=destination / "provider-result",
+            )
+            verification_evidence = _seal_record(
+                archive=self.archive, repository=self.repository,
+                tag=tags.verification,
+                candidate_commit=artifact.package.candidate_commit,
+                record_name="verification.json", record=verification,
+                source_name="verification-source.json",
+                source=verification_source,
+                destination=destination / "verification",
+            )
+            reconciliation_evidence = _seal_record(
+                archive=self.archive, repository=self.repository,
+                tag=tags.observation,
+                candidate_commit=artifact.package.candidate_commit,
+                record_name="reconciliation.json", record=reconciliation,
+                source_name="reconciliation-source.json",
+                source=reconciliation_source,
+                destination=destination / "observation",
+            )
+        except (
+            ArchiveError, PublicationExecutionError,
+            PublicationPreparationError,
+        ):
+            return ReconciliationRun(
+                "reconciliation_unsealed", recorded.attempt.intent,
+                observed, reconciliation,
+                reconciliation_evidence, provider_result, provider_evidence,
+                verification, verification_evidence, ("reconcile",),
+            )
+        return ReconciliationRun(
+            state, recorded.attempt.intent, observed, reconciliation,
+            reconciliation_evidence,
+            provider_result, provider_evidence,
+            verification, verification_evidence, permitted,
+        )
+
+    def reconcile_external(
+        self,
+        captured: VerifiedBaseline,
+        *,
+        archive_reference: ArchiveReference,
+        sanitizer_reference: ArchiveReference,
+        observation_tag: str,
+        retrieval_directory: str | Path,
+    ) -> ExternalReconciliationRun:
+        """Bind an unknown live deployment to a complete immutable capture.
+
+        Provider identity alone is deliberately insufficient. The capture must
+        still validate, its exact consumed archive must already be sealed, and
+        the live identity must still equal the capture after archive retrieval.
+        """
+
+        with self.operation_lock:
+            captured.assert_current()
+            if captured.sanitizer_record is None:
+                raise PublicationExecutionError(
+                    "external reconciliation requires the sanitized public "
+                    "capture derivative"
+                )
+            expected_archive_sha = (
+                captured.sanitizer_record.derivative_archive_sha256
+            )
+            if archive_reference.sha256 != expected_archive_sha:
+                raise PublicationExecutionError(
+                    "external capture reference does not bind the consumed archive"
+                )
+            destination = Path(retrieval_directory)
+            retrieved = self.archive.retrieve_and_verify(
+                archive_reference,
+                destination / archive_reference.asset_name,
+            )
+            retrieved_sanitizer = self.archive.retrieve_and_verify(
+                sanitizer_reference,
+                destination / sanitizer_reference.asset_name,
+            )
+            sanitizer = SanitizedBaselineArchiveRecord.from_dict(
+                _json_object(retrieved_sanitizer, "sanitizer record")
+            )
+            if (
+                sanitizer != captured.sanitizer_record
+                or sanitizer_reference.sha256 != sanitizer.digest
+                or sanitizer_reference.repository != archive_reference.repository
+                or sanitizer_reference.target_commit
+                != archive_reference.target_commit
+            ):
+                raise PublicationExecutionError(
+                    "external sanitizer evidence does not bind the capture"
+                )
+            consumed_sha = _sha256_file(retrieved)
+            if consumed_sha != expected_archive_sha:
+                raise PublicationExecutionError(
+                    "retrieved external capture differs from the verified baseline"
+                )
+            live = self.provider.observe()
+            if live != captured.record.observed:
+                raise PublicationExecutionError(
+                    "live provider identity changed after external capture archive work"
+                )
+            source = {
+                "schema_version": 1,
+                "record_type": "firebase_external_predecessor_observation",
+                "target": live.target.to_dict(),
+                "release": live.release,
+                "version": live.version,
+                "baseline_sha256": captured.record.digest,
+                "archive_reference_sha256": archive_reference.digest,
+                "sanitizer_reference_sha256": sanitizer_reference.digest,
+                "consumed_archive_sha256": consumed_sha,
+                "inventory_sha256": captured.record.inventory_sha256,
+                "configuration_sha256": captured.record.configuration_sha256,
+                "application_tree_sha256": (
+                    captured.record.application_tree_sha256
+                ),
+            }
+            observation = ExternalPredecessorRecord.create(
+                baseline=captured.record,
+                archive_reference=archive_reference,
+                sanitizer_reference=sanitizer_reference,
+                consumed_archive_sha256=consumed_sha,
+                observed_at=_timestamp(self.clock),
+                source_sha256=_source_digest(source),
+            )
+            try:
+                evidence = _seal_record(
+                    archive=self.archive,
+                    repository=self.repository,
+                    tag=observation_tag,
+                    candidate_commit=archive_reference.target_commit,
+                    record_name="external-predecessor.json",
+                    record=observation,
+                    source_name="external-predecessor-source.json",
+                    source=source,
+                    destination=destination / "observation",
+                )
+            except (
+                ArchiveError, PublicationExecutionError,
+                PublicationPreparationError,
+            ):
+                return ExternalReconciliationRun(
+                    "external_reconciliation_unsealed", captured, live,
+                    observation, None, ("reconcile_external",),
+                )
+            return ExternalReconciliationRun(
+                "external_verified", captured, live, observation, evidence,
+                ("normal_successor", "rollback", "correction"),
+            )
+
+    def verify_only(
+        self,
+        recorded: RecordedPublicationAttempt,
+        *,
+        baseline: BaselineRecord,
+        verification_tag: str,
+        retrieval_directory: str | Path,
+    ) -> PublicationRun:
+        """Append verification for one accepted deployment without deploying."""
+
+        with self.operation_lock:
+            destination = Path(retrieval_directory)
+            artifact = _retrieve_recorded_attempt(
+                recorded, archive=self.archive,
+                destination=destination / "attempt",
+            )
+            result = recorded.provider_result
+            if (
+                baseline.digest != artifact.package.expected_baseline_sha256
+                or result is None
+                or result.outcome != "accepted"
+                or not _record_evidence_is_valid(
+                    result, recorded.provider_evidence,
+                    archive=self.archive,
+                    destination=destination / "provider-result",
+                )
+            ):
+                raise PublicationExecutionError(
+                    "verification-only requires a sealed accepted provider result"
+                )
+            identity = ProviderIdentity(
+                result.observed_target,
+                result.observed_release,  # type: ignore[arg-type]
+                result.observed_version,  # type: ignore[arg-type]
+            )
+            if self.provider.observe() != identity:
+                raise PublicationExecutionError(
+                    "verification-only live identity differs from the accepted result"
+                )
+            observation = self.provider.verify(
+                artifact, identity,
+                expected_managed=baseline.managed_resources,
+            )
+            source = dict(observation.source)
+            verification = VerificationRecord.create(
+                intent=recorded.attempt.intent,
+                provider_result=result,
+                outcome=observation.outcome,
+                inventory_sha256=observation.inventory_sha256,
+                configuration_sha256=observation.configuration_sha256,
+                managed_resource_findings=observation.managed_findings,
+                public_page_findings=observation.public_findings,
+                findings=observation.findings,
+                observed_at=_timestamp(self.clock),
+                source_sha256=_source_digest(source),
+            )
+            try:
+                evidence = _seal_record(
+                    archive=self.archive, repository=self.repository,
+                    tag=verification_tag,
+                    candidate_commit=artifact.package.candidate_commit,
+                    record_name="verification.json", record=verification,
+                    source_name="verification-source.json", source=source,
+                    destination=destination / "verification",
+                )
+            except (
+                ArchiveError, PublicationExecutionError,
+                PublicationPreparationError,
+            ):
+                return PublicationRun(
+                    "verification_unsealed", recorded.attempt, result,
+                    recorded.provider_evidence, verification, None,
+                    True, ("reconcile",),
+                )
+            state = {
+                "verified": "verified",
+                "failed": "verification_failed",
+                "unknown": "verification_unknown",
+            }[verification.outcome]
+            permitted = (
+                ("normal_successor", "rollback", "correction")
+                if state == "verified" else ("verification_only", "reconcile")
+            )
+            return PublicationRun(
+                state, recorded.attempt, result, recorded.provider_evidence,
+                verification, evidence, True, permitted,
             )
 
     def _failure_result(

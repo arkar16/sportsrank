@@ -228,7 +228,6 @@ class ManagedResourceEvidence:
             "app_identity": dict(self.app_identity),
         }
 
-
 @dataclass(frozen=True)
 class BaselineRecord:
     target: ProviderTarget
@@ -892,3 +891,328 @@ class VerificationRecord:
     @property
     def digest(self) -> str:
         return record_digest(self.to_dict())
+
+
+@dataclass(frozen=True)
+class ReconciliationRecord:
+    """Append-only observation resolving one interrupted publication attempt."""
+
+    attempt_id: str
+    intent_sha256: str
+    package_sha256: str
+    observed_target: ProviderTarget
+    observed_release: str
+    observed_version: str
+    disposition: str
+    provider_result_sha256: str | None
+    verification_sha256: str | None
+    observed_at: str
+    findings: tuple[str, ...]
+    source_sha256: str
+    redaction_method: str
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "findings", tuple(self.findings))
+        _text(self.attempt_id, "attempt_id")
+        _digest(self.intent_sha256, "intent_sha256")
+        _digest(self.package_sha256, "package_sha256")
+        if not isinstance(self.observed_target, ProviderTarget):
+            raise RecordValidationError("reconciliation target is invalid")
+        ProviderIdentity(
+            self.observed_target, self.observed_release, self.observed_version
+        )
+        if self.disposition not in {
+            "prewrite_interrupted", "candidate_verified",
+            "candidate_unverified", "external_unverified",
+            "evidence_conflict",
+        }:
+            raise RecordValidationError("reconciliation disposition is invalid")
+        for name in ("provider_result_sha256", "verification_sha256"):
+            value = getattr(self, name)
+            if value is not None:
+                _digest(value, name)
+        linked = (
+            self.provider_result_sha256 is not None
+            and self.verification_sha256 is not None
+        )
+        if self.disposition in {
+            "candidate_verified", "candidate_unverified", "external_unverified",
+        } and not linked:
+            raise RecordValidationError(
+                "changed-live reconciliation requires result and verification records"
+            )
+        if self.disposition in {
+            "prewrite_interrupted", "evidence_conflict",
+        } and (
+            self.provider_result_sha256 is not None
+            or self.verification_sha256 is not None
+        ):
+            raise RecordValidationError(
+                "unchanged-live reconciliation cannot link changed-live records"
+            )
+        if not self.findings or any(
+            not isinstance(value, str) or not value for value in self.findings
+        ):
+            raise RecordValidationError("reconciliation findings must be non-empty")
+        _text(self.observed_at, "observed_at")
+        _digest(self.source_sha256, "source_sha256")
+        if self.redaction_method != "allowlisted-reconciliation-v1":
+            raise RecordValidationError("reconciliation redaction method is invalid")
+
+    @classmethod
+    def create(
+        cls,
+        *,
+        intent: AttemptIntentRecord,
+        observed_identity: ProviderIdentity,
+        disposition: str,
+        provider_result: ProviderResultRecord | None = None,
+        verification: VerificationRecord | None = None,
+        **values: Any,
+    ) -> "ReconciliationRecord":
+        if provider_result is not None and (
+            provider_result.attempt_id != intent.attempt_id
+            or provider_result.intent_sha256 != intent.digest
+        ):
+            raise RecordValidationError(
+                "reconciliation provider result does not link to the intent"
+            )
+        if verification is not None and (
+            provider_result is None
+            or verification.provider_result_sha256 != provider_result.digest
+        ):
+            raise RecordValidationError(
+                "reconciliation verification does not link to the provider result"
+            )
+        return cls(
+            intent.attempt_id,
+            intent.digest,
+            intent.package_sha256,
+            observed_identity.target,
+            observed_identity.release,
+            observed_identity.version,
+            disposition,
+            provider_result.digest if provider_result is not None else None,
+            verification.digest if verification is not None else None,
+            values["observed_at"],
+            tuple(values["findings"]),
+            values["source_sha256"],
+            values.get("redaction_method", "allowlisted-reconciliation-v1"),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "record_type": "reconciliation",
+            "attempt_id": self.attempt_id,
+            "intent_sha256": self.intent_sha256,
+            "package_sha256": self.package_sha256,
+            "observed_target": self.observed_target.to_dict(),
+            "observed_release": self.observed_release,
+            "observed_version": self.observed_version,
+            "disposition": self.disposition,
+            "provider_result_sha256": self.provider_result_sha256,
+            "verification_sha256": self.verification_sha256,
+            "observed_at": self.observed_at,
+            "findings": list(self.findings),
+            "source_sha256": self.source_sha256,
+            "redaction_method": self.redaction_method,
+        }
+
+    @property
+    def digest(self) -> str:
+        return record_digest(self.to_dict())
+
+    @classmethod
+    def from_dict(
+        cls,
+        raw: Mapping[str, Any],
+        *,
+        intent: AttemptIntentRecord | None = None,
+        provider_result: ProviderResultRecord | None = None,
+        verification: VerificationRecord | None = None,
+    ) -> "ReconciliationRecord":
+        raw = _object(raw, "reconciliation record")
+        names = {
+            "attempt_id", "intent_sha256", "package_sha256",
+            "observed_target", "observed_release", "observed_version",
+            "disposition", "provider_result_sha256", "verification_sha256",
+            "observed_at", "findings", "source_sha256", "redaction_method",
+        }
+        _exact(
+            raw, {"schema_version", "record_type", *names},
+            "reconciliation record",
+        )
+        _version(raw, "reconciliation")
+        result_sha = raw["provider_result_sha256"]
+        verification_sha = raw["verification_sha256"]
+        if result_sha is not None:
+            result_sha = _digest(result_sha, "provider_result_sha256")
+        if verification_sha is not None:
+            verification_sha = _digest(
+                verification_sha, "verification_sha256"
+            )
+        findings = raw["findings"]
+        if not isinstance(findings, list):
+            raise RecordValidationError("reconciliation findings must be an array")
+        record = cls(
+            _text(raw["attempt_id"], "attempt_id"),
+            _digest(raw["intent_sha256"], "intent_sha256"),
+            _digest(raw["package_sha256"], "package_sha256"),
+            ProviderTarget.from_value(raw["observed_target"]),
+            _text(raw["observed_release"], "observed_release"),
+            _text(raw["observed_version"], "observed_version"),
+            _text(raw["disposition"], "disposition"),
+            result_sha,
+            verification_sha,
+            _text(raw["observed_at"], "observed_at"),
+            tuple(findings),
+            _digest(raw["source_sha256"], "source_sha256"),
+            _text(raw["redaction_method"], "redaction_method"),
+        )
+        if intent is not None and (
+            record.attempt_id != intent.attempt_id
+            or record.intent_sha256 != intent.digest
+            or record.package_sha256 != intent.package_sha256
+        ):
+            raise RecordValidationError(
+                "reconciliation record does not link to the supplied intent"
+            )
+        if provider_result is not None and result_sha != provider_result.digest:
+            raise RecordValidationError(
+                "reconciliation record does not link to the provider result"
+            )
+        if verification is not None and verification_sha != verification.digest:
+            raise RecordValidationError(
+                "reconciliation record does not link to the verification"
+            )
+        return record
+
+
+@dataclass(frozen=True)
+class ExternalPredecessorRecord:
+    """Allowlisted binding of an unknown live deployment to a full capture."""
+
+    baseline_sha256: str
+    archive_reference_sha256: str
+    sanitizer_reference_sha256: str
+    consumed_archive_sha256: str
+    observed_target: ProviderTarget
+    observed_release: str
+    observed_version: str
+    inventory_sha256: str
+    configuration_sha256: str
+    application_tree_sha256: str
+    observed_at: str
+    source_sha256: str
+    redaction_method: str
+
+    def __post_init__(self) -> None:
+        for name in (
+            "baseline_sha256", "archive_reference_sha256",
+            "sanitizer_reference_sha256",
+            "consumed_archive_sha256", "inventory_sha256",
+            "configuration_sha256", "application_tree_sha256",
+            "source_sha256",
+        ):
+            _digest(getattr(self, name), name)
+        if not isinstance(self.observed_target, ProviderTarget):
+            raise RecordValidationError("external predecessor target is invalid")
+        ProviderIdentity(
+            self.observed_target, self.observed_release, self.observed_version
+        )
+        _text(self.observed_at, "observed_at")
+        if self.redaction_method != "allowlisted-external-predecessor-v1":
+            raise RecordValidationError(
+                "external predecessor redaction method is invalid"
+            )
+
+    @classmethod
+    def create(
+        cls,
+        *,
+        baseline: BaselineRecord,
+        archive_reference: ArchiveReference,
+        sanitizer_reference: ArchiveReference,
+        consumed_archive_sha256: str,
+        observed_at: str,
+        source_sha256: str,
+    ) -> "ExternalPredecessorRecord":
+        return cls(
+            baseline.digest,
+            archive_reference.digest,
+            sanitizer_reference.digest,
+            consumed_archive_sha256,
+            baseline.observed.target,
+            baseline.observed.release,
+            baseline.observed.version,
+            baseline.inventory_sha256,
+            baseline.configuration_sha256,
+            baseline.application_tree_sha256,
+            observed_at,
+            source_sha256,
+            "allowlisted-external-predecessor-v1",
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "record_type": "external_predecessor",
+            "baseline_sha256": self.baseline_sha256,
+            "archive_reference_sha256": self.archive_reference_sha256,
+            "sanitizer_reference_sha256": self.sanitizer_reference_sha256,
+            "consumed_archive_sha256": self.consumed_archive_sha256,
+            "observed_target": self.observed_target.to_dict(),
+            "observed_release": self.observed_release,
+            "observed_version": self.observed_version,
+            "inventory_sha256": self.inventory_sha256,
+            "configuration_sha256": self.configuration_sha256,
+            "application_tree_sha256": self.application_tree_sha256,
+            "observed_at": self.observed_at,
+            "source_sha256": self.source_sha256,
+            "redaction_method": self.redaction_method,
+        }
+
+    @property
+    def digest(self) -> str:
+        return record_digest(self.to_dict())
+
+    @classmethod
+    def from_dict(
+        cls, raw: Mapping[str, Any]
+    ) -> "ExternalPredecessorRecord":
+        raw = _object(raw, "external predecessor record")
+        names = {
+            "baseline_sha256", "archive_reference_sha256",
+            "sanitizer_reference_sha256",
+            "consumed_archive_sha256", "observed_target",
+            "observed_release", "observed_version", "inventory_sha256",
+            "configuration_sha256", "application_tree_sha256",
+            "observed_at", "source_sha256", "redaction_method",
+        }
+        _exact(
+            raw, {"schema_version", "record_type", *names},
+            "external predecessor record",
+        )
+        _version(raw, "external_predecessor")
+        return cls(
+            _digest(raw["baseline_sha256"], "baseline_sha256"),
+            _digest(
+                raw["archive_reference_sha256"],
+                "archive_reference_sha256",
+            ),
+            _digest(
+                raw["sanitizer_reference_sha256"],
+                "sanitizer_reference_sha256",
+            ),
+            _digest(raw["consumed_archive_sha256"], "consumed_archive_sha256"),
+            ProviderTarget.from_value(raw["observed_target"]),
+            _text(raw["observed_release"], "observed_release"),
+            _text(raw["observed_version"], "observed_version"),
+            _digest(raw["inventory_sha256"], "inventory_sha256"),
+            _digest(raw["configuration_sha256"], "configuration_sha256"),
+            _digest(raw["application_tree_sha256"], "application_tree_sha256"),
+            _text(raw["observed_at"], "observed_at"),
+            _digest(raw["source_sha256"], "source_sha256"),
+            _text(raw["redaction_method"], "redaction_method"),
+        )
