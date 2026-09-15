@@ -273,7 +273,7 @@ class PublicationExecutionTests(unittest.TestCase):
                 TARGET, fx.package.expected_predecessor,
                 managed_identity=APP_IDENTITY,
             )
-            result = coordinator(fx, backend).publish_normal(
+            result = coordinator(fx, backend)._publish_normal_legacy(
                 fx.package, prepared=fx.prepared, commit_reader=fx.reader,
                 runtime=fx.runtime, baseline=fx.baseline,
                 evidence_references=fx.evidence, tags=tags("first"),
@@ -310,7 +310,7 @@ class PublicationExecutionTests(unittest.TestCase):
                 TARGET, first.package.expected_predecessor,
                 managed_identity=APP_IDENTITY,
             )
-            first_run = coordinator(first, backend).publish_normal(
+            first_run = coordinator(first, backend)._publish_normal_legacy(
                 first.package, prepared=first.prepared, commit_reader=first.reader,
                 runtime=first.runtime, baseline=first.baseline,
                 evidence_references=first.evidence, tags=tags("first-successor"),
@@ -361,7 +361,7 @@ class PublicationExecutionTests(unittest.TestCase):
             with self.assertRaisesRegex(
                 PublicationExecutionError, "immutable evidence"
             ):
-                coordinator(second, backend).publish_normal(
+                coordinator(second, backend)._publish_normal_legacy(
                     second.package, prepared=second.prepared,
                     commit_reader=second.reader, runtime=second.runtime,
                     baseline=second.baseline,
@@ -372,7 +372,7 @@ class PublicationExecutionTests(unittest.TestCase):
                 )
             self.assertEqual(backend.write_count, writes_before)
             first.archive.corrupt(source_bytes, original_source)
-            second_run = coordinator(second, backend).publish_normal(
+            second_run = coordinator(second, backend)._publish_normal_legacy(
                 second.package, prepared=second.prepared, commit_reader=second.reader,
                 runtime=second.runtime, baseline=second.baseline,
                 evidence_references=second.evidence, tags=tags("second-successor"),
@@ -406,7 +406,7 @@ class PublicationExecutionTests(unittest.TestCase):
                 TARGET, successor, managed_identity=APP_IDENTITY,
             )
             with self.assertRaisesRegex(PublicationExecutionError, "successor requires"):
-                coordinator(fx, backend).publish_normal(
+                coordinator(fx, backend)._publish_normal_legacy(
                     fx.package, prepared=fx.prepared, commit_reader=fx.reader,
                     runtime=fx.runtime, baseline=fx.baseline,
                     evidence_references=fx.evidence, tags=tags("missing-prior"),
@@ -439,7 +439,7 @@ class PublicationExecutionTests(unittest.TestCase):
             )
             archive.on_intent = lambda: setattr(backend, "live", stale)
             with self.assertRaisesRegex(PublicationExecutionError, "changed after"):
-                coordinator(fx, backend).publish_normal(
+                coordinator(fx, backend)._publish_normal_legacy(
                     fx.package, prepared=fx.prepared, commit_reader=fx.reader,
                     runtime=fx.runtime, baseline=fx.baseline,
                     evidence_references=fx.evidence, tags=tags("stale"),
@@ -461,7 +461,7 @@ class PublicationExecutionTests(unittest.TestCase):
                     reject_at="create" if mode == "reject" else None,
                     lose_response_at="release" if mode == "lost" else None,
                 )
-                result = coordinator(fx, backend).publish_normal(
+                result = coordinator(fx, backend)._publish_normal_legacy(
                     fx.package, prepared=fx.prepared, commit_reader=fx.reader,
                     runtime=fx.runtime, baseline=fx.baseline,
                     evidence_references=fx.evidence, tags=tags(mode),
@@ -492,7 +492,7 @@ class PublicationExecutionTests(unittest.TestCase):
                 TARGET, fx.package.expected_predecessor,
                 managed_identity=APP_IDENTITY,
             )
-            result = coordinator(fx, backend).publish_normal(
+            result = coordinator(fx, backend)._publish_normal_legacy(
                 fx.package, prepared=fx.prepared, commit_reader=fx.reader,
                 runtime=fx.runtime, baseline=fx.baseline,
                 evidence_references=fx.evidence, tags=tags("receipt"),
@@ -517,7 +517,7 @@ class PublicationExecutionTests(unittest.TestCase):
                 TARGET, fx.package.expected_predecessor,
                 managed_identity=APP_IDENTITY,
             )
-            result = coordinator(fx, backend).publish_normal(
+            result = coordinator(fx, backend)._publish_normal_legacy(
                 fx.package, prepared=fx.prepared, commit_reader=fx.reader,
                 runtime=fx.runtime, baseline=fx.baseline,
                 evidence_references=fx.evidence, tags=tags("verification"),
@@ -543,7 +543,7 @@ class PublicationExecutionTests(unittest.TestCase):
                     managed_identity=APP_IDENTITY,
                     verification_failure=failure,
                 )
-                result = coordinator(fx, backend).publish_normal(
+                result = coordinator(fx, backend)._publish_normal_legacy(
                     fx.package, prepared=fx.prepared, commit_reader=fx.reader,
                     runtime=fx.runtime, baseline=fx.baseline,
                     evidence_references=fx.evidence,
@@ -567,7 +567,7 @@ class PublicationExecutionTests(unittest.TestCase):
                 managed_identity=APP_IDENTITY,
                 verification_failure="observation",
             )
-            result = coordinator(fx, backend).publish_normal(
+            result = coordinator(fx, backend)._publish_normal_legacy(
                 fx.package, prepared=fx.prepared, commit_reader=fx.reader,
                 runtime=fx.runtime, baseline=fx.baseline,
                 evidence_references=fx.evidence, tags=tags("verify-unknown"),
@@ -593,7 +593,7 @@ class PublicationExecutionTests(unittest.TestCase):
             missing = dict(fx.evidence)
             missing.pop("baseline")
             with self.assertRaises(RecordValidationError):
-                coordinator(fx, backend).publish_normal(
+                coordinator(fx, backend)._publish_normal_legacy(
                     fx.package, prepared=fx.prepared, commit_reader=fx.reader,
                     runtime=fx.runtime, baseline=fx.baseline,
                     evidence_references=missing, tags=tags("missing"),
@@ -610,7 +610,7 @@ class PublicationExecutionTests(unittest.TestCase):
                 approval_reader=forged_reader, clock=lambda: STAMP,
             )
             with self.assertRaises(PublicationAuthorizationError):
-                forged.publish_normal(
+                forged._publish_normal_legacy(
                     fx.package, prepared=fx.prepared, commit_reader=fx.reader,
                     runtime=forged_runtime, baseline=fx.baseline,
                     evidence_references=fx.evidence, tags=tags("forged"),
@@ -840,7 +840,7 @@ class PublicationExecutionTests(unittest.TestCase):
                     managed_identity=APP_IDENTITY,
                     fail_step=step, failure=failure,
                 )
-                result = coordinator(fx, backend).publish_normal(
+                result = coordinator(fx, backend)._publish_normal_legacy(
                     fx.package, prepared=fx.prepared,
                     commit_reader=fx.reader, runtime=fx.runtime,
                     baseline=fx.baseline,
@@ -911,7 +911,7 @@ class PublicationExecutionTests(unittest.TestCase):
                 TARGET, fx.package.expected_predecessor,
                 managed_identity=APP_IDENTITY,
             )
-            result = coordinator(fx, backend).publish_normal(
+            result = coordinator(fx, backend)._publish_normal_legacy(
                 fx.package, prepared=fx.prepared,
                 commit_reader=fx.reader, runtime=fx.runtime,
                 baseline=fx.baseline,

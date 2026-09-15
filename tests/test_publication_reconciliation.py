@@ -210,7 +210,7 @@ class PublicationReconciliationTests(unittest.TestCase):
                 TARGET, fx.package.expected_predecessor,
                 managed_identity=APP_IDENTITY, lose_response_at="release",
             )
-            interrupted = coordinator(fx, backend).publish_normal(
+            interrupted = coordinator(fx, backend)._publish_normal_legacy(
                 fx.package, prepared=fx.prepared, commit_reader=fx.reader,
                 runtime=fx.runtime, baseline=fx.baseline,
                 evidence_references=fx.evidence, tags=tags("baseline-binding"),
@@ -249,7 +249,7 @@ class PublicationReconciliationTests(unittest.TestCase):
                 TARGET, first.package.expected_predecessor,
                 managed_identity=APP_IDENTITY,
             )
-            published = coordinator(first, backend).publish_normal(
+            published = coordinator(first, backend)._publish_normal_legacy(
                 first.package, prepared=first.prepared,
                 commit_reader=first.reader, runtime=first.runtime,
                 baseline=first.baseline, evidence_references=first.evidence,
@@ -309,7 +309,7 @@ class PublicationReconciliationTests(unittest.TestCase):
             with self.assertRaisesRegex(
                 PublicationExecutionError, "does not match"
             ):
-                other_coordinator.publish_normal(
+                other_coordinator._publish_normal_legacy(
                     successor.package, prepared=successor.prepared,
                     commit_reader=successor.reader,
                     runtime=successor.runtime, baseline=successor.baseline,
@@ -328,7 +328,7 @@ class PublicationReconciliationTests(unittest.TestCase):
                 managed_identity=APP_IDENTITY,
                 verification_failure="public",
             )
-            published = coordinator(fx, backend).publish_normal(
+            published = coordinator(fx, backend)._publish_normal_legacy(
                 fx.package, prepared=fx.prepared, commit_reader=fx.reader,
                 runtime=fx.runtime, baseline=fx.baseline,
                 evidence_references=fx.evidence, tags=tags("failed-verify"),
@@ -380,7 +380,7 @@ class PublicationReconciliationTests(unittest.TestCase):
                 managed_identity=APP_IDENTITY,
                 lose_response_at="release",
             )
-            interrupted = coordinator(fx, backend).publish_normal(
+            interrupted = coordinator(fx, backend)._publish_normal_legacy(
                 fx.package, prepared=fx.prepared, commit_reader=fx.reader,
                 runtime=fx.runtime, baseline=fx.baseline,
                 evidence_references=fx.evidence, tags=tags("archive-failure"),
@@ -472,7 +472,7 @@ class PublicationReconciliationTests(unittest.TestCase):
                 managed_identity=APP_IDENTITY,
                 lose_response_at="release",
             )
-            interrupted = coordinator(fx, backend).publish_normal(
+            interrupted = coordinator(fx, backend)._publish_normal_legacy(
                 fx.package, prepared=fx.prepared, commit_reader=fx.reader,
                 runtime=fx.runtime, baseline=fx.baseline,
                 evidence_references=fx.evidence, tags=tags("lost"),
@@ -568,7 +568,7 @@ class PublicationReconciliationTests(unittest.TestCase):
                     managed_identity=APP_IDENTITY,
                     lose_response_at="release",
                 )
-                interrupted = coordinator(fx, backend).publish_normal(
+                interrupted = coordinator(fx, backend)._publish_normal_legacy(
                     fx.package, prepared=fx.prepared, commit_reader=fx.reader,
                     runtime=fx.runtime, baseline=fx.baseline,
                     evidence_references=fx.evidence, tags=tags(f"{mode}-lost"),
@@ -617,7 +617,7 @@ class PublicationReconciliationTests(unittest.TestCase):
                     managed_identity=APP_IDENTITY,
                     verification_failure="public" if mode == "failed" else None,
                 )
-                published = coordinator(fx, backend).publish_normal(
+                published = coordinator(fx, backend)._publish_normal_legacy(
                     fx.package, prepared=fx.prepared, commit_reader=fx.reader,
                     runtime=fx.runtime, baseline=fx.baseline,
                     evidence_references=fx.evidence,
@@ -860,7 +860,7 @@ class PublicationReconciliationTests(unittest.TestCase):
                 archive=fx.archive,
             )
             backend.lose_response_at = None
-            recovered = coordinator(recovery, backend).publish_recovery(
+            recovered = coordinator(recovery, backend)._publish_recovery_legacy(
                 recovery.package, purpose="correction", prior=external_prior,
                 prepared=recovery.prepared, commit_reader=recovery.reader,
                 runtime=recovery.runtime, baseline=recovery.baseline,
@@ -881,7 +881,7 @@ class PublicationReconciliationTests(unittest.TestCase):
                 managed_identity=APP_IDENTITY,
                 lose_response_at="release",
             )
-            first_run = coordinator(first, backend).publish_normal(
+            first_run = coordinator(first, backend)._publish_normal_legacy(
                 first.package, prepared=first.prepared,
                 commit_reader=first.reader, runtime=first.runtime,
                 baseline=first.baseline, evidence_references=first.evidence,
@@ -911,7 +911,7 @@ class PublicationReconciliationTests(unittest.TestCase):
             backend.lose_response_at = None
             writes = backend.write_count
 
-            result = coordinator(second, backend).publish_recovery(
+            result = coordinator(second, backend)._publish_recovery_legacy(
                 second.package, purpose="correction",
                 prepared=second.prepared, commit_reader=second.reader,
                 runtime=second.runtime, baseline=second.baseline,
@@ -934,7 +934,7 @@ class PublicationReconciliationTests(unittest.TestCase):
             with self.assertRaisesRegex(
                 PublicationExecutionError, "predecessor|live provider identity"
             ):
-                coordinator(stale, backend).publish_recovery(
+                coordinator(stale, backend)._publish_recovery_legacy(
                     stale.package, purpose="rollback",
                     prepared=stale.prepared, commit_reader=stale.reader,
                     runtime=stale.runtime, baseline=stale.baseline,
@@ -959,7 +959,7 @@ class PublicationReconciliationTests(unittest.TestCase):
                 )
             empty = object.__new__(PriorVerifiedPublication)
             with self.assertRaises(PublicationExecutionError):
-                coordinator(fx, backend).publish_recovery(
+                coordinator(fx, backend)._publish_recovery_legacy(
                     fx.package, purpose="correction", prior=empty,
                     prepared=fx.prepared, commit_reader=fx.reader,
                     runtime=fx.runtime, baseline=fx.baseline,

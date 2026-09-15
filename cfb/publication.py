@@ -34,7 +34,6 @@ from .publication_authorization import (
     ApprovalReader,
     GitHubPreparationProvenanceReader,
     GitHubRuntimeContext,
-    PREPARATION_REPOSITORY,
     PreparationManifest,
     authenticate_preparation_manifest,
     authorize_protected_execution,
@@ -1946,11 +1945,27 @@ class PublicationCoordinator:
         retrieval_directory: str | Path,
         prior: VerifiedPublicationPredecessor | None = None,
     ) -> PublicationRun:
-        if self.repository == PREPARATION_REPOSITORY:
-            raise PublicationExecutionError(
-                "production publication requires seal_publication_attempt then "
-                "execute_sealed_attempt"
-            )
+        raise PublicationExecutionError(
+            "publication requires seal_publication_attempt then "
+            "execute_sealed_attempt"
+        )
+
+    def _publish_normal_legacy(
+        self,
+        package: ValidatedPackageRecord,
+        *,
+        prepared: PreparedPackage,
+        commit_reader: CommitTreeReader,
+        runtime: GitHubRuntimeContext,
+        baseline: BaselineRecord,
+        evidence_references: Mapping[str, ArchiveReference],
+        tags: PublicationTags,
+        attempt_id: str,
+        retrieval_directory: str | Path,
+        prior: VerifiedPublicationPredecessor | None = None,
+    ) -> PublicationRun:
+        """Internal compatibility seam for the pre-SR14 behavior matrix."""
+
         return self._publish(
             package, purpose="normal", prepared=prepared,
             commit_reader=commit_reader, runtime=runtime, baseline=baseline,
@@ -1976,14 +1991,31 @@ class PublicationCoordinator:
     ) -> PublicationRun:
         """Publish a fresh approved rollback/correction; never reuse an attempt."""
 
+        raise PublicationExecutionError(
+            "recovery requires seal_publication_attempt then "
+            "execute_sealed_attempt"
+        )
+
+    def _publish_recovery_legacy(
+        self,
+        package: ValidatedPackageRecord,
+        *,
+        purpose: str,
+        prior: VerifiedPublicationPredecessor,
+        prepared: PreparedPackage,
+        commit_reader: CommitTreeReader,
+        runtime: GitHubRuntimeContext,
+        baseline: BaselineRecord,
+        evidence_references: Mapping[str, ArchiveReference],
+        tags: PublicationTags,
+        attempt_id: str,
+        retrieval_directory: str | Path,
+    ) -> PublicationRun:
+        """Internal compatibility seam for the pre-SR14 behavior matrix."""
+
         if purpose not in {"rollback", "correction"}:
             raise PublicationExecutionError(
                 "recovery publication purpose must be rollback or correction"
-            )
-        if self.repository == PREPARATION_REPOSITORY:
-            raise PublicationExecutionError(
-                "production recovery requires seal_publication_attempt then "
-                "execute_sealed_attempt"
             )
         if not isinstance(
             prior, (PriorVerifiedPublication, ExternalVerifiedPredecessor)

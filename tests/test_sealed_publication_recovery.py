@@ -37,6 +37,7 @@ from cfb.publication_authorization import (
 )
 from cfb.publication_records import (
     ArchiveReference,
+    ProviderIdentity,
     SealedAttemptReference,
     canonical_json,
 )
@@ -49,6 +50,48 @@ WORKFLOW = ".github/workflows/firebase-hosting-publish.yml"
 
 
 class SealedPublicationRecoveryTests(unittest.TestCase):
+    def test_public_one_shot_entry_points_are_unconditionally_disabled(self):
+        predecessor = ProviderIdentity(
+            TARGET,
+            "sites/fixture-site/channels/live/releases/baseline-release",
+            "sites/fixture-site/versions/baseline-version",
+        )
+        for repository in (
+            "arkar16/sportsrank",
+            "ARKAR16/SPORTSRANK",
+            "arkar16/SportsRank",
+            "owner/repository",
+        ):
+            with self.subTest(repository=repository):
+                backend = FakeFirebasePublicationBackend(
+                    TARGET, predecessor, managed_identity=APP_IDENTITY,
+                )
+                archive = FakeImmutableArchive()
+                coordinator = PublicationCoordinator(
+                    provider=FirebasePublicationAdapter(TARGET, backend),
+                    archive=archive,
+                    repository=repository,
+                    approval_reader=FakeGitHubApprovalReader({}, []),
+                )
+                arguments = {
+                    "prepared": None,
+                    "commit_reader": None,
+                    "runtime": None,
+                    "baseline": None,
+                    "evidence_references": {},
+                    "tags": None,
+                    "attempt_id": "disabled",
+                    "retrieval_directory": ".",
+                }
+                with self.assertRaisesRegex(Exception, "seal_publication_attempt"):
+                    coordinator.publish_normal(None, **arguments)
+                with self.assertRaisesRegex(Exception, "seal_publication_attempt"):
+                    coordinator.publish_recovery(
+                        None, purpose="correction", prior=None, **arguments
+                    )
+                self.assertEqual(backend.write_count, 0)
+                self.assertEqual(archive._releases, {})
+
     def test_exact_intent_reference_has_canonical_dispatch_grammar(self):
         reference = ArchiveReference(
             "arkar16/sportsrank", "17", "attempt-intent-17", "a" * 40,
