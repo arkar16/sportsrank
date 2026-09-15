@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import re
 import subprocess
+import threading
 from types import MappingProxyType
 from typing import Mapping, Protocol
 from urllib.parse import quote
@@ -62,6 +63,7 @@ class ArchiveSpec:
 
 class ImmutableArchive(Protocol):
     def seal_or_reconcile(self, spec: ArchiveSpec) -> Mapping[str, ArchiveReference]: ...
+    def seal_exclusive(self, spec: ArchiveSpec) -> Mapping[str, ArchiveReference]: ...
     def retrieve_and_verify(self, reference: ArchiveReference, destination: str | Path) -> Path: ...
 
 
@@ -276,6 +278,36 @@ class GitHubReleaseArchive:
             release = self._release_by_id(spec.repository, release_id)
         return self._references(spec, release)
 
+    def seal_exclusive(self, spec: ArchiveSpec) -> Mapping[str, ArchiveReference]:
+        """Create one immutable claim; any pre-existing claim is a hard failure."""
+
+        if self._release(spec.repository, spec.tag) is not None:
+            raise ArchiveError("exclusive archive claim already exists")
+        if self._draft(spec.repository, spec.tag) is not None:
+            raise ArchiveError("exclusive archive claim already exists")
+        self._ensure_tag_commit(spec.repository, spec.tag, spec.target_commit)
+        self._run([
+            "release", "create", spec.tag, "--repo", spec.repository,
+            "--target", spec.target_commit, "--title", spec.title,
+            "--notes", "Immutable SportsRank publication evidence", "--draft",
+        ])
+        release = self._draft(spec.repository, spec.tag)
+        if release is None:
+            raise ArchiveError("exclusive archive claim creation is uncertain")
+        release_id = _api_id(release.get("id"), "release ID")
+        self._require_tag_commit(spec.repository, spec.tag, spec.target_commit)
+        if self._draft_assets(spec, release, allow_missing=True):
+            raise ArchiveError("exclusive archive claim was not empty")
+        for name, path in spec.assets.items():
+            self._upload_to_draft(spec, release_id, name, Path(path))
+        release = self._release_by_id(spec.repository, release_id)
+        self._draft_assets(spec, release, allow_missing=False)
+        self._require_tag_commit(spec.repository, spec.tag, spec.target_commit)
+        self._publish_draft(spec.repository, release_id)
+        return self._references(
+            spec, self._release_by_id(spec.repository, release_id)
+        )
+
     def retrieve_and_verify(self, reference: ArchiveReference, destination: str | Path) -> Path:
         reference = ArchiveReference.from_value(reference)
         release = self._release_by_id(reference.repository, reference.release_id)
@@ -313,8 +345,13 @@ class FakeImmutableArchive:
     def __init__(self, *, immutability_available: bool = True) -> None:
         self.immutability_available = immutability_available
         self._releases: dict[tuple[str, str], tuple[str, str, dict[str, bytes], dict[str, ArchiveReference]]] = {}
+        self._lock = threading.Lock()
 
     def seal_or_reconcile(self, spec: ArchiveSpec) -> Mapping[str, ArchiveReference]:
+        with self._lock:
+            return self._seal_or_reconcile(spec)
+
+    def _seal_or_reconcile(self, spec: ArchiveSpec) -> Mapping[str, ArchiveReference]:
         if not self.immutability_available:
             raise ArchiveError("archive immutability is unavailable")
         key = (spec.repository, spec.tag)
@@ -335,6 +372,13 @@ class FakeImmutableArchive:
         }
         self._releases[key] = (spec.target_commit, release_id, assets, references)
         return dict(references)
+
+    def seal_exclusive(self, spec: ArchiveSpec) -> Mapping[str, ArchiveReference]:
+        with self._lock:
+            key = (spec.repository, spec.tag)
+            if key in self._releases:
+                raise ArchiveError("exclusive archive claim already exists")
+            return self._seal_or_reconcile(spec)
 
     def retrieve_and_verify(self, reference: ArchiveReference, destination: str | Path) -> Path:
         reference = ArchiveReference.from_value(reference)

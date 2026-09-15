@@ -34,6 +34,8 @@ from .publication_authorization import (
     ApprovalReader,
     GitHubPreparationProvenanceReader,
     GitHubRuntimeContext,
+    PREPARATION_REPOSITORY,
+    PreparationManifest,
     authenticate_preparation_manifest,
     authorize_protected_execution,
 )
@@ -41,12 +43,14 @@ from .publication_records import (
     ArchiveReference,
     AttemptIntentRecord,
     BaselineRecord,
+    ExecutionClaimRecord,
     ExternalPredecessorRecord,
     ProviderIdentity,
     ProviderResultRecord,
     ReconciliationRecord,
     RecordValidationError,
     SanitizedBaselineArchiveRecord,
+    SealedAttemptReference,
     ValidatedPackageRecord,
     VerificationRecord,
     canonical_json,
@@ -430,6 +434,110 @@ def rehydrate_prepared_package(
         raise
 
 
+def _preparation_origin_bytes(
+    path: str | Path,
+    *,
+    manifest: object,
+) -> bytes:
+    """Require the retained origin to exactly cross-check authenticated data."""
+
+    try:
+        value = Path(path).read_bytes()
+        raw = json.loads(value)
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise PublicationPreparationError("preparation origin is invalid") from exc
+    expected = {
+        "schema_version": 1,
+        "record_type": "publication_preparation_origin",
+        "repository": manifest.repository,
+        "workflow_path": manifest.workflow_path,
+        "event": manifest.event,
+        "ref": manifest.ref,
+        "head_sha": manifest.head_sha,
+        "run_id": manifest.run_id,
+        "run_attempt": manifest.run_attempt,
+    }
+    if raw != expected:
+        raise PublicationPreparationError(
+            "preparation origin differs from the authenticated preparation run"
+        )
+    return value
+
+
+def _candidate_bundle_reader(
+    bundle: str | Path,
+    *,
+    candidate_commit: str,
+    destination: Path,
+) -> GitCommitTreeReader:
+    """Materialize one retained Git bundle and require its exact commit object."""
+
+    bundle_path = Path(bundle).resolve()
+    if not bundle_path.is_file():
+        raise PublicationPreparationError("candidate bundle is unavailable")
+    if destination.exists():
+        raise PublicationPreparationError(
+            "candidate bundle destination must not already exist"
+        )
+    try:
+        subprocess.run(
+            ["git", "init", "--bare", "--quiet", str(destination)],
+            check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        )
+        subprocess.run(
+            ["git", "-C", str(destination), "bundle", "verify", str(bundle_path)],
+            check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        )
+        subprocess.run(
+            [
+                "git", "-C", str(destination), "fetch", "--quiet", str(bundle_path),
+                f"{candidate_commit}:refs/heads/candidate",
+            ],
+            check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise PublicationPreparationError(
+            "candidate bundle does not retain the immutable candidate"
+        ) from exc
+    reader = GitCommitTreeReader(destination)
+    reader.require_commit(candidate_commit)
+    return reader
+
+
+def _trusted_retained_evidence(
+    reader: GitCommitTreeReader,
+    *,
+    candidate_commit: str,
+) -> Mapping[str, str]:
+    """Read exact retained-evidence pins from the immutable candidate tree."""
+
+    try:
+        raw = json.loads(
+            reader.read_file(
+                candidate_commit, "config/sr7-recovery-inputs.json"
+            )
+        )
+        evidence = raw["evidence_archives"]
+    except (
+        UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError,
+        PublicationPreparationError,
+    ) as exc:
+        raise PublicationPreparationError(
+            "candidate commit lacks trusted retained-evidence pins"
+        ) from exc
+    required = {"baseline", "source_inputs", "original_prepared"}
+    if not isinstance(evidence, Mapping) or set(evidence) != required:
+        raise PublicationPreparationError(
+            "candidate retained-evidence pins are incomplete"
+        )
+    result = {str(name): str(value) for name, value in evidence.items()}
+    if any(not re.fullmatch(r"[0-9a-f]{64}", value) for value in result.values()):
+        raise PublicationPreparationError(
+            "candidate retained-evidence pins are invalid"
+        )
+    return result
+
+
 @dataclass(frozen=True)
 class SealedAttempt:
     package: ValidatedPackageRecord
@@ -443,6 +551,9 @@ class SealedAttempt:
     retrieved_validation: Path
     retrieved_intent: Path
     retrieved_evidence: Mapping[str, Path]
+    retrieved_preparation_manifest: Path | None = None
+    retrieved_preparation_origin: Path | None = None
+    retrieved_candidate_bundle: Path | None = None
 
     def __post_init__(self) -> None:
         from types import MappingProxyType
@@ -463,9 +574,22 @@ def seal_attempt_evidence(
     evidence_references: Mapping[str, ArchiveReference],
     protected_context: Mapping[str, str],
     retrieval_directory: str | Path,
+    preparation_manifest: str | Path | None = None,
+    preparation_origin: str | Path | None = None,
+    candidate_bundle: str | Path | None = None,
+    provenance_reader: GitHubPreparationProvenanceReader | None = None,
 ) -> SealedAttempt:
     """Seal and retrieve package, retained evidence, then the separate intent."""
 
+    recovery_values = (
+        preparation_manifest, preparation_origin, candidate_bundle,
+        provenance_reader,
+    )
+    durable_recovery = any(value is not None for value in recovery_values)
+    if durable_recovery and any(value is None for value in recovery_values):
+        raise PublicationPreparationError(
+            "durable attempt recovery inputs must be complete"
+        )
     prepared.assert_current()
     rebound = bind_merged_candidate(prepared, candidate_commit=package.candidate_commit, reader=commit_reader)
     if rebound.digest != package.digest:
@@ -488,6 +612,51 @@ def seal_attempt_evidence(
             package_record_path.name: package_record_path,
             validation_path.name: validation_path,
         }
+        if durable_recovery:
+            manifest_path = Path(preparation_manifest).resolve()  # type: ignore[arg-type]
+            origin_path = Path(preparation_origin).resolve()  # type: ignore[arg-type]
+            bundle_path = Path(candidate_bundle).resolve()  # type: ignore[arg-type]
+            if (
+                manifest_path.name != "publication-preparation-manifest.json"
+                or origin_path.name != "preparation-origin.json"
+                or bundle_path.name != "candidate.bundle"
+            ):
+                raise PublicationPreparationError(
+                    "durable preparation evidence uses unexpected asset names"
+                )
+            authenticated = authenticate_preparation_manifest(
+                manifest_path,
+                reader=provenance_reader,  # type: ignore[arg-type]
+                expected_candidate_commit=package.candidate_commit,
+            )
+            if (
+                authenticated.manifest.package_archive_sha256
+                != package.bundle_sha256
+                or authenticated.manifest.package_record_sha256 != package.digest
+            ):
+                raise PublicationPreparationError(
+                    "authenticated preparation does not bind the sealed package"
+                )
+            _preparation_origin_bytes(
+                origin_path, manifest=authenticated.manifest
+            )
+            bundle_reader = _candidate_bundle_reader(
+                bundle_path,
+                candidate_commit=package.candidate_commit,
+                destination=work / "candidate-replay.git",
+            )
+            if bind_merged_candidate(
+                prepared, candidate_commit=package.candidate_commit,
+                reader=bundle_reader,
+            ) != package:
+                raise PublicationPreparationError(
+                    "retained candidate bundle differs from the sealed package"
+                )
+            package_assets.update({
+                manifest_path.name: manifest_path,
+                origin_path.name: origin_path,
+                bundle_path.name: bundle_path,
+            })
         package_refs = archive.seal_or_reconcile(ArchiveSpec(
             repository, package_tag, package.candidate_commit, package_assets,
             f"SportsRank package {attempt_id}",
@@ -515,12 +684,28 @@ def seal_attempt_evidence(
             role: archive.retrieve_and_verify(ArchiveReference.from_value(reference), destination / f"{role}-{reference.asset_name}")
             for role, reference in evidence_references.items()
         }
+        recovery_references: dict[str, Mapping[str, Any]] = {}
+        if durable_recovery:
+            recovery_references = {
+                "package_record_reference": package_record_ref.to_dict(),
+                "validation_reference": validation_ref.to_dict(),
+                "preparation_manifest_reference": package_refs[
+                    "publication-preparation-manifest.json"
+                ].to_dict(),
+                "preparation_origin_reference": package_refs[
+                    "preparation-origin.json"
+                ].to_dict(),
+                "candidate_bundle_reference": package_refs[
+                    "candidate.bundle"
+                ].to_dict(),
+            }
         intent = AttemptIntentRecord.create(
             package=package, attempt_id=attempt_id, purpose=purpose,
             expected_predecessor=package.expected_predecessor.to_dict(),
             artifact_reference=package_ref.to_dict(),
             evidence_references={name: value.to_dict() for name, value in evidence_references.items()},
             protected_context=dict(protected_context),
+            **recovery_references,
         )
         intent_path = work / "attempt-intent.json"
         intent_path.write_bytes(canonical_json(intent.to_dict()))
@@ -533,10 +718,25 @@ def seal_attempt_evidence(
             # canonical_json is the record digest's exact byte representation.
             raise PublicationPreparationError("sealed intent digest differs from its logical record")
         retrieved_intent = archive.retrieve_and_verify(intent_ref, destination / intent_path.name)
+        retrieved_manifest = retrieved_origin = retrieved_bundle = None
+        if durable_recovery:
+            retrieved_manifest = archive.retrieve_and_verify(
+                package_refs["publication-preparation-manifest.json"],
+                destination / "publication-preparation-manifest.json",
+            )
+            retrieved_origin = archive.retrieve_and_verify(
+                package_refs["preparation-origin.json"],
+                destination / "preparation-origin.json",
+            )
+            retrieved_bundle = archive.retrieve_and_verify(
+                package_refs["candidate.bundle"],
+                destination / "candidate.bundle",
+            )
     return SealedAttempt(
         package, intent, package_ref, package_record_ref, validation_ref,
         intent_ref, retrieved_package, retrieved_package_record,
         retrieved_validation, retrieved_intent, dict(retrieved_evidence),
+        retrieved_manifest, retrieved_origin, retrieved_bundle,
     )
 
 
@@ -846,6 +1046,151 @@ def _json_object(path: Path, name: str) -> Mapping[str, Any]:
     return value
 
 
+def retrieve_sealed_attempt(
+    reference: SealedAttemptReference,
+    *,
+    archive: ImmutableArchive,
+    repository: str,
+    provenance_reader: GitHubPreparationProvenanceReader,
+    retrieval_directory: str | Path,
+) -> RecordedPublicationAttempt:
+    """Reconstruct one attempt solely from its exact immutable intent ref."""
+
+    if not isinstance(reference, SealedAttemptReference):
+        raise PublicationExecutionError(
+            "recovery requires a canonical sealed attempt reference"
+        )
+    intent_reference = reference.intent_reference
+    if intent_reference.repository != repository:
+        raise PublicationExecutionError(
+            "sealed attempt belongs to another repository"
+        )
+    destination = Path(retrieval_directory)
+    destination.mkdir(parents=True, exist_ok=True)
+    intent_path = archive.retrieve_and_verify(
+        intent_reference, destination / "attempt-intent.json"
+    )
+    intent = AttemptIntentRecord.from_dict(
+        _json_object(intent_path, "attempt intent")
+    )
+    if intent_reference.sha256 != intent.digest:
+        raise PublicationExecutionError(
+            "sealed attempt reference differs from the retrieved intent"
+        )
+    required = (
+        intent.package_record_reference,
+        intent.validation_reference,
+        intent.preparation_manifest_reference,
+        intent.preparation_origin_reference,
+        intent.candidate_bundle_reference,
+    )
+    if any(value is None for value in required):
+        raise PublicationExecutionError(
+            "attempt intent predates durable exact-reference recovery"
+        )
+    (
+        package_record_reference,
+        validation_reference,
+        preparation_manifest_reference,
+        preparation_origin_reference,
+        candidate_bundle_reference,
+    ) = required
+    package_path = archive.retrieve_and_verify(
+        intent.artifact_reference,
+        destination / intent.artifact_reference.asset_name,
+    )
+    package_record_path = archive.retrieve_and_verify(
+        package_record_reference,  # type: ignore[arg-type]
+        destination / "validated-package.json",
+    )
+    validation_path = archive.retrieve_and_verify(
+        validation_reference,  # type: ignore[arg-type]
+        destination / "package-validation.json",
+    )
+    manifest_path = archive.retrieve_and_verify(
+        preparation_manifest_reference,  # type: ignore[arg-type]
+        destination / "publication-preparation-manifest.json",
+    )
+    origin_path = archive.retrieve_and_verify(
+        preparation_origin_reference,  # type: ignore[arg-type]
+        destination / "preparation-origin.json",
+    )
+    bundle_path = archive.retrieve_and_verify(
+        candidate_bundle_reference,  # type: ignore[arg-type]
+        destination / "candidate.bundle",
+    )
+    retrieved_evidence = {
+        role: archive.retrieve_and_verify(
+            evidence_reference,
+            destination / f"{role}-{evidence_reference.asset_name}",
+        )
+        for role, evidence_reference in intent.evidence_references.items()
+    }
+    package = ValidatedPackageRecord.from_dict(
+        _json_object(package_record_path, "validated package record")
+    )
+    linked_intent = AttemptIntentRecord.from_dict(
+        _json_object(intent_path, "attempt intent"), package=package
+    )
+    if linked_intent != intent:
+        raise PublicationExecutionError("attempt intent package link changed")
+    if (
+        intent_reference.target_commit != package.candidate_commit
+        or intent.expected_predecessor != package.expected_predecessor
+    ):
+        raise PublicationExecutionError(
+            "sealed intent does not bind the package candidate and predecessor"
+        )
+    expected_validation = _validation_evidence(
+        inventory_sha256=package.inventory_sha256,
+        configuration_sha256=package.configuration_sha256,
+        expected_baseline_sha256=package.expected_baseline_sha256,
+        retained_inputs_sha256=package.retained_inputs_sha256,
+    )
+    if validation_path.read_bytes() != expected_validation:
+        raise PublicationExecutionError(
+            "retrieved validation evidence differs from the package"
+        )
+    bundle_reader = _candidate_bundle_reader(
+        bundle_path,
+        candidate_commit=package.candidate_commit,
+        destination=destination / "candidate.git",
+    )
+    prepared = rehydrate_prepared_package(
+        package_record=package_record_path,
+        package_archive=package_path,
+        preparation_manifest=manifest_path,
+        candidate_reader=bundle_reader,
+        provenance_reader=provenance_reader,
+        materialize_to=destination / "materialized",
+    )
+    if bind_merged_candidate(
+        prepared, candidate_commit=package.candidate_commit,
+        reader=bundle_reader,
+    ) != package:
+        raise PublicationExecutionError(
+            "retrieved candidate binding differs from the sealed package"
+        )
+    manifest = PreparationManifest.from_bytes(manifest_path.read_bytes())
+    _preparation_origin_bytes(origin_path, manifest=manifest)
+    return RecordedPublicationAttempt(SealedAttempt(
+        package,
+        intent,
+        intent.artifact_reference,
+        package_record_reference,  # type: ignore[arg-type]
+        validation_reference,  # type: ignore[arg-type]
+        intent_reference,
+        package_path,
+        package_record_path,
+        validation_path,
+        intent_path,
+        retrieved_evidence,
+        manifest_path,
+        origin_path,
+        bundle_path,
+    ))
+
+
 def _retrieve_recorded_attempt(
     recorded: RecordedPublicationAttempt,
     *,
@@ -992,6 +1337,8 @@ def _verify_prior_publication(
         prior is None
         and not require_prior
         and baseline.observed == package.expected_predecessor
+        and baseline.source.status == "unknown"
+        and baseline.source.commit is None
     ):
         # First publication: the complete stable baseline is authoritative even
         # when its historical source commit is explicitly unknown.
@@ -1293,6 +1640,298 @@ class PublicationCoordinator:
         self.clock = clock
         self.operation_lock = operation_lock
 
+    def seal_publication_attempt(
+        self,
+        package: ValidatedPackageRecord,
+        *,
+        purpose: str,
+        prepared: PreparedPackage,
+        commit_reader: GitCommitTreeReader,
+        runtime: GitHubRuntimeContext,
+        baseline: BaselineRecord,
+        evidence_references: Mapping[str, ArchiveReference],
+        preparation_manifest: str | Path,
+        preparation_origin: str | Path,
+        candidate_bundle: str | Path,
+        provenance_reader: GitHubPreparationProvenanceReader,
+        tags: PublicationTags,
+        attempt_id: str,
+        retrieval_directory: str | Path,
+        prior: VerifiedPublicationPredecessor | None = None,
+    ) -> SealedAttemptReference:
+        """Seal a durable attempt reference without reading or writing Firebase."""
+
+        if purpose not in {"normal", "rollback", "correction"}:
+            raise PublicationExecutionError("publication purpose is invalid")
+        if type(commit_reader) is not GitCommitTreeReader:
+            raise PublicationExecutionError(
+                "durable sealing requires the concrete Git commit-tree reader"
+            )
+        if (
+            baseline.target != self.provider.target
+            or package.expected_predecessor.target != self.provider.target
+        ):
+            raise PublicationExecutionError(
+                "sealed package baseline does not match the configured provider target"
+            )
+        trusted_evidence = _trusted_retained_evidence(
+            commit_reader, candidate_commit=package.candidate_commit
+        )
+        if (
+            set(evidence_references) != set(trusted_evidence)
+            or any(
+                ArchiveReference.from_value(evidence_references[role]).sha256
+                != digest
+                for role, digest in trusted_evidence.items()
+            )
+        ):
+            raise PublicationExecutionError(
+                "retained evidence differs from the immutable candidate pins"
+            )
+        with self.operation_lock:
+            destination = Path(retrieval_directory)
+            _verify_prior_publication(
+                package, baseline, prior, archive=self.archive,
+                repository=self.repository,
+                destination=destination / "predecessor",
+                require_prior=purpose != "normal",
+            )
+            authorization = authorize_protected_execution(
+                package, runtime=runtime, github=self.approval_reader,
+                expected_repository=self.repository,
+            )
+            attempt = seal_attempt_evidence(
+                package,
+                prepared=prepared,
+                commit_reader=commit_reader,
+                archive=self.archive,
+                repository=self.repository,
+                package_tag=tags.package,
+                intent_tag=tags.intent,
+                attempt_id=attempt_id,
+                purpose=purpose,
+                evidence_references=evidence_references,
+                protected_context=authorization.context,
+                retrieval_directory=destination / "attempt",
+                preparation_manifest=preparation_manifest,
+                preparation_origin=preparation_origin,
+                candidate_bundle=candidate_bundle,
+                provenance_reader=provenance_reader,
+            )
+            return SealedAttemptReference(attempt.intent_reference)
+
+    def execute_sealed_attempt(
+        self,
+        reference: SealedAttemptReference,
+        *,
+        purpose: str,
+        runtime: GitHubRuntimeContext,
+        baseline: BaselineRecord,
+        provenance_reader: GitHubPreparationProvenanceReader,
+        tags: PublicationTags,
+        retrieval_directory: str | Path,
+        prior: VerifiedPublicationPredecessor | None = None,
+    ) -> PublicationRun:
+        """Consume one exact sealed reference once under fresh authorization."""
+
+        with self.operation_lock:
+            destination = Path(retrieval_directory)
+            recorded = retrieve_sealed_attempt(
+                reference,
+                archive=self.archive,
+                repository=self.repository,
+                provenance_reader=provenance_reader,
+                retrieval_directory=destination / "attempt",
+            )
+            attempt = recorded.attempt
+            package = attempt.package
+            if purpose != attempt.intent.purpose:
+                raise PublicationExecutionError(
+                    "execution purpose differs from the sealed intent"
+                )
+            if (
+                baseline.digest != package.expected_baseline_sha256
+                or baseline.observed != package.expected_predecessor
+                or baseline.target != self.provider.target
+            ):
+                raise PublicationExecutionError(
+                    "execution baseline or provider target differs from the sealed attempt"
+                )
+            _verify_prior_publication(
+                package, baseline, prior, archive=self.archive,
+                repository=self.repository,
+                destination=destination / "predecessor",
+                require_prior=purpose != "normal",
+            )
+            authorization = authorize_protected_execution(
+                package, runtime=runtime, github=self.approval_reader,
+                expected_repository=self.repository,
+            )
+            if (
+                authorization.context["run_id"]
+                == attempt.intent.protected_context["run_id"]
+            ):
+                raise PublicationExecutionError(
+                    "execution requires a fresh protected dispatch after sealing"
+                )
+            claim = ExecutionClaimRecord(
+                reference.intent_reference.digest,
+                attempt.intent.digest,
+                attempt.intent.attempt_id,
+                purpose,
+                package.digest,
+                package.candidate_commit,
+                package.expected_predecessor,
+                authorization.context,
+            )
+            claim_tag = (
+                "sportsrank-execution-claim-"
+                + reference.intent_reference.sha256
+            )
+            try:
+                with tempfile.TemporaryDirectory(
+                    prefix="sportsrank-execution-claim-"
+                ) as directory:
+                    claim_path = Path(directory) / "execution-claim.json"
+                    claim_path.write_bytes(canonical_json(claim.to_dict()))
+                    claim_refs = self.archive.seal_exclusive(ArchiveSpec(
+                        self.repository,
+                        claim_tag,
+                        package.candidate_commit,
+                        {claim_path.name: claim_path},
+                        f"SportsRank execution claim {attempt.intent.attempt_id}",
+                    ))
+                    claim_reference = claim_refs[claim_path.name]
+                    if claim_reference.sha256 != claim.digest:
+                        raise PublicationExecutionError(
+                            "execution claim digest differs from its record"
+                        )
+                    retrieved_claim = self.archive.retrieve_and_verify(
+                        claim_reference,
+                        destination / "execution-claim.json",
+                    )
+                    if ExecutionClaimRecord.from_dict(
+                        _json_object(retrieved_claim, "execution claim")
+                    ) != claim:
+                        raise PublicationExecutionError(
+                            "retrieved execution claim differs from the fresh authorization"
+                        )
+            except (ArchiveError, KeyError, OSError, RecordValidationError) as exc:
+                raise PublicationExecutionError(
+                    "execution claim could not be acquired exactly once"
+                ) from exc
+            return self._deploy_retrieved_attempt(
+                attempt, baseline=baseline, tags=tags,
+                destination=destination,
+            )
+
+    def _deploy_retrieved_attempt(
+        self,
+        attempt: SealedAttempt,
+        *,
+        baseline: BaselineRecord,
+        tags: PublicationTags,
+        destination: Path,
+    ) -> PublicationRun:
+        """Perform the one provider call sequence after the exclusive claim."""
+
+        package = attempt.package
+        artifact = FirebaseDeployArtifact.from_archive(
+            attempt.retrieved_package, package
+        )
+        live = self.provider.observe()
+        if live != package.expected_predecessor:
+            raise PublicationExecutionError(
+                "live provider identity changed after approval and archive work"
+            )
+        try:
+            receipt = self.provider.deploy(
+                artifact, attempt_id=attempt.intent.attempt_id
+            )
+        except ProviderRejectedError as exc:
+            result, provider_source = self._failure_result(
+                attempt.intent, "rejected", type(exc).__name__
+            )
+            return self._finish_without_verification(
+                attempt, package, tags, destination, result, provider_source,
+                state="rejected", may_have_changed=False,
+                next_operations=("new_owner_approved_attempt",),
+            )
+        except ProviderWriteUncertain as exc:
+            result, provider_source = self._failure_result(
+                attempt.intent, "unknown", type(exc).__name__
+            )
+            return self._finish_without_verification(
+                attempt, package, tags, destination, result, provider_source,
+                state="provider_unknown", may_have_changed=True,
+                next_operations=("reconcile",),
+            )
+        provider_source = dict(receipt.source)
+        result = ProviderResultRecord.create(
+            intent=attempt.intent,
+            outcome="accepted",
+            observed_target=receipt.identity.target.to_dict(),
+            observed_release=receipt.identity.release,
+            observed_version=receipt.identity.version,
+            observed_at=_timestamp(self.clock),
+            source_sha256=_source_digest(provider_source),
+        )
+        try:
+            provider_evidence = _seal_record(
+                archive=self.archive, repository=self.repository,
+                tag=tags.provider_result,
+                candidate_commit=package.candidate_commit,
+                record_name="provider-result.json", record=result,
+                source_name="provider-result-source.json", source=provider_source,
+                destination=destination / "provider-result",
+            )
+        except (ArchiveError, PublicationExecutionError, PublicationPreparationError):
+            return PublicationRun(
+                "provider_result_unsealed", attempt, result, None, None, None,
+                True, ("reconcile",),
+            )
+        observation = self.provider.verify(
+            artifact, receipt.identity,
+            expected_managed=baseline.managed_resources,
+        )
+        verification_source = dict(observation.source)
+        verification = VerificationRecord.create(
+            intent=attempt.intent,
+            provider_result=result,
+            outcome=observation.outcome,
+            inventory_sha256=observation.inventory_sha256,
+            configuration_sha256=observation.configuration_sha256,
+            managed_resource_findings=observation.managed_findings,
+            public_page_findings=observation.public_findings,
+            findings=observation.findings,
+            observed_at=_timestamp(self.clock),
+            source_sha256=_source_digest(verification_source),
+        )
+        try:
+            verification_evidence = _seal_record(
+                archive=self.archive, repository=self.repository,
+                tag=tags.verification,
+                candidate_commit=package.candidate_commit,
+                record_name="verification.json", record=verification,
+                source_name="verification-source.json",
+                source=verification_source,
+                destination=destination / "verification",
+            )
+        except (ArchiveError, PublicationExecutionError, PublicationPreparationError):
+            return PublicationRun(
+                "verification_unsealed", attempt, result, provider_evidence,
+                verification, None, True, ("reconcile",),
+            )
+        state = {
+            "verified": "verified",
+            "failed": "verification_failed",
+            "unknown": "verification_unknown",
+        }[verification.outcome]
+        return PublicationRun(
+            state, attempt, result, provider_evidence, verification,
+            verification_evidence, True, ("reconcile",),
+        )
+
     def publish_normal(
         self,
         package: ValidatedPackageRecord,
@@ -1307,6 +1946,11 @@ class PublicationCoordinator:
         retrieval_directory: str | Path,
         prior: VerifiedPublicationPredecessor | None = None,
     ) -> PublicationRun:
+        if self.repository == PREPARATION_REPOSITORY:
+            raise PublicationExecutionError(
+                "production publication requires seal_publication_attempt then "
+                "execute_sealed_attempt"
+            )
         return self._publish(
             package, purpose="normal", prepared=prepared,
             commit_reader=commit_reader, runtime=runtime, baseline=baseline,
@@ -1335,6 +1979,11 @@ class PublicationCoordinator:
         if purpose not in {"rollback", "correction"}:
             raise PublicationExecutionError(
                 "recovery publication purpose must be rollback or correction"
+            )
+        if self.repository == PREPARATION_REPOSITORY:
+            raise PublicationExecutionError(
+                "production recovery requires seal_publication_attempt then "
+                "execute_sealed_attempt"
             )
         if not isinstance(
             prior, (PriorVerifiedPublication, ExternalVerifiedPredecessor)
@@ -1401,104 +2050,9 @@ class PublicationCoordinator:
                 protected_context=authorization.context,
                 retrieval_directory=destination / "attempt",
             )
-            artifact = FirebaseDeployArtifact.from_archive(
-                attempt.retrieved_package, package
-            )
-            # This is deliberately the last operation before the first provider
-            # write. The process lock does not lock Firebase against outsiders.
-            live = self.provider.observe()
-            if live != package.expected_predecessor:
-                raise PublicationExecutionError(
-                    "live provider identity changed after approval and archive work"
-                )
-
-            try:
-                receipt = self.provider.deploy(artifact, attempt_id=attempt_id)
-            except ProviderRejectedError as exc:
-                result, provider_source = self._failure_result(
-                    attempt.intent, "rejected", type(exc).__name__
-                )
-                return self._finish_without_verification(
-                    attempt, package, tags, destination, result, provider_source,
-                    state="rejected", may_have_changed=False,
-                    next_operations=("new_owner_approved_attempt",),
-                )
-            except ProviderWriteUncertain as exc:
-                result, provider_source = self._failure_result(
-                    attempt.intent, "unknown", type(exc).__name__
-                )
-                return self._finish_without_verification(
-                    attempt, package, tags, destination, result, provider_source,
-                    state="provider_unknown", may_have_changed=True,
-                    next_operations=("reconcile",),
-                )
-
-            provider_source = dict(receipt.source)
-            result = ProviderResultRecord.create(
-                intent=attempt.intent,
-                outcome="accepted",
-                observed_target=receipt.identity.target.to_dict(),
-                observed_release=receipt.identity.release,
-                observed_version=receipt.identity.version,
-                observed_at=_timestamp(self.clock),
-                source_sha256=_source_digest(provider_source),
-            )
-            try:
-                provider_evidence = _seal_record(
-                    archive=self.archive, repository=self.repository,
-                    tag=tags.provider_result,
-                    candidate_commit=package.candidate_commit,
-                    record_name="provider-result.json", record=result,
-                    source_name="provider-result-source.json", source=provider_source,
-                    destination=destination / "provider-result",
-                )
-            except (ArchiveError, PublicationExecutionError, PublicationPreparationError):
-                return PublicationRun(
-                    "provider_result_unsealed", attempt, result, None, None, None,
-                    True, ("reconcile",),
-                )
-
-            observation = self.provider.verify(
-                artifact, receipt.identity,
-                expected_managed=baseline.managed_resources,
-            )
-            verification_source = dict(observation.source)
-            verification = VerificationRecord.create(
-                intent=attempt.intent,
-                provider_result=result,
-                outcome=observation.outcome,
-                inventory_sha256=observation.inventory_sha256,
-                configuration_sha256=observation.configuration_sha256,
-                managed_resource_findings=observation.managed_findings,
-                public_page_findings=observation.public_findings,
-                findings=observation.findings,
-                observed_at=_timestamp(self.clock),
-                source_sha256=_source_digest(verification_source),
-            )
-            try:
-                verification_evidence = _seal_record(
-                    archive=self.archive, repository=self.repository,
-                    tag=tags.verification,
-                    candidate_commit=package.candidate_commit,
-                    record_name="verification.json", record=verification,
-                    source_name="verification-source.json",
-                    source=verification_source,
-                    destination=destination / "verification",
-                )
-            except (ArchiveError, PublicationExecutionError, PublicationPreparationError):
-                return PublicationRun(
-                    "verification_unsealed", attempt, result, provider_evidence,
-                    verification, None, True, ("reconcile",),
-                )
-            state = {
-                "verified": "verified",
-                "failed": "verification_failed",
-                "unknown": "verification_unknown",
-            }[verification.outcome]
-            next_operations = ("reconcile",)
-            return PublicationRun(
-                state, attempt, result, provider_evidence, verification,
-                verification_evidence, True, next_operations,
+            return self._deploy_retrieved_attempt(
+                attempt, baseline=baseline, tags=tags,
+                destination=destination,
             )
 
     def reconcile(
@@ -1779,6 +2333,51 @@ class PublicationCoordinator:
             reconciliation_evidence,
             provider_result, provider_evidence,
             verification, verification_evidence, permitted, predecessor,
+        )
+
+    def reconcile_sealed_attempt(
+        self,
+        reference: SealedAttemptReference,
+        *,
+        baseline: BaselineRecord,
+        provenance_reader: GitHubPreparationProvenanceReader,
+        tags: ReconciliationTags,
+        retrieval_directory: str | Path,
+    ) -> ReconciliationRun:
+        """Freshly reconcile an exact attempt without Actions state."""
+
+        destination = Path(retrieval_directory)
+        recorded = retrieve_sealed_attempt(
+            reference,
+            archive=self.archive,
+            repository=self.repository,
+            provenance_reader=provenance_reader,
+            retrieval_directory=destination / "retrieved-attempt",
+        )
+        return self.reconcile(
+            recorded,
+            baseline=baseline,
+            tags=tags,
+            retrieval_directory=destination / "reconciliation",
+        )
+
+    def verify_sealed_attempt(
+        self,
+        reference: SealedAttemptReference,
+        *,
+        baseline: BaselineRecord,
+        provenance_reader: GitHubPreparationProvenanceReader,
+        tags: ReconciliationTags,
+        retrieval_directory: str | Path,
+    ) -> ReconciliationRun:
+        """Zero-write verification when no provider-result state survived."""
+
+        return self.reconcile_sealed_attempt(
+            reference,
+            baseline=baseline,
+            provenance_reader=provenance_reader,
+            tags=tags,
+            retrieval_directory=retrieval_directory,
         )
 
     def reconcile_external(
