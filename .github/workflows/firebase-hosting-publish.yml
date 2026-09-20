@@ -9,9 +9,17 @@ on:
         type: choice
         options:
           - prepare
+          - seal-only
           - execute
           - reconcile
           - verify-only
+      purpose:
+        description: Immutable intent purpose for seal-only or execute
+        required: false
+        default: normal
+        type: choice
+        options:
+          - normal
           - rollback
           - correction
       preparation_run_id:
@@ -22,6 +30,10 @@ on:
         description: Exact artifact name from the preparation run
         required: false
         type: string
+      sealed_reference:
+        description: Exact canonical SealedAttemptReference text from seal-only
+        required: false
+        type: string
       input_run_id:
         description: Read-only retained-input artifact run for prepare
         required: false
@@ -30,12 +42,16 @@ on:
         description: Read-only retained-input artifact name for prepare
         required: false
         type: string
-      predecessor_run_id:
-        description: Prior protected run containing the immutable attempt state
+      prior_reference:
+        description: Exact predecessor SealedAttemptReference for a successor, rollback, or correction
         required: false
         type: string
-      predecessor_artifact_name:
-        description: Exact prior protected state artifact for reconciliation or recovery
+      prior_preparation_run_id:
+        description: Preparation run containing the predecessor baseline record
+        required: false
+        type: string
+      prior_preparation_artifact_name:
+        description: Exact predecessor preparation artifact containing baseline.json
         required: false
         type: string
 
@@ -140,14 +156,16 @@ jobs:
           set -euo pipefail
           input_root="$RUNNER_TEMP/retained-inputs"
           output_root="$RUNNER_TEMP/preparation"
+          candidate_bundle="$RUNNER_TEMP/candidate.bundle"
+          candidate_bundle_sha256="$RUNNER_TEMP/candidate.bundle.sha256"
           mkdir -p "$output_root"
-          git bundle create "$output_root/candidate.bundle" HEAD
-          (cd "$output_root" && sha256sum candidate.bundle > candidate.bundle.sha256)
+          git bundle create "$candidate_bundle" HEAD
+          sha256sum "$candidate_bundle" > "$candidate_bundle_sha256"
           uv run --locked python -m cfb.publication_cli prepare \
             --candidate-root "$GITHUB_WORKSPACE" \
             --candidate-commit "$GITHUB_SHA" \
-            --candidate-tree-bundle "$output_root/candidate.bundle" \
-            --candidate-tree-sha256 "$(cut -d' ' -f1 "$output_root/candidate.bundle.sha256")" \
+            --candidate-tree-bundle "$candidate_bundle" \
+            --candidate-tree-sha256 "$(cut -d' ' -f1 "$candidate_bundle_sha256")" \
             --firebase-json "$GITHUB_WORKSPACE/firebase.json" \
             --baseline-archive "$input_root/baseline.tar.gz" \
             --baseline-sha256 "$(jq -r '.baseline.private_archive_sha256' "$GITHUB_WORKSPACE/config/sr7-recovery-inputs.json")" \
@@ -248,6 +266,7 @@ jobs:
       actions: read
     steps:
       - name: Download the exact prepared package transport
+        if: inputs.preparation_run_id != '' && inputs.preparation_artifact_name != ''
         uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.preparation_artifact_name }}
@@ -255,13 +274,14 @@ jobs:
           github-token: ${{ github.token }}
           path: ${{ runner.temp }}/preparation
 
-      - name: Verify the authenticated preparation and state run origins
+      - name: Verify the authenticated preparation origin and exact reference input
+        if: inputs.preparation_run_id != '' && inputs.preparation_artifact_name != ''
         shell: bash
         env:
           OPERATION: ${{ inputs.operation }}
           PREPARATION_RUN_ID: ${{ inputs.preparation_run_id }}
           PREPARATION_ARTIFACT_NAME: ${{ inputs.preparation_artifact_name }}
-          EXPECTED_SHA: ${{ github.sha }}
+          SEALED_REFERENCE: ${{ inputs.sealed_reference }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
@@ -311,19 +331,19 @@ jobs:
             --arg package_record_sha256 "$package_record_sha256" \
             '.schema_version == 1 and .record_type == "publication_preparation_manifest" and .repository == "arkar16/sportsrank" and .workflow_path == ".github/workflows/firebase-hosting-publish.yml" and .event == "workflow_dispatch" and .ref == "refs/heads/main" and .head_sha == $candidate and .run_id == $origin_run_id and .run_attempt == "1" and .package_archive_sha256 == $package_archive_sha256 and .package_record_sha256 == $package_record_sha256' \
             "$preparation_manifest" > /dev/null
-          if [[ "$OPERATION" == "execute" || "$OPERATION" == "rollback" || "$OPERATION" == "correction" ]]; then
+          if [[ "$OPERATION" == "seal-only" || "$OPERATION" == "execute" ]]; then
             test "$origin_run_id" = "$PREPARATION_RUN_ID"
           fi
           echo "PREPARATION_HEAD_SHA=$origin_head_sha" >> "$GITHUB_ENV"
           echo "PREPARATION_ORIGIN_RUN_ID=$origin_run_id" >> "$GITHUB_ENV"
           echo "SOURCE_RUN_HEAD_SHA=$preparation_head_sha" >> "$GITHUB_ENV"
           case "$OPERATION" in
-            execute|rollback|correction)
-              test "$PREPARATION_ARTIFACT_NAME" = "sportsrank-preparation-$EXPECTED_SHA"
-              test "$preparation_head_sha" = "$EXPECTED_SHA"
+            seal-only|execute)
+              test "$PREPARATION_ARTIFACT_NAME" = "sportsrank-preparation-$origin_head_sha"
+              test "$preparation_head_sha" = "$origin_head_sha"
               ;;
             reconcile|verify-only)
-              test "$PREPARATION_ARTIFACT_NAME" = "sportsrank-publication-$PREPARATION_RUN_ID"
+              test "$PREPARATION_ARTIFACT_NAME" = "sportsrank-preparation-$origin_head_sha"
               ;;
             *)
               echo "unsupported protected operation" >&2
@@ -331,32 +351,255 @@ jobs:
               ;;
           esac
 
-      - name: Retrieve the immutable predecessor state when required
-        if: inputs.operation == 'execute' || inputs.operation == 'rollback' || inputs.operation == 'correction'
+      - name: Preserve the exact sealed reference input
+        if: inputs.operation != 'seal-only'
         shell: bash
         env:
-          OPERATION: ${{ inputs.operation }}
-          PREDECESSOR_RUN_ID: ${{ inputs.predecessor_run_id }}
-          PREDECESSOR_ARTIFACT_NAME: ${{ inputs.predecessor_artifact_name }}
+          SEALED_REFERENCE: ${{ inputs.sealed_reference }}
+        run: |
+          set -euo pipefail
+          test -n "$SEALED_REFERENCE"
+          printf '%s' "$SEALED_REFERENCE" > "$RUNNER_TEMP/sealed-attempt-reference.json"
+          test "$(tail -c 1 "$RUNNER_TEMP/sealed-attempt-reference.json" | od -An -t x1 | tr -d '[:space:]')" = "0a"
+          jq -e '.schema_version == 1 and .record_type == "sealed_attempt_reference" and (.intent_reference.asset_name == "attempt-intent.json")' \
+            "$RUNNER_TEMP/sealed-attempt-reference.json" >/dev/null
+
+      - name: Require either the prepared runtime transport or a durable exact reference
+        if: inputs.operation != 'seal-only'
+        shell: bash
+        env:
+          PREPARATION_RUN_ID: ${{ inputs.preparation_run_id }}
+          PREPARATION_ARTIFACT_NAME: ${{ inputs.preparation_artifact_name }}
+          SEALED_REFERENCE: ${{ inputs.sealed_reference }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$SEALED_REFERENCE" && ( -z "$PREPARATION_RUN_ID" || -z "$PREPARATION_ARTIFACT_NAME" ) ]]; then
+            echo 'execute, reconcile, and verify-only require sealed_reference; preparation transport is optional runtime input' >&2
+            exit 1
+          fi
+
+      - name: Require the prepared transport for seal-only
+        if: inputs.operation == 'seal-only'
+        shell: bash
+        env:
+          PREPARATION_RUN_ID: ${{ inputs.preparation_run_id }}
+          PREPARATION_ARTIFACT_NAME: ${{ inputs.preparation_artifact_name }}
+        run: |
+          set -euo pipefail
+          [[ "$PREPARATION_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          [[ "$PREPARATION_ARTIFACT_NAME" =~ ^[A-Za-z0-9_.-]+$ ]]
+
+      - name: Retrieve the exact predecessor baseline when a successor needs it
+        if: (inputs.operation == 'seal-only' || inputs.operation == 'execute') && inputs.prior_reference != '' && inputs.prior_preparation_run_id != '' && inputs.prior_preparation_artifact_name != ''
+        id: prior_preparation
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRIOR_PREPARATION_RUN_ID: ${{ inputs.prior_preparation_run_id }}
+          PRIOR_PREPARATION_ARTIFACT_NAME: ${{ inputs.prior_preparation_artifact_name }}
+        run: |
+          set -euo pipefail
+          [[ "$PRIOR_PREPARATION_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          [[ "$PRIOR_PREPARATION_ARTIFACT_NAME" =~ ^[A-Za-z0-9_.-]+$ ]]
+          mkdir -p "$RUNNER_TEMP/prior-preparation"
+          if gh run download "$PRIOR_PREPARATION_RUN_ID" \
+            --repo arkar16/sportsrank \
+            --name "$PRIOR_PREPARATION_ARTIFACT_NAME" \
+            --dir "$RUNNER_TEMP/prior-preparation" \
+            && test -s "$RUNNER_TEMP/prior-preparation/baseline.json"; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Require a complete predecessor transport or durable predecessor reference
+        if: (inputs.operation == 'seal-only' || inputs.operation == 'execute') && inputs.prior_reference != ''
+        shell: bash
+        env:
+          PRIOR_PREPARATION_RUN_ID: ${{ inputs.prior_preparation_run_id }}
+          PRIOR_PREPARATION_ARTIFACT_NAME: ${{ inputs.prior_preparation_artifact_name }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$PRIOR_PREPARATION_RUN_ID" && -z "$PRIOR_PREPARATION_ARTIFACT_NAME" ]]; then
+            exit 0
+          fi
+          [[ "$PRIOR_PREPARATION_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          [[ "$PRIOR_PREPARATION_ARTIFACT_NAME" =~ ^[A-Za-z0-9_.-]+$ ]]
+
+      - name: Materialize the transported predecessor baseline
+        if: (inputs.operation == 'seal-only' || inputs.operation == 'execute') && inputs.prior_reference != '' && inputs.prior_preparation_run_id != '' && inputs.prior_preparation_artifact_name != '' && steps.prior_preparation.outputs.available == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s "$RUNNER_TEMP/prior-preparation/baseline.json"
+          cp "$RUNNER_TEMP/prior-preparation/baseline.json" "$RUNNER_TEMP/prior-baseline.json"
+
+      - name: Preserve the exact predecessor reference input
+        if: (inputs.operation == 'seal-only' || inputs.operation == 'execute') && inputs.prior_reference != ''
+        shell: bash
+        env:
+          PRIOR_REFERENCE: ${{ inputs.prior_reference }}
+        run: |
+          set -euo pipefail
+          [[ -n "$PRIOR_REFERENCE" ]]
+          printf '%s' "$PRIOR_REFERENCE" > "$RUNNER_TEMP/prior-sealed-attempt-reference.json"
+          test "$(tail -c 1 "$RUNNER_TEMP/prior-sealed-attempt-reference.json" | od -An -t x1 | tr -d '[:space:]')" = "0a"
+          jq -e '.schema_version == 1 and .record_type == "sealed_attempt_reference" and (.intent_reference.asset_name == "attempt-intent.json")' \
+            "$RUNNER_TEMP/prior-sealed-attempt-reference.json" >/dev/null
+
+      - name: Set up Python 3.12 and uv for durable fallback bootstrap
+        if: inputs.operation != 'seal-only' && (inputs.preparation_run_id == '' || inputs.preparation_artifact_name == '')
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv for durable fallback bootstrap
+        if: inputs.operation != 'seal-only' && (inputs.preparation_run_id == '' || inputs.preparation_artifact_name == '')
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: true
+
+      - name: Bootstrap exact runtime and baseline from the durable reference
+        if: inputs.operation != 'seal-only' && (inputs.preparation_run_id == '' || inputs.preparation_artifact_name == '')
+        shell: bash
+        env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          if [[ -z "$PREDECESSOR_RUN_ID" && -z "$PREDECESSOR_ARTIFACT_NAME" ]]; then
-            if [[ "$OPERATION" == "execute" ]]; then
-              exit 0
-            fi
-            echo "$OPERATION requires an immutable predecessor state artifact" >&2
-            exit 1
-          fi
-          [[ "$PREDECESSOR_RUN_ID" =~ ^[1-9][0-9]*$ ]]
-          [[ "$PREDECESSOR_ARTIFACT_NAME" =~ ^[A-Za-z0-9_.-]+$ ]]
-          mkdir -p "$RUNNER_TEMP/predecessor"
-          gh run download "$PREDECESSOR_RUN_ID" \
+          reference="$RUNNER_TEMP/sealed-attempt-reference.json"
+          test -s "$reference"
+          mkdir -p "$RUNNER_TEMP/durable" "$RUNNER_TEMP/preparation"
+          download_asset() {
+            local asset_id="$1" expected="$2" destination="$3"
+            [[ "$asset_id" =~ ^[1-9][0-9]*$ ]]
+            [[ "$expected" =~ ^[0-9a-f]{64}$ ]]
+            gh api \
+              -H 'Accept: application/octet-stream' \
+              "repos/arkar16/sportsrank/releases/assets/$asset_id" > "$destination"
+            test "$(sha256sum "$destination" | cut -d' ' -f1)" = "$expected"
+          }
+          intent_asset="$(jq -r '.intent_reference.asset_id' "$reference")"
+          intent_sha="$(jq -r '.intent_reference.sha256' "$reference")"
+          [[ "$intent_asset" =~ ^[1-9][0-9]*$ ]]
+          [[ "$intent_sha" =~ ^[0-9a-f]{64}$ ]]
+          download_asset "$intent_asset" "$intent_sha" "$RUNNER_TEMP/durable/attempt-intent.json"
+          package_asset="$(jq -r '.artifact_reference.asset_id' "$RUNNER_TEMP/durable/attempt-intent.json")"
+          package_sha="$(jq -r '.artifact_reference.sha256' "$RUNNER_TEMP/durable/attempt-intent.json")"
+          download_asset "$package_asset" "$package_sha" "$RUNNER_TEMP/durable/package.tar.gz"
+          package_record_asset="$(jq -r '.package_record_reference.asset_id' "$RUNNER_TEMP/durable/attempt-intent.json")"
+          package_record_sha="$(jq -r '.package_record_reference.sha256' "$RUNNER_TEMP/durable/attempt-intent.json")"
+          download_asset "$package_record_asset" "$package_record_sha" "$RUNNER_TEMP/durable/validated-package.json"
+          candidate="$(jq -r '.candidate_bundle_reference.target_commit' "$RUNNER_TEMP/durable/attempt-intent.json")"
+          [[ "$candidate" =~ ^[0-9a-f]{40}$ ]]
+          for role in candidate_bundle_reference preparation_manifest_reference preparation_origin_reference; do
+            asset_id="$(jq -r ".${role}.asset_id" "$RUNNER_TEMP/durable/attempt-intent.json")"
+            asset_sha="$(jq -r ".${role}.sha256" "$RUNNER_TEMP/durable/attempt-intent.json")"
+            case "$role" in
+              candidate_bundle_reference) output="$RUNNER_TEMP/durable/candidate.bundle" ;;
+              preparation_manifest_reference) output="$RUNNER_TEMP/durable/publication-preparation-manifest.json" ;;
+              preparation_origin_reference) output="$RUNNER_TEMP/durable/preparation-origin.json" ;;
+            esac
+            download_asset "$asset_id" "$asset_sha" "$output"
+          done
+          manifest="$RUNNER_TEMP/durable/publication-preparation-manifest.json"
+          package_archive_sha256="$(sha256sum "$RUNNER_TEMP/durable/package.tar.gz" | cut -d' ' -f1)"
+          package_record_sha256="$(sha256sum "$RUNNER_TEMP/durable/validated-package.json" | cut -d' ' -f1)"
+          jq -e \
+            --arg candidate "$candidate" \
+            --arg package_sha "$package_sha" \
+            '.candidate_commit == $candidate and .bundle_sha256 == $package_sha' \
+            "$RUNNER_TEMP/durable/validated-package.json" >/dev/null
+          manifest_sha="$(sha256sum "$manifest" | cut -d' ' -f1)"
+          jq -e \
+            --arg candidate "$candidate" \
+            --arg package_archive_sha256 "$package_archive_sha256" \
+            --arg package_record_sha256 "$package_record_sha256" \
+            '.schema_version == 1 and .record_type == "publication_preparation_manifest" and .head_sha == $candidate and .package_archive_sha256 == $package_archive_sha256 and .package_record_sha256 == $package_record_sha256' \
+            "$manifest" >/dev/null
+          attestation_json="$(gh attestation verify "$manifest" \
             --repo arkar16/sportsrank \
-            --name "$PREDECESSOR_ARTIFACT_NAME" \
-            --dir "$RUNNER_TEMP/predecessor"
+            --signer-workflow "arkar16/sportsrank/.github/workflows/firebase-hosting-publish.yml" \
+            --source-ref "refs/heads/main" \
+            --source-digest "$candidate" \
+            --predicate-type "https://slsa.dev/provenance/v1" \
+            --deny-self-hosted-runners --format json)"
+          jq -e --arg manifest_sha "$manifest_sha" \
+            'type == "array" and length > 0 and any(.[]; any(.verificationResult.statement.subject[]?; .digest.sha256 == $manifest_sha))' \
+            <<< "$attestation_json" >/dev/null
+          origin_run_id="$(jq -r '.run_id' "$RUNNER_TEMP/durable/preparation-origin.json")"
+          origin_sha="$(jq -r '.head_sha' "$RUNNER_TEMP/durable/preparation-origin.json")"
+          [[ "$origin_run_id" =~ ^[1-9][0-9]*$ && "$origin_sha" = "$candidate" ]]
+          origin_json="$(gh run view "$origin_run_id" --repo arkar16/sportsrank --json databaseId,path,event,headBranch,headSha,runAttempt,status,conclusion)"
+          jq -e --arg run_id "$origin_run_id" --arg head_sha "$candidate" \
+            '.databaseId == ($run_id | tonumber) and .path == ".github/workflows/firebase-hosting-publish.yml" and .event == "workflow_dispatch" and .headBranch == "main" and .headSha == $head_sha and .runAttempt == 1 and .status == "completed" and .conclusion == "success"' \
+            <<< "$origin_json" >/dev/null
+          trusted_repo="$RUNNER_TEMP/durable/candidate.git"
+          git init --bare --quiet "$trusted_repo"
+          authenticated_commit="$(gh api "repos/arkar16/sportsrank/commits/$candidate")"
+          authenticated_sha="$(jq -r '.sha // empty' <<< "$authenticated_commit")"
+          authenticated_tree="$(jq -r '.commit.tree.sha // empty' <<< "$authenticated_commit")"
+          [[ "$authenticated_sha" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$authenticated_tree" =~ ^[0-9a-f]{40}$ ]]
+          test "$authenticated_sha" = "$candidate"
+          git -C "$trusted_repo" bundle verify "$RUNNER_TEMP/durable/candidate.bundle" >/dev/null
+          heads="$(git bundle list-heads "$RUNNER_TEMP/durable/candidate.bundle")"
+          [[ "$heads" == "$candidate "* ]]
+          git -C "$trusted_repo" fetch --quiet --no-tags "$RUNNER_TEMP/durable/candidate.bundle" "$candidate:refs/heads/candidate"
+          test "$(git -C "$trusted_repo" cat-file -t "$candidate")" = commit
+          test "$(git -C "$trusted_repo" rev-parse "$candidate^{tree}")" = "$authenticated_tree"
+          git -C "$trusted_repo" fsck --strict --full --no-dangling >/dev/null
+          mkdir -p "$RUNNER_TEMP/execution"
+          git -C "$trusted_repo" archive --format=tar "$candidate" \
+            README.md cfb tools pyproject.toml uv.lock config \
+            | gzip -n > "$RUNNER_TEMP/durable/execution-source.tar.gz"
+          tar --extract --file "$RUNNER_TEMP/durable/execution-source.tar.gz" \
+            --directory "$RUNNER_TEMP/execution" --no-same-owner
+          cp "$RUNNER_TEMP/durable/publication-preparation-manifest.json" "$RUNNER_TEMP/preparation/publication-preparation-manifest.json"
+          cp "$RUNNER_TEMP/durable/preparation-origin.json" "$RUNNER_TEMP/preparation/preparation-origin.json"
+          cp "$RUNNER_TEMP/durable/candidate.bundle" "$RUNNER_TEMP/preparation/candidate.bundle"
+          (cd "$RUNNER_TEMP/preparation" && sha256sum candidate.bundle > candidate.bundle.sha256)
+          echo "PREPARATION_HEAD_SHA=$candidate" >> "$GITHUB_ENV"
+          echo "PREPARATION_ORIGIN_RUN_ID=$origin_run_id" >> "$GITHUB_ENV"
 
-      - name: "Verify the prepared package, fresh approval context, and channel: live target"
+      - name: Reconstruct the exact baseline record from the sealed package
+        if: inputs.operation != 'seal-only' && (inputs.preparation_run_id == '' || inputs.preparation_artifact_name == '')
+        working-directory: ${{ runner.temp }}/execution
+        env:
+          PACKAGE_ARCHIVE: ${{ runner.temp }}/durable/package.tar.gz
+          PACKAGE_RECORD: ${{ runner.temp }}/durable/validated-package.json
+          PACKAGE_MANIFEST: ${{ runner.temp }}/durable/candidate-manifest.json
+          BASELINE_OUTPUT: ${{ runner.temp }}/preparation/baseline.json
+          TRUSTED_INPUT_MANIFEST: ${{ runner.temp }}/execution/config/sr7-recovery-inputs.json
+        run: |
+          set -euo pipefail
+          tar --extract --gzip --file "$PACKAGE_ARCHIVE" --to-stdout website/manifest.json > "$PACKAGE_MANIFEST"
+          uv sync --locked
+          uv run --locked python - <<'PY'
+          import os
+          import json
+          from pathlib import Path
+          from cfb.publication_records import BaselineRecord, ProviderTarget, ValidatedPackageRecord, canonical_json
+
+          package = ValidatedPackageRecord.from_dict(json.loads(Path(os.environ["PACKAGE_RECORD"]).read_bytes()))
+          manifest = json.loads(Path(os.environ["PACKAGE_MANIFEST"]).read_bytes())
+          provenance = manifest.get("baseline_provenance")
+          if not isinstance(provenance, dict) or not isinstance(provenance.get("record"), dict):
+              raise SystemExit("sealed package has no baseline provenance record")
+          baseline = BaselineRecord.from_dict(provenance["record"])
+          if provenance.get("record_digest") != baseline.digest:
+              raise SystemExit("sealed baseline provenance digest is inconsistent")
+          if baseline.digest != package.expected_baseline_sha256:
+              raise SystemExit("sealed baseline provenance does not match package")
+          if baseline.target != ProviderTarget("sportsrank-837af", "sportsrank-837af", "live"):
+              raise SystemExit("sealed baseline target is invalid")
+          trusted = json.loads(Path(os.environ["TRUSTED_INPUT_MANIFEST"]).read_bytes())
+          if trusted["baseline"]["record_sha256"] != baseline.digest:
+              raise SystemExit("sealed baseline does not match committed input pin")
+          Path(os.environ["BASELINE_OUTPUT"]).write_bytes(canonical_json(baseline.to_dict()))
+          PY
+
+      - name: "Verify the prepared transport and channel: live target"
+        if: inputs.preparation_run_id != '' && inputs.preparation_artifact_name != ''
         shell: bash
         env:
           OPERATION: ${{ inputs.operation }}
@@ -374,10 +617,7 @@ jobs:
           candidate="$(jq -r '.candidate_commit' publication-context.json)"
           [[ "$candidate" =~ ^[0-9a-f]{40}$ ]]
           case "$OPERATION" in
-            execute|rollback|correction)
-              test "$candidate" = "$EXPECTED_SHA"
-              ;;
-            reconcile|verify-only)
+            seal-only|execute|reconcile|verify-only)
               test "$candidate" = "$PREPARATION_HEAD_SHA"
               ;;
           esac
@@ -398,6 +638,7 @@ jobs:
             publication-preparation-manifest.json > /dev/null
 
       - name: Verify the preparation attestation before runtime materialization
+        if: inputs.preparation_run_id != '' && inputs.preparation_artifact_name != ''
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -420,6 +661,7 @@ jobs:
             <<< "$attestation_json" >/dev/null
 
       - name: Verify transported execution source against the authenticated Git object graph
+        if: inputs.preparation_run_id != '' && inputs.preparation_artifact_name != ''
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -455,6 +697,7 @@ jobs:
             "$RUNNER_TEMP/preparation/execution-source.tar.gz"
 
       - name: Materialize the exact execution code without a source checkout
+        if: inputs.preparation_run_id != '' && inputs.preparation_artifact_name != ''
         shell: bash
         run: |
           set -euo pipefail
@@ -463,11 +706,13 @@ jobs:
             --directory "$RUNNER_TEMP/execution" --no-same-owner
 
       - name: Set up Python 3.12 and uv for the transported source
+        if: inputs.preparation_run_id != '' && inputs.preparation_artifact_name != ''
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
       - name: Set up uv
+        if: inputs.preparation_run_id != '' && inputs.preparation_artifact_name != ''
         uses: astral-sh/setup-uv@v9.0.0
         with:
           enable-cache: true
@@ -476,7 +721,71 @@ jobs:
         working-directory: ${{ runner.temp }}/execution
         run: uv sync --locked
 
-      - name: Obtain the gated Firebase access token
+      - name: Bootstrap the predecessor package from its durable reference
+        if: (inputs.operation == 'seal-only' || inputs.operation == 'execute') && inputs.prior_reference != '' && (inputs.prior_preparation_run_id == '' || inputs.prior_preparation_artifact_name == '' || steps.prior_preparation.outputs.available != 'true')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRIOR_REFERENCE: ${{ inputs.prior_reference }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/prior-durable" "$RUNNER_TEMP/prior-preparation"
+          download_asset() {
+            local asset_id="$1" expected="$2" destination="$3"
+            [[ "$asset_id" =~ ^[1-9][0-9]*$ ]]
+            [[ "$expected" =~ ^[0-9a-f]{64}$ ]]
+            gh api -H 'Accept: application/octet-stream' \
+              "repos/arkar16/sportsrank/releases/assets/$asset_id" > "$destination"
+            test "$(sha256sum "$destination" | cut -d' ' -f1)" = "$expected"
+          }
+          intent_asset="$(jq -r '.intent_reference.asset_id' "$RUNNER_TEMP/prior-sealed-attempt-reference.json")"
+          intent_sha="$(jq -r '.intent_reference.sha256' "$RUNNER_TEMP/prior-sealed-attempt-reference.json")"
+          [[ "$intent_asset" =~ ^[1-9][0-9]*$ ]]
+          [[ "$intent_sha" =~ ^[0-9a-f]{64}$ ]]
+          download_asset "$intent_asset" "$intent_sha" "$RUNNER_TEMP/prior-durable/attempt-intent.json"
+          package_asset="$(jq -r '.artifact_reference.asset_id' "$RUNNER_TEMP/prior-durable/attempt-intent.json")"
+          package_sha="$(jq -r '.artifact_reference.sha256' "$RUNNER_TEMP/prior-durable/attempt-intent.json")"
+          download_asset "$package_asset" "$package_sha" "$RUNNER_TEMP/prior-durable/package.tar.gz"
+          package_record_asset="$(jq -r '.package_record_reference.asset_id' "$RUNNER_TEMP/prior-durable/attempt-intent.json")"
+          package_record_sha="$(jq -r '.package_record_reference.sha256' "$RUNNER_TEMP/prior-durable/attempt-intent.json")"
+          download_asset "$package_record_asset" "$package_record_sha" "$RUNNER_TEMP/prior-durable/validated-package.json"
+
+      - name: Reconstruct the predecessor baseline record from the sealed package
+        if: (inputs.operation == 'seal-only' || inputs.operation == 'execute') && inputs.prior_reference != '' && (inputs.prior_preparation_run_id == '' || inputs.prior_preparation_artifact_name == '')
+        working-directory: ${{ runner.temp }}/execution
+        env:
+          PRIOR_PACKAGE_ARCHIVE: ${{ runner.temp }}/prior-durable/package.tar.gz
+          PRIOR_PACKAGE_RECORD: ${{ runner.temp }}/prior-durable/validated-package.json
+          PRIOR_PACKAGE_MANIFEST: ${{ runner.temp }}/prior-durable/candidate-manifest.json
+          PRIOR_BASELINE_OUTPUT: ${{ runner.temp }}/prior-baseline.json
+        run: |
+          set -euo pipefail
+          tar --extract --gzip --file "$PRIOR_PACKAGE_ARCHIVE" --to-stdout website/manifest.json > "$PRIOR_PACKAGE_MANIFEST"
+          uv run --locked python - <<'PY'
+          import os
+          import json
+          from pathlib import Path
+          from cfb.publication_records import BaselineRecord, ProviderTarget, ValidatedPackageRecord, canonical_json
+
+          package = ValidatedPackageRecord.from_dict(json.loads(Path(os.environ["PRIOR_PACKAGE_RECORD"]).read_bytes()))
+          manifest = json.loads(Path(os.environ["PRIOR_PACKAGE_MANIFEST"]).read_bytes())
+          provenance = manifest.get("baseline_provenance")
+          if not isinstance(provenance, dict) or not isinstance(provenance.get("record"), dict):
+              raise SystemExit("sealed predecessor package has no baseline provenance record")
+          baseline = BaselineRecord.from_dict(provenance["record"])
+          if provenance.get("record_digest") != baseline.digest:
+              raise SystemExit("sealed predecessor baseline provenance digest is inconsistent")
+          if baseline.digest != package.expected_baseline_sha256:
+              raise SystemExit("sealed predecessor baseline provenance does not match package")
+          if baseline.target != ProviderTarget("sportsrank-837af", "sportsrank-837af", "live"):
+              raise SystemExit("sealed predecessor baseline target is invalid")
+          Path(os.environ["PRIOR_BASELINE_OUTPUT"]).write_bytes(
+              canonical_json(baseline.to_dict())
+          )
+          PY
+
+      - name: Obtain the gated Firebase access token for observation or execution
+        if: inputs.operation == 'execute' || inputs.operation == 'reconcile' || inputs.operation == 'verify-only' || (inputs.operation == 'seal-only' && inputs.prior_reference != '')
         id: firebase-auth
         uses: google-github-actions/auth@v2
         with:
@@ -484,41 +793,68 @@ jobs:
           token_format: access_token
           access_token_scopes: https://www.googleapis.com/auth/cloud-platform
 
-      - name: Run the selected publication operation through the coordinator
+      - name: Run the selected two-dispatch operation through the coordinator
         working-directory: ${{ runner.temp }}/execution
         env:
           OPERATION: ${{ inputs.operation }}
+          PURPOSE: ${{ inputs.purpose }}
           GITHUB_TOKEN: ${{ github.token }}
           GH_TOKEN: ${{ github.token }}
           FIREBASE_ACCESS_TOKEN: ${{ steps.firebase-auth.outputs.access_token }}
           CFBD_API_KEY: ""
+          PRIOR_REFERENCE: ${{ inputs.prior_reference }}
         run: |
           set -euo pipefail
-          cli=(
-            uv run --locked python -m cfb.publication_cli
-            "$OPERATION"
-            --context "$RUNNER_TEMP/preparation/publication-context.json"
-            --trusted-input-manifest "$RUNNER_TEMP/execution/config/sr7-recovery-inputs.json"
-            --attempt-id "run-${GITHUB_RUN_ID}"
-            --retrieval-directory "$RUNNER_TEMP/receipts" \
-            --result "$RUNNER_TEMP/publication-run.json"
-          )
+          if [[ "$OPERATION" == "seal-only" ]]; then
+            cli=(
+              uv run --locked python -m cfb.publication_cli seal-only
+              --context "$RUNNER_TEMP/preparation/publication-context.json"
+              --trusted-input-manifest "$RUNNER_TEMP/execution/config/sr7-recovery-inputs.json"
+              --attempt-id "run-${GITHUB_RUN_ID}"
+              --purpose "$PURPOSE"
+              --retrieval-directory "$RUNNER_TEMP/receipts"
+              --reference-output "$RUNNER_TEMP/sealed-attempt-reference.json"
+            )
+            if [[ -n "$PRIOR_REFERENCE" ]]; then
+              test -s "$RUNNER_TEMP/prior-sealed-attempt-reference.json"
+              test -s "$RUNNER_TEMP/prior-baseline.json"
+              cli+=(
+                --prior-reference "$RUNNER_TEMP/prior-sealed-attempt-reference.json"
+                --prior-baseline-record "$RUNNER_TEMP/prior-baseline.json"
+              )
+            elif [[ "$PURPOSE" != "normal" ]]; then
+              echo "$PURPOSE requires prior_reference and a verified predecessor baseline" >&2
+              exit 1
+            fi
+          else
+            cli=(
+              uv run --locked python -m cfb.publication_cli
+              "$OPERATION"
+              --sealed-reference "$RUNNER_TEMP/sealed-attempt-reference.json"
+              --baseline-record "$RUNNER_TEMP/preparation/baseline.json"
+              --attempt-id "run-${GITHUB_RUN_ID}"
+              --retrieval-directory "$RUNNER_TEMP/receipts"
+              --result "$RUNNER_TEMP/publication-run.json"
+            )
+          fi
           case "$OPERATION" in
-            reconcile|verify-only)
-              cli+=(--attempt-manifest "$RUNNER_TEMP/preparation/publication-run.json")
-              ;;
-            execute|rollback|correction)
-              if [[ -f "$RUNNER_TEMP/predecessor/publication-context.json" || -f "$RUNNER_TEMP/predecessor/publication-run.json" ]]; then
-                test -f "$RUNNER_TEMP/predecessor/publication-context.json"
-                test -f "$RUNNER_TEMP/predecessor/publication-run.json"
+            execute)
+              cli+=(--purpose "$PURPOSE")
+              if [[ -n "$PRIOR_REFERENCE" ]]; then
+                test -s "$RUNNER_TEMP/prior-sealed-attempt-reference.json"
+                test -s "$RUNNER_TEMP/prior-baseline.json"
                 cli+=(
-                  --prior-context "$RUNNER_TEMP/predecessor/publication-context.json"
-                  --prior-manifest "$RUNNER_TEMP/predecessor/publication-run.json"
+                  --prior-reference "$RUNNER_TEMP/prior-sealed-attempt-reference.json"
+                  --prior-baseline-record "$RUNNER_TEMP/prior-baseline.json"
                 )
-              elif [[ "$OPERATION" != "execute" ]]; then
-                echo "$OPERATION requires predecessor context and run manifest" >&2
+              elif [[ "$PURPOSE" != "normal" ]]; then
+                echo "$PURPOSE requires prior_reference and a verified predecessor baseline" >&2
                 exit 1
               fi
+              ;;
+            reconcile|verify-only)
+              ;;
+            seal-only)
               ;;
             *)
               echo "unsupported protected operation" >&2
@@ -528,53 +864,44 @@ jobs:
           "${cli[@]}"
 
       - name: Expose only sanitized coordinator evidence
+        env:
+          OPERATION: ${{ inputs.operation }}
         shell: bash
         run: |
           set -euo pipefail
-          jq -e '{record_type, operation, state, deployment_may_have_changed, permitted_next_operations, attempt: {candidate_commit: .attempt.package.candidate_commit, package_sha256: .attempt.package.bundle_sha256, intent_sha256: .attempt.intent.package_sha256}, provider_result: (.provider_result | if . == null then null else {outcome, observed_release, observed_version} end), verification: (.verification | if . == null then null else {outcome, observed_release, observed_version} end)}' \
-            "$RUNNER_TEMP/publication-run.json" >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$OPERATION" == "seal-only" ]]; then
+            {
+              printf '%s\n' 'Exact SealedAttemptReference (preserve the trailing newline):' '```'
+              cat "$RUNNER_TEMP/sealed-attempt-reference.json"
+              printf '%s\n' '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            jq -e '{record_type, operation, state, permitted_next_operations, intent: (.intent // {candidate_commit: .attempt.package.candidate_commit, intent_sha256: .attempt.intent.package_sha256}), provider_result: (.provider_result | if . == null then null else {outcome, observed_release, observed_version} end), verification: (.verification | if . == null then null else {outcome, observed_release, observed_version} end)}' \
+              "$RUNNER_TEMP/publication-run.json" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
-      - name: Assemble the immutable publication state transport
-        if: success()
+      - name: Assemble the exact reference and sanitized receipt transport
+        if: always()
         shell: bash
         run: |
           set -euo pipefail
           state_root="$RUNNER_TEMP/publication-state"
           mkdir -p "$state_root"
-          cp "$RUNNER_TEMP/publication-run.json" "$state_root/publication-run.json"
-          for name in \
-            package.tar.gz package.sha256 package.json baseline.json \
-            baseline-public.tar.gz baseline-sanitizer.json \
-            package.json.sha256 \
-            publication-context.json publication-attestation.json \
-            publication-preparation-manifest.json \
-            preparation-origin.json \
-            candidate.bundle candidate.bundle.sha256 \
-            execution-source.tar.gz execution-source.sha256; do
-            cp "$RUNNER_TEMP/preparation/$name" "$state_root/$name"
-          done
+          test -s "$RUNNER_TEMP/sealed-attempt-reference.json"
+          cp "$RUNNER_TEMP/sealed-attempt-reference.json" "$state_root/sealed-attempt-reference.json"
+          cp "$RUNNER_TEMP/preparation/baseline.json" "$state_root/baseline.json"
+          if [[ -f "$RUNNER_TEMP/publication-run.json" ]]; then
+            cp "$RUNNER_TEMP/publication-run.json" "$state_root/publication-run.json"
+          fi
 
-      - name: Retain the immutable publication state for later reconciliation
-        if: success()
+      - name: Retain the exact reference for state-free recovery
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: sportsrank-publication-${{ github.run_id }}
           path: |
-            ${{ runner.temp }}/publication-state/publication-run.json
-            ${{ runner.temp }}/publication-state/package.tar.gz
-            ${{ runner.temp }}/publication-state/package.sha256
-            ${{ runner.temp }}/publication-state/package.json
-            ${{ runner.temp }}/publication-state/package.json.sha256
             ${{ runner.temp }}/publication-state/baseline.json
-            ${{ runner.temp }}/publication-state/baseline-public.tar.gz
-            ${{ runner.temp }}/publication-state/baseline-sanitizer.json
-            ${{ runner.temp }}/publication-state/publication-context.json
-            ${{ runner.temp }}/publication-state/publication-attestation.json
-            ${{ runner.temp }}/publication-state/publication-preparation-manifest.json
-            ${{ runner.temp }}/publication-state/preparation-origin.json
-            ${{ runner.temp }}/publication-state/candidate.bundle
-            ${{ runner.temp }}/publication-state/candidate.bundle.sha256
-            ${{ runner.temp }}/publication-state/execution-source.tar.gz
-            ${{ runner.temp }}/publication-state/execution-source.sha256
-          if-no-files-found: error
+            ${{ runner.temp }}/publication-state/sealed-attempt-reference.json
+            ${{ runner.temp }}/publication-state/publication-run.json
+          if-no-files-found: warn
           retention-days: 7

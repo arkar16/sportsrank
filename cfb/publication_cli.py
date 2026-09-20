@@ -8,15 +8,22 @@ the coordinator in :mod:`cfb.publication`:
     Revalidate a staged candidate against an imported complete baseline and
     retained Schema 3 inputs, bind the exact immutable Git commit, and write
     a portable preparation context plus package.
-``execute`` / ``rollback`` / ``correction``
-    Consume the exact prepared package.  Normal successors may supply a
-    previous attempt; that attempt is reconciled afresh before it is used.
-    Rollback and correction always require that fresh reconciled predecessor.
+``seal-only``
+    Authenticate and retain one complete immutable attempt intent without
+    reading or writing Firebase, then emit the exact canonical sealed reference
+    for a later dispatch.  Known predecessors are freshly reconciled before
+    sealing when a successor, rollback, or correction is requested.
+``execute``
+    Consume one exact sealed reference under a fresh owner-approved dispatch.
+    The reference rehydrates the package and all retained evidence; no local
+    package, manifest, bundle, or Actions state is an authority.  Rollback and
+    correction require a freshly reconciled predecessor reference.
 ``reconcile``
-    Read one sealed attempt and append a provider observation through the
-    coordinator.
+    Read one sealed attempt from its exact reference and append a fresh provider
+    observation through the coordinator; it never deploys.
 ``verify-only``
-    Recheck one accepted deployment without invoking a provider write.
+    Recheck one sealed attempt from its exact reference without invoking a
+    provider write.
 ``reconcile-external``
     Bind an unknown live deployment to a complete, freshly captured provider
     baseline through the configured reader.
@@ -35,6 +42,7 @@ import json
 import os
 from pathlib import Path, PurePosixPath
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -57,7 +65,6 @@ from .firebase import (
 from .github_archive import (
     ArchiveError,
     GitHubReleaseArchive,
-    ImmutableArchive,
 )
 from .publication import (
     CommitTreeReader,
@@ -67,10 +74,8 @@ from .publication import (
     PublicationExecutionError,
     PublicationTags,
     ReconciliationTags,
-    RecordedPublicationAttempt,
     SealedAttempt,
     SealedRecordEvidence,
-    _validation_evidence,
     bind_merged_candidate,
     prepare_review_package,
     rehydrate_prepared_package,
@@ -90,7 +95,8 @@ from .publication_records import (
     BaselineRecord,
     ProviderTarget,
     ProviderResultRecord,
-    SanitizedBaselineArchiveRecord,
+    RecordValidationError,
+    SealedAttemptReference,
     ValidatedPackageRecord,
     VerificationRecord,
     canonical_json,
@@ -128,34 +134,6 @@ _LEGACY_CONTEXT_FIELDS = _CONTEXT_FIELDS - {
     "baseline_sanitizer_record",
     "baseline_sanitizer_record_sha256",
 }
-_RUN_FIELDS = {
-    "schema_version",
-    "record_type",
-    "operation",
-    "state",
-    "deployment_may_have_changed",
-    "permitted_next_operations",
-    "attempt",
-    "provider_result",
-    "provider_evidence",
-    "verification",
-    "verification_evidence",
-}
-_ATTEMPT_FIELDS = {
-    "package",
-    "intent",
-    "package_reference",
-    "package_record_reference",
-    "validation_reference",
-    "intent_reference",
-    "evidence_references",
-}
-_EVIDENCE_FIELDS = {
-    "record_reference",
-    "source_reference",
-}
-
-
 class PublicationCLIError(RuntimeError):
     """A caller input or portable publication context failed closed."""
 
@@ -889,8 +867,13 @@ def prepare_operation(args: argparse.Namespace) -> Path:
         _assert_trusted_source_bundle(source_inputs, trusted)
         source_inputs.assert_external_to(candidate_root)
         package_archive = output / "package.tar.gz"
+        candidate_site = (
+            candidate_root / "website"
+            if (candidate_root / "website").is_dir()
+            else candidate_root
+        )
         prepared = prepare_review_package(
-            candidate_root,
+            candidate_site,
             baseline=baseline,
             firebase_json=firebase_json,
             source_inputs=source_inputs,
@@ -921,6 +904,24 @@ def prepare_operation(args: argparse.Namespace) -> Path:
             raise PublicationCLIError(
                 "generated public baseline derivative is not the reviewed SR7 derivative"
             )
+        # The preparation output must start empty so a caller cannot smuggle
+        # an unreviewed transport file into the package.  Keep the candidate
+        # bundle staged outside that directory until every input and package
+        # check above has passed, then copy the exact verified bytes into the
+        # self-contained preparation transport referenced by its context.
+        transported_candidate_tree = output / "candidate.bundle"
+        if candidate_tree_archive != transported_candidate_tree:
+            shutil.copyfile(candidate_tree_archive, transported_candidate_tree)
+        if _sha256_file(transported_candidate_tree) != candidate_tree_sha256:
+            raise PublicationCLIError(
+                "transported candidate Git bundle does not match its digest"
+            )
+        transported_candidate_digest = output / "candidate.bundle.sha256"
+        if transported_candidate_digest.exists():
+            raise PublicationCLIError("refusing to overwrite candidate bundle digest")
+        transported_candidate_digest.write_text(
+            f"{candidate_tree_sha256}  candidate.bundle\n", encoding="ascii"
+        )
         public_sanitizer_record = output / "baseline-sanitizer.json"
         _write_json(output / "package.json", package.to_dict())
         _write_json(output / "baseline.json", baseline.record.to_dict())
@@ -931,7 +932,7 @@ def prepare_operation(args: argparse.Namespace) -> Path:
                 package=package,
                 baseline=baseline.record,
                 package_archive=package_archive,
-                candidate_tree_archive=candidate_tree_archive,
+                candidate_tree_archive=transported_candidate_tree,
                 candidate_tree_sha256=candidate_tree_sha256,
                 evidence_references=evidence,
                 output_root=output,
@@ -1124,181 +1125,6 @@ def _result_path(args: argparse.Namespace, default_root: Path) -> Path:
     return Path(args.result).resolve()
 
 
-def _attempt_manifest_path(args: argparse.Namespace) -> Path:
-    if args.attempt_manifest is None:
-        raise PublicationCLIError(
-            f"{args.operation} requires an immutable attempt manifest"
-        )
-    path = Path(args.attempt_manifest).resolve()
-    if not path.is_file():
-        raise PublicationCLIError("immutable attempt manifest is missing")
-    return path
-
-
-def _load_evidence_pair(
-    value: Any, name: str, archive: ImmutableArchive, destination: Path
-) -> SealedRecordEvidence:
-    if not isinstance(value, Mapping) or set(value) != _EVIDENCE_FIELDS:
-        raise PublicationCLIError(f"{name} evidence is incomplete")
-    record_reference = _archive_reference(value["record_reference"], f"{name} record")
-    source_reference = _archive_reference(value["source_reference"], f"{name} source")
-    if record_reference.release_id == source_reference.release_id and record_reference.asset_id == source_reference.asset_id:
-        raise PublicationCLIError(f"{name} evidence roles must be distinct")
-    try:
-        record_path = archive.retrieve_and_verify(
-            record_reference, destination / record_reference.asset_name
-        )
-        source_path = archive.retrieve_and_verify(
-            source_reference, destination / source_reference.asset_name
-        )
-    except ArchiveError as exc:
-        raise PublicationCLIError(f"{name} immutable evidence is unavailable") from exc
-    return SealedRecordEvidence(record_reference, source_reference, record_path, source_path)
-
-
-def _load_recorded_attempt(
-    manifest_path: Path,
-    *,
-    archive: ImmutableArchive,
-    candidate_tree_archive: Path,
-    candidate_tree_sha256: str,
-    destination: Path,
-) -> tuple[RecordedPublicationAttempt, _RehydratedPackage]:
-    raw = _json_object(manifest_path, "publication run")
-    if set(raw) != _RUN_FIELDS or raw.get("record_type") != "publication_run" or raw.get("schema_version") != 1:
-        raise PublicationCLIError("publication run schema is unsupported")
-    attempt_raw = raw.get("attempt")
-    if not isinstance(attempt_raw, Mapping) or set(attempt_raw) != _ATTEMPT_FIELDS:
-        raise PublicationCLIError("publication attempt schema is incomplete")
-    try:
-        package = ValidatedPackageRecord.from_dict(attempt_raw["package"])
-        intent = AttemptIntentRecord.from_dict(attempt_raw["intent"], package=package)
-    except (TypeError, ValueError) as exc:
-        raise PublicationCLIError("publication attempt records are invalid") from exc
-    refs = {
-        name: _archive_reference(attempt_raw[name], name)
-        for name in (
-            "package_reference", "package_record_reference",
-            "validation_reference", "intent_reference",
-        )
-    }
-    if refs["package_reference"] != intent.artifact_reference:
-        raise PublicationCLIError("attempt package reference does not match its intent")
-    evidence_refs_raw = attempt_raw["evidence_references"]
-    if not isinstance(evidence_refs_raw, Mapping) or set(evidence_refs_raw) != {"baseline", "source_inputs", "original_prepared"}:
-        raise PublicationCLIError("attempt evidence references are incomplete")
-    evidence_refs = {
-        str(role): _archive_reference(value, f"attempt evidence {role}")
-        for role, value in evidence_refs_raw.items()
-    }
-    if len({(value.release_id, value.asset_id) for value in (*refs.values(), *evidence_refs.values())}) != 7:
-        raise PublicationCLIError("attempt archive assets must be distinct")
-    destination.mkdir(parents=True, exist_ok=True)
-    try:
-        package_path = archive.retrieve_and_verify(
-            refs["package_reference"], destination / refs["package_reference"].asset_name
-        )
-        package_record_path = archive.retrieve_and_verify(
-            refs["package_record_reference"], destination / refs["package_record_reference"].asset_name
-        )
-        validation_path = archive.retrieve_and_verify(
-            refs["validation_reference"], destination / refs["validation_reference"].asset_name
-        )
-        intent_path = archive.retrieve_and_verify(
-            refs["intent_reference"], destination / refs["intent_reference"].asset_name
-        )
-        evidence_paths = {
-            role: archive.retrieve_and_verify(
-                reference, destination / f"{role}-{reference.asset_name}"
-            )
-            for role, reference in evidence_refs.items()
-        }
-    except ArchiveError as exc:
-        raise PublicationCLIError("attempt archive evidence is unavailable") from exc
-    try:
-        stored_package = ValidatedPackageRecord.from_dict(
-            _json_object(package_record_path, "validated package record")
-        )
-        stored_intent = AttemptIntentRecord.from_dict(
-            _json_object(intent_path, "attempt intent"), package=stored_package
-        )
-    except (TypeError, ValueError) as exc:
-        raise PublicationCLIError("retrieved attempt records are invalid") from exc
-    if stored_package != package or stored_intent != intent:
-        raise PublicationCLIError("retrieved attempt records differ from the manifest")
-    if validation_path.read_bytes() != _validation_evidence(
-        inventory_sha256=package.inventory_sha256,
-        configuration_sha256=package.configuration_sha256,
-        expected_baseline_sha256=package.expected_baseline_sha256,
-        retained_inputs_sha256=package.retained_inputs_sha256,
-    ):
-        raise PublicationCLIError("retrieved validation evidence differs from the package")
-    context = PreparationContext(
-        manifest_path,
-        package,
-        # A baseline record is not needed to rehydrate the exact package.  It
-        # is supplied separately by the caller before coordinator use.
-        None,
-        package_path,
-        candidate_tree_archive,
-        candidate_tree_sha256,
-        evidence_refs,
-    )
-    rehydrated = _rehydrate_package(context)
-    try:
-        attempt = SealedAttempt(
-            package,
-            intent,
-            refs["package_reference"],
-            refs["package_record_reference"],
-            refs["validation_reference"],
-            refs["intent_reference"],
-            package_path,
-            package_record_path,
-            validation_path,
-            intent_path,
-            evidence_paths,
-        )
-        provider_result = None
-        provider_evidence = None
-        verification = None
-        verification_evidence = None
-        if raw["provider_result"] is not None:
-            try:
-                provider_result = ProviderResultRecord.from_dict(
-                    raw["provider_result"], intent=intent
-                )
-            except (TypeError, ValueError) as exc:
-                raise PublicationCLIError("publication provider result is invalid") from exc
-            provider_evidence = _load_evidence_pair(
-                raw["provider_evidence"], "provider result", archive,
-                destination / "provider-result",
-            )
-        elif raw["provider_evidence"] is not None:
-            raise PublicationCLIError("provider evidence cannot exist without a result")
-        if raw["verification"] is not None:
-            if provider_result is None:
-                raise PublicationCLIError("verification cannot exist without a provider result")
-            try:
-                verification = VerificationRecord.from_dict(
-                    raw["verification"], intent=intent, provider_result=provider_result
-                )
-            except (TypeError, ValueError) as exc:
-                raise PublicationCLIError("publication verification is invalid") from exc
-            verification_evidence = _load_evidence_pair(
-                raw["verification_evidence"], "verification", archive,
-                destination / "verification",
-            )
-        elif raw["verification_evidence"] is not None:
-            raise PublicationCLIError("verification evidence cannot exist without verification")
-        return RecordedPublicationAttempt(
-            attempt, provider_result, provider_evidence, verification, verification_evidence
-        ), rehydrated
-    except Exception:
-        rehydrated.close()
-        raise
-
-
 def _runtime() -> GitHubRuntimeContext:
     try:
         return GitHubRuntimeContext.from_environment()
@@ -1306,52 +1132,225 @@ def _runtime() -> GitHubRuntimeContext:
         raise PublicationCLIError("GitHub protected runtime context is incomplete") from exc
 
 
+def _load_sealed_reference(path: str | Path) -> SealedAttemptReference:
+    """Load the exact canonical reference supplied to a later dispatch.
+
+    The newline is part of the wire format.  Reading bytes here, instead of
+    parsing text and re-serializing it, makes accidental whitespace or a
+    substituted JSON object fail closed before any archive or provider work.
+    """
+
+    reference_path = Path(path).resolve()
+    try:
+        value = reference_path.read_bytes()
+    except OSError as exc:
+        raise PublicationCLIError("sealed attempt reference is unavailable") from exc
+    try:
+        reference = SealedAttemptReference.from_bytes(value)
+    except (RecordValidationError, TypeError, ValueError) as exc:
+        raise PublicationCLIError(
+            "sealed attempt reference must be canonical JSON with one trailing newline"
+        ) from exc
+    if reference.intent_reference.repository != REPOSITORY:
+        raise PublicationCLIError("sealed attempt reference belongs to another repository")
+    return reference
+
+
+def _load_baseline_record(path: str | Path) -> BaselineRecord:
+    """Load the baseline record transported beside a sealed reference."""
+
+    try:
+        baseline = BaselineRecord.from_dict(
+            _json_object(Path(path).resolve(), "baseline record")
+        )
+    except (RecordValidationError, TypeError, ValueError) as exc:
+        raise PublicationCLIError("baseline record is invalid") from exc
+    if baseline.target != TARGET:
+        raise PublicationCLIError("baseline record targets another Firebase site")
+    return baseline
+
+
+def _reference_output_path(args: argparse.Namespace, default_root: Path) -> Path:
+    path = getattr(args, "reference_output", None)
+    if path is None:
+        return default_root / "sealed-attempt-reference.json"
+    return Path(path).resolve()
+
+
+def _write_reference(path: Path, reference: SealedAttemptReference) -> Path:
+    """Write only canonical reference bytes; never wrap them in a summary."""
+
+    if path.exists():
+        raise PublicationCLIError(f"refusing to overwrite sealed output: {path.name}")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(reference.to_bytes())
+    return path
+
+
+def _fresh_prior_reference(
+    reference: SealedAttemptReference,
+    baseline: BaselineRecord,
+    *,
+    coordinator: PublicationCoordinator,
+    provenance_reader: GitHubPreparationProvenanceReader,
+    tag_prefix: str,
+    destination: Path,
+) -> Any:
+    """Reconcile a predecessor from its exact durable reference.
+
+    The returned capability is issued by the coordinator.  No local run
+    manifest or Actions state is used to establish predecessor authority.
+    """
+
+    reconciliation = coordinator.reconcile_sealed_attempt(
+        reference,
+        baseline=baseline,
+        provenance_reader=provenance_reader,
+        tags=_reconciliation_tags(f"fresh-{tag_prefix}"),
+        retrieval_directory=destination,
+    )
+    if not reconciliation.ordinary_successor_allowed:
+        raise PublicationCLIError(
+            "fresh predecessor reconciliation did not establish a verified capability"
+        )
+    try:
+        return reconciliation.as_prior()
+    except PublicationExecutionError as exc:
+        raise PublicationCLIError(
+            "fresh predecessor reconciliation did not establish a verified capability"
+        ) from exc
+
+
+def _reconciliation_evidence_dict(
+    evidence: SealedRecordEvidence | None,
+) -> dict[str, Any] | None:
+    return _evidence_dict(evidence)
+
+
+def _reconciliation_dict(
+    *,
+    operation: str,
+    state: str,
+    intent: AttemptIntentRecord,
+    observed_identity: Any,
+    observation: Any,
+    observation_evidence: SealedRecordEvidence | None,
+    provider_result: ProviderResultRecord | None,
+    provider_evidence: SealedRecordEvidence | None,
+    verification: VerificationRecord | None,
+    verification_evidence: SealedRecordEvidence | None,
+    permitted_next_operations: Sequence[str],
+) -> dict[str, Any]:
+    """Serialize a state-free reconciliation/verification receipt."""
+
+    return {
+        "schema_version": 1,
+        "record_type": "reconciliation_run",
+        "operation": operation,
+        "state": state,
+        "observed_identity": observed_identity.to_dict(),
+        "observation": observation.to_dict(),
+        "observation_evidence": _reconciliation_evidence_dict(observation_evidence),
+        "intent": intent.to_dict(),
+        "provider_result": provider_result.to_dict() if provider_result is not None else None,
+        "provider_evidence": _reconciliation_evidence_dict(provider_evidence),
+        "verification": verification.to_dict() if verification is not None else None,
+        "verification_evidence": _reconciliation_evidence_dict(verification_evidence),
+        "permitted_next_operations": list(permitted_next_operations),
+    }
+
+
 def _write_run(path: Path, run: Mapping[str, Any]) -> Path:
     _write_json(path, run)
     return path
 
 
-def _fresh_prior(
-    prior_context: PreparationContext,
-    prior_manifest: Path,
+def seal_only_operation(
+    args: argparse.Namespace,
     *,
-    coordinator: PublicationCoordinator,
-    destination: Path,
-) -> tuple[Any, _RehydratedPackage]:
-    recorded, package = _load_recorded_attempt(
-        prior_manifest,
-        archive=coordinator.archive,
-        candidate_tree_archive=prior_context.candidate_tree_archive,
-        candidate_tree_sha256=prior_context.candidate_tree_sha256,
-        destination=destination / "prior-attempt",
+    coordinator: PublicationCoordinator | None = None,
+) -> Path:
+    """Seal an immutable intent and return its exact canonical reference.
+
+    This operation deliberately stops before any Firebase adapter is observed;
+    the later execute dispatch is the only operation allowed to consume the
+    intent and perform a provider write.
+    """
+
+    context = _load_context(
+        args.context, trusted_manifest=getattr(args, "trusted_input_manifest", None)
     )
-    if prior_context.package != recorded.attempt.package:
-        package.close()
-        raise PublicationCLIError(
-            "predecessor context does not identify the recorded attempt package"
-        )
-    tags = _reconciliation_tags(
-        f"fresh-{recorded.attempt.intent.attempt_id}"
-    )
+    coordinator = build_coordinator() if coordinator is None else coordinator
+    destination = Path(
+        args.retrieval_directory or context.path.parent / "sealed-attempt"
+    ).resolve()
+    rehydrated = _rehydrate_package(context)
     try:
-        reconciliation = coordinator.reconcile(
-            recorded,
-            baseline=prior_context.baseline,
-            tags=tags,
-            retrieval_directory=destination / "fresh-reconciliation",
+        provenance_reader = GitHubPreparationProvenanceReader.from_github_token()
+        prior_reference = getattr(args, "prior_reference", None)
+        prior_baseline_record = getattr(args, "prior_baseline_record", None)
+        if (prior_reference is None) != (prior_baseline_record is None):
+            raise PublicationCLIError(
+                "prior reference and prior baseline record must be supplied together"
+            )
+        if args.purpose != "normal" and prior_reference is None:
+            raise PublicationCLIError(
+                f"{args.purpose} requires a freshly reconciled predecessor reference"
+            )
+        prior = None
+        if prior_reference is not None:
+            prior = _fresh_prior_reference(
+                _load_sealed_reference(prior_reference),
+                _load_baseline_record(prior_baseline_record),
+                coordinator=coordinator,
+                provenance_reader=provenance_reader,
+                tag_prefix=args.attempt_id,
+                destination=destination / "predecessor",
+            )
+        preparation_manifest = Path(
+            args.preparation_manifest
+            if args.preparation_manifest is not None
+            else context.path.parent / PREPARATION_MANIFEST_NAME
+        ).resolve()
+        preparation_origin = Path(
+            args.preparation_origin
+            if args.preparation_origin is not None
+            else context.path.parent / "preparation-origin.json"
+        ).resolve()
+        candidate_bundle = Path(
+            args.candidate_bundle
+            if args.candidate_bundle is not None
+            else context.candidate_tree_archive
+        ).resolve()
+        for path, label in (
+            (preparation_manifest, "preparation manifest"),
+            (preparation_origin, "preparation origin"),
+            (candidate_bundle, "candidate Git bundle"),
+        ):
+            if not path.is_file():
+                raise PublicationCLIError(f"{label} is missing")
+        reference = coordinator.seal_publication_attempt(
+            context.package,
+            purpose=args.purpose,
+            prepared=rehydrated.prepared,
+            commit_reader=rehydrated.reader,
+            runtime=_runtime(),
+            baseline=context.baseline,
+            evidence_references=context.evidence_references,
+            preparation_manifest=preparation_manifest,
+            preparation_origin=preparation_origin,
+            candidate_bundle=candidate_bundle,
+            provenance_reader=provenance_reader,
+            tags=_tag_values(args.attempt_id),
+            attempt_id=args.attempt_id,
+            retrieval_directory=destination,
+            prior=prior,
         )
-        prior = reconciliation.as_prior()
-    except (PublicationExecutionError, ValueError) as exc:
-        package.close()
-        raise PublicationCLIError(
-            "fresh predecessor reconciliation did not establish a verified capability"
-        ) from exc
-    if not reconciliation.ordinary_successor_allowed:
-        package.close()
-        raise PublicationCLIError(
-            "current predecessor is not fully reconciled and verified"
+        return _write_reference(
+            _reference_output_path(args, context.path.parent), reference
         )
-    return prior, package
+    finally:
+        rehydrated.close()
 
 
 def execute_operation(
@@ -1359,89 +1358,55 @@ def execute_operation(
     *,
     coordinator: PublicationCoordinator | None = None,
 ) -> Path:
-    context = _load_context(
-        args.context, trusted_manifest=getattr(args, "trusted_input_manifest", None)
-    )
+    """Execute one exact sealed intent in a fresh protected dispatch."""
+
+    reference = _load_sealed_reference(args.sealed_reference)
+    baseline = _load_baseline_record(args.baseline_record)
     coordinator = build_coordinator() if coordinator is None else coordinator
-    rehydrated = _rehydrate_package(context)
-    destination = Path(args.retrieval_directory or context.path.parent / "receipts").resolve()
-    prior_capability = None
-    prior_package: _RehydratedPackage | None = None
-    try:
-        prior_context_path = args.prior_context
-        prior_manifest_path = args.prior_manifest
-        if (prior_context_path is None) != (prior_manifest_path is None):
-            raise PublicationCLIError(
-                "prior context and prior attempt manifest must be supplied together"
-            )
-        prior_files_exist = (
-            prior_context_path is not None
-            and prior_manifest_path is not None
-            and Path(prior_context_path).is_file()
-            and Path(prior_manifest_path).is_file()
+    destination = Path(args.retrieval_directory or Path(args.baseline_record).parent / "receipts").resolve()
+    provenance_reader = GitHubPreparationProvenanceReader.from_github_token()
+    prior = None
+    prior_reference = getattr(args, "prior_reference", None)
+    prior_baseline_record = getattr(args, "prior_baseline_record", None)
+    if (prior_reference is None) != (prior_baseline_record is None):
+        raise PublicationCLIError(
+            "prior reference and prior baseline record must be supplied together"
         )
-        if prior_context_path is not None and not prior_files_exist:
-            raise PublicationCLIError(
-                "prior context and prior attempt manifest must identify existing files"
-            )
-        if prior_files_exist:
-            prior_context = _load_context(prior_context_path)
-            prior_capability, prior_package = _fresh_prior(
-                prior_context,
-                Path(prior_manifest_path).resolve(),
-                coordinator=coordinator,
-                destination=destination,
-            )
-        operation = args.operation
-        tags = _tag_values(args.attempt_id)
-        runtime = _runtime()
-        if operation == "execute":
-            run = coordinator.publish_normal(
-                context.package,
-                prepared=rehydrated.prepared,
-                commit_reader=rehydrated.reader,
-                runtime=runtime,
-                baseline=context.baseline,
-                evidence_references=context.evidence_references,
-                tags=tags,
-                attempt_id=args.attempt_id,
-                retrieval_directory=destination,
-                prior=prior_capability,
-            )
-        else:
-            if prior_capability is None:
-                raise PublicationCLIError(
-                    f"{operation} requires a freshly reconciled predecessor"
-                )
-            run = coordinator.publish_recovery(
-                context.package,
-                purpose=operation,
-                prior=prior_capability,
-                prepared=rehydrated.prepared,
-                commit_reader=rehydrated.reader,
-                runtime=runtime,
-                baseline=context.baseline,
-                evidence_references=context.evidence_references,
-                tags=tags,
-                attempt_id=args.attempt_id,
-                retrieval_directory=destination,
-            )
-        result = _run_dict(
-            operation=operation,
-            state=run.state,
-            attempt=run.attempt,
-            provider_result=run.provider_result,
-            provider_evidence=run.provider_evidence,
-            verification=run.verification,
-            verification_evidence=run.verification_evidence,
-            deployment_may_have_changed=run.deployment_may_have_changed,
-            permitted_next_operations=run.permitted_next_operations,
+    if args.purpose != "normal" and prior_reference is None:
+        raise PublicationCLIError(
+            f"{args.purpose} requires a freshly reconciled predecessor reference"
         )
-        return _write_run(_result_path(args, context.path.parent), result)
-    finally:
-        rehydrated.close()
-        if prior_package is not None:
-            prior_package.close()
+    if prior_reference is not None:
+        prior = _fresh_prior_reference(
+            _load_sealed_reference(prior_reference),
+            _load_baseline_record(prior_baseline_record),
+            coordinator=coordinator,
+            provenance_reader=provenance_reader,
+            tag_prefix=args.attempt_id,
+            destination=destination / "predecessor",
+        )
+    run = coordinator.execute_sealed_attempt(
+        reference,
+        purpose=args.purpose,
+        runtime=_runtime(),
+        baseline=baseline,
+        provenance_reader=provenance_reader,
+        tags=_tag_values(args.attempt_id),
+        retrieval_directory=destination,
+        prior=prior,
+    )
+    payload = _run_dict(
+        operation="execute",
+        state=run.state,
+        attempt=run.attempt,
+        provider_result=run.provider_result,
+        provider_evidence=run.provider_evidence,
+        verification=run.verification,
+        verification_evidence=run.verification_evidence,
+        deployment_may_have_changed=run.deployment_may_have_changed,
+        permitted_next_operations=run.permitted_next_operations,
+    )
+    return _write_run(_result_path(args, Path(args.baseline_record).parent), payload)
 
 
 def reconcile_operation(
@@ -1449,44 +1414,33 @@ def reconcile_operation(
     *,
     coordinator: PublicationCoordinator | None = None,
 ) -> Path:
-    context = _load_context(
-        args.context, trusted_manifest=getattr(args, "trusted_input_manifest", None)
-    )
+    """Reconcile one exact sealed intent without Actions-state dependency."""
+
+    reference = _load_sealed_reference(args.sealed_reference)
+    baseline = _load_baseline_record(args.baseline_record)
     coordinator = build_coordinator() if coordinator is None else coordinator
-    destination = Path(args.retrieval_directory or context.path.parent / "reconciliation").resolve()
-    recorded, rehydrated = _load_recorded_attempt(
-        _attempt_manifest_path(args),
-        archive=coordinator.archive,
-        candidate_tree_archive=context.candidate_tree_archive,
-        candidate_tree_sha256=context.candidate_tree_sha256,
-        destination=destination / "attempt",
+    destination = Path(args.retrieval_directory or Path(args.baseline_record).parent / "reconciliation").resolve()
+    result = coordinator.reconcile_sealed_attempt(
+        reference,
+        baseline=baseline,
+        provenance_reader=GitHubPreparationProvenanceReader.from_github_token(),
+        tags=_reconciliation_tags(args.attempt_id),
+        retrieval_directory=destination,
     )
-    if recorded.attempt.package != context.package:
-        rehydrated.close()
-        raise PublicationCLIError(
-            "attempt manifest package does not match the preparation context"
-        )
-    try:
-        result = coordinator.reconcile(
-            recorded,
-            baseline=context.baseline,
-            tags=_reconciliation_tags(args.attempt_id),
-            retrieval_directory=destination,
-        )
-        payload = _run_dict(
-            operation="reconcile",
-            state=result.state,
-            attempt=recorded.attempt,
-            provider_result=result.provider_result,
-            provider_evidence=result.provider_evidence,
-            verification=result.verification,
-            verification_evidence=result.verification_evidence,
-            deployment_may_have_changed=(result.observed_identity != context.package.expected_predecessor),
-            permitted_next_operations=result.permitted_next_operations,
-        )
-        return _write_run(_result_path(args, context.path.parent), payload)
-    finally:
-        rehydrated.close()
+    payload = _reconciliation_dict(
+        operation="reconcile",
+        state=result.state,
+        intent=result.intent,
+        observed_identity=result.observed_identity,
+        observation=result.observation,
+        observation_evidence=result.observation_evidence,
+        provider_result=result.provider_result,
+        provider_evidence=result.provider_evidence,
+        verification=result.verification,
+        verification_evidence=result.verification_evidence,
+        permitted_next_operations=result.permitted_next_operations,
+    )
+    return _write_run(_result_path(args, Path(args.baseline_record).parent), payload)
 
 
 def verify_only_operation(
@@ -1494,44 +1448,33 @@ def verify_only_operation(
     *,
     coordinator: PublicationCoordinator | None = None,
 ) -> Path:
-    context = _load_context(
-        args.context, trusted_manifest=getattr(args, "trusted_input_manifest", None)
-    )
+    """Verify one exact sealed intent with no provider deployment call."""
+
+    reference = _load_sealed_reference(args.sealed_reference)
+    baseline = _load_baseline_record(args.baseline_record)
     coordinator = build_coordinator() if coordinator is None else coordinator
-    destination = Path(args.retrieval_directory or context.path.parent / "verification-only").resolve()
-    recorded, rehydrated = _load_recorded_attempt(
-        _attempt_manifest_path(args),
-        archive=coordinator.archive,
-        candidate_tree_archive=context.candidate_tree_archive,
-        candidate_tree_sha256=context.candidate_tree_sha256,
-        destination=destination / "attempt",
+    destination = Path(args.retrieval_directory or Path(args.baseline_record).parent / "verification-only").resolve()
+    result = coordinator.verify_sealed_attempt(
+        reference,
+        baseline=baseline,
+        provenance_reader=GitHubPreparationProvenanceReader.from_github_token(),
+        tags=_reconciliation_tags(args.attempt_id),
+        retrieval_directory=destination,
     )
-    if recorded.attempt.package != context.package:
-        rehydrated.close()
-        raise PublicationCLIError(
-            "attempt manifest package does not match the preparation context"
-        )
-    try:
-        run = coordinator.verify_only(
-            recorded,
-            baseline=context.baseline,
-            verification_tag=f"{args.attempt_id}-verification",
-            retrieval_directory=destination,
-        )
-        payload = _run_dict(
-            operation="verify-only",
-            state=run.state,
-            attempt=run.attempt,
-            provider_result=run.provider_result,
-            provider_evidence=run.provider_evidence,
-            verification=run.verification,
-            verification_evidence=run.verification_evidence,
-            deployment_may_have_changed=run.deployment_may_have_changed,
-            permitted_next_operations=run.permitted_next_operations,
-        )
-        return _write_run(_result_path(args, context.path.parent), payload)
-    finally:
-        rehydrated.close()
+    payload = _reconciliation_dict(
+        operation="verify-only",
+        state=result.state,
+        intent=result.intent,
+        observed_identity=result.observed_identity,
+        observation=result.observation,
+        observation_evidence=result.observation_evidence,
+        provider_result=result.provider_result,
+        provider_evidence=result.provider_evidence,
+        verification=result.verification,
+        verification_evidence=result.verification_evidence,
+        permitted_next_operations=result.permitted_next_operations,
+    )
+    return _write_run(_result_path(args, Path(args.baseline_record).parent), payload)
 
 
 def reconcile_external_operation(
@@ -1594,11 +1537,36 @@ def _common_context(parser: argparse.ArgumentParser) -> None:
         help="tracked SR7 input identities from the attested execution source",
     )
     parser.add_argument("--attempt-id", required=True, help="new evidence identity, not authorization")
-    parser.add_argument("--attempt-manifest", type=Path, help="sealed prior publication run JSON")
-    parser.add_argument("--prior-context", type=Path, help="predecessor preparation context")
-    parser.add_argument("--prior-manifest", type=Path, help="predecessor sealed publication run")
     parser.add_argument("--retrieval-directory", type=Path, help="local receipt directory")
     parser.add_argument("--result", type=Path, help="new immutable local result manifest")
+
+
+def _exact_reference_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--sealed-reference",
+        type=Path,
+        required=True,
+        help="canonical SealedAttemptReference bytes from the seal-only dispatch",
+    )
+    parser.add_argument(
+        "--baseline-record",
+        type=Path,
+        required=True,
+        help="exact baseline.json transported with the preparation package",
+    )
+    parser.add_argument("--attempt-id", required=True, help="new evidence tag prefix")
+    parser.add_argument("--retrieval-directory", type=Path, help="local receipt directory")
+    parser.add_argument("--result", type=Path, help="new immutable local result manifest")
+
+
+def _purpose_arg(parser: argparse.ArgumentParser, *, required: bool = True) -> None:
+    parser.add_argument(
+        "--purpose",
+        choices=("normal", "rollback", "correction"),
+        required=required,
+        default=None if required else "normal",
+        help="sealed publication purpose; rollback and correction require a fresh predecessor",
+    )
 
 
 def _attempt_context_args(parser: argparse.ArgumentParser) -> None:
@@ -1635,21 +1603,40 @@ def build_parser() -> argparse.ArgumentParser:
     )
     prepare.add_argument("--output-directory", type=Path, required=True)
 
-    for name, help_text in (
-        ("execute", "execute one owner-approved normal publication"),
-        ("rollback", "execute one owner-approved rollback after fresh reconciliation"),
-        ("correction", "execute one owner-approved correction after fresh reconciliation"),
-    ):
-        command = subparsers.add_parser(name, help=help_text)
-        _common_context(command)
+    seal = subparsers.add_parser(
+        "seal-only", help="seal one immutable intent without observing or writing Firebase"
+    )
+    seal.add_argument("--context", type=Path, required=True, help="strict preparation context JSON")
+    seal.add_argument(
+        "--trusted-input-manifest",
+        type=Path,
+        help="tracked SR7 input identities from the attested execution source",
+    )
+    seal.add_argument("--preparation-manifest", type=Path)
+    seal.add_argument("--preparation-origin", type=Path)
+    seal.add_argument("--candidate-bundle", type=Path)
+    seal.add_argument("--attempt-id", required=True, help="new immutable intent identity")
+    _purpose_arg(seal)
+    seal.add_argument("--prior-reference", type=Path)
+    seal.add_argument("--prior-baseline-record", type=Path)
+    seal.add_argument("--retrieval-directory", type=Path, help="local receipt directory")
+    seal.add_argument("--reference-output", type=Path, help="canonical reference output path")
+
+    execute = subparsers.add_parser(
+        "execute", help="execute one exact sealed intent under fresh owner approval"
+    )
+    _exact_reference_args(execute)
+    _purpose_arg(execute)
+    execute.add_argument("--prior-reference", type=Path)
+    execute.add_argument("--prior-baseline-record", type=Path)
 
     reconcile = subparsers.add_parser("reconcile", help="freshly observe a sealed attempt")
-    _common_context(reconcile)
-    _attempt_context_args(reconcile)
+    _exact_reference_args(reconcile)
 
-    verify = subparsers.add_parser("verify-only", help="verify a recorded deployment without writing")
-    _common_context(verify)
-    _attempt_context_args(verify)
+    verify = subparsers.add_parser(
+        "verify-only", help="verify a sealed attempt without deploying"
+    )
+    _exact_reference_args(verify)
 
     external = subparsers.add_parser("reconcile-external", help="freshly capture and bind an unknown live predecessor")
     _common_context(external)
@@ -1673,7 +1660,9 @@ def main(
     try:
         if args.operation == "prepare":
             path = prepare_operation(args)
-        elif args.operation in {"execute", "rollback", "correction"}:
+        elif args.operation == "seal-only":
+            path = seal_only_operation(args, coordinator=coordinator)
+        elif args.operation == "execute":
             path = execute_operation(args, coordinator=coordinator)
         elif args.operation == "reconcile":
             path = reconcile_operation(args, coordinator=coordinator)
@@ -1691,6 +1680,7 @@ def main(
         PublicationCLIError,
         PublicationAuthorizationError,
         PublicationExecutionError,
+        PreparationProvenanceError,
         ReleaseValidationError,
         ValueError,
     ) as exc:
@@ -1716,6 +1706,7 @@ __all__ = [
     "load_preparation_context",
     "main",
     "prepare_operation",
+    "seal_only_operation",
     "reconcile_external_operation",
     "reconcile_operation",
     "verify_only_operation",

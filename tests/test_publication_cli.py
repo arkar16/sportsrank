@@ -27,6 +27,7 @@ from cfb.publication_cli import (
     _context_dict,
     load_preparation_context,
     main,
+    prepare_operation,
 )
 from cfb.publication_records import (
     AttemptIntentRecord,
@@ -34,6 +35,7 @@ from cfb.publication_records import (
     BaselineRecord,
     ManagedResourceEvidence,
     ProviderIdentity,
+    SealedAttemptReference,
     SourceProvenance,
     ValidatedPackageRecord,
     canonical_json,
@@ -252,6 +254,117 @@ def _preparation_provenance(root: Path, commit: str):
 
 
 class PublicationCLIContextTests(unittest.TestCase):
+    def test_prepare_copies_an_external_candidate_bundle_after_empty_output_gate(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            context, package, baseline, _archive = _fixture(root)
+            candidate_bundle = root / context["candidate_tree_archive"]
+            output = root / "preparation"
+            output.mkdir()
+            baseline_archive = root / "baseline.tar.gz"
+            baseline_archive.write_bytes(b"private baseline input")
+            source_root = root / "source-inputs"
+            source_root.mkdir()
+            source_archive = root / "source-inputs.tar.gz"
+            source_archive.write_bytes(b"source inputs")
+            source_pins = root / "source-input-pins.json"
+            source_pins.write_bytes(canonical_json({"snapshots/example.json": "f" * 64}))
+            evidence_path = root / "evidence-references.json"
+            evidence_path.write_bytes(b"{}\n")
+            trusted_path = root / "sr7-recovery-inputs.json"
+            trusted_path.write_bytes(b"{}\n")
+
+            public_archive_sha = "a" * 64
+            sanitizer_sha = "b" * 64
+            trusted = SimpleNamespace(
+                baseline_private_archive_sha256="c" * 64,
+                baseline_record_sha256=baseline.digest,
+                baseline_public_archive_sha256=public_archive_sha,
+                baseline_sanitizer_record_sha256=sanitizer_sha,
+                source_archive_sha256="d" * 64,
+                evidence_archive_sha256="e" * 64,
+                source_file_sha256={"snapshots/example.json": "f" * 64},
+            )
+            source_inputs = SimpleNamespace(assert_external_to=lambda _root: None)
+            imported_baseline = SimpleNamespace(record=baseline)
+            prepared_candidate = []
+
+            def fake_prepare_review_package(*_args, **kwargs):
+                self.assertEqual(tuple(output.iterdir()), ())
+                prepared_candidate.append(_args[0])
+                kwargs["output"].write_bytes(b"prepared package")
+                return object()
+
+            def fake_sanitizer(_baseline, destination):
+                destination.write_bytes(b"public derivative")
+                return SimpleNamespace(
+                    source_baseline_record_sha256=baseline.digest,
+                    source_archive_sha256=trusted.baseline_private_archive_sha256,
+                    derivative_archive_sha256=public_archive_sha,
+                    digest=sanitizer_sha,
+                    to_dict=lambda: {"record_type": "sanitized_baseline"},
+                )
+
+            args = SimpleNamespace(
+                candidate_root=root,
+                candidate_commit=package.candidate_commit,
+                candidate_tree_bundle=candidate_bundle,
+                candidate_tree_sha256=_sha(candidate_bundle.read_bytes()),
+                firebase_json=root / "firebase.json",
+                baseline_archive=baseline_archive,
+                baseline_sha256=trusted.baseline_private_archive_sha256,
+                source_input_root=source_root,
+                source_input_pins=source_pins,
+                source_input_archive=source_archive,
+                source_input_sha256=trusted.source_archive_sha256,
+                retained_inputs_sha256=trusted.source_archive_sha256,
+                evidence_references=evidence_path,
+                trusted_input_manifest=trusted_path,
+                output_directory=output,
+            )
+            with patch.dict(os.environ, {"GITHUB_SHA": package.candidate_commit}), patch(
+                "cfb.publication_cli._load_trusted_recovery_inputs",
+                return_value=trusted,
+            ), patch(
+                "cfb.publication_cli._load_evidence_references",
+                return_value={},
+            ), patch(
+                "cfb.publication_cli.import_baseline",
+                return_value=imported_baseline,
+            ), patch(
+                "cfb.publication_cli.RecoveryInputBundle.from_directory",
+                return_value=source_inputs,
+            ), patch(
+                "cfb.publication_cli._assert_trusted_source_bundle",
+            ), patch(
+                "cfb.publication_cli.prepare_review_package",
+                side_effect=fake_prepare_review_package,
+            ), patch(
+                "cfb.publication_cli.GitCommitTreeReader",
+                return_value=SimpleNamespace(require_commit=lambda _commit: None),
+            ), patch(
+                "cfb.publication_cli.bind_merged_candidate",
+                return_value=package,
+            ), patch(
+                "cfb.publication_cli.create_sanitized_baseline_archive",
+                side_effect=fake_sanitizer,
+            ):
+                context_path = prepare_operation(args)
+
+            self.assertEqual(context_path, (output / "publication-context.json").resolve())
+            self.assertEqual(prepared_candidate, [(root / "website").resolve()])
+            self.assertEqual(
+                json.loads(context_path.read_text(encoding="utf-8"))["candidate_tree_archive"],
+                "candidate.bundle",
+            )
+            self.assertEqual(
+                (output / "candidate.bundle").read_bytes(), candidate_bundle.read_bytes()
+            )
+            self.assertEqual(
+                (output / "candidate.bundle.sha256").read_text(encoding="ascii"),
+                f"{_sha(candidate_bundle.read_bytes())}  candidate.bundle\n",
+            )
+
     def test_context_loader_revalidates_exact_target_records_and_package_bytes(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -287,13 +400,26 @@ class PublicationCLIContextTests(unittest.TestCase):
             with self.assertRaises(PublicationCLIError):
                 load_preparation_context(path)
 
-    def test_execute_dispatches_one_prepared_package_through_injected_coordinator(self):
+    def test_execute_dispatches_exact_reference_through_injected_coordinator(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             context, package, _baseline, archive = _fixture(root)
-            context_path = root / "publication-context.json"
-            context_path.write_bytes(canonical_json(context))
-
+            baseline_path = root / "baseline.json"
+            baseline_path.write_bytes(canonical_json(_baseline.to_dict()))
+            intent_reference = ArchiveReference(
+                REPOSITORY,
+                "100",
+                "cli-intent",
+                package.candidate_commit,
+                "200",
+                "attempt-intent.json",
+                _sha(b"intent"),
+                len(b"intent"),
+                True,
+            )
+            sealed_reference = SealedAttemptReference(intent_reference)
+            reference_path = root / "sealed-attempt-reference.json"
+            reference_path.write_bytes(sealed_reference.to_bytes())
             evidence = {
                 name: _reference(package.candidate_commit, index)
                 for index, name in enumerate(
@@ -301,15 +427,8 @@ class PublicationCLIContextTests(unittest.TestCase):
                 )
             }
             artifact_reference = ArchiveReference(
-                REPOSITORY,
-                "100",
-                "cli-package",
-                package.candidate_commit,
-                "200",
-                "package.tar.gz",
-                package.bundle_sha256,
-                archive.stat().st_size,
-                True,
+                REPOSITORY, "100", "cli-package", package.candidate_commit, "201",
+                "package.tar.gz", package.bundle_sha256, archive.stat().st_size, True,
             )
             intent = AttemptIntentRecord.create(
                 package=package,
@@ -365,19 +484,21 @@ class PublicationCLIContextTests(unittest.TestCase):
                 def __init__(self):
                     self.calls = []
 
-                def publish_normal(self, *args, **kwargs):
-                    self.calls.append((args, kwargs))
+                def execute_sealed_attempt(self, reference, **kwargs):
+                    self.calls.append((reference, kwargs))
                     return run
 
             coordinator = CoordinatorFake()
             result_path = root / "publication-run.json"
-            with patch.dict(os.environ, {"GITHUB_TOKEN": "offline-fixture"}), _preparation_provenance(
-                root, package.candidate_commit
-            ), patch("cfb.publication_cli._runtime", return_value=object()):
+            with patch.dict(os.environ, {"GITHUB_TOKEN": "offline-fixture"}), patch(
+                "cfb.publication_cli._runtime", return_value=object()
+            ):
                 status = main(
                     [
                         "execute",
-                        "--context", str(context_path),
+                        "--sealed-reference", str(reference_path),
+                        "--baseline-record", str(baseline_path),
+                        "--purpose", "normal",
                         "--attempt-id", "cli-test",
                         "--result", str(result_path),
                     ],
@@ -386,11 +507,155 @@ class PublicationCLIContextTests(unittest.TestCase):
 
             self.assertEqual(status, 0)
             self.assertEqual(len(coordinator.calls), 1)
+            self.assertEqual(coordinator.calls[0][0], sealed_reference)
+            self.assertEqual(coordinator.calls[0][1]["purpose"], "normal")
             payload = json.loads(result_path.read_text(encoding="utf-8"))
             self.assertEqual(payload["record_type"], "publication_run")
             self.assertEqual(payload["operation"], "execute")
             self.assertEqual(payload["attempt"]["package"]["candidate_commit"], package.candidate_commit)
             self.assertNotIn("FIREBASE_ACCESS_TOKEN", result_path.read_text(encoding="utf-8"))
+
+    def test_execute_rejects_missing_canonical_reference_newline_before_coordinator(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            context, package, baseline, _archive = _fixture(root)
+            baseline_path = root / "baseline.json"
+            baseline_path.write_bytes(canonical_json(baseline.to_dict()))
+            intent_reference = ArchiveReference(
+                REPOSITORY, "100", "cli-intent", package.candidate_commit, "200",
+                "attempt-intent.json", _sha(b"intent"), len(b"intent"), True,
+            )
+            reference_path = root / "sealed-attempt-reference.json"
+            reference_path.write_bytes(SealedAttemptReference(intent_reference).to_bytes().rstrip(b"\n"))
+
+            class CoordinatorMustNotRun:
+                def execute_sealed_attempt(self, *args, **kwargs):
+                    self.called = True
+                    raise AssertionError("malformed reference reached coordinator")
+
+            coordinator = CoordinatorMustNotRun()
+            status = main(
+                [
+                    "execute",
+                    "--sealed-reference", str(reference_path),
+                    "--baseline-record", str(baseline_path),
+                    "--purpose", "normal",
+                    "--attempt-id", "bad-reference",
+                ],
+                coordinator=coordinator,
+            )
+            self.assertEqual(status, 1)
+            self.assertFalse(hasattr(coordinator, "called"))
+
+    def test_reconcile_uses_exact_reference_without_a_run_manifest_or_actions_state(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            _context, package, baseline, _archive = _fixture(root)
+            baseline_path = root / "baseline.json"
+            baseline_path.write_bytes(canonical_json(baseline.to_dict()))
+            reference = SealedAttemptReference(
+                ArchiveReference(
+                    REPOSITORY, "100", "cli-intent", package.candidate_commit,
+                    "200", "attempt-intent.json", _sha(b"intent"), 6, True,
+                )
+            )
+            reference_path = root / "sealed-attempt-reference.json"
+            reference_path.write_bytes(reference.to_bytes())
+
+            class CoordinatorFake:
+                def __init__(self):
+                    self.calls = []
+
+                def reconcile_sealed_attempt(self, supplied, **kwargs):
+                    self.calls.append((supplied, kwargs))
+                    return SimpleNamespace(
+                        state="prewrite_interrupted",
+                        intent=SimpleNamespace(to_dict=lambda: {"attempt_id": "cli-test"}),
+                        observed_identity=SimpleNamespace(
+                            to_dict=lambda: baseline.observed.to_dict()
+                        ),
+                        observation=SimpleNamespace(
+                            to_dict=lambda: {"record_type": "reconciliation"}
+                        ),
+                        observation_evidence=None,
+                        provider_result=None,
+                        provider_evidence=None,
+                        verification=None,
+                        verification_evidence=None,
+                        permitted_next_operations=("new_owner_approved_attempt",),
+                    )
+
+            coordinator = CoordinatorFake()
+            with patch.dict(os.environ, {"GITHUB_TOKEN": "offline-fixture"}):
+                status = main(
+                    [
+                        "reconcile",
+                        "--sealed-reference", str(reference_path),
+                        "--baseline-record", str(baseline_path),
+                        "--attempt-id", "cli-reconcile",
+                    ],
+                    coordinator=coordinator,
+                )
+
+            self.assertEqual(status, 0)
+            self.assertEqual(len(coordinator.calls), 1)
+            self.assertEqual(coordinator.calls[0][0], reference)
+            self.assertEqual(coordinator.calls[0][1]["baseline"], baseline)
+            result_path = root / "publication-run.json"
+            payload = json.loads(result_path.read_text(encoding="utf-8"))
+            self.assertEqual(payload["record_type"], "reconciliation_run")
+            self.assertEqual(payload["state"], "prewrite_interrupted")
+            self.assertNotIn("attempt_manifest", payload)
+            self.assertNotIn("actions", json.dumps(payload, sort_keys=True).lower())
+
+    def test_seal_only_writes_only_canonical_reference_and_never_uses_one_shot_api(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            context, package, _baseline, _archive = _fixture(root)
+            context_path = root / "publication-context.json"
+            context_path.write_bytes(canonical_json(context))
+            (root / "preparation-origin.json").write_bytes(
+                canonical_json({"schema_version": 1, "record_type": "origin"})
+            )
+            intent_reference = ArchiveReference(
+                REPOSITORY, "100", "seal-intent", package.candidate_commit, "200",
+                "attempt-intent.json", _sha(b"intent"), 6, True,
+            )
+            sealed_reference = SealedAttemptReference(intent_reference)
+
+            class CoordinatorFake:
+                def __init__(self):
+                    self.calls = []
+
+                def seal_publication_attempt(self, package, **kwargs):
+                    self.calls.append((package, kwargs))
+                    return sealed_reference
+
+            coordinator = CoordinatorFake()
+            result_path = root / "sealed-attempt-reference.json"
+            rehydrated = SimpleNamespace(
+                prepared=object(), reader=object(), close=lambda: None
+            )
+            with patch(
+                "cfb.publication_cli._rehydrate_package", return_value=rehydrated
+            ), patch("cfb.publication_cli._runtime", return_value=object()), patch.dict(
+                os.environ, {"GITHUB_TOKEN": "offline-fixture"}
+            ):
+                status = main(
+                    [
+                        "seal-only",
+                        "--context", str(context_path),
+                        "--attempt-id", "seal-test",
+                        "--purpose", "normal",
+                        "--reference-output", str(result_path),
+                    ],
+                    coordinator=coordinator,
+                )
+
+            self.assertEqual(status, 0)
+            self.assertEqual(result_path.read_bytes(), sealed_reference.to_bytes())
+            self.assertEqual(len(coordinator.calls), 1)
+            self.assertEqual(coordinator.calls[0][1]["purpose"], "normal")
 
     def test_context_loader_rejects_archive_substitution_and_path_escape(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -418,24 +683,35 @@ class PublicationCLIContextTests(unittest.TestCase):
     def test_unavailable_provider_adapter_fails_closed_without_result_or_secret(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            context, package, _baseline, _archive = _fixture(root)
-            context_path = root / "publication-context.json"
-            context_path.write_bytes(canonical_json(context))
+            _context, package, baseline, _archive = _fixture(root)
+            baseline_path = root / "baseline.json"
+            baseline_path.write_bytes(canonical_json(baseline.to_dict()))
+            reference_path = root / "sealed-attempt-reference.json"
+            reference_path.write_bytes(
+                SealedAttemptReference(
+                    ArchiveReference(
+                        REPOSITORY, "100", "cli-intent", package.candidate_commit,
+                        "200", "attempt-intent.json", _sha(b"intent"), 6, True,
+                    )
+                ).to_bytes()
+            )
             result_path = root / "publication-run.json"
 
             class CoordinatorUnavailable:
                 archive = SimpleNamespace()
 
-                def publish_normal(self, *args, **kwargs):
+                def execute_sealed_attempt(self, *args, **kwargs):
                     raise FirebasePublicationError("provider adapter unavailable")
 
-            with patch.dict(os.environ, {"GITHUB_TOKEN": "offline-fixture"}), _preparation_provenance(
-                root, package.candidate_commit
-            ), patch("cfb.publication_cli._runtime", return_value=object()):
+            with patch.dict(os.environ, {"GITHUB_TOKEN": "offline-fixture"}), patch(
+                "cfb.publication_cli._runtime", return_value=object()
+            ):
                 status = main(
                     [
                         "execute",
-                        "--context", str(context_path),
+                        "--sealed-reference", str(reference_path),
+                        "--baseline-record", str(baseline_path),
+                        "--purpose", "normal",
                         "--attempt-id", "unavailable-adapter",
                         "--result", str(result_path),
                     ],
@@ -444,7 +720,7 @@ class PublicationCLIContextTests(unittest.TestCase):
 
             self.assertEqual(status, 1)
             self.assertFalse(result_path.exists())
-            self.assertEqual(package.candidate_commit, context["candidate_commit"])
+            self.assertEqual(package.candidate_commit, _context["candidate_commit"])
 
 
 if __name__ == "__main__":

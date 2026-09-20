@@ -281,9 +281,9 @@ human review entry point is
 `.sportsrank/gate1-recovery-20260908/evidence/human-review-v4.md`. The sealed
 V5 candidate and evidence are recorded under
 `.sportsrank/gate1-review-repairs-20260909/`; its isolated temporary promotion
-matched the candidate and left the Published Site unchanged. Reviewer final
-acceptance is now complete and the exact candidate is in tracked `website/`;
-Gate 2 remains pending.
+matched the candidate and left the Published Site unchanged. These dated acceptance results describe the original prepared output. SR-7
+retains it as comparison evidence and requires fresh provider-bound
+reconstruction and final-head acceptance under SR-16. Gate 2 remains separate.
 
 ### Exact-artifact publication
 
@@ -304,16 +304,15 @@ Gate 2 remains pending.
   `preparation-origin.json`, `publication-preparation-manifest.json`,
   `baseline-public.tar.gz`, `baseline-sanitizer.json`,
   `candidate.bundle`/`candidate.bundle.sha256`, and
-  `execution-source.tar.gz`/`execution-source.sha256`. Its mutating artifact is
-  `sportsrank-preparation-<GITHUB_SHA>`; reconcile/verify state uses
-  `sportsrank-publication-<RUN_ID>` and retains
-  `publication-preparation-manifest.json`, original preparation origin, all
-  transport files, and `publication-run.json`.
+  `execution-source.tar.gz`/`execution-source.sha256`. Its preparation artifact is
+  `sportsrank-preparation-<GITHUB_SHA>`. Actions artifacts may duplicate state,
+  but execute/reconcile/verify recover authority from an exact immutable sealed
+  reference and never require successful execution-state upload.
   The manifest is the GitHub-attested subject binding
   `arkar16/sportsrank/.github/workflows/firebase-hosting-publish.yml`,
   `workflow_dispatch` on `refs/heads/main`, exact candidate/run/attempt
   identities, and package archive/package-record digests. A
-  trusted bootstrap must authenticate the preparation and state runs, verify
+  trusted bootstrap must authenticate the applicable preparation provenance, verify
   the candidate bundle as the actual Git object graph, regenerate the execution
   source archive from that candidate and compare it before extraction, runtime
   installation or secret authentication. `preparation-origin.json` and hash
@@ -335,28 +334,31 @@ Gate 2 remains pending.
   task evidence and are never uploaded here. Public IDs, digests, `baseline.json`,
   and accepted sanitized records are intentional evidence in public Actions
   artifacts.
-  The state artifact is uploaded only after a successful protected run;
-  durable recovery after a failure before that upload remains unresolved
-  pending the owner's two-dispatch decision, and no workaround is implemented.
-- The one cohesive CLI surface provides `prepare`, `execute`, `reconcile`,
-  `verify-only`, `rollback`, and `correction`; the workflow choices are exactly
-  those six. The CLI also provides CLI-only `reconcile-external` for an unknown
-  live predecessor. `execute` performs a
-  normal approved publication; `reconcile` makes a fresh configured-provider
-  observation; `verify-only` retries verification without a provider write; and
-  rollback/correction publish only an owner-approved exact package after fresh
-  predecessor reconciliation. `reconcile-external` requires a complete fresh
-  capture, sanitized record and immutable archive references. Protected modes
-  use `--context`, `--attempt-id`, `--retrieval-directory`, and `--result`;
-  `reconcile`/`verify-only` require `--attempt-manifest`, while
-  `rollback`/`correction` require `--prior-context` and `--prior-manifest`.
-  `execute` may omit the predecessor pair only for an initial publication.
-- Any cross-run predecessor supplied to a normal successor must be fully
-  reconciled afresh through the configured provider. Rollback and correction
-  always require both predecessor context and sealed run manifest; a missing,
-  partial, stale or unverified predecessor fails closed. The CLI's concrete
-  provider and archive adapters may make live calls; its ordinary tests remain
-  offline.
+  The owner-approved two-dispatch procedure seals the exact intent before a
+  separate fresh approved execution. Preserve its canonical reference before
+  execution; it remains usable after a runner or state-upload loss.
+- The cohesive CLI and workflow provide `prepare`, `seal-only`, `execute`,
+  `reconcile`, and `verify-only`. `normal`, `rollback`, and `correction` are
+  immutable purposes, each using seal-only followed by a separate fresh
+  owner-approved execute dispatch with the same canonical reference and purpose.
+  CLI-only `reconcile-external` requires complete fresh capture, sanitized
+  evidence and immutable archive references. The runbook owns command grammar.
+- Sealing retains exact package, validation, baseline and preparation evidence
+  before returning a canonical sealed reference. The seal module performs no
+  Firebase reads or writes; obtaining required fresh predecessor evidence may
+  read Firebase before sealing. Execution retrieves and reauthenticates those
+  exact records, validates target/baseline/purpose, rejects the sealing run, and
+  acquires a single-use immutable execution claim before the final live read.
+  Any existing claim blocks another write, including same-run reentry and
+  lost-response retries. No public one-shot publication route is permitted.
+- Normal successors, rollback and correction require a freshly reconciled,
+  verified predecessor. Only the explicit unknown-historical first baseline
+  exception may omit it. Missing, partial, stale or unverified evidence fails
+  closed. `reconcile` and `verify-only` retrieve the durable reference and
+  observe current provider state without deployment, independently of Actions
+  success or state upload. After an interrupted consumed attempt, any new write
+  requires a new sealed intent and fresh owner approval. Concrete operational
+  adapters may make live calls; ordinary tests remain offline.
 - Use one manually dispatched workflow on `main` with the `production`
   environment. The guard requires the fixed repository, `workflow_dispatch`,
   `refs/heads/main`, and run attempt `1`. The protected job uses `actions: read`

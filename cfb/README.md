@@ -141,96 +141,65 @@ The 92 recovery rows use `phase_source=recovery_registry`; missing or stripped
 origin provenance fails closed, and their provider phase metadata remains null.
 The P1 roots are separate:
 `.sportsrank/postseason-calendar-repair-20260909/{data,releases-v6,evidence}`.
-Deep validation reverses the migration to the full Schema 3 checksum. The V6
-chain remains the frozen baseline; V7 focused and full verification plus fresh
-reconstructed-byte equivalence pass. Reviewer acceptance is complete.
-
-The seven delegated repairs are implemented and verified in the historical V5
-candidate. The V6 calendar correction remains the frozen comparison baseline;
-the V7 window/provider-phase correction is verified through 225/225 tests and
-exact reconstructed-byte equivalence. Reviewer acceptance is complete.
+Deep validation reverses the migration to the full Schema 3 checksum.
+V5/V6/V7 acceptance and test counts are historical comparison evidence. The
+current delivery reconstructs the same accepted ranking behavior from the
+retained inputs and binds the complete overlay to the verified Firebase
+baseline; SR-7 and SR-16 own current acceptance evidence.
 
 For a future candidate, `build` writes only to its staging output. Review its
 manifest and run `validate` before the explicit `promote` step. Promotion is
 local and should be followed by committing the reviewed `website/` tree, then
 using the protected, manual **Publish validated static site to Firebase Hosting**
 workflow only after production approval.
-The isolated temporary promotion and byte comparison are complete for V5. The
-V6 candidate also passed isolated public-CLI promotion rehearsal and
-post-validation; after the V7 source-equivalence review, its exact bytes are now
-in tracked `website/`. Do not rebuild it or issue provider requests. Remote
-Firebase publication still requires PR merge
-and the separate Gate 2 production approval.
+The original prepared website is retained as comparison evidence. Current
+provider-bound reconstruction uses the pinned source-input bundle with zero
+live CFBD calls. Local promotion follows independent acceptance; remote
+publication still requires owner merge and separate Gate 2 approval.
 For a cumulative final candidate, `validate --published-site` must name the
 original Published Site, not an intermediate Release. This invokes the
 independent cumulative-chain validator and reports added, changed, and deleted
 public paths in JSON output before any explicit promotion.
-The protected publication workflow is one manually dispatched
-`workflow_dispatch` path on `main` with `prepare`, `execute`, `reconcile`,
-`verify-only`, `rollback`, and `correction` operations. Preparation binds the
-exact package to the actual merged commit SHA and transports the package,
-publication context, preparation-origin record,
-`publication-preparation-manifest.json`, candidate Git bundle, runtime source,
-and their hashes, plus `baseline.json`, `baseline-public.tar.gz`, and
-`baseline-sanitizer.json`. The manifest is the GitHub-attested subject binding
-`arkar16/sportsrank/.github/workflows/firebase-hosting-publish.yml`,
-`workflow_dispatch` on `refs/heads/main`, exact candidate/run/attempt
-identities, and package archive/package-record digests. The
-protected job verifies that transport and invokes the cohesive CLI without
-checking out source or rebuilding the package. A shell bootstrap must anchor
-those hashes before extraction, dependency installation, or secret
-authentication. It authenticates the workflow runs, verifies the GitHub
-attestation and candidate Git bundle against the authenticated commit/tree, and
-compares regenerated execution-source bytes; self-asserted payload metadata
-cannot establish trust. Rehydrate verifies the attestation and actual
-`GitCommitTreeReader` before package use; preparation-origin and hash files are
-context checks, not standalone proof. The schema-1 `baseline-sanitizer.json`
-record and `baseline-public.tar.gz` are the accepted allowlisted public baseline
-derivative. The committed schema-1 `config/sr7-recovery-inputs.json` manifest
-(`record_type` `sr7_recovery_input_trust`) from the exact candidate tree
-independently pins baseline and source-input identities; raw
-download metadata cannot replace those pins. `source-inputs.tar.gz` is excluded
-from this publication transport; its separately retained archive is intentional
-public historical evidence under SR-11. Raw `baseline.tar.gz` and provider
-actor/auth metadata remain private task evidence and are never uploaded here.
-Public IDs, digests, `baseline.json`, and accepted sanitized records are
-intentional evidence in the public Actions transport.
+The protected publication workflow on `main` offers `prepare`, `seal-only`,
+`execute`, `reconcile`, and `verify-only`. Preparation validates the provider-
+backed baseline and retained inputs, then binds the exact site/configuration
+package to the actual merged commit. `seal-only` retains the exact package and
+intent and emits canonical `SealedAttemptReference` JSON. A fresh separately
+owner-approved `execute` consumes that reference once. `normal`, `rollback`,
+and `correction` are purposes of the sealed attempt, not one-shot CLI routes.
 
-Use `uv run --locked python -m cfb.publication_cli --help` for the canonical
-CLI grammar. Cross-run predecessors require fresh full reconciliation through
-the configured provider. `reconcile-external` is CLI-only and requires a
-complete fresh live capture and sanitized evidence; archived history alone
-cannot establish origin.
-The concrete adapters may make live provider, archive, and approval reads. See
-the [publication runbook](../docs/operations/2026-season-recovery-morning.md)
-for readiness and recovery procedure. [ADR-0016](../docs/adr/0016-bind-publication-to-verified-live-content.md)
-allows unknown source-commit provenance for an initial live capture while
-requiring deployed identity to be recorded separately from verification. SR-15
-setup and SR-16 final evidence remain separate readiness gates. A Pi-local
-`.sportsrank/releases` path is never passed to a runner.
+`reconcile` and `verify-only` use the same durable reference and make zero
+provider writes. They remain usable when the execution runner or Actions state
+upload was lost. Existing execution claims forbid replay; reconcile first and
+seal a new attempt for any further write. Normal successors and recovery
+purposes require a freshly verified predecessor. Only the explicitly unknown-
+historical initial baseline may omit predecessor evidence. CLI-only
+`reconcile-external` requires a complete fresh live capture and sanitized
+retained evidence; archived history alone cannot establish live origin.
 
-Protected modes use `--context`, `--attempt-id`, `--retrieval-directory`, and
-`--result`; `reconcile`/`verify-only` add `--attempt-manifest`, while
-`rollback`/`correction` add `--prior-context` and `--prior-manifest`. The
-initial `execute` may omit the predecessor pair; later successors require a
-fresh predecessor reconciliation. The
-mutating preparation artifact is `sportsrank-preparation-<GITHUB_SHA>`; sealed
-reconciliation and verification state uses `sportsrank-publication-<RUN_ID>`
-and retains `publication-preparation-manifest.json`, the original
-`preparation-origin.json`, all transport files, and `publication-run.json`.
-The state artifact is uploaded only after a successful protected run; durable
-recovery after a failure before that upload remains unresolved pending the
-owner's two-dispatch decision, and no workaround is implemented. Summaries
-expose sanitized target and digest identity; raw provider actor/auth evidence
-and the original `baseline.tar.gz` remain private task evidence and are never
-uploaded as public artifacts. The separately retained source-input archive is
-public historical evidence under SR-11 and is outside this publication
-transport. The protected
-runtime uses `GITHUB_TOKEN` for provenance/approval reads,
-`FIREBASE_ACCESS_TOKEN` only inside production, and no `CFBD_API_KEY`.
+Use `uv run --locked python -m cfb.publication_cli --help` and each operation's
+`--help` for the canonical grammar. The [publication runbook](../docs/operations/2026-season-recovery-morning.md)
+owns exact transport and recovery instructions. Its authenticated bootstrap
+verifies the actual GitHub commit/tree, candidate bundle and package/record
+attestation before extracting runtime source, installing dependencies or using
+the gated secret. The protected runtime never checks out a mutable source ref
+or rebuilds the package. Committed `config/sr7-recovery-inputs.json` pins trusted
+baseline and source-input identities independently of downloaded metadata.
 
-Local Firebase commands are for the emulator only. Public publication has no
-local npm or Firebase deployment shortcut; use the gated workflow above.
+Public evidence uses the allowlisted `baseline-public.tar.gz` and
+`baseline-sanitizer.json`; raw `baseline.tar.gz` and provider actor/auth metadata
+remain private. The separately archived source inputs are public historical
+evidence and excluded from publication transport. Concrete CLI adapters may
+make live provider/archive/approval requests; ordinary tests use offline fakes.
+`GITHUB_TOKEN` supplies authenticated provenance and approval reads,
+`FIREBASE_ACCESS_TOKEN` is confined to the protected production job, and
+`CFBD_API_KEY` is absent. A Pi-local path is never passed to a runner.
+
+[ADR-0016](../docs/adr/0016-bind-publication-to-verified-live-content.md)
+separates live identity from verification; [ADR-0018](../docs/adr/0018-retain-publication-evidence-in-github-releases.md)
+records durable evidence and two-dispatch recovery. Setup and final acceptance
+remain separately tracked in SR-15 and SR-16. Local Firebase commands are for
+the emulator only; use the gated workflow for publication.
 
 The older `cfb/main.py` script and batch file are retained for historical
 compatibility; new recovery work should use the staged interface above.
