@@ -43,6 +43,22 @@ class OperationsContractTests(unittest.TestCase):
         return textwrap.dedent(source[body_start:body_end])
 
     @staticmethod
+    def _preparation_transport_script() -> str:
+        source = (WORKFLOW_ROOT / "firebase-hosting-publish.yml").read_text(encoding="utf-8")
+        start = source.index("      - name: Download the exact prepared package transport")
+        body_start = source.index("        run: |\n", start) + len("        run: |\n")
+        body_end = source.index("\n      - name:", body_start)
+        return textwrap.dedent(source[body_start:body_end])
+
+    @staticmethod
+    def _external_reference_transport_script() -> str:
+        source = (WORKFLOW_ROOT / "firebase-hosting-publish.yml").read_text(encoding="utf-8")
+        start = source.index("      - name: Preserve the exact external predecessor reference input")
+        body_start = source.index("        run: |\n", start) + len("        run: |\n")
+        body_end = source.index("\n      - name:", body_start)
+        return textwrap.dedent(source[body_start:body_end])
+
+    @staticmethod
     def _attestation_bootstrap_script() -> str:
         source = (WORKFLOW_ROOT / "firebase-hosting-publish.yml").read_text(encoding="utf-8")
         start = source.index(
@@ -321,7 +337,7 @@ class OperationsContractTests(unittest.TestCase):
         prepare, protected = source.split("\n  protected:", 1)
 
         self.assertEqual(source.count("actions/upload-artifact@v4"), 2)
-        self.assertEqual(source.count("actions/download-artifact@v4"), 1)
+        self.assertEqual(source.count("actions/download-artifact@v4"), 0)
         self.assertEqual(source.count("actions/attest-build-provenance@v2"), 1)
         self.assertIn("prepare_review_package", prepare)
         self.assertIn("bind_merged_candidate", prepare)
@@ -337,6 +353,9 @@ class OperationsContractTests(unittest.TestCase):
         self.assertIn("jq -e '{schema_version, record_type, repository, target, candidate_commit", prepare)
         self.assertNotIn('cat "$RUNNER_TEMP/preparation/publication-context.json" >> "$GITHUB_STEP_SUMMARY"', prepare)
         self.assertIn("sha256sum -c", protected)
+        self.assertIn("id: preparation_transport", protected)
+        self.assertIn("gh run download", protected)
+        self.assertIn('echo "available=false" >> "$GITHUB_OUTPUT"', protected)
         self.assertIn("package.json", protected)
         self.assertIn("package.json.sha256", protected)
         self.assertIn("publication-preparation-manifest.json", protected)
@@ -377,12 +396,31 @@ class OperationsContractTests(unittest.TestCase):
         self.assertIn("sportsrank-837af", protected)
         self.assertIn("channel: live", protected)
         self.assertIn("sealed-attempt-reference.json", protected)
+        self.assertIn("prior_external_reference", protected)
+        self.assertIn("--prior-external-reference", protected)
+        self.assertIn("--initial-baseline", protected)
+        self.assertIn(
+            'tail -c 1 "$RUNNER_TEMP/prior-external-predecessor-reference.json"',
+            protected,
+        )
         self.assertIn("Bootstrap exact runtime and baseline from the durable reference", protected)
         self.assertIn("Reconstruct the exact baseline record from the sealed package", protected)
         self.assertIn("Bootstrap the predecessor package from its durable reference", protected)
         self.assertIn("gh run download", protected)
         self.assertIn('echo "available=false" >> "$GITHUB_OUTPUT"', protected)
         self.assertIn("steps.prior_preparation.outputs.available != 'true'", protected)
+        self.assertIn(
+            "Reconstruct the predecessor baseline record from the sealed package",
+            protected,
+        )
+        reconstruct = protected.index(
+            "      - name: Reconstruct the predecessor baseline record from the sealed package"
+        )
+        reconstruct_end = protected.index("\n      - name:", reconstruct + 1)
+        self.assertIn(
+            "steps.prior_preparation.outputs.available != 'true'",
+            protected[reconstruct:reconstruct_end],
+        )
         self.assertNotIn("cp \"$RUNNER_TEMP/preparation/baseline.json\" \"$RUNNER_TEMP/prior-baseline.json\"", protected)
         self.assertIn("candidate-manifest.json", protected)
         self.assertIn("sealed baseline does not match committed input pin", protected)
@@ -457,6 +495,59 @@ class OperationsContractTests(unittest.TestCase):
             )
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(output.read_text(encoding="utf-8"), "available=false\n")
+
+    def test_expired_current_transport_selects_durable_reference_bootstrap(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            fake_bin = root / "fake-bin"
+            fake_bin.mkdir()
+            fake_gh = fake_bin / "gh"
+            fake_gh.write_text("#!/bin/sh\nexit 42\n", encoding="utf-8")
+            fake_gh.chmod(0o755)
+            output = root / "github-output"
+            result = subprocess.run(
+                ["bash", "-c", self._preparation_transport_script()],
+                env={
+                    **os.environ,
+                    "RUNNER_TEMP": str(root / "runner"),
+                    "GITHUB_OUTPUT": str(output),
+                    "GH_TOKEN": "offline-fixture",
+                    "PREPARATION_RUN_ID": "123",
+                    "PREPARATION_ARTIFACT_NAME": "expired-artifact",
+                    "PATH": f"{fake_bin}:/usr/bin:/bin",
+                },
+                text=True,
+                capture_output=True,
+                timeout=30,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(output.read_text(encoding="utf-8"), "available=false\n")
+
+    def test_external_reference_transport_requires_canonical_trailing_newline(self):
+        script = self._external_reference_transport_script()
+        reference = '{"schema_version":1,"record_type":"external_predecessor_reference"}'
+        for supplied in (reference, reference + "\n"):
+            with self.subTest(trailing_newline=supplied.endswith("\n")), TemporaryDirectory() as directory:
+                runner = Path(directory)
+                result = subprocess.run(
+                    ["bash", "-c", script],
+                    env={
+                        **os.environ,
+                        "RUNNER_TEMP": str(runner),
+                        "PRIOR_EXTERNAL_REFERENCE": supplied,
+                    },
+                    text=True,
+                    capture_output=True,
+                    timeout=30,
+                )
+                if supplied.endswith("\n"):
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(
+                        (runner / "prior-external-predecessor-reference.json").read_bytes(),
+                        supplied.encode("utf-8"),
+                    )
+                else:
+                    self.assertNotEqual(result.returncode, 0)
 
     def test_durable_fallback_reconstructs_baseline_from_sealed_package_provenance(self):
         script = self._baseline_reconstruction_python()
@@ -717,6 +808,12 @@ class OperationsContractTests(unittest.TestCase):
         self.assertEqual(execute.purpose, "normal")
         self.assertEqual(execute.prior_reference.name, "prior-reference.json")
 
+        external = parser.parse_args([
+            "execute", *common, "--purpose", "normal",
+            "--prior-external-reference", "/tmp/external-prior.json",
+        ])
+        self.assertEqual(external.prior_external_reference.name, "external-prior.json")
+
         seal = parser.parse_args([
             "seal-only", "--context", "/tmp/publication-context.json",
             "--attempt-id", "run-123", "--purpose", "rollback",
@@ -724,6 +821,13 @@ class OperationsContractTests(unittest.TestCase):
             "--prior-baseline-record", "/tmp/prior-baseline.json",
         ])
         self.assertEqual(seal.purpose, "rollback")
+
+        initial = parser.parse_args([
+            "seal-only", "--context", "/tmp/publication-context.json",
+            "--attempt-id", "run-123", "--purpose", "normal",
+            "--initial-baseline",
+        ])
+        self.assertTrue(initial.initial_baseline)
 
 
 if __name__ == "__main__":

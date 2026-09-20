@@ -1327,20 +1327,25 @@ def _verify_prior_publication(
     repository: str,
     destination: Path,
     require_prior: bool = False,
+    allow_unknown_historical_baseline: bool = False,
 ) -> None:
     if baseline.digest != package.expected_baseline_sha256:
         raise PublicationExecutionError(
             "baseline record does not match the validated package"
         )
-    if (
-        prior is None
-        and not require_prior
-        and baseline.observed == package.expected_predecessor
-        and baseline.source.status == "unknown"
-        and baseline.source.commit is None
-    ):
-        # First publication: the complete stable baseline is authoritative even
-        # when its historical source commit is explicitly unknown.
+    if prior is None and allow_unknown_historical_baseline:
+        if (
+            require_prior
+            or baseline.observed != package.expected_predecessor
+            or baseline.source.status != "unknown"
+            or baseline.source.commit is not None
+        ):
+            raise PublicationExecutionError(
+                "initial baseline exception is invalid; successor requires sealed "
+                "verified predecessor evidence"
+            )
+        # The exception is explicit at the protected dispatch boundary.  An
+        # unknown source status by itself never authorizes a successor.
         return
     if prior is None:
         raise PublicationExecutionError(
@@ -1657,6 +1662,7 @@ class PublicationCoordinator:
         attempt_id: str,
         retrieval_directory: str | Path,
         prior: VerifiedPublicationPredecessor | None = None,
+        allow_unknown_historical_baseline: bool = False,
     ) -> SealedAttemptReference:
         """Seal a durable attempt reference without reading or writing Firebase."""
 
@@ -1694,6 +1700,7 @@ class PublicationCoordinator:
                 repository=self.repository,
                 destination=destination / "predecessor",
                 require_prior=purpose != "normal",
+                allow_unknown_historical_baseline=allow_unknown_historical_baseline,
             )
             authorization = authorize_protected_execution(
                 package, runtime=runtime, github=self.approval_reader,
@@ -1730,6 +1737,7 @@ class PublicationCoordinator:
         tags: PublicationTags,
         retrieval_directory: str | Path,
         prior: VerifiedPublicationPredecessor | None = None,
+        allow_unknown_historical_baseline: bool = False,
     ) -> PublicationRun:
         """Consume one exact sealed reference once under fresh authorization."""
 
@@ -1761,6 +1769,7 @@ class PublicationCoordinator:
                 repository=self.repository,
                 destination=destination / "predecessor",
                 require_prior=purpose != "normal",
+                allow_unknown_historical_baseline=allow_unknown_historical_baseline,
             )
             authorization = authorize_protected_execution(
                 package, runtime=runtime, github=self.approval_reader,
@@ -1963,6 +1972,7 @@ class PublicationCoordinator:
         attempt_id: str,
         retrieval_directory: str | Path,
         prior: VerifiedPublicationPredecessor | None = None,
+        allow_unknown_historical_baseline: bool = True,
     ) -> PublicationRun:
         """Internal compatibility seam for the pre-SR14 behavior matrix."""
 
@@ -1972,6 +1982,7 @@ class PublicationCoordinator:
             evidence_references=evidence_references, tags=tags,
             attempt_id=attempt_id, retrieval_directory=retrieval_directory,
             prior=prior,
+            allow_unknown_historical_baseline=allow_unknown_historical_baseline,
         )
 
     def publish_recovery(
@@ -2053,6 +2064,7 @@ class PublicationCoordinator:
         attempt_id: str,
         retrieval_directory: str | Path,
         prior: VerifiedPublicationPredecessor | None = None,
+        allow_unknown_historical_baseline: bool = False,
     ) -> PublicationRun:
         """Publish once or return a truthful paused state; never retry or roll back."""
 
@@ -2063,6 +2075,7 @@ class PublicationCoordinator:
                 repository=self.repository,
                 destination=destination / "predecessor",
                 require_prior=purpose != "normal",
+                allow_unknown_historical_baseline=allow_unknown_historical_baseline,
             )
             authorization = authorize_protected_execution(
                 package, runtime=runtime, github=self.approval_reader,

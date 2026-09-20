@@ -23,9 +23,11 @@ from cfb.github_archive import (
     GitHubReleaseArchive,
 )
 from cfb.publication import (
+    PublicationExecutionError,
     PublicationCoordinator,
     PublicationTags,
     ReconciliationTags,
+    _verify_prior_publication,
     bind_merged_candidate,
     retrieve_sealed_attempt,
 )
@@ -50,6 +52,31 @@ WORKFLOW = ".github/workflows/firebase-hosting-publish.yml"
 
 
 class SealedPublicationRecoveryTests(unittest.TestCase):
+    def test_unknown_historical_baseline_requires_explicit_exception(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fx = fixture(root)
+            with self.assertRaisesRegex(
+                PublicationExecutionError, "successor requires"
+            ):
+                _verify_prior_publication(
+                    fx.package,
+                    fx.baseline,
+                    None,
+                    archive=fx.archive,
+                    repository=REPOSITORY,
+                    destination=root / "without-exception",
+                )
+            _verify_prior_publication(
+                fx.package,
+                fx.baseline,
+                None,
+                archive=fx.archive,
+                repository=REPOSITORY,
+                destination=root / "with-exception",
+                allow_unknown_historical_baseline=True,
+            )
+
     def test_public_one_shot_entry_points_are_unconditionally_disabled(self):
         predecessor = ProviderIdentity(
             TARGET,
@@ -298,6 +325,7 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                         "failed-package", "failed-intent", "unused-result", "unused-verification"
                     ),
                     attempt_id="failed-seal", retrieval_directory=root / "failed-seal",
+                    allow_unknown_historical_baseline=True,
                 )
             self.assertEqual(backend.write_count, 0)
 
@@ -323,6 +351,7 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                     ),
                     attempt_id="substituted",
                     retrieval_directory=root / "substituted",
+                    allow_unknown_historical_baseline=True,
                 )
             self.assertEqual(backend.write_count, 0)
 
@@ -337,6 +366,7 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                         "sealed-package", "sealed-intent", "unused-result", "unused-verification"
                     ),
                     attempt_id="sealed", retrieval_directory=root / "seal",
+                    allow_unknown_historical_baseline=True,
                 )
 
             self.assertIsInstance(reference, SealedAttemptReference)
@@ -380,6 +410,7 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                         "same-run-result", "same-run-verification",
                     ),
                     retrieval_directory=root / "same-run",
+                    allow_unknown_historical_baseline=True,
                 )
             with transport, self.assertRaisesRegex(Exception, "purpose"):
                 executor.execute_sealed_attempt(
@@ -408,6 +439,7 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                     baseline=fx.baseline, provenance_reader=provenance,
                     tags=PublicationTags("x-package", "x-intent", "x-result", "x-verification"),
                     retrieval_directory=root / "claim-failure",
+                    allow_unknown_historical_baseline=True,
                 )
             self.assertEqual(backend.write_count, 0)
             with transport:
@@ -418,6 +450,7 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                         "unused-package", "unused-intent", "result", "verification"
                     ),
                     retrieval_directory=root / "execute",
+                    allow_unknown_historical_baseline=True,
                 )
             self.assertEqual(result.state, "verified")
             writes_after_first_execution = backend.write_count
@@ -429,6 +462,7 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                         "unused-package", "unused-intent", "result", "verification"
                     ),
                     retrieval_directory=root / "replay",
+                    allow_unknown_historical_baseline=True,
                 )
             self.assertEqual(backend.write_count, writes_after_first_execution)
             new_run_approval = FakeGitHubApprovalReader(
@@ -453,6 +487,7 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                         "replay-result", "replay-verification",
                     ),
                     retrieval_directory=root / "new-run-replay",
+                    allow_unknown_historical_baseline=True,
                 )
             self.assertEqual(backend.write_count, writes_after_first_execution)
 
@@ -469,6 +504,7 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                     ),
                     attempt_id="claim-lost",
                     retrieval_directory=root / "claim-lost-seal",
+                    allow_unknown_historical_baseline=True,
                 )
             claim_lost_backend = CountingBackend(
                 TARGET, fx.package.expected_predecessor,
@@ -497,6 +533,7 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                         "claim-lost-result", "claim-lost-verification",
                     ),
                     retrieval_directory=root / "claim-lost-execute",
+                    allow_unknown_historical_baseline=True,
                 )
             self.assertEqual(claim_lost_backend.write_count, 0)
             with transport, self.assertRaisesRegex(Exception, "exactly once"):
@@ -509,6 +546,7 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                         "claim-lost-result-2", "claim-lost-verification-2",
                     ),
                     retrieval_directory=root / "claim-lost-replay",
+                    allow_unknown_historical_baseline=True,
                 )
             self.assertEqual(claim_lost_backend.write_count, 0)
 
@@ -525,6 +563,7 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                     ),
                     attempt_id="interrupted",
                     retrieval_directory=root / "interrupted-seal",
+                    allow_unknown_historical_baseline=True,
                 )
             interrupted_backend = CountingBackend(
                 TARGET, fx.package.expected_predecessor,
@@ -548,6 +587,7 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                         "interrupted-result", "interrupted-verification",
                     ),
                     retrieval_directory=root / "interrupted-execute",
+                    allow_unknown_historical_baseline=True,
                 )
             interrupted_writes = interrupted_backend.write_count
             with transport:
@@ -576,6 +616,7 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                     ),
                     attempt_id="prewrite",
                     retrieval_directory=root / "prewrite-seal",
+                    allow_unknown_historical_baseline=True,
                 )
 
             class PrewriteCrashBackend(CountingBackend):
@@ -608,6 +649,7 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                         "prewrite-result", "prewrite-verification",
                     ),
                     retrieval_directory=root / "prewrite-execute",
+                    allow_unknown_historical_baseline=True,
                 )
             self.assertEqual(prewrite_backend.write_count, 0)
             with transport:
@@ -639,6 +681,7 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                     ),
                     attempt_id="fresh-after-prewrite",
                     retrieval_directory=root / "fresh-seal",
+                    allow_unknown_historical_baseline=True,
                 )
             fresh_approval = FakeGitHubApprovalReader(
                 {**execute_approval.run_value, "id": 505},
@@ -662,6 +705,7 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                         "fresh-result", "fresh-verification",
                     ),
                     retrieval_directory=root / "fresh-execute",
+                    allow_unknown_historical_baseline=True,
                 )
             self.assertEqual(fresh_result.state, "verified")
             self.assertGreater(prewrite_backend.write_count, 0)

@@ -46,6 +46,15 @@ on:
         description: Exact predecessor SealedAttemptReference for a successor, rollback, or correction
         required: false
         type: string
+      prior_external_reference:
+        description: Durable external predecessor reference from reconcile-external
+        required: false
+        type: string
+      initial_baseline:
+        description: Explicit unknown-historical first-baseline exception for seal-only and execute
+        required: false
+        default: false
+        type: boolean
       prior_preparation_run_id:
         description: Preparation run containing the predecessor baseline record
         required: false
@@ -267,15 +276,29 @@ jobs:
     steps:
       - name: Download the exact prepared package transport
         if: inputs.preparation_run_id != '' && inputs.preparation_artifact_name != ''
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ inputs.preparation_artifact_name }}
-          run-id: ${{ inputs.preparation_run_id }}
-          github-token: ${{ github.token }}
-          path: ${{ runner.temp }}/preparation
+        id: preparation_transport
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREPARATION_RUN_ID: ${{ inputs.preparation_run_id }}
+          PREPARATION_ARTIFACT_NAME: ${{ inputs.preparation_artifact_name }}
+        run: |
+          set -euo pipefail
+          [[ "$PREPARATION_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          [[ "$PREPARATION_ARTIFACT_NAME" =~ ^[A-Za-z0-9_.-]+$ ]]
+          mkdir -p "$RUNNER_TEMP/preparation"
+          if gh run download "$PREPARATION_RUN_ID" \
+            --repo arkar16/sportsrank \
+            --name "$PREPARATION_ARTIFACT_NAME" \
+            --dir "$RUNNER_TEMP/preparation" \
+            && test -s "$RUNNER_TEMP/preparation/publication-context.json"; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Verify the authenticated preparation origin and exact reference input
-        if: inputs.preparation_run_id != '' && inputs.preparation_artifact_name != ''
+        if: inputs.preparation_run_id != '' && inputs.preparation_artifact_name != '' && steps.preparation_transport.outputs.available == 'true'
         shell: bash
         env:
           OPERATION: ${{ inputs.operation }}
@@ -389,6 +412,36 @@ jobs:
           [[ "$PREPARATION_RUN_ID" =~ ^[1-9][0-9]*$ ]]
           [[ "$PREPARATION_ARTIFACT_NAME" =~ ^[A-Za-z0-9_.-]+$ ]]
 
+      - name: Validate predecessor and first-baseline dispatch grammar
+        if: inputs.operation == 'seal-only' || inputs.operation == 'execute'
+        shell: bash
+        env:
+          PURPOSE: ${{ inputs.purpose }}
+          INITIAL_BASELINE: ${{ inputs.initial_baseline }}
+          PRIOR_REFERENCE: ${{ inputs.prior_reference }}
+          PRIOR_EXTERNAL_REFERENCE: ${{ inputs.prior_external_reference }}
+          PRIOR_PREPARATION_RUN_ID: ${{ inputs.prior_preparation_run_id }}
+          PRIOR_PREPARATION_ARTIFACT_NAME: ${{ inputs.prior_preparation_artifact_name }}
+        run: |
+          set -euo pipefail
+          if [[ -n "$PRIOR_REFERENCE" && -n "$PRIOR_EXTERNAL_REFERENCE" ]]; then
+            echo 'sealed and external predecessor references are mutually exclusive' >&2
+            exit 1
+          fi
+          if [[ "$INITIAL_BASELINE" == "true" ]]; then
+            [[ "$PURPOSE" == "normal" ]]
+            [[ -z "$PRIOR_REFERENCE" && -z "$PRIOR_EXTERNAL_REFERENCE" ]]
+            [[ -z "$PRIOR_PREPARATION_RUN_ID" && -z "$PRIOR_PREPARATION_ARTIFACT_NAME" ]]
+          fi
+          if [[ -n "$PRIOR_EXTERNAL_REFERENCE" && ( -n "$PRIOR_PREPARATION_RUN_ID" || -n "$PRIOR_PREPARATION_ARTIFACT_NAME" ) ]]; then
+            echo 'external predecessor references do not use preparation baseline transport' >&2
+            exit 1
+          fi
+          if [[ "$PURPOSE" != "normal" && -z "$PRIOR_REFERENCE" && -z "$PRIOR_EXTERNAL_REFERENCE" ]]; then
+            echo "$PURPOSE requires a freshly reconciled predecessor reference" >&2
+            exit 1
+          fi
+
       - name: Retrieve the exact predecessor baseline when a successor needs it
         if: (inputs.operation == 'seal-only' || inputs.operation == 'execute') && inputs.prior_reference != '' && inputs.prior_preparation_run_id != '' && inputs.prior_preparation_artifact_name != ''
         id: prior_preparation
@@ -447,20 +500,33 @@ jobs:
           jq -e '.schema_version == 1 and .record_type == "sealed_attempt_reference" and (.intent_reference.asset_name == "attempt-intent.json")' \
             "$RUNNER_TEMP/prior-sealed-attempt-reference.json" >/dev/null
 
+      - name: Preserve the exact external predecessor reference input
+        if: (inputs.operation == 'seal-only' || inputs.operation == 'execute') && inputs.prior_external_reference != ''
+        shell: bash
+        env:
+          PRIOR_EXTERNAL_REFERENCE: ${{ inputs.prior_external_reference }}
+        run: |
+          set -euo pipefail
+          [[ -n "$PRIOR_EXTERNAL_REFERENCE" ]]
+          printf '%s' "$PRIOR_EXTERNAL_REFERENCE" > "$RUNNER_TEMP/prior-external-predecessor-reference.json"
+          test "$(tail -c 1 "$RUNNER_TEMP/prior-external-predecessor-reference.json" | od -An -t x1 | tr -d '[:space:]')" = "0a"
+          jq -e '(.record_type == "external_predecessor_reference" and .schema_version == 1) or (.record_type == "external_reconciliation_run" and .state == "external_verified" and .external_predecessor_reference.record_type == "external_predecessor_reference")' \
+            "$RUNNER_TEMP/prior-external-predecessor-reference.json" >/dev/null
+
       - name: Set up Python 3.12 and uv for durable fallback bootstrap
-        if: inputs.operation != 'seal-only' && (inputs.preparation_run_id == '' || inputs.preparation_artifact_name == '')
+        if: inputs.operation != 'seal-only' && (inputs.preparation_run_id == '' || inputs.preparation_artifact_name == '' || steps.preparation_transport.outputs.available != 'true')
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
       - name: Set up uv for durable fallback bootstrap
-        if: inputs.operation != 'seal-only' && (inputs.preparation_run_id == '' || inputs.preparation_artifact_name == '')
+        if: inputs.operation != 'seal-only' && (inputs.preparation_run_id == '' || inputs.preparation_artifact_name == '' || steps.preparation_transport.outputs.available != 'true')
         uses: astral-sh/setup-uv@v9.0.0
         with:
           enable-cache: true
 
       - name: Bootstrap exact runtime and baseline from the durable reference
-        if: inputs.operation != 'seal-only' && (inputs.preparation_run_id == '' || inputs.preparation_artifact_name == '')
+        if: inputs.operation != 'seal-only' && (inputs.preparation_run_id == '' || inputs.preparation_artifact_name == '' || steps.preparation_transport.outputs.available != 'true')
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -562,7 +628,7 @@ jobs:
           echo "PREPARATION_ORIGIN_RUN_ID=$origin_run_id" >> "$GITHUB_ENV"
 
       - name: Reconstruct the exact baseline record from the sealed package
-        if: inputs.operation != 'seal-only' && (inputs.preparation_run_id == '' || inputs.preparation_artifact_name == '')
+        if: inputs.operation != 'seal-only' && (inputs.preparation_run_id == '' || inputs.preparation_artifact_name == '' || steps.preparation_transport.outputs.available != 'true')
         working-directory: ${{ runner.temp }}/execution
         env:
           PACKAGE_ARCHIVE: ${{ runner.temp }}/durable/package.tar.gz
@@ -599,7 +665,7 @@ jobs:
           PY
 
       - name: "Verify the prepared transport and channel: live target"
-        if: inputs.preparation_run_id != '' && inputs.preparation_artifact_name != ''
+        if: inputs.preparation_run_id != '' && inputs.preparation_artifact_name != '' && steps.preparation_transport.outputs.available == 'true'
         shell: bash
         env:
           OPERATION: ${{ inputs.operation }}
@@ -638,7 +704,7 @@ jobs:
             publication-preparation-manifest.json > /dev/null
 
       - name: Verify the preparation attestation before runtime materialization
-        if: inputs.preparation_run_id != '' && inputs.preparation_artifact_name != ''
+        if: inputs.preparation_run_id != '' && inputs.preparation_artifact_name != '' && steps.preparation_transport.outputs.available == 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -661,7 +727,7 @@ jobs:
             <<< "$attestation_json" >/dev/null
 
       - name: Verify transported execution source against the authenticated Git object graph
-        if: inputs.preparation_run_id != '' && inputs.preparation_artifact_name != ''
+        if: inputs.preparation_run_id != '' && inputs.preparation_artifact_name != '' && steps.preparation_transport.outputs.available == 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -697,7 +763,7 @@ jobs:
             "$RUNNER_TEMP/preparation/execution-source.tar.gz"
 
       - name: Materialize the exact execution code without a source checkout
-        if: inputs.preparation_run_id != '' && inputs.preparation_artifact_name != ''
+        if: inputs.preparation_run_id != '' && inputs.preparation_artifact_name != '' && steps.preparation_transport.outputs.available == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -706,13 +772,13 @@ jobs:
             --directory "$RUNNER_TEMP/execution" --no-same-owner
 
       - name: Set up Python 3.12 and uv for the transported source
-        if: inputs.preparation_run_id != '' && inputs.preparation_artifact_name != ''
+        if: inputs.preparation_run_id != '' && inputs.preparation_artifact_name != '' && steps.preparation_transport.outputs.available == 'true'
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
       - name: Set up uv
-        if: inputs.preparation_run_id != '' && inputs.preparation_artifact_name != ''
+        if: inputs.preparation_run_id != '' && inputs.preparation_artifact_name != '' && steps.preparation_transport.outputs.available == 'true'
         uses: astral-sh/setup-uv@v9.0.0
         with:
           enable-cache: true
@@ -751,7 +817,7 @@ jobs:
           download_asset "$package_record_asset" "$package_record_sha" "$RUNNER_TEMP/prior-durable/validated-package.json"
 
       - name: Reconstruct the predecessor baseline record from the sealed package
-        if: (inputs.operation == 'seal-only' || inputs.operation == 'execute') && inputs.prior_reference != '' && (inputs.prior_preparation_run_id == '' || inputs.prior_preparation_artifact_name == '')
+        if: (inputs.operation == 'seal-only' || inputs.operation == 'execute') && inputs.prior_reference != '' && (inputs.prior_preparation_run_id == '' || inputs.prior_preparation_artifact_name == '' || steps.prior_preparation.outputs.available != 'true')
         working-directory: ${{ runner.temp }}/execution
         env:
           PRIOR_PACKAGE_ARCHIVE: ${{ runner.temp }}/prior-durable/package.tar.gz
@@ -798,11 +864,13 @@ jobs:
         env:
           OPERATION: ${{ inputs.operation }}
           PURPOSE: ${{ inputs.purpose }}
+          INITIAL_BASELINE: ${{ inputs.initial_baseline }}
           GITHUB_TOKEN: ${{ github.token }}
           GH_TOKEN: ${{ github.token }}
           FIREBASE_ACCESS_TOKEN: ${{ steps.firebase-auth.outputs.access_token }}
           CFBD_API_KEY: ""
           PRIOR_REFERENCE: ${{ inputs.prior_reference }}
+          PRIOR_EXTERNAL_REFERENCE: ${{ inputs.prior_external_reference }}
         run: |
           set -euo pipefail
           if [[ "$OPERATION" == "seal-only" ]]; then
@@ -815,6 +883,9 @@ jobs:
               --retrieval-directory "$RUNNER_TEMP/receipts"
               --reference-output "$RUNNER_TEMP/sealed-attempt-reference.json"
             )
+            if [[ "$INITIAL_BASELINE" == "true" ]]; then
+              cli+=(--initial-baseline)
+            fi
             if [[ -n "$PRIOR_REFERENCE" ]]; then
               test -s "$RUNNER_TEMP/prior-sealed-attempt-reference.json"
               test -s "$RUNNER_TEMP/prior-baseline.json"
@@ -822,8 +893,13 @@ jobs:
                 --prior-reference "$RUNNER_TEMP/prior-sealed-attempt-reference.json"
                 --prior-baseline-record "$RUNNER_TEMP/prior-baseline.json"
               )
+            elif [[ -n "$PRIOR_EXTERNAL_REFERENCE" ]]; then
+              test -s "$RUNNER_TEMP/prior-external-predecessor-reference.json"
+              cli+=(
+                --prior-external-reference "$RUNNER_TEMP/prior-external-predecessor-reference.json"
+              )
             elif [[ "$PURPOSE" != "normal" ]]; then
-              echo "$PURPOSE requires prior_reference and a verified predecessor baseline" >&2
+              echo "$PURPOSE requires a freshly reconciled predecessor reference" >&2
               exit 1
             fi
           else
@@ -847,8 +923,15 @@ jobs:
                   --prior-reference "$RUNNER_TEMP/prior-sealed-attempt-reference.json"
                   --prior-baseline-record "$RUNNER_TEMP/prior-baseline.json"
                 )
+              elif [[ -n "$PRIOR_EXTERNAL_REFERENCE" ]]; then
+                test -s "$RUNNER_TEMP/prior-external-predecessor-reference.json"
+                cli+=(
+                  --prior-external-reference "$RUNNER_TEMP/prior-external-predecessor-reference.json"
+                )
+              elif [[ "$INITIAL_BASELINE" == "true" ]]; then
+                cli+=(--initial-baseline)
               elif [[ "$PURPOSE" != "normal" ]]; then
-                echo "$PURPOSE requires prior_reference and a verified predecessor baseline" >&2
+                echo "$PURPOSE requires a freshly reconciled predecessor reference" >&2
                 exit 1
               fi
               ;;

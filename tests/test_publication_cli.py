@@ -25,6 +25,9 @@ from cfb.publication_cli import (
     PublicationCLIError,
     _attestation_dict,
     _context_dict,
+    _external_predecessor_reference_dict,
+    _load_external_predecessor_reference,
+    _validate_initial_baseline_exception,
     load_preparation_context,
     main,
     prepare_operation,
@@ -33,6 +36,7 @@ from cfb.publication_records import (
     AttemptIntentRecord,
     ArchiveReference,
     BaselineRecord,
+    ExternalPredecessorRecord,
     ManagedResourceEvidence,
     ProviderIdentity,
     SealedAttemptReference,
@@ -254,6 +258,133 @@ def _preparation_provenance(root: Path, commit: str):
 
 
 class PublicationCLIContextTests(unittest.TestCase):
+    def test_legacy_calculation_errors_redact_cfbd_credentials(self):
+        import cfb.main as legacy_main
+
+        secret = "legacy-cfbd-sentinel"
+
+        def fail(*_args, **_kwargs):
+            raise RuntimeError(f"provider failed with {secret}")
+
+        with patch.dict(os.environ, {"CFBD_API_KEY": secret}, clear=True):
+            with patch.object(legacy_main, "single_week_calc", fail):
+                with self.assertLogs(level="ERROR") as logs:
+                    with self.assertRaisesRegex(RuntimeError, secret):
+                        legacy_main.run_calculations(
+                            "single_week", 2025, 0, 0, "FBS", 2, 0,
+                            "2026-09-20T00:00:00Z",
+                        )
+
+        rendered = "\n".join(logs.output)
+        self.assertNotIn(secret, rendered)
+        self.assertIn("[redacted]", rendered)
+
+    def test_external_predecessor_reference_rehydrates_sealed_evidence(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            _context, package, baseline, _archive = _fixture(root)
+            capture_bytes = b"external baseline bytes"
+            sanitizer_bytes = b"external sanitizer record"
+            capture_reference = ArchiveReference(
+                REPOSITORY, "101", "external-capture", package.candidate_commit,
+                "201", "baseline-public.tar.gz", _sha(capture_bytes), len(capture_bytes), True,
+            )
+            sanitizer_reference = ArchiveReference(
+                REPOSITORY, "101", "external-capture", package.candidate_commit,
+                "202", "baseline-sanitizer.json", _sha(sanitizer_bytes), len(sanitizer_bytes), True,
+            )
+            source = {
+                "schema_version": 1,
+                "record_type": "firebase_external_predecessor_observation",
+                "target": baseline.observed.target.to_dict(),
+                "release": baseline.observed.release,
+                "version": baseline.observed.version,
+                "baseline_sha256": baseline.digest,
+                "archive_reference_sha256": capture_reference.digest,
+                "sanitizer_reference_sha256": sanitizer_reference.digest,
+                "consumed_archive_sha256": capture_reference.sha256,
+                "inventory_sha256": baseline.inventory_sha256,
+                "configuration_sha256": baseline.configuration_sha256,
+                "application_tree_sha256": baseline.application_tree_sha256,
+                "fresh_capture_correspondence": "verified",
+            }
+            observation = ExternalPredecessorRecord.create(
+                baseline=baseline,
+                archive_reference=capture_reference,
+                sanitizer_reference=sanitizer_reference,
+                consumed_archive_sha256=capture_reference.sha256,
+                observed_at="2026-09-20T00:00:00+00:00",
+                source_sha256=_sha(canonical_json(source)),
+            )
+            observation_reference = ArchiveReference(
+                REPOSITORY, "101", "external-capture", package.candidate_commit,
+                "203", "external-predecessor.json", observation.digest,
+                len(canonical_json(observation.to_dict())), True,
+            )
+            source_reference = ArchiveReference(
+                REPOSITORY, "101", "external-capture", package.candidate_commit,
+                "204", "external-predecessor-source.json", _sha(canonical_json(source)),
+                len(canonical_json(source)), True,
+            )
+            predecessor = SimpleNamespace(
+                observed_identity=baseline.observed,
+                observation=observation,
+                capture_reference=capture_reference,
+                sanitizer_reference=sanitizer_reference,
+                observation_reference=observation_reference,
+                observation_source_reference=source_reference,
+            )
+            reference_path = root / "external-predecessor-reference.json"
+            reference_path.write_bytes(
+                canonical_json(_external_predecessor_reference_dict(baseline, predecessor))
+            )
+
+            class ArchiveFake:
+                def __init__(self):
+                    self.files = {
+                        capture_reference.asset_id: capture_bytes,
+                        sanitizer_reference.asset_id: sanitizer_bytes,
+                        observation_reference.asset_id: canonical_json(observation.to_dict()),
+                        source_reference.asset_id: canonical_json(source),
+                    }
+
+                def retrieve_and_verify(self, reference, destination):
+                    value = self.files[reference.asset_id]
+                    destination = Path(destination)
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    destination.write_bytes(value)
+                    return destination
+
+            coordinator = SimpleNamespace(repository=REPOSITORY, archive=ArchiveFake())
+            loaded = _load_external_predecessor_reference(
+                reference_path,
+                expected_baseline=baseline,
+                coordinator=coordinator,
+                destination=root / "retrieved",
+            )
+            self.assertEqual(loaded.observation, observation)
+            self.assertEqual(loaded.capture_reference, capture_reference)
+            self.assertEqual(loaded.observation_source_reference, source_reference)
+
+            wrapper_path = root / "external-reconciliation-run.json"
+            wrapper_path.write_bytes(
+                canonical_json({
+                    "schema_version": 1,
+                    "record_type": "external_reconciliation_run",
+                    "state": "external_verified",
+                    "external_predecessor_reference": json.loads(
+                        reference_path.read_bytes()
+                    ),
+                })
+            )
+            wrapped = _load_external_predecessor_reference(
+                wrapper_path,
+                expected_baseline=baseline,
+                coordinator=coordinator,
+                destination=root / "wrapped-retrieved",
+            )
+            self.assertEqual(wrapped.observation, observation)
+
     def test_prepare_copies_an_external_candidate_bundle_after_empty_output_gate(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -640,6 +771,12 @@ class PublicationCLIContextTests(unittest.TestCase):
                 "cfb.publication_cli._rehydrate_package", return_value=rehydrated
             ), patch("cfb.publication_cli._runtime", return_value=object()), patch.dict(
                 os.environ, {"GITHUB_TOKEN": "offline-fixture"}
+            ), patch(
+                "cfb.publication_cli._INITIAL_BASELINE_RECORD_SHA256",
+                _baseline.digest,
+            ), patch(
+                "cfb.publication_cli._INITIAL_BASELINE_OBSERVED",
+                _baseline.observed,
             ):
                 status = main(
                     [
@@ -647,6 +784,7 @@ class PublicationCLIContextTests(unittest.TestCase):
                         "--context", str(context_path),
                         "--attempt-id", "seal-test",
                         "--purpose", "normal",
+                        "--initial-baseline",
                         "--reference-output", str(result_path),
                     ],
                     coordinator=coordinator,
@@ -656,6 +794,24 @@ class PublicationCLIContextTests(unittest.TestCase):
             self.assertEqual(result_path.read_bytes(), sealed_reference.to_bytes())
             self.assertEqual(len(coordinator.calls), 1)
             self.assertEqual(coordinator.calls[0][1]["purpose"], "normal")
+            self.assertTrue(
+                coordinator.calls[0][1]["allow_unknown_historical_baseline"]
+            )
+
+    def test_initial_baseline_rejects_a_future_unknown_capture(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            _context, _package, baseline, _archive = _fixture(root)
+
+            with self.assertRaisesRegex(
+                PublicationCLIError, "accepted historical baseline"
+            ):
+                _validate_initial_baseline_exception(
+                    True,
+                    purpose="normal",
+                    baseline=baseline,
+                    prior_supplied=False,
+                )
 
     def test_context_loader_rejects_archive_substitution_and_path_escape(self):
         with tempfile.TemporaryDirectory() as directory:

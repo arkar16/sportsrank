@@ -353,7 +353,9 @@ reconstruction and final-head acceptance under SR-16. Gate 2 remains separate.
   lost-response retries. No public one-shot publication route is permitted.
 - Normal successors, rollback and correction require a freshly reconciled,
   verified predecessor. Only the explicit unknown-historical first baseline
-  exception may omit it. Missing, partial, stale or unverified evidence fails
+  exception may omit it, explicitly selected and bound to the accepted historical
+  baseline record. External reconciliation emits an immutable-evidence reference
+  consumable by sealing and execution. Missing, partial, stale or unverified evidence fails
   closed. `reconcile` and `verify-only` retrieve the durable reference and
   observe current provider state without deployment, independently of Actions
   success or state upload. After an interrupted consumed attempt, any new write

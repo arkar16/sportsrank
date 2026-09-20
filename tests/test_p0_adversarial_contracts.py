@@ -8,6 +8,7 @@ contracts reject the tampering.
 from datetime import datetime, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 from types import MappingProxyType
 import tempfile
@@ -15,6 +16,7 @@ import unittest
 
 from bs4 import BeautifulSoup
 
+from cfb.baseline import create_sanitized_baseline_archive, import_baseline
 from cfb.ranking_engine import (
     PreviousFinal,
     RankingContractError,
@@ -185,6 +187,8 @@ class P0AdversarialContractTests(unittest.TestCase):
         self.assertNotIn('cat "$input_root/baseline.sha256"', preparation)
         self.assertNotIn('cat "$input_root/source-inputs.sha256"', preparation)
         self.assertIn("candidate.bundle", preparation)
+        self.assertIn('candidate_bundle="$RUNNER_TEMP/candidate.bundle"', preparation)
+        self.assertNotIn('git bundle create "$output_root/candidate.bundle"', preparation)
         self.assertIn("bind_merged_candidate", preparation)
         self.assertIn("publication-context.json", preparation)
         self.assertIn("package.sha256", preparation)
@@ -218,8 +222,55 @@ class P0AdversarialContractTests(unittest.TestCase):
         upload = source[upload_start:protected_start]
         self.assertIn("baseline-public.tar.gz", upload)
         self.assertIn("baseline-sanitizer.json", upload)
+        self.assertIn("candidate.bundle.sha256", upload)
         self.assertNotIn("baseline.tar.gz", upload)
         self.assertNotIn("source-inputs.tar.gz", upload)
+
+        self.assertEqual(
+            trust["baseline"]["public_archive_sha256"],
+            "0e8cda0c3042b02f96f4c5ae12a502944b2f9742fa768b257616e171399eaa20",
+        )
+        self.assertEqual(
+            trust["baseline"]["sanitizer_record_sha256"],
+            "d27c90bdc13b76169934543543613b5f225ae688457149677e17758d32d71063",
+        )
+
+    def test_accepted_baseline_derivative_pins_match_generator_for_canonical_input(self):
+        acceptance_root = os.environ.get("SPORTSRANK_SR7_ACCEPTANCE_ROOT")
+        if not acceptance_root:
+            self.skipTest("set SPORTSRANK_SR7_ACCEPTANCE_ROOT for the retained canonical input")
+        baseline_archive = Path(acceptance_root) / "inputs" / "baseline.tar.gz"
+        if not baseline_archive.is_file():
+            self.skipTest(f"canonical baseline is unavailable: {baseline_archive}")
+
+        trust = json.loads(
+            (REPO_ROOT / "config" / "sr7-recovery-inputs.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        baseline = import_baseline(
+            baseline_archive,
+            target=trust["target"],
+            expected_archive_sha256=trust["baseline"]["private_archive_sha256"],
+        )
+        try:
+            with tempfile.TemporaryDirectory() as directory:
+                public_archive = Path(directory) / "baseline-public.tar.gz"
+                sanitizer = create_sanitized_baseline_archive(baseline, public_archive)
+                self.assertEqual(
+                    hashlib.sha256(public_archive.read_bytes()).hexdigest(),
+                    trust["baseline"]["public_archive_sha256"],
+                )
+                self.assertEqual(
+                    sanitizer.digest,
+                    trust["baseline"]["sanitizer_record_sha256"],
+                )
+                self.assertEqual(
+                    sanitizer.source_baseline_record_sha256,
+                    trust["baseline"]["record_sha256"],
+                )
+        finally:
+            baseline.close()
 
     def test_resealed_candidate_with_wrong_finite_prior_final_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:

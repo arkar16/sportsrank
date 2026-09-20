@@ -68,6 +68,7 @@ from .github_archive import (
 )
 from .publication import (
     CommitTreeReader,
+    ExternalVerifiedPredecessor,
     GitCommitTreeReader,
     PreparedPackage,
     PublicationCoordinator,
@@ -93,7 +94,9 @@ from .publication_records import (
     ArchiveReference,
     AttemptIntentRecord,
     BaselineRecord,
+    ExternalPredecessorRecord,
     ProviderTarget,
+    ProviderIdentity,
     ProviderResultRecord,
     RecordValidationError,
     SealedAttemptReference,
@@ -108,6 +111,18 @@ from .release import ReleaseValidationError
 REPOSITORY = "arkar16/sportsrank"
 TARGET = ProviderTarget("sportsrank-837af", "sportsrank-837af", "live")
 WORKFLOW_PATH = ".github/workflows/firebase-hosting-publish.yml"
+# The unknown historical baseline exception is valid only for the reviewed
+# recovery starting point.  Keep this authority at the protected CLI boundary
+# so a later capture cannot opt into the same exception by changing its source
+# provenance or a tracked input manifest.
+_INITIAL_BASELINE_RECORD_SHA256 = (
+    "37dbba4d5c17d5a4b215950bf22459d055b327f3e291716ab1dddbe3470ea44f"
+)
+_INITIAL_BASELINE_OBSERVED = ProviderIdentity(
+    TARGET,
+    "sites/sportsrank-837af/channels/live/releases/1735229681345000",
+    "sites/sportsrank-837af/versions/5001daa796bb8d9a",
+)
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 _COMMIT = re.compile(r"[0-9a-f]{40}\Z")
 _POSITIVE_ID = re.compile(r"[1-9][0-9]*\Z")
@@ -1221,6 +1236,199 @@ def _fresh_prior_reference(
         ) from exc
 
 
+def _validate_initial_baseline_exception(
+    requested: bool,
+    *,
+    purpose: str,
+    baseline: BaselineRecord,
+    prior_supplied: bool,
+) -> None:
+    """Validate the one explicit exception to predecessor requirements."""
+
+    if not requested:
+        return
+    if purpose != "normal" or prior_supplied:
+        raise PublicationCLIError(
+            "initial-baseline is allowed only for a normal first publication"
+        )
+    if baseline.source.status != "unknown" or baseline.source.commit is not None:
+        raise PublicationCLIError(
+            "initial-baseline requires an explicitly unknown historical source"
+        )
+    if (
+        baseline.digest != _INITIAL_BASELINE_RECORD_SHA256
+        or baseline.observed != _INITIAL_BASELINE_OBSERVED
+    ):
+        raise PublicationCLIError(
+            "initial-baseline requires the accepted historical baseline record"
+        )
+
+
+_EXTERNAL_PREDECESSOR_REFERENCE_FIELDS = {
+    "schema_version",
+    "record_type",
+    "baseline",
+    "observed_identity",
+    "observation",
+    "capture_reference",
+    "sanitizer_reference",
+    "observation_reference",
+    "observation_source_reference",
+}
+
+
+def _external_predecessor_reference_dict(
+    baseline: BaselineRecord,
+    predecessor: ExternalVerifiedPredecessor,
+) -> dict[str, Any]:
+    """Serialize the archive-backed capability returned by external reconcile."""
+
+    return {
+        "schema_version": 1,
+        "record_type": "external_predecessor_reference",
+        "baseline": baseline.to_dict(),
+        "observed_identity": predecessor.observed_identity.to_dict(),
+        "observation": predecessor.observation.to_dict(),
+        "capture_reference": predecessor.capture_reference.to_dict(),
+        "sanitizer_reference": predecessor.sanitizer_reference.to_dict(),
+        "observation_reference": predecessor.observation_reference.to_dict(),
+        "observation_source_reference": predecessor.observation_source_reference.to_dict(),
+    }
+
+
+def _load_external_predecessor_reference(
+    path: str | Path,
+    *,
+    expected_baseline: BaselineRecord,
+    coordinator: PublicationCoordinator,
+    destination: Path,
+) -> ExternalVerifiedPredecessor:
+    """Load an immutable external predecessor capability from sealed evidence."""
+
+    reference_path = Path(path).resolve()
+    try:
+        raw_bytes = reference_path.read_bytes()
+        raw = json.loads(raw_bytes)
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise PublicationCLIError("external predecessor reference is unreadable") from exc
+    if not isinstance(raw, Mapping) or raw_bytes != canonical_json(raw):
+        raise PublicationCLIError(
+            "external predecessor reference must be canonical JSON with one trailing newline"
+        )
+    if raw.get("record_type") == "external_reconciliation_run":
+        if raw.get("state") != "external_verified":
+            raise PublicationCLIError(
+                "external reconciliation did not produce a verified predecessor"
+            )
+        raw = raw.get("external_predecessor_reference")
+        if not isinstance(raw, Mapping):
+            raise PublicationCLIError(
+                "external reconciliation result lacks its durable predecessor reference"
+            )
+    if set(raw) != _EXTERNAL_PREDECESSOR_REFERENCE_FIELDS:
+        raise PublicationCLIError(
+            "external predecessor reference fields do not match its schema"
+        )
+    if raw.get("schema_version") != 1 or raw.get("record_type") != "external_predecessor_reference":
+        raise PublicationCLIError("external predecessor reference schema is unsupported")
+    try:
+        baseline = BaselineRecord.from_dict(raw["baseline"])
+        observation = ExternalPredecessorRecord.from_dict(raw["observation"])
+        observed = ProviderIdentity.from_value(
+            raw["observed_identity"], target=baseline.target
+        )
+        references = {
+            name: _archive_reference(raw[name], f"external predecessor {name}")
+            for name in (
+                "capture_reference", "sanitizer_reference",
+                "observation_reference", "observation_source_reference",
+            )
+        }
+    except (RecordValidationError, TypeError, ValueError, KeyError) as exc:
+        raise PublicationCLIError("external predecessor reference is invalid") from exc
+    if baseline.digest != expected_baseline.digest:
+        raise PublicationCLIError(
+            "external predecessor baseline does not match the current package"
+        )
+    capture = references["capture_reference"]
+    sanitizer = references["sanitizer_reference"]
+    observation_reference = references["observation_reference"]
+    source_reference = references["observation_source_reference"]
+    if (
+        observed != baseline.observed
+        or observation.baseline_sha256 != baseline.digest
+        or observation.observed_target != observed.target
+        or observation.observed_release != observed.release
+        or observation.observed_version != observed.version
+        or observation.consumed_archive_sha256 != capture.sha256
+        or observation.archive_reference_sha256 != capture.digest
+        or observation.sanitizer_reference_sha256 != sanitizer.digest
+        or observation_reference.sha256 != observation.digest
+        or source_reference.sha256 != observation.source_sha256
+    ):
+        raise PublicationCLIError(
+            "external predecessor reference is not internally bound"
+        )
+    all_references = (capture, sanitizer, observation_reference, source_reference)
+    if any(reference.repository != coordinator.repository for reference in all_references):
+        raise PublicationCLIError(
+            "external predecessor evidence belongs to another repository"
+        )
+    if len({(reference.release_id, reference.asset_id) for reference in all_references}) != 4:
+        raise PublicationCLIError(
+            "external predecessor evidence roles must use distinct assets"
+        )
+    destination.mkdir(parents=True, exist_ok=True)
+    archive = coordinator.archive
+    try:
+        archive.retrieve_and_verify(capture, destination / "capture.tar.gz")
+        archive.retrieve_and_verify(sanitizer, destination / "sanitizer.json")
+        record_path = archive.retrieve_and_verify(
+            observation_reference, destination / "external-predecessor.json"
+        )
+        source_path = archive.retrieve_and_verify(
+            source_reference, destination / "external-predecessor-source.json"
+        )
+        if record_path.read_bytes() != canonical_json(observation.to_dict()):
+            raise PublicationCLIError(
+                "external predecessor record differs from its reference"
+            )
+        source = _json_object(source_path, "external predecessor source")
+        expected_source = {
+            "schema_version": 1,
+            "record_type": "firebase_external_predecessor_observation",
+            "target": observed.target.to_dict(),
+            "release": observed.release,
+            "version": observed.version,
+            "baseline_sha256": baseline.digest,
+            "archive_reference_sha256": capture.digest,
+            "sanitizer_reference_sha256": sanitizer.digest,
+            "consumed_archive_sha256": capture.sha256,
+            "inventory_sha256": baseline.inventory_sha256,
+            "configuration_sha256": baseline.configuration_sha256,
+            "application_tree_sha256": baseline.application_tree_sha256,
+            "fresh_capture_correspondence": "verified",
+        }
+        if dict(source) != expected_source:
+            raise PublicationCLIError(
+                "external predecessor source differs from its reference"
+            )
+    except ArchiveError as exc:
+        raise PublicationCLIError(
+            "external predecessor evidence is unavailable"
+        ) from exc
+    return ExternalVerifiedPredecessor._create(
+        coordinator.repository,
+        baseline.digest,
+        observed,
+        observation,
+        capture,
+        sanitizer,
+        observation_reference,
+        source_reference,
+    )
+
+
 def _reconciliation_evidence_dict(
     evidence: SealedRecordEvidence | None,
 ) -> dict[str, Any] | None:
@@ -1289,14 +1497,32 @@ def seal_only_operation(
         provenance_reader = GitHubPreparationProvenanceReader.from_github_token()
         prior_reference = getattr(args, "prior_reference", None)
         prior_baseline_record = getattr(args, "prior_baseline_record", None)
+        prior_external_reference = getattr(args, "prior_external_reference", None)
+        if prior_reference is not None and prior_external_reference is not None:
+            raise PublicationCLIError(
+                "sealed and external predecessor references are mutually exclusive"
+            )
         if (prior_reference is None) != (prior_baseline_record is None):
             raise PublicationCLIError(
                 "prior reference and prior baseline record must be supplied together"
             )
-        if args.purpose != "normal" and prior_reference is None:
+        if prior_external_reference is not None and prior_baseline_record is not None:
+            raise PublicationCLIError(
+                "external predecessor references carry their own baseline record"
+            )
+        prior_supplied = (
+            prior_reference is not None or prior_external_reference is not None
+        )
+        if args.purpose != "normal" and not prior_supplied:
             raise PublicationCLIError(
                 f"{args.purpose} requires a freshly reconciled predecessor reference"
             )
+        _validate_initial_baseline_exception(
+            bool(args.initial_baseline),
+            purpose=args.purpose,
+            baseline=context.baseline,
+            prior_supplied=prior_supplied,
+        )
         prior = None
         if prior_reference is not None:
             prior = _fresh_prior_reference(
@@ -1306,6 +1532,13 @@ def seal_only_operation(
                 provenance_reader=provenance_reader,
                 tag_prefix=args.attempt_id,
                 destination=destination / "predecessor",
+            )
+        elif prior_external_reference is not None:
+            prior = _load_external_predecessor_reference(
+                prior_external_reference,
+                expected_baseline=context.baseline,
+                coordinator=coordinator,
+                destination=destination / "external-predecessor",
             )
         preparation_manifest = Path(
             args.preparation_manifest
@@ -1345,6 +1578,7 @@ def seal_only_operation(
             attempt_id=args.attempt_id,
             retrieval_directory=destination,
             prior=prior,
+            allow_unknown_historical_baseline=bool(args.initial_baseline),
         )
         return _write_reference(
             _reference_output_path(args, context.path.parent), reference
@@ -1368,14 +1602,32 @@ def execute_operation(
     prior = None
     prior_reference = getattr(args, "prior_reference", None)
     prior_baseline_record = getattr(args, "prior_baseline_record", None)
+    prior_external_reference = getattr(args, "prior_external_reference", None)
+    if prior_reference is not None and prior_external_reference is not None:
+        raise PublicationCLIError(
+            "sealed and external predecessor references are mutually exclusive"
+        )
     if (prior_reference is None) != (prior_baseline_record is None):
         raise PublicationCLIError(
             "prior reference and prior baseline record must be supplied together"
         )
-    if args.purpose != "normal" and prior_reference is None:
+    if prior_external_reference is not None and prior_baseline_record is not None:
+        raise PublicationCLIError(
+            "external predecessor references carry their own baseline record"
+        )
+    prior_supplied = (
+        prior_reference is not None or prior_external_reference is not None
+    )
+    if args.purpose != "normal" and not prior_supplied:
         raise PublicationCLIError(
             f"{args.purpose} requires a freshly reconciled predecessor reference"
         )
+    _validate_initial_baseline_exception(
+        bool(args.initial_baseline),
+        purpose=args.purpose,
+        baseline=baseline,
+        prior_supplied=prior_supplied,
+    )
     if prior_reference is not None:
         prior = _fresh_prior_reference(
             _load_sealed_reference(prior_reference),
@@ -1384,6 +1636,13 @@ def execute_operation(
             provenance_reader=provenance_reader,
             tag_prefix=args.attempt_id,
             destination=destination / "predecessor",
+        )
+    elif prior_external_reference is not None:
+        prior = _load_external_predecessor_reference(
+            prior_external_reference,
+            expected_baseline=baseline,
+            coordinator=coordinator,
+            destination=destination / "external-predecessor",
         )
     run = coordinator.execute_sealed_attempt(
         reference,
@@ -1394,6 +1653,7 @@ def execute_operation(
         tags=_tag_values(args.attempt_id),
         retrieval_directory=destination,
         prior=prior,
+        allow_unknown_historical_baseline=bool(args.initial_baseline),
     )
     payload = _run_dict(
         operation="execute",
@@ -1524,6 +1784,12 @@ def reconcile_external_operation(
             "observation_evidence": _evidence_dict(result.observation_evidence),
             "permitted_next_operations": list(result.permitted_next_operations),
         }
+        if result.ordinary_successor_allowed:
+            payload["external_predecessor_reference"] = (
+                _external_predecessor_reference_dict(
+                    baseline_record, result.as_prior()
+                )
+            )
         return _write_run(_result_path(args, context.path.parent), payload)
     finally:
         captured.close() if "captured" in locals() and isinstance(captured, VerifiedBaseline) else None
@@ -1617,8 +1883,18 @@ def build_parser() -> argparse.ArgumentParser:
     seal.add_argument("--candidate-bundle", type=Path)
     seal.add_argument("--attempt-id", required=True, help="new immutable intent identity")
     _purpose_arg(seal)
+    seal.add_argument(
+        "--initial-baseline",
+        action="store_true",
+        help="explicitly authorize the unknown-historical first baseline exception",
+    )
     seal.add_argument("--prior-reference", type=Path)
     seal.add_argument("--prior-baseline-record", type=Path)
+    seal.add_argument(
+        "--prior-external-reference",
+        type=Path,
+        help="durable external predecessor reference from reconcile-external",
+    )
     seal.add_argument("--retrieval-directory", type=Path, help="local receipt directory")
     seal.add_argument("--reference-output", type=Path, help="canonical reference output path")
 
@@ -1627,8 +1903,18 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _exact_reference_args(execute)
     _purpose_arg(execute)
+    execute.add_argument(
+        "--initial-baseline",
+        action="store_true",
+        help="repeat the explicit unknown-historical first baseline exception",
+    )
     execute.add_argument("--prior-reference", type=Path)
     execute.add_argument("--prior-baseline-record", type=Path)
+    execute.add_argument(
+        "--prior-external-reference",
+        type=Path,
+        help="durable external predecessor reference from reconcile-external",
+    )
 
     reconcile = subparsers.add_parser("reconcile", help="freshly observe a sealed attempt")
     _exact_reference_args(reconcile)

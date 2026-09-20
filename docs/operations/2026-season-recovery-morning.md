@@ -43,7 +43,11 @@ The workflow exposes five manual operations on `main`:
 attempt. Every purpose uses seal-only followed by a separate approved execute
 dispatch. There are no one-shot rollback/correction publication routes. The
 CLI-only `reconcile-external` operation requires a complete fresh capture and
-sanitized retained evidence for an unknown live predecessor.
+sanitized retained evidence for an unknown live predecessor. It emits a canonical
+`external_predecessor_reference` in its result. Supply that reference (or the
+complete canonical result) as `prior_external_reference` to both sealing and
+execution; the CLI equivalent is `--prior-external-reference`. Retrieval verifies
+its immutable capture, sanitizer and observation before freshly checking live state.
 
 Use `uv run --locked python -m cfb.publication_cli --help` and each operation's
 `--help` for exact arguments. Concrete commands may read or write GitHub and
@@ -117,7 +121,10 @@ inside the protected job, and `CFBD_API_KEY` is absent.
 1. Select the exact validated preparation, expected baseline and purpose.
    Normal successors, rollback and correction need freshly reconciled verified
    predecessor evidence. Only the explicitly unknown-historical first baseline
-   may omit it. Provider reads needed to establish that predecessor happen
+   may omit it, using `initial_baseline: true` on both dispatches (CLI
+   `--initial-baseline`). This exception is pinned to the accepted historical
+   baseline record; an unknown source on a later capture does not qualify.
+   Provider reads needed to establish that predecessor happen
    before sealing; the seal module itself performs zero Firebase reads/writes.
 2. Run `seal-only`. It retains and verifies immutable package, validation,
    preparation and attempt-intent evidence before returning a canonical
@@ -150,7 +157,7 @@ substitution around `cat`, which removes trailing newlines.
 For an initial normal execution, the dispatch shape is:
 
 ```sh
-python3 -c 'import json, pathlib; print(json.dumps({"operation": "execute", "purpose": "normal", "sealed_reference": pathlib.Path("sealed-reference.json").read_text()}))' |
+python3 -c 'import json, pathlib; print(json.dumps({"operation": "execute", "purpose": "normal", "initial_baseline": True, "sealed_reference": pathlib.Path("sealed-reference.json").read_text()}))' |
   gh workflow run firebase-hosting-publish.yml \
     --repo arkar16/sportsrank --ref main --json
 ```

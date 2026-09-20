@@ -1,6 +1,7 @@
 import sys
 import time
 import logging
+import os
 from pathlib import Path
 try:
     from .cfbd_client import get_snapshot_service
@@ -27,6 +28,16 @@ BASE_CORS = 0
 single_week_calc = None
 full_season_calc = None
 history_calc = None
+
+
+def _safe_message(error: BaseException) -> str:
+    """Render legacy errors without echoing the CFBD credential."""
+
+    message = str(error)
+    secret = os.environ.get("CFBD_API_KEY", "")
+    if secret:
+        message = message.replace(secret, "[redacted]")
+    return message
 
 def get_current_year_and_week():
     """Reject the removed calendar guess used by the old no-argument path."""
@@ -79,8 +90,8 @@ def run_calculations(calc_type, year, week, start_week, division, hfa, base_cors
             )
         else:
             raise ValueError(f"Invalid calculation type: {calc_type}")
-    except Exception as e:
-        logging.error(f"Error during {calc_type} calculation: {str(e)}")
+    except Exception as exc:
+        logging.error("Error during %s calculation: %s", calc_type, _safe_message(exc))
         raise
 
 def main():
@@ -162,8 +173,8 @@ def main():
             # Get dynamic end week for html_grab
             end_week = get_end_week(END_YEAR, DIVISION, snapshot_service)
             html_grab(START_YEAR, END_YEAR, START_WEEK, end_week, DIVISION, timestamp)
-        except Exception as e:
-            logging.error(f"Error during additional processes: {str(e)}")
+        except Exception as exc:
+            logging.error("Error during additional processes: %s", _safe_message(exc))
             raise
     
 
@@ -176,5 +187,9 @@ if __name__ == "__main__":
     except SystemExit:
         raise
     except Exception as exc:
-        logging.error("stage=legacy_calculation cause=%s: %s", type(exc).__name__, exc)
+        logging.error(
+            "stage=legacy_calculation cause=%s: %s",
+            type(exc).__name__,
+            _safe_message(exc),
+        )
         raise SystemExit(1)
