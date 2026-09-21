@@ -316,6 +316,25 @@ class OperationsContractTests(unittest.TestCase):
         self.assertNotIn("FirebaseExtended/action-hosting-deploy", portable)
         self.assertNotIn("firebase deploy", portable)
 
+    def test_portable_check_cache_paths_are_initialized_by_a_shell_step(self):
+        portable = (WORKFLOW_ROOT / "portable-checks.yml").read_text(encoding="utf-8")
+
+        self.assertNotRegex(
+            portable,
+            r"(?m)^\s+(?:UV_CACHE_DIR|npm_config_cache):\s*\$\{\{\s*runner\.temp\s*\}\}",
+        )
+        configure = portable.index("      - name: Configure runner-local package caches")
+        setup_python = portable.index("      - name: Set up Python 3.12")
+        setup_uv = portable.index("      - name: Set up uv")
+        setup_node = portable.index("      - name: Set up Node.js")
+        self.assertLess(configure, setup_python)
+        self.assertLess(configure, setup_uv)
+        self.assertLess(configure, setup_node)
+        configure_step = portable[configure:setup_python]
+        self.assertIn('echo "UV_CACHE_DIR=$RUNNER_TEMP/sportsrank-uv-cache" >> "$GITHUB_ENV"', configure_step)
+        self.assertIn('echo "npm_config_cache=$RUNNER_TEMP/sportsrank-npm-cache" >> "$GITHUB_ENV"', configure_step)
+        self.assertIn('mkdir -p "$RUNNER_TEMP/sportsrank-uv-cache" "$RUNNER_TEMP/sportsrank-npm-cache"', configure_step)
+
     def test_workflow_requires_main_and_exact_immutable_candidate_in_prepare(self):
         source = (WORKFLOW_ROOT / "firebase-hosting-publish.yml").read_text(encoding="utf-8")
 
