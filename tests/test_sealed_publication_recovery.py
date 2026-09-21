@@ -214,7 +214,12 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                 check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             )
             subprocess.run(
-                ["git", "-C", str(fx.reader.repository), "commit", "--amend", "--no-edit", "--quiet"],
+                [
+                    "git", "-C", str(fx.reader.repository),
+                    "-c", "user.name=SportsRank Test",
+                    "-c", "user.email=sportsrank@example.invalid",
+                    "commit", "--amend", "--no-edit", "--quiet",
+                ],
                 check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             )
             fx.package = bind_merged_candidate(

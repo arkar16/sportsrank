@@ -229,7 +229,10 @@ class PublicationArchiveTests(unittest.TestCase):
             def gh(arguments, **kwargs):
                 nonlocal by_id_reads
                 commands.append(arguments)
-                if arguments[1:4] == ["api", "--hostname", "uploads.github.com"]:
+                if (
+                    arguments[1:4] == ["api", "--method", "POST"]
+                    and arguments[4].startswith("https://uploads.github.com/")
+                ):
                     return subprocess.CompletedProcess(arguments, 0, b"{}", b"")
                 if arguments[1:4] == ["api", "--method", "PATCH"]:
                     return subprocess.CompletedProcess(arguments, 0, b"{}", b"")
@@ -254,9 +257,23 @@ class PublicationArchiveTests(unittest.TestCase):
                     {asset.name: asset}, "title",
                 ))[asset.name]
 
-            upload = next(command for command in commands if "uploads.github.com" in command)
+            upload = next(
+                command for command in commands
+                if any("uploads.github.com" in argument for argument in command)
+            )
             publish = next(command for command in commands if command[1:4] == ["api", "--method", "PATCH"])
-            self.assertIn("repos/owner/repository/releases/77/assets?name=asset.tar.gz", upload)
+            self.assertEqual(upload[1:4], ["api", "--method", "POST"])
+            self.assertEqual(
+                upload[4],
+                "https://uploads.github.com/repos/owner/repository/releases/77/assets?name=asset.tar.gz",
+            )
+            self.assertNotIn("--hostname", upload)
+            self.assertTrue(
+                any(
+                    "repos/owner/repository/releases/77/assets?name=asset.tar.gz" in argument
+                    for argument in upload
+                )
+            )
             self.assertEqual(publish[4], "repos/owner/repository/releases/77")
             self.assertEqual(reference.release_id, "77")
 
@@ -292,7 +309,10 @@ class PublicationArchiveTests(unittest.TestCase):
 
                     def gh(arguments, **kwargs):
                         nonlocal by_id_reads
-                        if arguments[1:4] == ["api", "--hostname", "uploads.github.com"]:
+                        if (
+                            arguments[1:4] == ["api", "--method", "POST"]
+                            and arguments[4].startswith("https://uploads.github.com/")
+                        ):
                             return subprocess.CompletedProcess(arguments, 0, b"{}", b"")
                         if arguments[1:4] == ["api", "--method", "PATCH"]:
                             publishes.append(arguments)

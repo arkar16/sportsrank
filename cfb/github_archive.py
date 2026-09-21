@@ -213,8 +213,8 @@ class GitHubReleaseArchive:
         self, spec: ArchiveSpec, release_id: object, name: str, path: Path
     ) -> None:
         self._run([
-            "api", "--hostname", "uploads.github.com", "--method", "POST",
-            f"repos/{spec.repository}/releases/{release_id}/assets?name={quote(name, safe='')}",
+            "api", "--method", "POST",
+            f"https://uploads.github.com/repos/{spec.repository}/releases/{release_id}/assets?name={quote(name, safe='')}",
             "-H", "Content-Type: application/octet-stream", "--input", str(path),
         ])
 
