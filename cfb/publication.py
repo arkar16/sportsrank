@@ -21,6 +21,7 @@ import threading
 from typing import Any, Callable, Mapping, Protocol
 
 from .baseline import BaselineValidationError, VerifiedBaseline
+from .candidate_tree import CandidateTreeError, materialize_candidate_tree_archive
 from .firebase import (
     FirebaseDeployArtifact,
     FirebasePublicationError,
@@ -217,6 +218,71 @@ def prepare_review_package(
         output_path, bundle_sha, inventory_sha, configuration_sha,
         baseline.record.digest, baseline.record.observed, retained_inputs_sha256,
         validation_sha, site, config_path,
+    )
+    prepared.assert_current()
+    return prepared
+
+
+def prepare_reviewed_package(
+    candidate: str | Path | Release,
+    *,
+    firebase_json: str | Path,
+    inventory_sha256: str,
+    configuration_sha256: str,
+    expected_baseline_sha256: str,
+    expected_predecessor: ProviderIdentity,
+    retained_inputs_sha256: str,
+    validation_sha256: str,
+    output: str | Path,
+) -> PreparedPackage:
+    """Package bytes already covered by a reviewed local-validation receipt.
+
+    This hosted seam intentionally has no source-input or private-baseline
+    arguments.  The caller must first authenticate the committed receipt and
+    its runtime/source fingerprint.  We then independently recompute every
+    public byte identity before packaging it.
+    """
+
+    site = _site(candidate).resolve()
+    config_path = Path(firebase_json).resolve()
+    try:
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise PublicationPreparationError("firebase.json is unreadable") from exc
+    if (
+        not isinstance(config, Mapping)
+        or not isinstance(config.get("hosting"), Mapping)
+        or config["hosting"].get("public") != "website"
+    ):
+        raise PublicationPreparationError(
+            "firebase.json must publish the packaged website directory"
+        )
+    actual_inventory = _inventory_digest(_inventory(site))
+    actual_configuration = _sha256_file(config_path)
+    if actual_inventory != inventory_sha256:
+        raise PublicationPreparationError(
+            "candidate website differs from the local-validation receipt"
+        )
+    if actual_configuration != configuration_sha256:
+        raise PublicationPreparationError(
+            "serving configuration differs from the local-validation receipt"
+        )
+    expected_validation = _sha256_bytes(_validation_evidence(
+        inventory_sha256=inventory_sha256,
+        configuration_sha256=actual_configuration,
+        expected_baseline_sha256=expected_baseline_sha256,
+        retained_inputs_sha256=retained_inputs_sha256,
+    ))
+    if expected_validation != validation_sha256:
+        raise PublicationPreparationError(
+            "local-validation receipt does not bind the package validation"
+        )
+    output_path = Path(output).resolve()
+    bundle_sha = _deterministic_package(site, config_path, output_path)
+    prepared = PreparedPackage._create(
+        output_path, bundle_sha, actual_inventory, actual_configuration,
+        expected_baseline_sha256, expected_predecessor, retained_inputs_sha256,
+        validation_sha256, site, config_path,
     )
     prepared.assert_current()
     return prepared
@@ -463,40 +529,24 @@ def _preparation_origin_bytes(
     return value
 
 
-def _candidate_bundle_reader(
-    bundle: str | Path,
+def _candidate_tree_reader(
+    archive: str | Path,
     *,
     candidate_commit: str,
     destination: Path,
 ) -> GitCommitTreeReader:
-    """Materialize one retained Git bundle and require its exact commit object."""
+    """Materialize retained current-tree evidence without fetching ancestry."""
 
-    bundle_path = Path(bundle).resolve()
-    if not bundle_path.is_file():
-        raise PublicationPreparationError("candidate bundle is unavailable")
-    if destination.exists():
-        raise PublicationPreparationError(
-            "candidate bundle destination must not already exist"
-        )
+    archive_path = Path(archive).resolve()
+    if not archive_path.is_file():
+        raise PublicationPreparationError("candidate tree evidence is unavailable")
     try:
-        subprocess.run(
-            ["git", "init", "--bare", "--quiet", str(destination)],
-            check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        materialize_candidate_tree_archive(
+            archive_path, candidate_commit=candidate_commit, destination=destination
         )
-        subprocess.run(
-            ["git", "-C", str(destination), "bundle", "verify", str(bundle_path)],
-            check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        )
-        subprocess.run(
-            [
-                "git", "-C", str(destination), "fetch", "--quiet", str(bundle_path),
-                f"{candidate_commit}:refs/heads/candidate",
-            ],
-            check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        )
-    except (OSError, subprocess.CalledProcessError) as exc:
+    except CandidateTreeError as exc:
         raise PublicationPreparationError(
-            "candidate bundle does not retain the immutable candidate"
+            "candidate tree evidence does not retain the immutable candidate"
         ) from exc
     reader = GitCommitTreeReader(destination)
     reader.require_commit(candidate_commit)
@@ -552,7 +602,7 @@ class SealedAttempt:
     retrieved_evidence: Mapping[str, Path]
     retrieved_preparation_manifest: Path | None = None
     retrieved_preparation_origin: Path | None = None
-    retrieved_candidate_bundle: Path | None = None
+    retrieved_candidate_tree: Path | None = None
 
     def __post_init__(self) -> None:
         from types import MappingProxyType
@@ -575,13 +625,13 @@ def seal_attempt_evidence(
     retrieval_directory: str | Path,
     preparation_manifest: str | Path | None = None,
     preparation_origin: str | Path | None = None,
-    candidate_bundle: str | Path | None = None,
+    candidate_tree: str | Path | None = None,
     provenance_reader: GitHubPreparationProvenanceReader | None = None,
 ) -> SealedAttempt:
     """Seal and retrieve package, retained evidence, then the separate intent."""
 
     recovery_values = (
-        preparation_manifest, preparation_origin, candidate_bundle,
+        preparation_manifest, preparation_origin, candidate_tree,
         provenance_reader,
     )
     durable_recovery = any(value is not None for value in recovery_values)
@@ -614,11 +664,11 @@ def seal_attempt_evidence(
         if durable_recovery:
             manifest_path = Path(preparation_manifest).resolve()  # type: ignore[arg-type]
             origin_path = Path(preparation_origin).resolve()  # type: ignore[arg-type]
-            bundle_path = Path(candidate_bundle).resolve()  # type: ignore[arg-type]
+            tree_path = Path(candidate_tree).resolve()  # type: ignore[arg-type]
             if (
                 manifest_path.name != "publication-preparation-manifest.json"
                 or origin_path.name != "preparation-origin.json"
-                or bundle_path.name != "candidate.bundle"
+                or tree_path.name != "candidate-tree.tar.gz"
             ):
                 raise PublicationPreparationError(
                     "durable preparation evidence uses unexpected asset names"
@@ -639,8 +689,8 @@ def seal_attempt_evidence(
             _preparation_origin_bytes(
                 origin_path, manifest=authenticated.manifest
             )
-            bundle_reader = _candidate_bundle_reader(
-                bundle_path,
+            bundle_reader = _candidate_tree_reader(
+                tree_path,
                 candidate_commit=package.candidate_commit,
                 destination=work / "candidate-replay.git",
             )
@@ -649,12 +699,12 @@ def seal_attempt_evidence(
                 reader=bundle_reader,
             ) != package:
                 raise PublicationPreparationError(
-                    "retained candidate bundle differs from the sealed package"
+                    "retained candidate tree differs from the sealed package"
                 )
             package_assets.update({
                 manifest_path.name: manifest_path,
                 origin_path.name: origin_path,
-                bundle_path.name: bundle_path,
+                tree_path.name: tree_path,
             })
         package_refs = archive.seal_or_reconcile(ArchiveSpec(
             repository, package_tag, package.candidate_commit, package_assets,
@@ -679,8 +729,15 @@ def seal_attempt_evidence(
         retrieved_validation = archive.retrieve_and_verify(
             validation_ref, destination / validation_path.name
         )
+        if durable_recovery and evidence_references:
+            raise PublicationPreparationError(
+                "new attempts must not retrieve private retained-input roles"
+            )
         retrieved_evidence = {
-            role: archive.retrieve_and_verify(ArchiveReference.from_value(reference), destination / f"{role}-{reference.asset_name}")
+            role: archive.retrieve_and_verify(
+                ArchiveReference.from_value(reference),
+                destination / f"{role}-{reference.asset_name}",
+            )
             for role, reference in evidence_references.items()
         }
         recovery_references: dict[str, Mapping[str, Any]] = {}
@@ -694,8 +751,8 @@ def seal_attempt_evidence(
                 "preparation_origin_reference": package_refs[
                     "preparation-origin.json"
                 ].to_dict(),
-                "candidate_bundle_reference": package_refs[
-                    "candidate.bundle"
+                "candidate_tree_reference": package_refs[
+                    "candidate-tree.tar.gz"
                 ].to_dict(),
             }
         intent = AttemptIntentRecord.create(
@@ -728,8 +785,8 @@ def seal_attempt_evidence(
                 destination / "preparation-origin.json",
             )
             retrieved_bundle = archive.retrieve_and_verify(
-                package_refs["candidate.bundle"],
-                destination / "candidate.bundle",
+                package_refs["candidate-tree.tar.gz"],
+                destination / "candidate-tree.tar.gz",
             )
     return SealedAttempt(
         package, intent, package_ref, package_record_ref, validation_ref,
@@ -1081,7 +1138,7 @@ def retrieve_sealed_attempt(
         intent.validation_reference,
         intent.preparation_manifest_reference,
         intent.preparation_origin_reference,
-        intent.candidate_bundle_reference,
+        intent.candidate_tree_reference,
     )
     if any(value is None for value in required):
         raise PublicationExecutionError(
@@ -1092,7 +1149,7 @@ def retrieve_sealed_attempt(
         validation_reference,
         preparation_manifest_reference,
         preparation_origin_reference,
-        candidate_bundle_reference,
+        candidate_tree_reference,
     ) = required
     package_path = archive.retrieve_and_verify(
         intent.artifact_reference,
@@ -1115,8 +1172,8 @@ def retrieve_sealed_attempt(
         destination / "preparation-origin.json",
     )
     bundle_path = archive.retrieve_and_verify(
-        candidate_bundle_reference,  # type: ignore[arg-type]
-        destination / "candidate.bundle",
+        candidate_tree_reference,  # type: ignore[arg-type]
+        destination / "candidate-tree.tar.gz",
     )
     retrieved_evidence = {
         role: archive.retrieve_and_verify(
@@ -1150,7 +1207,7 @@ def retrieve_sealed_attempt(
         raise PublicationExecutionError(
             "retrieved validation evidence differs from the package"
         )
-    bundle_reader = _candidate_bundle_reader(
+    bundle_reader = _candidate_tree_reader(
         bundle_path,
         candidate_commit=package.candidate_commit,
         destination=destination / "candidate.git",
@@ -1656,7 +1713,7 @@ class PublicationCoordinator:
         evidence_references: Mapping[str, ArchiveReference],
         preparation_manifest: str | Path,
         preparation_origin: str | Path,
-        candidate_bundle: str | Path,
+        candidate_tree: str | Path,
         provenance_reader: GitHubPreparationProvenanceReader,
         tags: PublicationTags,
         attempt_id: str,
@@ -1683,15 +1740,12 @@ class PublicationCoordinator:
             commit_reader, candidate_commit=package.candidate_commit
         )
         if (
-            set(evidence_references) != set(trusted_evidence)
-            or any(
-                ArchiveReference.from_value(evidence_references[role]).sha256
-                != digest
-                for role, digest in trusted_evidence.items()
-            )
+            evidence_references
+            or trusted_evidence.get("source_inputs") != package.retained_inputs_sha256
+            or baseline.digest != package.expected_baseline_sha256
         ):
             raise PublicationExecutionError(
-                "retained evidence differs from the immutable candidate pins"
+                "safe private-input identities differ from the immutable candidate pins"
             )
         with self.operation_lock:
             destination = Path(retrieval_directory)
@@ -1721,7 +1775,7 @@ class PublicationCoordinator:
                 retrieval_directory=destination / "attempt",
                 preparation_manifest=preparation_manifest,
                 preparation_origin=preparation_origin,
-                candidate_bundle=candidate_bundle,
+                candidate_tree=candidate_tree,
                 provenance_reader=provenance_reader,
             )
             return SealedAttemptReference(attempt.intent_reference)

@@ -72,10 +72,11 @@ merge. It provides `prepare`, `seal-only`, `execute`, `reconcile`, and
 `verify-only`. `normal`, `rollback`, and `correction` are sealed purposes;
 each provider write follows the same two-dispatch procedure.
 
-Preparation independently validates the complete provider-backed baseline and
-privately retrieved retained recovery inputs after the private-input gate,
-packages `website/` plus `firebase.json`, and binds those exact bytes to the
-actual merged commit. The protected `seal-only`
+Local preparation independently validates the complete provider-backed baseline
+and privately retained recovery inputs, then exports safe public pages and a
+reviewed hash receipt. GitHub-hosted preparation verifies that receipt against
+the committed site/code/configuration and input pins, packages `website/` plus
+`firebase.json`, and binds those exact bytes to the actual merged commit. The protected `seal-only`
 dispatch retains the package, provenance and attempt intent in immutable GitHub
 releases and returns the exact canonical sealed reference. A separate fresh
 owner-approved `execute` dispatch consumes that reference once, rechecks the
@@ -102,11 +103,13 @@ The committed `config/sr7-recovery-inputs.json` records trusted input
 identities; it does not make raw bytes public or replace private retrieval.
 Public releases and artifacts are limited to intended generated static output
 and safe hashes/provenance. Raw CFBD source snapshots, the original-prepared
-archive containing them, provider actor/auth metadata, and any Git bundle or
-history containing that raw data remain in private durable storage. The current
-Actions-artifact raw-input transport is incompatible with this policy and
-pending remediation; the private storage provider and replacement transport
-are not yet selected. See the [ADR-0018 retention gate](docs/adr/0018-retain-publication-evidence-in-github-releases.md)
+archive containing them and provider actor/auth metadata remain in private
+local storage. New transport excludes raw Actions inputs and Git ancestry.
+Historical public copies remain subject to a separate cleanup decision.
+The owner selected this computer for private retention;
+local source validation with a reviewed hash receipt is approved; implementation
+and acceptance are tracked in SR-7. See the
+[ADR-0018 retention gate](docs/adr/0018-retain-publication-evidence-in-github-releases.md)
 and [publication runbook](docs/operations/2026-season-recovery-morning.md).
 Concrete operational commands may read or write GitHub/Firebase; offline tests
 use fakes and no CFBD key. Local hosting commands are emulator-only.

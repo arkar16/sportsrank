@@ -36,6 +36,30 @@
   "original_prepared": {
     "archive_sha256": "c9246cfe49ec4a57abf34b60fa5bc6e2f2d42fd6c0087155bc41102f77a271b5"
   },
+  "safe_public_evidence": {
+    "baseline_archive": {
+      "asset_id": "578967283",
+      "asset_name": "baseline-public.tar.gz",
+      "immutable": true,
+      "release_id": "392927532",
+      "repository": "arkar16/sportsrank",
+      "sha256": "0e8cda0c3042b02f96f4c5ae12a502944b2f9742fa768b257616e171399eaa20",
+      "size": 31679403,
+      "tag": "sr16-retained-adapter-v2-aa6dcf7c54b6-baseline-sanitized",
+      "target_commit": "aa6dcf7c54b66a8bc68973f01751967b7634ecae"
+    },
+    "baseline_sanitizer": {
+      "asset_id": "578967345",
+      "asset_name": "baseline-sanitizer-record.json",
+      "immutable": true,
+      "release_id": "392927532",
+      "repository": "arkar16/sportsrank",
+      "sha256": "d27c90bdc13b76169934543543613b5f225ae688457149677e17758d32d71063",
+      "size": 1191590,
+      "tag": "sr16-retained-adapter-v2-aa6dcf7c54b6-baseline-sanitized",
+      "target_commit": "aa6dcf7c54b66a8bc68973f01751967b7634ecae"
+    }
+  },
   "evidence_archives": {
     "baseline": "453faf935e8d2a363b3f6b83637ff19c38d32db5246d177cd947cae69efb425d",
     "source_inputs": "dbf2bc29a3025fddbda3b3417435549e6207f0274eaf2ff256de29b2e515d3eb",

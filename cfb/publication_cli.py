@@ -4,10 +4,10 @@ The command line surface is intentionally thin.  It loads untrusted JSON and
 path hints, revalidates the immutable records and package bytes, then calls
 the coordinator in :mod:`cfb.publication`:
 
-``prepare``
-    Revalidate a staged candidate against an imported complete baseline and
-    retained Schema 3 inputs, bind the exact immutable Git commit, and write
-    a portable preparation context plus package.
+``prepare-reviewed``
+    Verify the committed receipt produced by the private local-validation
+    command, bind the exact immutable Git commit, and write a public-safe
+    portable preparation context plus package.
 ``seal-only``
     Authenticate and retain one complete immutable attempt intent without
     reading or writing Firebase, then emit the exact canonical sealed reference
@@ -16,7 +16,7 @@ the coordinator in :mod:`cfb.publication`:
 ``execute``
     Consume one exact sealed reference under a fresh owner-approved dispatch.
     The reference rehydrates the package and all retained evidence; no local
-    package, manifest, bundle, or Actions state is an authority.  Rollback and
+    package, manifest, tree archive, or Actions state is an authority.  Rollback and
     correction require a freshly reconciled predecessor reference.
 ``reconcile``
     Read one sealed attempt from its exact reference and append a fresh provider
@@ -55,6 +55,7 @@ from .baseline import (
     import_baseline,
     import_sanitized_baseline,
 )
+from .candidate_tree import CandidateTreeError, materialize_candidate_tree_archive
 from .firebase import (
     FirebasePublicationAdapter,
     FirebasePublicationError,
@@ -79,6 +80,7 @@ from .publication import (
     SealedRecordEvidence,
     bind_merged_candidate,
     prepare_review_package,
+    prepare_reviewed_package,
     rehydrate_prepared_package,
 )
 from .publication_authorization import (
@@ -106,6 +108,7 @@ from .publication_records import (
 )
 from .recovery_inputs import RecoveryInputBundle
 from .release import ReleaseValidationError
+from .public_site import PublicSiteError, verify_local_receipt
 
 
 REPOSITORY = "arkar16/sportsrank"
@@ -191,6 +194,8 @@ class TrustedRecoveryInputs:
     source_snapshot_checksum: Mapping[str, str]
     original_prepared_archive_sha256: str
     evidence_archive_sha256: Mapping[str, str]
+    baseline_public_reference: ArchiveReference
+    baseline_sanitizer_reference: ArchiveReference
 
 
 @dataclass(frozen=True)
@@ -261,7 +266,8 @@ def _load_trusted_recovery_inputs(path: str | Path) -> TrustedRecoveryInputs:
     raw = _json_object(manifest_path, "trusted recovery-input manifest")
     if set(raw) != {
         "schema_version", "record_type", "target", "baseline",
-        "source_inputs", "original_prepared", "evidence_archives",
+        "source_inputs", "original_prepared", "safe_public_evidence",
+        "evidence_archives",
     }:
         raise PublicationCLIError(
             "trusted recovery-input manifest fields do not match its schema"
@@ -336,6 +342,28 @@ def _load_trusted_recovery_inputs(path: str | Path) -> TrustedRecoveryInputs:
             original["archive_sha256"], "trusted original-prepared archive"
         )
 
+        safe_public = raw["safe_public_evidence"]
+        if not isinstance(safe_public, Mapping) or set(safe_public) != {
+            "baseline_archive", "baseline_sanitizer"
+        }:
+            raise PublicationCLIError("trusted safe public evidence is incomplete")
+        baseline_public_reference = ArchiveReference.from_value(
+            safe_public["baseline_archive"]
+        )
+        baseline_sanitizer_reference = ArchiveReference.from_value(
+            safe_public["baseline_sanitizer"]
+        )
+        if (
+            baseline_public_reference.sha256 != baseline_public
+            or baseline_public_reference.asset_name != "baseline-public.tar.gz"
+            or baseline_sanitizer_reference.sha256 != baseline_sanitizer
+            or baseline_sanitizer_reference.asset_name
+            != "baseline-sanitizer-record.json"
+        ):
+            raise PublicationCLIError(
+                "safe public evidence references differ from their trusted digests"
+            )
+
         evidence = raw["evidence_archives"]
         required_roles = {"baseline", "source_inputs", "original_prepared"}
         if not isinstance(evidence, Mapping) or set(evidence) != required_roles:
@@ -370,6 +398,8 @@ def _load_trusted_recovery_inputs(path: str | Path) -> TrustedRecoveryInputs:
         file_checksums,
         original_prepared,
         evidence_sha256,
+        baseline_public_reference,
+        baseline_sanitizer_reference,
     )
 
 
@@ -427,30 +457,19 @@ def _context_sibling(context: Path, name: str) -> Path:
     return path
 
 
-def _verify_candidate_bundle(path: Path, candidate_commit: str) -> None:
-    """Require a local Git bundle that advertises the exact candidate commit."""
+def _verify_candidate_tree(path: Path, candidate_commit: str) -> None:
+    """Require current-tree-only evidence for the exact candidate commit."""
 
-    try:
-        subprocess.run(
-            ["git", "bundle", "verify", str(path)],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        heads = subprocess.run(
-            ["git", "bundle", "list-heads", str(path)],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        ).stdout.decode("utf-8")
-    except (OSError, UnicodeDecodeError, subprocess.CalledProcessError) as exc:
-        raise PublicationCLIError("candidate Git bundle is not a valid immutable transport") from exc
-    if not any(
-        line.split(maxsplit=1)[0] == candidate_commit
-        for line in heads.splitlines()
-        if line.strip()
-    ):
-        raise PublicationCLIError("candidate Git bundle does not advertise its commit")
+    with tempfile.TemporaryDirectory(prefix="sportsrank-tree-check-") as directory:
+        try:
+            materialize_candidate_tree_archive(
+                path, candidate_commit=candidate_commit,
+                destination=Path(directory) / "candidate.git",
+            )
+        except CandidateTreeError as exc:
+            raise PublicationCLIError(
+                "candidate current-tree evidence is invalid"
+            ) from exc
 
 
 def _load_digest_pins(path: Path) -> Mapping[str, str]:
@@ -470,6 +489,8 @@ def _parse_evidence_references(
     expected_sha256: Mapping[str, str] | None = None,
 ) -> Mapping[str, ArchiveReference]:
     required = {"baseline", "source_inputs", "original_prepared"}
+    if not raw:
+        return {}
     if set(raw) != required:
         raise PublicationCLIError("immutable evidence references must contain the three required roles")
     result = {
@@ -675,8 +696,8 @@ def _load_context(
         or attestation.get("expected_predecessor") != package.expected_predecessor.to_dict()
     ):
         raise PublicationCLIError("publication attestation does not bind its package")
-    if set(refs) != {"baseline", "source_inputs", "original_prepared"}:
-        raise PublicationCLIError("publication context evidence roles are incomplete")
+    if set(refs) not in ({"baseline", "source_inputs", "original_prepared"}, set()):
+        raise PublicationCLIError("publication context evidence roles are invalid")
     if any(reference.repository != REPOSITORY for reference in refs.values()):
         raise PublicationCLIError("publication context evidence belongs to another repository")
     if len({(reference.release_id, reference.asset_id) for reference in refs.values()}) != len(refs):
@@ -694,13 +715,13 @@ def _load_context(
         context_path.parent, candidate_tree_name, "candidate_tree_archive"
     )
     if not candidate_tree_archive.is_file():
-        raise PublicationCLIError("candidate Git bundle is missing")
+        raise PublicationCLIError("candidate current-tree evidence is missing")
     candidate_tree_sha256 = _require_sha(
         raw.get("candidate_tree_sha256"), "candidate_tree_sha256"
     )
     if _sha256_file(candidate_tree_archive) != candidate_tree_sha256:
-        raise PublicationCLIError("candidate Git bundle does not match its digest")
-    _verify_candidate_bundle(candidate_tree_archive, candidate)
+        raise PublicationCLIError("candidate current-tree evidence does not match its digest")
+    _verify_candidate_tree(candidate_tree_archive, candidate)
     return PreparationContext(
         context_path,
         package,
@@ -813,6 +834,12 @@ def _candidate_commit(explicit: str | None) -> str:
 
 
 def prepare_operation(args: argparse.Namespace) -> Path:
+    """Legacy private fixture seam; intentionally absent from the CLI.
+
+    Its contexts retain private evidence references and are rejected by the
+    schema-3 durable sealing path.  Local validation now uses
+    :mod:`cfb.public_site`; hosted preparation uses ``prepare-reviewed``.
+    """
     candidate_root = Path(args.candidate_root).resolve()
     firebase_json = Path(args.firebase_json).resolve()
     output = Path(args.output_directory).resolve()
@@ -825,15 +852,15 @@ def prepare_operation(args: argparse.Namespace) -> Path:
     source_root = Path(args.source_input_root).resolve()
     candidate_commit = _candidate_commit(args.candidate_commit)
     trusted = _load_trusted_recovery_inputs(args.trusted_input_manifest)
-    candidate_tree_archive = Path(args.candidate_tree_bundle).resolve()
+    candidate_tree_archive = Path(args.candidate_tree_archive).resolve()
     if not candidate_tree_archive.is_file():
-        raise PublicationCLIError("candidate Git bundle is missing")
+        raise PublicationCLIError("candidate current-tree evidence is missing")
     candidate_tree_sha256 = _require_sha(
         args.candidate_tree_sha256, "candidate_tree_sha256"
     )
     if _sha256_file(candidate_tree_archive) != candidate_tree_sha256:
-        raise PublicationCLIError("candidate Git bundle does not match its digest")
-    _verify_candidate_bundle(candidate_tree_archive, candidate_commit)
+        raise PublicationCLIError("candidate current-tree evidence does not match its digest")
+    _verify_candidate_tree(candidate_tree_archive, candidate_commit)
     source_archive = (
         Path(args.source_input_archive).resolve()
         if args.source_input_archive is not None else None
@@ -921,21 +948,21 @@ def prepare_operation(args: argparse.Namespace) -> Path:
             )
         # The preparation output must start empty so a caller cannot smuggle
         # an unreviewed transport file into the package.  Keep the candidate
-        # bundle staged outside that directory until every input and package
+        # tree evidence staged outside that directory until every input and package
         # check above has passed, then copy the exact verified bytes into the
         # self-contained preparation transport referenced by its context.
-        transported_candidate_tree = output / "candidate.bundle"
+        transported_candidate_tree = output / "candidate-tree.tar.gz"
         if candidate_tree_archive != transported_candidate_tree:
             shutil.copyfile(candidate_tree_archive, transported_candidate_tree)
         if _sha256_file(transported_candidate_tree) != candidate_tree_sha256:
             raise PublicationCLIError(
-                "transported candidate Git bundle does not match its digest"
+                "transported candidate tree does not match its digest"
             )
-        transported_candidate_digest = output / "candidate.bundle.sha256"
+        transported_candidate_digest = output / "candidate-tree.tar.gz.sha256"
         if transported_candidate_digest.exists():
             raise PublicationCLIError("refusing to overwrite candidate bundle digest")
         transported_candidate_digest.write_text(
-            f"{candidate_tree_sha256}  candidate.bundle\n", encoding="ascii"
+            f"{candidate_tree_sha256}  candidate-tree.tar.gz\n", encoding="ascii"
         )
         public_sanitizer_record = output / "baseline-sanitizer.json"
         _write_json(output / "package.json", package.to_dict())
@@ -968,32 +995,145 @@ def prepare_operation(args: argparse.Namespace) -> Path:
     return output / "publication-context.json"
 
 
+def prepare_reviewed_operation(args: argparse.Namespace) -> Path:
+    """Hosted packaging from a committed, locally produced validation receipt."""
+
+    candidate_root = Path(args.candidate_root).resolve()
+    firebase_json = Path(args.firebase_json).resolve()
+    output = Path(args.output_directory).resolve()
+    output.mkdir(parents=True, exist_ok=True)
+    if any(output.iterdir()):
+        raise PublicationCLIError("preparation output directory must be new and empty")
+    candidate_commit = _candidate_commit(args.candidate_commit)
+    trusted = _load_trusted_recovery_inputs(args.trusted_input_manifest)
+    candidate_tree_archive = Path(args.candidate_tree_archive).resolve()
+    candidate_tree_sha256 = _require_sha(
+        args.candidate_tree_sha256, "candidate_tree_sha256"
+    )
+    if _sha256_file(candidate_tree_archive) != candidate_tree_sha256:
+        raise PublicationCLIError(
+            "candidate current-tree evidence does not match its digest"
+        )
+    _verify_candidate_tree(candidate_tree_archive, candidate_commit)
+    site = candidate_root / "website"
+    try:
+        receipt = verify_local_receipt(
+            args.local_validation_receipt,
+            site,
+            firebase_json,
+            candidate_root,
+            args.trusted_input_manifest,
+            code_root=candidate_root,
+        )
+        baseline_record_raw = receipt.baseline_record
+        predecessor_raw = receipt.expected_predecessor
+        if baseline_record_raw is None or predecessor_raw is None:
+            raise PublicationCLIError(
+                "local-validation receipt lacks the baseline identity"
+            )
+        baseline_record = BaselineRecord.from_dict(baseline_record_raw)
+        predecessor = ProviderIdentity.from_value(predecessor_raw, target=TARGET)
+        expected_baseline = _require_sha(
+            receipt.expected_baseline_sha256, "receipt baseline record"
+        )
+        retained_inputs = _require_sha(
+            receipt.retained_inputs_sha256, "receipt retained input identity"
+        )
+        if (
+            expected_baseline != trusted.baseline_record_sha256
+            or retained_inputs != trusted.source_archive_sha256
+            or baseline_record.digest != expected_baseline
+            or baseline_record.observed != predecessor
+            or receipt.baseline.get("archive_sha256")
+            != trusted.baseline_private_archive_sha256
+            or receipt.baseline_public_archive_sha256
+            != trusted.baseline_public_archive_sha256
+            or receipt.baseline_sanitizer_record_sha256
+            != trusted.baseline_sanitizer_record_sha256
+            or receipt.private_evidence.get("original_prepared_archive_sha256")
+            != trusted.original_prepared_archive_sha256
+        ):
+            raise PublicationCLIError(
+                "local-validation receipt differs from reviewed private identities"
+            )
+        sanitizer_path = Path(args.baseline_sanitizer_record).resolve()
+        sanitizer_raw = _json_object(sanitizer_path, "baseline sanitizer record")
+        baseline = import_sanitized_baseline(
+            args.baseline_public_archive,
+            expected_derivative_sha256=trusted.baseline_public_archive_sha256,
+            sanitizer_record=sanitizer_raw,
+            expected_sanitizer_record_sha256=trusted.baseline_sanitizer_record_sha256,
+            baseline_record=baseline_record,
+            expected_baseline_record_sha256=trusted.baseline_record_sha256,
+            target=TARGET,
+        )
+        try:
+            prepared = prepare_reviewed_package(
+                site,
+                firebase_json=firebase_json,
+                inventory_sha256=receipt.inventory_sha256,
+                configuration_sha256=receipt.configuration_sha256,
+                expected_baseline_sha256=expected_baseline,
+                expected_predecessor=predecessor,
+                retained_inputs_sha256=retained_inputs,
+                validation_sha256=receipt.validation_sha256,
+                output=output / "package.tar.gz",
+            )
+            reader = GitCommitTreeReader(candidate_root)
+            package = bind_merged_candidate(
+                prepared, candidate_commit=candidate_commit, reader=reader
+            )
+        finally:
+            baseline.close()
+        transported_tree = output / "candidate-tree.tar.gz"
+        shutil.copyfile(candidate_tree_archive, transported_tree)
+        (output / "candidate-tree.tar.gz.sha256").write_text(
+            f"{candidate_tree_sha256}  candidate-tree.tar.gz\n", encoding="ascii"
+        )
+        baseline_public = output / "baseline-public.tar.gz"
+        shutil.copyfile(Path(args.baseline_public_archive), baseline_public)
+        sanitizer_output = output / "baseline-sanitizer.json"
+        sanitizer_output.write_bytes(canonical_json(sanitizer_raw))
+        _write_json(output / "package.json", package.to_dict())
+        _write_json(output / "baseline.json", baseline_record.to_dict())
+        _write_json(
+            output / "publication-context.json",
+            _context_dict(
+                package=package,
+                baseline=baseline_record,
+                package_archive=output / "package.tar.gz",
+                candidate_tree_archive=transported_tree,
+                candidate_tree_sha256=candidate_tree_sha256,
+                evidence_references={},
+                output_root=output,
+                baseline_public_archive=baseline_public,
+                baseline_public_archive_sha256=trusted.baseline_public_archive_sha256,
+                baseline_sanitizer_record=sanitizer_output,
+                baseline_sanitizer_record_sha256=trusted.baseline_sanitizer_record_sha256,
+            ),
+        )
+        _write_json(
+            output / "publication-attestation.json",
+            _attestation_dict(package=package, baseline=baseline_record),
+        )
+    except (BaselineValidationError, PublicSiteError, RecordValidationError, OSError, ValueError) as exc:
+        raise PublicationCLIError("reviewed preparation failed closed") from exc
+    return output / "publication-context.json"
+
+
 def _materialize_candidate_reader(
-    bundle: Path, candidate_commit: str, root: Path
+    tree_archive: Path, candidate_commit: str, root: Path
 ) -> GitCommitTreeReader:
     """Load the transported Git object graph into a read-only bare store."""
 
     repository = root / "candidate.git"
     try:
-        subprocess.run(
-            ["git", "init", "--bare", "--quiet", str(repository)],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+        materialize_candidate_tree_archive(
+            tree_archive, candidate_commit=candidate_commit, destination=repository
         )
-        subprocess.run(
-            [
-                "git", "--git-dir", str(repository), "fetch", "--quiet",
-                "--no-tags", str(bundle),
-                f"{candidate_commit}:refs/heads/candidate",
-            ],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-    except (OSError, subprocess.CalledProcessError) as exc:
+    except CandidateTreeError as exc:
         raise PublicationCLIError(
-            "candidate Git bundle could not materialize its immutable object graph"
+            "candidate tree could not materialize its immutable object graph"
         ) from exc
     reader = GitCommitTreeReader(repository)
     reader.require_commit(candidate_commit)
@@ -1005,8 +1145,8 @@ def _rehydrate_package(context: PreparationContext) -> _RehydratedPackage:
     root = Path(temporary.name)
     try:
         if _sha256_file(context.candidate_tree_archive) != context.candidate_tree_sha256:
-            raise PublicationCLIError("candidate Git bundle changed after context validation")
-        _verify_candidate_bundle(
+            raise PublicationCLIError("candidate current-tree evidence changed after context validation")
+        _verify_candidate_tree(
             context.candidate_tree_archive, context.package.candidate_commit
         )
         reader = _materialize_candidate_reader(
@@ -1550,15 +1690,15 @@ def seal_only_operation(
             if args.preparation_origin is not None
             else context.path.parent / "preparation-origin.json"
         ).resolve()
-        candidate_bundle = Path(
-            args.candidate_bundle
-            if args.candidate_bundle is not None
+        candidate_tree = Path(
+            args.candidate_tree
+            if args.candidate_tree is not None
             else context.candidate_tree_archive
         ).resolve()
         for path, label in (
             (preparation_manifest, "preparation manifest"),
             (preparation_origin, "preparation origin"),
-            (candidate_bundle, "candidate Git bundle"),
+            (candidate_tree, "candidate current-tree evidence"),
         ):
             if not path.is_file():
                 raise PublicationCLIError(f"{label} is missing")
@@ -1572,7 +1712,7 @@ def seal_only_operation(
             evidence_references=context.evidence_references,
             preparation_manifest=preparation_manifest,
             preparation_origin=preparation_origin,
-            candidate_bundle=candidate_bundle,
+            candidate_tree=candidate_tree,
             provenance_reader=provenance_reader,
             tags=_tag_values(args.attempt_id),
             attempt_id=args.attempt_id,
@@ -1847,27 +1987,20 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="operation", required=True)
 
-    prepare = subparsers.add_parser("prepare", help="validate and bind one immutable candidate")
-    prepare.add_argument("--candidate-root", type=Path, default=Path("."))
-    prepare.add_argument("--candidate-commit", help="exact local hint; workflow derives GITHUB_SHA")
-    prepare.add_argument("--candidate-tree-bundle", type=Path, required=True)
-    prepare.add_argument("--candidate-tree-sha256", required=True)
-    prepare.add_argument("--firebase-json", type=Path, default=Path("firebase.json"))
-    prepare.add_argument("--baseline-archive", type=Path, required=True)
-    prepare.add_argument("--baseline-sha256", required=True)
-    prepare.add_argument("--source-input-root", type=Path, required=True)
-    prepare.add_argument("--source-input-pins", type=Path, required=True)
-    prepare.add_argument("--source-input-archive", type=Path)
-    prepare.add_argument("--source-input-sha256")
-    prepare.add_argument("--retained-inputs-sha256", required=True)
-    prepare.add_argument("--evidence-references", type=Path, required=True)
-    prepare.add_argument(
-        "--trusted-input-manifest",
-        type=Path,
-        required=True,
-        help="tracked SR7 input identities from the exact candidate checkout",
+    reviewed = subparsers.add_parser(
+        "prepare-reviewed",
+        help="verify a committed local-validation receipt and package public bytes",
     )
-    prepare.add_argument("--output-directory", type=Path, required=True)
+    reviewed.add_argument("--candidate-root", type=Path, default=Path("."))
+    reviewed.add_argument("--candidate-commit")
+    reviewed.add_argument("--candidate-tree-archive", type=Path, required=True)
+    reviewed.add_argument("--candidate-tree-sha256", required=True)
+    reviewed.add_argument("--firebase-json", type=Path, default=Path("firebase.json"))
+    reviewed.add_argument("--local-validation-receipt", type=Path, required=True)
+    reviewed.add_argument("--trusted-input-manifest", type=Path, required=True)
+    reviewed.add_argument("--baseline-public-archive", type=Path, required=True)
+    reviewed.add_argument("--baseline-sanitizer-record", type=Path, required=True)
+    reviewed.add_argument("--output-directory", type=Path, required=True)
 
     seal = subparsers.add_parser(
         "seal-only", help="seal one immutable intent without observing or writing Firebase"
@@ -1880,7 +2013,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     seal.add_argument("--preparation-manifest", type=Path)
     seal.add_argument("--preparation-origin", type=Path)
-    seal.add_argument("--candidate-bundle", type=Path)
+    seal.add_argument("--candidate-tree", type=Path)
     seal.add_argument("--attempt-id", required=True, help="new immutable intent identity")
     _purpose_arg(seal)
     seal.add_argument(
@@ -1944,8 +2077,8 @@ def main(
 ) -> int:
     args = build_parser().parse_args(argv)
     try:
-        if args.operation == "prepare":
-            path = prepare_operation(args)
+        if args.operation == "prepare-reviewed":
+            path = prepare_reviewed_operation(args)
         elif args.operation == "seal-only":
             path = seal_only_operation(args, coordinator=coordinator)
         elif args.operation == "execute":
@@ -1991,7 +2124,7 @@ __all__ = [
     "execute_operation",
     "load_preparation_context",
     "main",
-    "prepare_operation",
+    "prepare_reviewed_operation",
     "seal_only_operation",
     "reconcile_external_operation",
     "reconcile_operation",

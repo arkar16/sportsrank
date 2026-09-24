@@ -14,6 +14,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from cfb.publication import SealedAttempt, _deterministic_package
+from cfb.candidate_tree import create_candidate_tree_archive
 from cfb.firebase import FirebasePublicationError
 from cfb.publication_authorization import (
     preparation_manifest_bytes,
@@ -106,14 +107,8 @@ def _fixture(root: Path):
     commit = subprocess.check_output(
         ["git", "rev-parse", "HEAD"], cwd=root, text=True
     ).strip()
-    candidate_tree_archive = root / "candidate.bundle"
-    subprocess.run(
-        ["git", "bundle", "create", str(candidate_tree_archive), "HEAD"],
-        cwd=root,
-        check=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
+    candidate_tree_archive = root / "candidate-tree.tar.gz"
+    create_candidate_tree_archive(root, commit, candidate_tree_archive)
     predecessor = ProviderIdentity(
         TARGET,
         "sites/sportsrank-837af/channels/live/releases/prior",
@@ -439,7 +434,7 @@ class PublicationCLIContextTests(unittest.TestCase):
             args = SimpleNamespace(
                 candidate_root=root,
                 candidate_commit=package.candidate_commit,
-                candidate_tree_bundle=candidate_bundle,
+                candidate_tree_archive=candidate_bundle,
                 candidate_tree_sha256=_sha(candidate_bundle.read_bytes()),
                 firebase_json=root / "firebase.json",
                 baseline_archive=baseline_archive,
@@ -486,14 +481,14 @@ class PublicationCLIContextTests(unittest.TestCase):
             self.assertEqual(prepared_candidate, [(root / "website").resolve()])
             self.assertEqual(
                 json.loads(context_path.read_text(encoding="utf-8"))["candidate_tree_archive"],
-                "candidate.bundle",
+                "candidate-tree.tar.gz",
             )
             self.assertEqual(
-                (output / "candidate.bundle").read_bytes(), candidate_bundle.read_bytes()
+                (output / "candidate-tree.tar.gz").read_bytes(), candidate_bundle.read_bytes()
             )
             self.assertEqual(
-                (output / "candidate.bundle.sha256").read_text(encoding="ascii"),
-                f"{_sha(candidate_bundle.read_bytes())}  candidate.bundle\n",
+                (output / "candidate-tree.tar.gz.sha256").read_text(encoding="ascii"),
+                f"{_sha(candidate_bundle.read_bytes())}  candidate-tree.tar.gz\n",
             )
 
     def test_context_loader_revalidates_exact_target_records_and_package_bytes(self):
@@ -822,7 +817,7 @@ class PublicationCLIContextTests(unittest.TestCase):
             candidate_bundle = root / context["candidate_tree_archive"]
             original_bundle = candidate_bundle.read_bytes()
             candidate_bundle.write_bytes(b"substituted candidate object graph")
-            with self.assertRaisesRegex(PublicationCLIError, "candidate Git bundle"):
+            with self.assertRaisesRegex(PublicationCLIError, "candidate current-tree"):
                 load_preparation_context(path)
             candidate_bundle.write_bytes(original_bundle)
 

@@ -22,6 +22,7 @@ from cfb.github_archive import (
     FakeImmutableArchive,
     GitHubReleaseArchive,
 )
+from cfb.candidate_tree import create_candidate_tree_archive
 from cfb.publication import (
     PublicationExecutionError,
     PublicationCoordinator,
@@ -39,7 +40,9 @@ from cfb.publication_authorization import (
 )
 from cfb.publication_records import (
     ArchiveReference,
+    AttemptIntentRecord,
     ProviderIdentity,
+    RecordValidationError,
     SealedAttemptReference,
     canonical_json,
 )
@@ -204,6 +207,7 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                 path.write_bytes(role.encode())
                 retained_paths[role] = path
                 retained_digests[role] = hashlib.sha256(path.read_bytes()).hexdigest()
+            retained_digests["source_inputs"] = fx.package.retained_inputs_sha256
             trust_path = fx.reader.repository / "config" / "sr7-recovery-inputs.json"
             trust_path.parent.mkdir()
             trust_path.write_bytes(canonical_json({
@@ -236,10 +240,9 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                     REPOSITORY, f"retained-{role}", fx.package.candidate_commit,
                     {path.name: path}, role,
                 ))[path.name]
-            bundle = root / "candidate.bundle"
-            subprocess.run(
-                ["git", "-C", str(fx.reader.repository), "bundle", "create", str(bundle), "HEAD"],
-                check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            bundle = root / "candidate-tree.tar.gz"
+            create_candidate_tree_archive(
+                fx.reader.repository, fx.package.candidate_commit, bundle
             )
             record = root / "package.json"
             record.write_bytes(canonical_json(fx.package.to_dict()))
@@ -323,9 +326,9 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                 coordinator.seal_publication_attempt(
                     fx.package, purpose="normal", prepared=fx.prepared,
                     commit_reader=fx.reader, runtime=runtime,
-                    baseline=fx.baseline, evidence_references=evidence,
+                    baseline=fx.baseline, evidence_references={},
                     preparation_manifest=manifest, preparation_origin=origin,
-                    candidate_bundle=bundle, provenance_reader=provenance,
+                    candidate_tree=bundle, provenance_reader=provenance,
                     tags=PublicationTags(
                         "failed-package", "failed-intent", "unused-result", "unused-verification"
                     ),
@@ -341,7 +344,7 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                 {substituted_path.name: substituted_path}, "substituted",
             ))[substituted_path.name]
             with transport, self.assertRaisesRegex(
-                Exception, "immutable candidate pins"
+                Exception, "safe private-input identities"
             ):
                 coordinator.seal_publication_attempt(
                     fx.package, purpose="normal", prepared=fx.prepared,
@@ -349,7 +352,7 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                     baseline=fx.baseline,
                     evidence_references={**evidence, "baseline": substituted_reference},
                     preparation_manifest=manifest, preparation_origin=origin,
-                    candidate_bundle=bundle, provenance_reader=provenance,
+                    candidate_tree=bundle, provenance_reader=provenance,
                     tags=PublicationTags(
                         "substituted-package", "substituted-intent",
                         "unused-result", "unused-verification",
@@ -364,9 +367,9 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                 reference = coordinator.seal_publication_attempt(
                     fx.package, purpose="normal", prepared=fx.prepared,
                     commit_reader=fx.reader, runtime=runtime,
-                    baseline=fx.baseline, evidence_references=evidence,
+                    baseline=fx.baseline, evidence_references={},
                     preparation_manifest=manifest, preparation_origin=origin,
-                    candidate_bundle=bundle, provenance_reader=provenance,
+                    candidate_tree=bundle, provenance_reader=provenance,
                     tags=PublicationTags(
                         "sealed-package", "sealed-intent", "unused-result", "unused-verification"
                     ),
@@ -388,6 +391,12 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
             self.assertEqual(recorded.attempt.intent.attempt_id, "sealed")
             self.assertEqual(backend.read_count, 0)
             self.assertEqual(backend.write_count, 0)
+            substituted_tree = recorded.attempt.intent.to_dict()
+            substituted_tree["candidate_tree_reference"]["repository"] = "attacker/repository"
+            with self.assertRaisesRegex(
+                RecordValidationError, "protected repository"
+            ):
+                AttemptIntentRecord.from_dict(substituted_tree, package=fx.package)
 
             execute_approval = FakeGitHubApprovalReader(
                 {
@@ -500,9 +509,9 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                 claim_lost_reference = coordinator.seal_publication_attempt(
                     fx.package, purpose="normal", prepared=fx.prepared,
                     commit_reader=fx.reader, runtime=runtime,
-                    baseline=fx.baseline, evidence_references=evidence,
+                    baseline=fx.baseline, evidence_references={},
                     preparation_manifest=manifest, preparation_origin=origin,
-                    candidate_bundle=bundle, provenance_reader=provenance,
+                    candidate_tree=bundle, provenance_reader=provenance,
                     tags=PublicationTags(
                         "claim-lost-package", "claim-lost-intent",
                         "unused-claim-lost-result", "unused-claim-lost-verification",
@@ -559,9 +568,9 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                 interrupted_reference = coordinator.seal_publication_attempt(
                     fx.package, purpose="normal", prepared=fx.prepared,
                     commit_reader=fx.reader, runtime=runtime,
-                    baseline=fx.baseline, evidence_references=evidence,
+                    baseline=fx.baseline, evidence_references={},
                     preparation_manifest=manifest, preparation_origin=origin,
-                    candidate_bundle=bundle, provenance_reader=provenance,
+                    candidate_tree=bundle, provenance_reader=provenance,
                     tags=PublicationTags(
                         "interrupted-package", "interrupted-intent",
                         "unused-interrupted-result", "unused-interrupted-verification",
@@ -612,9 +621,9 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                 prewrite_reference = coordinator.seal_publication_attempt(
                     fx.package, purpose="normal", prepared=fx.prepared,
                     commit_reader=fx.reader, runtime=runtime,
-                    baseline=fx.baseline, evidence_references=evidence,
+                    baseline=fx.baseline, evidence_references={},
                     preparation_manifest=manifest, preparation_origin=origin,
-                    candidate_bundle=bundle, provenance_reader=provenance,
+                    candidate_tree=bundle, provenance_reader=provenance,
                     tags=PublicationTags(
                         "prewrite-package", "prewrite-intent",
                         "unused-prewrite-result", "unused-prewrite-verification",
@@ -677,9 +686,9 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                 fresh_reference = coordinator.seal_publication_attempt(
                     fx.package, purpose="normal", prepared=fx.prepared,
                     commit_reader=fx.reader, runtime=runtime,
-                    baseline=fx.baseline, evidence_references=evidence,
+                    baseline=fx.baseline, evidence_references={},
                     preparation_manifest=manifest, preparation_origin=origin,
-                    candidate_bundle=bundle, provenance_reader=provenance,
+                    candidate_tree=bundle, provenance_reader=provenance,
                     tags=PublicationTags(
                         "fresh-package", "fresh-intent",
                         "unused-fresh-result", "unused-fresh-verification",

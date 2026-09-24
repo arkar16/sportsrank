@@ -33,7 +33,7 @@ The workflow exposes five manual operations on `main`:
 
 | Operation | Effect |
 | --- | --- |
-| `prepare` | Once the private-input gate is satisfied, independently validate privately retrieved inputs and the complete baseline; package site/configuration once and bind it to the actual merged commit. |
+| `prepare` | Verify the reviewed local-validation receipt against the safe committed website, code/configuration and input pins; package exact bytes and bind the actual merged commit. |
 | `seal-only` | Retain the exact package, provenance and intent in immutable archives; return its canonical sealed reference. |
 | `execute` | Under fresh owner approval, consume that exact reference once and publish its validated bytes. |
 | `reconcile` | Retrieve sealed evidence and freshly observe actual Firebase state without deploying. |
@@ -57,31 +57,31 @@ Firebase; they are operational interfaces, not offline test commands.
 
 Preparation must identify the actual merged candidate SHA. A staged package
 with `candidate_commit` absent or `null` is ineligible. After owner merge,
-repeat preparation and independent validation against the actual merged SHA,
-even when its site bytes match the reviewed branch.
+verify that the reviewed receipt still matches the actual merged code,
+configuration, input pins and website, then repeat hosted packaging against
+that SHA. Any changed binding requires fresh local validation/export and review.
 
-The existing `sportsrank-preparation-<GITHUB_SHA>` design describes exact
+The `sportsrank-preparation-<GITHUB_SHA>` transport contains only exact
 package and record bytes/hashes, `baseline.json`,
 `publication-context.json`, `publication-attestation.json`,
 `preparation-origin.json`, `publication-preparation-manifest.json`, a
-candidate Git bundle/hash, and a runtime source archive/hash. That Actions
-input transport is **incompatible with the 2026-09-24 retention policy and
-pending remediation** whenever it carries raw CFBD snapshots, an
-original-prepared archive, or Git bundles/history containing them. The same
-boundary applies to nested copies in archives and transports. It must not be
-used as the approved source of raw inputs until the private-input gate below
-has passed.
+current-tree archive/hash, reviewed local receipt and a runtime source
+archive/hash. Current-tree evidence authenticates the candidate commit and its
+tree/blob objects without carrying ancestor commits or historical payloads.
+Raw input Actions artifacts and full-history Git bundles are prohibited.
 
 The committed schema-1 `config/sr7-recovery-inputs.json`
 (`sr7_recovery_input_trust`) records expected identities for private baseline,
 source-input, sanitizer, and related evidence; hashes and downloaded metadata
-cannot authorize or replace private byte retrieval. The private storage
-provider, transport, and restore mechanism remain undecided.
+cannot authorize or replace private byte retrieval during local validation.
+The owner selected this computer for private retention and approved the local
+validation/hosted packaging trust contract in ADR-0018. Safe public baseline
+references are separately pinned; they never substitute for private raw inputs.
 
 Before extracting runtime code, installing dependencies or using credentials,
 the trusted workflow bootstrap verifies authenticated GitHub run provenance,
 package and package-record attestation, the actual candidate commit/tree and
-bundle, and regenerated execution-source bytes. The attested manifest binds
+current-tree evidence, and regenerated execution-source bytes. The attested manifest binds
 `arkar16/sportsrank/.github/workflows/firebase-hosting-publish.yml`,
 `workflow_dispatch` on `refs/heads/main`, and exact candidate/run/attempt
 identities. Hash files and preparation-origin metadata support these checks;
@@ -106,14 +106,29 @@ remediation decision before claiming this boundary is satisfied.
 
 ### Private-input proof gate
 
-Before `prepare` can be approved, document an owner-approved private durable
-store and verify authorized retrieval, SHA-256 checks against the committed
-pins, a restore drill that reproduces the exact bytes, and access
-control/audit behavior that blocks public readers and unapproved workflow
-contexts. Missing, inaccessible, mismatched, or unexpectedly exposed private
-evidence fails closed. Until that evidence exists, the current `input_run_id`
-and `input_artifact_name` Actions-artifact path is a pending implementation
-gap, not an approved transport.
+Keep the exact source-input, original-prepared and raw-baseline archives in
+`~/Library/Application Support/SportsRank/private-inputs`, outside Git,
+temporary storage and BB thread storage. The local store uses owner-only
+directories/files, content-addressed objects and the original pinned digests.
+Verify ingestion and exact restoration before relying on a copy. This is
+single-computer retention for now; it provides no off-device backup. Missing,
+inaccessible, corrupt or insecurely stored evidence stops local preparation.
+
+Reconstruct and independently validate the recovery in private staging using
+the retained source inputs. Run the public exporter only on that accepted
+candidate. The export preserves reader pages while replacing source snapshot
+payloads with strict provenance, and emits a safe receipt binding inventory,
+hosting configuration, validator/runtime/workflow source, trusted input hashes
+and baseline. Review and commit the safe website and receipt together.
+
+Hosted `prepare` requires only the reviewed safe tree, receipt, hash pins and
+the verified public baseline derivative. It never retrieves raw source data.
+The owner-reviewed receipt is the authority for local source validation;
+GitHub attestation authenticates receipt verification and exact packaging.
+Seal, execute and recovery retrieve public-safe evidence and private hashes,
+never private source/original archives. A missing or stale receipt fails closed.
+Deleting exposed remote releases or rewriting Git history remains a separate
+owner decision; completing the new path does not erase historical exposure.
 
 ## First-publication readiness
 

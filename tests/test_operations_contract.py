@@ -8,6 +8,7 @@ import textwrap
 import tomllib
 import unittest
 from tempfile import TemporaryDirectory
+from cfb.candidate_tree import create_candidate_tree_archive
 
 from cfb.publication_records import (
     BaselineRecord,
@@ -212,12 +213,8 @@ class OperationsContractTests(unittest.TestCase):
         ).strip()
         preparation = root / "runner" / "preparation"
         preparation.mkdir(parents=True)
-        subprocess.run(
-            ["git", "bundle", "create", str(preparation / "candidate.bundle"), "HEAD"],
-            cwd=repository,
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+        create_candidate_tree_archive(
+            repository, commit, preparation / "candidate-tree.tar.gz"
         )
         archive = subprocess.check_output(
             [
@@ -241,6 +238,14 @@ class OperationsContractTests(unittest.TestCase):
         )
         fake_bin = root / "fake-bin"
         fake_bin.mkdir()
+        tree_entries = []
+        for entry in subprocess.check_output(
+            ["git", "ls-tree", "-r", "-z", commit], cwd=repository
+        ).split(b"\0"):
+            if entry:
+                meta, path = entry.split(b"\t", 1)
+                mode, kind, oid = meta.decode("ascii").split(" ")
+                tree_entries.append({"path": path.decode(), "mode": mode, "type": kind, "sha": oid})
         (fake_bin / "gh").write_text(
             "#!/bin/sh\n"
             "if [ \"$1\" != api ]; then exit 1; fi\n"
@@ -252,6 +257,9 @@ class OperationsContractTests(unittest.TestCase):
             "case \"$1\" in\n"
             "  repos/arkar16/sportsrank/commits/*)\n"
             f"    printf '%s\\n' '{json.dumps({'sha': commit, 'commit': {'tree': {'sha': tree}}})}'\n"
+            "    ;;\n"
+            "  repos/arkar16/sportsrank/git/trees/*)\n"
+            f"    printf '%s\\n' '{json.dumps({'tree': tree_entries})}'\n"
             "    ;;\n"
             "  *) exit 3 ;;\n"
             "esac\n",
@@ -344,11 +352,11 @@ class OperationsContractTests(unittest.TestCase):
         self.assertIn('test "$HEAD_SHA" = "$GITHUB_SHA"', source)
         self.assertIn("git rev-parse HEAD", source)
         self.assertIn('candidate-commit "$GITHUB_SHA"', source)
-        self.assertIn("candidate.bundle", source)
-        self.assertIn("git bundle create", source)
-        self.assertIn('candidate_bundle="$RUNNER_TEMP/candidate.bundle"', source)
-        self.assertNotIn('git bundle create "$output_root/candidate.bundle"', source)
-        self.assertIn("bind_merged_candidate", source)
+        self.assertIn("candidate-tree.tar.gz", source)
+        self.assertIn("python -m cfb.candidate_tree", source)
+        self.assertIn('candidate_tree="$RUNNER_TEMP/candidate-tree.tar.gz"', source)
+        self.assertNotIn("git bundle create", source)
+        self.assertIn("prepare-reviewed", source)
         self.assertNotIn("merge-base --is-ancestor", source)
 
     def test_protected_job_consumes_prepared_artifact_without_checkout_or_rebuild(self):
@@ -358,8 +366,8 @@ class OperationsContractTests(unittest.TestCase):
         self.assertEqual(source.count("actions/upload-artifact@v4"), 2)
         self.assertEqual(source.count("actions/download-artifact@v4"), 0)
         self.assertEqual(source.count("actions/attest-build-provenance@v2"), 1)
-        self.assertIn("prepare_review_package", prepare)
-        self.assertIn("bind_merged_candidate", prepare)
+        self.assertIn("prepare-reviewed", prepare)
+        self.assertIn("--local-validation-receipt", prepare)
         self.assertIn("publication-context.json", prepare)
         self.assertIn("publication-preparation-manifest.json", prepare)
         self.assertIn(
@@ -381,7 +389,8 @@ class OperationsContractTests(unittest.TestCase):
         self.assertIn("gh attestation verify", protected)
         self.assertIn("gh api", protected)
         self.assertIn("commit.tree.sha", protected)
-        self.assertIn("fsck --strict --full --no-dangling", protected)
+        self.assertIn("reachable-objects.txt", protected)
+        self.assertIn("github-tree.json", protected)
         self.assertIn("--signer-workflow", protected)
         self.assertIn("--source-ref", protected)
         self.assertIn("--source-digest", protected)
@@ -389,7 +398,7 @@ class OperationsContractTests(unittest.TestCase):
         self.assertIn("publication_cli", protected)
         self.assertIn("Verify the authenticated preparation origin and exact reference input", protected)
         self.assertIn("gh run view", protected)
-        self.assertIn("candidate.bundle.sha256", protected)
+        self.assertIn("candidate-tree.tar.gz.sha256", protected)
         self.assertIn("archive --format=tar", protected)
         self.assertIn("README.md cfb tools pyproject.toml uv.lock", protected)
         self.assertIn("execution-source.expected.tar.gz", protected)
@@ -399,10 +408,12 @@ class OperationsContractTests(unittest.TestCase):
         runtime_install = protected.index("Install the transported locked runtime")
         self.assertLess(bootstrap, extraction)
         self.assertLess(bootstrap, runtime_install)
-        self.assertIn("bundle verify", protected)
-        self.assertIn('git -C "$trusted_repo" fetch', protected)
+        self.assertIn("candidate_current_tree", protected)
+        self.assertIn("declared-objects.txt", protected)
+        self.assertIn('cp -R "$tree_stage/objects/." "$trusted_repo/objects/"', protected)
+        self.assertNotIn('git -C "$trusted_repo" fetch', protected)
         self.assertIn('cat-file -t "$candidate"', protected)
-        self.assertIn("rev-parse refs/heads/candidate", protected)
+        self.assertIn('rev-parse "$candidate^{tree}"', protected)
         self.assertIn("FIREBASE_ACCESS_TOKEN", protected)
         self.assertIn("google-github-actions/auth@v2", protected)
         attestation = protected.index(
@@ -445,7 +456,14 @@ class OperationsContractTests(unittest.TestCase):
         self.assertIn("sealed baseline does not match committed input pin", protected)
         self.assertIn('authenticated_commit="$(gh api "repos/arkar16/sportsrank/commits/$candidate")"', protected)
         self.assertIn('rev-parse "$candidate^{tree}"', protected)
-        self.assertIn('git -C "$trusted_repo" fsck --strict --full --no-dangling', protected)
+        self.assertIn(
+            'git -C "$trusted_repo" rev-list --objects --no-object-names "$candidate^{tree}"',
+            protected,
+        )
+        self.assertIn(
+            'cmp "$RUNNER_TEMP/reachable-objects.txt" "$RUNNER_TEMP/declared-objects.txt"',
+            protected,
+        )
         self.assertIn("state-free recovery", protected)
         self.assertIn("releases/assets/$asset_id", protected)
         self.assertIn("publication-state", protected)
@@ -665,19 +683,18 @@ class OperationsContractTests(unittest.TestCase):
 
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("differ", result.stdout + result.stderr)
-            self.assertTrue((runner / "trusted-candidate.git" / "refs" / "heads" / "candidate").exists())
+            self.assertTrue((runner / "trusted-candidate.git" / "objects").exists())
             self.assertFalse((runner / "execution").exists())
 
     def test_transport_bootstrap_rejects_corrupt_bundle_before_candidate_ref(self):
         with TemporaryDirectory() as directory:
             runner, preparation, _commit = self._transport_fixture(Path(directory))
-            (preparation / "candidate.bundle").write_bytes(b"corrupt candidate bundle")
+            (preparation / "candidate-tree.tar.gz").write_bytes(b"corrupt candidate tree")
 
             result = self._run_transport_bootstrap(runner)
 
             self.assertNotEqual(result.returncode, 0)
-            self.assertTrue((runner / "trusted-candidate.git").exists())
-            self.assertFalse((runner / "trusted-candidate.git" / "refs" / "heads" / "candidate").exists())
+            self.assertFalse((runner / "trusted-candidate.git").exists())
             self.assertFalse((runner / "execution").exists())
 
     def test_transport_bootstrap_rejects_bundle_tree_mismatch_against_authenticated_commit(self):
@@ -696,7 +713,7 @@ class OperationsContractTests(unittest.TestCase):
             result = self._run_transport_bootstrap(runner)
 
             self.assertNotEqual(result.returncode, 0)
-            self.assertTrue((runner / "trusted-candidate.git" / "refs" / "heads" / "candidate").exists())
+            self.assertTrue((runner / "candidate-tree-stage" / "candidate-tree.json").exists())
             self.assertFalse((runner / "execution").exists())
 
     def test_gh_api_repository_selection_is_an_explicit_offline_endpoint(self):

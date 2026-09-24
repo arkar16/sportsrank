@@ -34,14 +34,6 @@ on:
         description: Exact canonical SealedAttemptReference text from seal-only
         required: false
         type: string
-      input_run_id:
-        description: Read-only retained-input artifact run for prepare
-        required: false
-        type: string
-      input_artifact_name:
-        description: Read-only retained-input artifact name for prepare
-        required: false
-        type: string
       prior_reference:
         description: Exact predecessor SealedAttemptReference for a successor, rollback, or correction
         required: false
@@ -138,53 +130,50 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Retrieve retained inputs for the offline package gate
+      - name: Retrieve only the reviewed safe baseline derivative
         shell: bash
         env:
-          INPUT_RUN_ID: ${{ inputs.input_run_id }}
-          INPUT_ARTIFACT_NAME: ${{ inputs.input_artifact_name }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          trusted_manifest="$GITHUB_WORKSPACE/config/sr7-recovery-inputs.json"
-          test -s "$trusted_manifest"
-          jq -e '.schema_version == 1 and .record_type == "sr7_recovery_input_trust" and .target.project == "sportsrank-837af" and .target.site == "sportsrank-837af" and .target.channel == "live"' "$trusted_manifest" >/dev/null
-          [[ "$INPUT_RUN_ID" =~ ^[1-9][0-9]*$ ]]
-          [[ "$INPUT_ARTIFACT_NAME" =~ ^[A-Za-z0-9_.-]+$ ]]
-          mkdir -p "$RUNNER_TEMP/retained-inputs"
-          gh run download "$INPUT_RUN_ID" \
-            --repo arkar16/sportsrank \
-            --name "$INPUT_ARTIFACT_NAME" \
-            --dir "$RUNNER_TEMP/retained-inputs"
+          trust="$GITHUB_WORKSPACE/config/sr7-recovery-inputs.json"
+          mkdir -p "$RUNNER_TEMP/safe-baseline"
+          release_id="$(jq -r '.safe_public_evidence.baseline_archive.release_id' "$trust")"
+          release="$(gh api "repos/arkar16/sportsrank/releases/$release_id")"
+          jq -e --argjson release_id "$release_id" \
+            '.id == $release_id and .immutable == true and .draft == false' \
+            <<< "$release" >/dev/null
+          for role in baseline_archive baseline_sanitizer; do
+            asset_id="$(jq -r ".safe_public_evidence.${role}.asset_id" "$trust")"
+            name="$(jq -r ".safe_public_evidence.${role}.asset_name" "$trust")"
+            expected="$(jq -r ".safe_public_evidence.${role}.sha256" "$trust")"
+            gh api -H 'Accept: application/octet-stream' \
+              "repos/arkar16/sportsrank/releases/assets/$asset_id" \
+              > "$RUNNER_TEMP/safe-baseline/$name"
+            test "$(sha256sum "$RUNNER_TEMP/safe-baseline/$name" | cut -d' ' -f1)" = "$expected"
+          done
 
-      - name: Run prepare_review_package and bind_merged_candidate
+      - name: Verify the reviewed local receipt and package its exact public bytes
         shell: bash
         env:
           CFBD_API_KEY: ""
         run: |
           set -euo pipefail
-          input_root="$RUNNER_TEMP/retained-inputs"
           output_root="$RUNNER_TEMP/preparation"
-          candidate_bundle="$RUNNER_TEMP/candidate.bundle"
-          candidate_bundle_sha256="$RUNNER_TEMP/candidate.bundle.sha256"
+          candidate_tree="$RUNNER_TEMP/candidate-tree.tar.gz"
           mkdir -p "$output_root"
-          git bundle create "$candidate_bundle" HEAD
-          sha256sum "$candidate_bundle" > "$candidate_bundle_sha256"
-          uv run --locked python -m cfb.publication_cli prepare \
+          candidate_tree_sha256="$(uv run --locked python -m cfb.candidate_tree \
+            "$GITHUB_WORKSPACE" "$GITHUB_SHA" "$candidate_tree")"
+          uv run --locked python -m cfb.publication_cli prepare-reviewed \
             --candidate-root "$GITHUB_WORKSPACE" \
             --candidate-commit "$GITHUB_SHA" \
-            --candidate-tree-bundle "$candidate_bundle" \
-            --candidate-tree-sha256 "$(cut -d' ' -f1 "$candidate_bundle_sha256")" \
+            --candidate-tree-archive "$candidate_tree" \
+            --candidate-tree-sha256 "$candidate_tree_sha256" \
             --firebase-json "$GITHUB_WORKSPACE/firebase.json" \
-            --baseline-archive "$input_root/baseline.tar.gz" \
-            --baseline-sha256 "$(jq -r '.baseline.private_archive_sha256' "$GITHUB_WORKSPACE/config/sr7-recovery-inputs.json")" \
-            --source-input-root "$input_root/source-inputs" \
-            --source-input-pins "$input_root/source-input-pins.json" \
-            --source-input-archive "$input_root/source-inputs.tar.gz" \
-            --source-input-sha256 "$(jq -r '.source_inputs.archive_sha256' "$GITHUB_WORKSPACE/config/sr7-recovery-inputs.json")" \
-            --retained-inputs-sha256 "$(jq -r '.source_inputs.archive_sha256' "$GITHUB_WORKSPACE/config/sr7-recovery-inputs.json")" \
-            --evidence-references "$input_root/evidence-references.json" \
+            --local-validation-receipt "$GITHUB_WORKSPACE/config/sr7-local-validation-receipt.json" \
             --trusted-input-manifest "$GITHUB_WORKSPACE/config/sr7-recovery-inputs.json" \
+            --baseline-public-archive "$RUNNER_TEMP/safe-baseline/baseline-public.tar.gz" \
+            --baseline-sanitizer-record "$RUNNER_TEMP/safe-baseline/baseline-sanitizer-record.json" \
             --output-directory "$output_root"
           jq -n \
             --arg repository "arkar16/sportsrank" \
@@ -255,8 +244,8 @@ jobs:
             ${{ runner.temp }}/preparation/publication-attestation.json
             ${{ runner.temp }}/preparation/publication-preparation-manifest.json
             ${{ runner.temp }}/preparation/preparation-origin.json
-            ${{ runner.temp }}/preparation/candidate.bundle
-            ${{ runner.temp }}/preparation/candidate.bundle.sha256
+            ${{ runner.temp }}/preparation/candidate-tree.tar.gz
+            ${{ runner.temp }}/preparation/candidate-tree.tar.gz.sha256
             ${{ runner.temp }}/preparation/execution-source.tar.gz
             ${{ runner.temp }}/preparation/execution-source.sha256
           if-no-files-found: error
@@ -555,13 +544,13 @@ jobs:
           package_record_asset="$(jq -r '.package_record_reference.asset_id' "$RUNNER_TEMP/durable/attempt-intent.json")"
           package_record_sha="$(jq -r '.package_record_reference.sha256' "$RUNNER_TEMP/durable/attempt-intent.json")"
           download_asset "$package_record_asset" "$package_record_sha" "$RUNNER_TEMP/durable/validated-package.json"
-          candidate="$(jq -r '.candidate_bundle_reference.target_commit' "$RUNNER_TEMP/durable/attempt-intent.json")"
+          candidate="$(jq -r '.candidate_tree_reference.target_commit' "$RUNNER_TEMP/durable/attempt-intent.json")"
           [[ "$candidate" =~ ^[0-9a-f]{40}$ ]]
-          for role in candidate_bundle_reference preparation_manifest_reference preparation_origin_reference; do
+          for role in candidate_tree_reference preparation_manifest_reference preparation_origin_reference; do
             asset_id="$(jq -r ".${role}.asset_id" "$RUNNER_TEMP/durable/attempt-intent.json")"
             asset_sha="$(jq -r ".${role}.sha256" "$RUNNER_TEMP/durable/attempt-intent.json")"
             case "$role" in
-              candidate_bundle_reference) output="$RUNNER_TEMP/durable/candidate.bundle" ;;
+              candidate_tree_reference) output="$RUNNER_TEMP/durable/candidate-tree.tar.gz" ;;
               preparation_manifest_reference) output="$RUNNER_TEMP/durable/publication-preparation-manifest.json" ;;
               preparation_origin_reference) output="$RUNNER_TEMP/durable/preparation-origin.json" ;;
             esac
@@ -600,20 +589,44 @@ jobs:
             '.databaseId == ($run_id | tonumber) and .path == ".github/workflows/firebase-hosting-publish.yml" and .event == "workflow_dispatch" and .headBranch == "main" and .headSha == $head_sha and .runAttempt == 1 and .status == "completed" and .conclusion == "success"' \
             <<< "$origin_json" >/dev/null
           trusted_repo="$RUNNER_TEMP/durable/candidate.git"
-          git init --bare --quiet "$trusted_repo"
           authenticated_commit="$(gh api "repos/arkar16/sportsrank/commits/$candidate")"
           authenticated_sha="$(jq -r '.sha // empty' <<< "$authenticated_commit")"
           authenticated_tree="$(jq -r '.commit.tree.sha // empty' <<< "$authenticated_commit")"
           [[ "$authenticated_sha" =~ ^[0-9a-f]{40}$ ]]
           [[ "$authenticated_tree" =~ ^[0-9a-f]{40}$ ]]
           test "$authenticated_sha" = "$candidate"
-          git -C "$trusted_repo" bundle verify "$RUNNER_TEMP/durable/candidate.bundle" >/dev/null
-          heads="$(git bundle list-heads "$RUNNER_TEMP/durable/candidate.bundle")"
-          [[ "$heads" == "$candidate "* ]]
-          git -C "$trusted_repo" fetch --quiet --no-tags "$RUNNER_TEMP/durable/candidate.bundle" "$candidate:refs/heads/candidate"
+          tree_stage="$RUNNER_TEMP/durable/candidate-tree-stage"
+          mkdir -p "$tree_stage"
+          tar --extract --gzip --to-stdout --file "$RUNNER_TEMP/durable/candidate-tree.tar.gz" \
+            candidate-tree.json > "$tree_stage/candidate-tree.json"
+          jq -e '(.objects | type == "array" and length > 0 and all(.[]; (.object | test("^[0-9a-f]{40}$")) and (.type == "commit" or .type == "tree" or .type == "blob") and (.size | type == "number" and . >= 0))) and (.files | type == "array" and all(.[]; (.path | type == "string") and (.path | startswith("/") | not) and (.path | contains("../") | not) and (.mode == "100644" or .mode == "100755") and (.object | test("^[0-9a-f]{40}$"))))' \
+            "$tree_stage/candidate-tree.json" >/dev/null
+          tar --list --gzip --file "$RUNNER_TEMP/durable/candidate-tree.tar.gz" | LC_ALL=C sort \
+            > "$RUNNER_TEMP/durable/archive-members.txt"
+          jq -r '["candidate-tree.json"] + [.objects[].object | "objects/" + .[0:2] + "/" + .[2:]] | .[]' \
+            "$tree_stage/candidate-tree.json" | LC_ALL=C sort \
+            > "$RUNNER_TEMP/durable/expected-members.txt"
+          cmp "$RUNNER_TEMP/durable/archive-members.txt" "$RUNNER_TEMP/durable/expected-members.txt"
+          tar --extract --gzip --file "$RUNNER_TEMP/durable/candidate-tree.tar.gz" \
+            --directory "$tree_stage" --no-same-owner
+          jq -e --arg candidate "$candidate" --arg tree "$authenticated_tree" \
+            '.schema_version == 1 and .record_type == "candidate_current_tree" and .candidate_commit == $candidate and .root_tree == $tree' \
+            "$tree_stage/candidate-tree.json" >/dev/null
+          git init --bare --quiet "$trusted_repo"
+          cp -R "$tree_stage/objects/." "$trusted_repo/objects/"
           test "$(git -C "$trusted_repo" cat-file -t "$candidate")" = commit
           test "$(git -C "$trusted_repo" rev-parse "$candidate^{tree}")" = "$authenticated_tree"
-          git -C "$trusted_repo" fsck --strict --full --no-dangling >/dev/null
+          { echo "$candidate"; git -C "$trusted_repo" rev-list --objects --no-object-names "$candidate^{tree}"; } \
+            | LC_ALL=C sort -u > "$RUNNER_TEMP/durable/reachable-objects.txt"
+          jq -r '.objects[].object' "$tree_stage/candidate-tree.json" | LC_ALL=C sort -u \
+            > "$RUNNER_TEMP/durable/declared-objects.txt"
+          cmp "$RUNNER_TEMP/durable/reachable-objects.txt" "$RUNNER_TEMP/durable/declared-objects.txt"
+          gh api "repos/arkar16/sportsrank/git/trees/$authenticated_tree?recursive=1" \
+            | jq -cS '[.tree[] | select(.type == "blob") | {path, mode, object: .sha}] | sort_by(.path)' \
+            > "$RUNNER_TEMP/durable/github-tree.json"
+          jq -cS '.files | sort_by(.path)' "$tree_stage/candidate-tree.json" \
+            > "$RUNNER_TEMP/durable/transport-tree.json"
+          cmp "$RUNNER_TEMP/durable/github-tree.json" "$RUNNER_TEMP/durable/transport-tree.json"
           mkdir -p "$RUNNER_TEMP/execution"
           git -C "$trusted_repo" archive --format=tar "$candidate" \
             README.md cfb tools pyproject.toml uv.lock config \
@@ -622,8 +635,8 @@ jobs:
             --directory "$RUNNER_TEMP/execution" --no-same-owner
           cp "$RUNNER_TEMP/durable/publication-preparation-manifest.json" "$RUNNER_TEMP/preparation/publication-preparation-manifest.json"
           cp "$RUNNER_TEMP/durable/preparation-origin.json" "$RUNNER_TEMP/preparation/preparation-origin.json"
-          cp "$RUNNER_TEMP/durable/candidate.bundle" "$RUNNER_TEMP/preparation/candidate.bundle"
-          (cd "$RUNNER_TEMP/preparation" && sha256sum candidate.bundle > candidate.bundle.sha256)
+          cp "$RUNNER_TEMP/durable/candidate-tree.tar.gz" "$RUNNER_TEMP/preparation/candidate-tree.tar.gz"
+          (cd "$RUNNER_TEMP/preparation" && sha256sum candidate-tree.tar.gz > candidate-tree.tar.gz.sha256)
           echo "PREPARATION_HEAD_SHA=$candidate" >> "$GITHUB_ENV"
           echo "PREPARATION_ORIGIN_RUN_ID=$origin_run_id" >> "$GITHUB_ENV"
 
@@ -676,7 +689,7 @@ jobs:
           sha256sum -c package.sha256
           sha256sum -c package.json.sha256
           test -s publication-preparation-manifest.json
-          sha256sum -c candidate.bundle.sha256
+          sha256sum -c candidate-tree.tar.gz.sha256
           sha256sum -c execution-source.sha256
           test -s publication-context.json
           test -s publication-attestation.json
@@ -745,17 +758,38 @@ jobs:
           [[ "$authenticated_tree" =~ ^[0-9a-f]{40}$ ]]
           test "$authenticated_sha" = "$candidate"
           trusted_repo="$RUNNER_TEMP/trusted-candidate.git"
+          tree_stage="$RUNNER_TEMP/candidate-tree-stage"
+          mkdir -p "$tree_stage"
+          tar --extract --gzip --to-stdout --file "$RUNNER_TEMP/preparation/candidate-tree.tar.gz" \
+            candidate-tree.json > "$tree_stage/candidate-tree.json"
+          jq -e '(.objects | type == "array" and length > 0 and all(.[]; (.object | test("^[0-9a-f]{40}$")) and (.type == "commit" or .type == "tree" or .type == "blob") and (.size | type == "number" and . >= 0))) and (.files | type == "array" and all(.[]; (.path | type == "string") and (.path | startswith("/") | not) and (.path | contains("../") | not) and (.mode == "100644" or .mode == "100755") and (.object | test("^[0-9a-f]{40}$"))))' \
+            "$tree_stage/candidate-tree.json" >/dev/null
+          tar --list --gzip --file "$RUNNER_TEMP/preparation/candidate-tree.tar.gz" | LC_ALL=C sort \
+            > "$RUNNER_TEMP/archive-members.txt"
+          jq -r '["candidate-tree.json"] + [.objects[].object | "objects/" + .[0:2] + "/" + .[2:]] | .[]' \
+            "$tree_stage/candidate-tree.json" | LC_ALL=C sort \
+            > "$RUNNER_TEMP/expected-members.txt"
+          cmp "$RUNNER_TEMP/archive-members.txt" "$RUNNER_TEMP/expected-members.txt"
+          tar --extract --gzip --file "$RUNNER_TEMP/preparation/candidate-tree.tar.gz" \
+            --directory "$tree_stage" --no-same-owner
+          jq -e --arg candidate "$candidate" --arg tree "$authenticated_tree" \
+            '.schema_version == 1 and .record_type == "candidate_current_tree" and .candidate_commit == $candidate and .root_tree == $tree' \
+            "$tree_stage/candidate-tree.json" >/dev/null
           git init --bare --quiet "$trusted_repo"
-          git -C "$trusted_repo" bundle verify "$RUNNER_TEMP/preparation/candidate.bundle" >/dev/null
-          heads="$(git bundle list-heads "$RUNNER_TEMP/preparation/candidate.bundle")"
-          [[ "$heads" == "$candidate "* ]]
-          git -C "$trusted_repo" fetch --quiet --no-tags \
-            "$RUNNER_TEMP/preparation/candidate.bundle" \
-            "${candidate}:refs/heads/candidate"
+          cp -R "$tree_stage/objects/." "$trusted_repo/objects/"
           test "$(git -C "$trusted_repo" cat-file -t "$candidate")" = "commit"
-          test "$(git -C "$trusted_repo" rev-parse refs/heads/candidate)" = "$candidate"
           test "$(git -C "$trusted_repo" rev-parse "$candidate^{tree}")" = "$authenticated_tree"
-          git -C "$trusted_repo" fsck --strict --full --no-dangling >/dev/null
+          { echo "$candidate"; git -C "$trusted_repo" rev-list --objects --no-object-names "$candidate^{tree}"; } \
+            | LC_ALL=C sort -u > "$RUNNER_TEMP/reachable-objects.txt"
+          jq -r '.objects[].object' "$tree_stage/candidate-tree.json" | LC_ALL=C sort -u \
+            > "$RUNNER_TEMP/declared-objects.txt"
+          cmp "$RUNNER_TEMP/reachable-objects.txt" "$RUNNER_TEMP/declared-objects.txt"
+          gh api "repos/arkar16/sportsrank/git/trees/$authenticated_tree?recursive=1" \
+            | jq -cS '[.tree[] | select(.type == "blob") | {path, mode, object: .sha}] | sort_by(.path)' \
+            > "$RUNNER_TEMP/github-tree.json"
+          jq -cS '.files | sort_by(.path)' "$tree_stage/candidate-tree.json" \
+            > "$RUNNER_TEMP/transport-tree.json"
+          cmp "$RUNNER_TEMP/github-tree.json" "$RUNNER_TEMP/transport-tree.json"
           git -C "$trusted_repo" archive --format=tar "$candidate" \
             README.md cfb tools pyproject.toml uv.lock config \
             | gzip -n > "$RUNNER_TEMP/execution-source.expected.tar.gz"

@@ -298,21 +298,33 @@ releases may carry intended generated static output and safe hashes/provenance
 only. This policy does not change public URLs, CORS behavior, or any preserved
 snapshot hash.
 
-The private storage provider, transport, and restore mechanism are not yet
-selected. Before the publication path can use retained inputs, the owner must
-accept a proof gate covering authorized private retrieval, SHA-256 verification
+The owner selected this computer for private retention for now and approved
+local source validation with a reviewed hash receipt. Before the publication
+path can use retained inputs, acceptance must prove authorized private retrieval,
+SHA-256 verification
 against the committed pins, exact-byte restore, and access-control/audit
 behavior that prevents public readers and unapproved workflow contexts from
 retrieving raw inputs. Missing, mismatched, unrestorable, or exposed evidence
 fails closed.
 
-The current prepare input path that downloads raw inputs from public Actions
-artifacts is incompatible with this revision and pending remediation. It is
-not evidence that private retention has been implemented, and it must not be
-described as an approved transport.
+The approved replacement performs source-derived reconstruction and validation
+in private local staging, then exports public pages and payload-free snapshot
+provenance. A reviewed committed receipt binds the public inventory, serving
+configuration, validator/runtime/workflow code, input pins and baseline.
+GitHub-hosted preparation checks those bindings and packages the exact merged
+candidate; its attestation describes verified packaging, not hosted execution
+of the raw-input calculation. Retained runtime evidence must contain no Git
+ancestry. Protected consumers retrieve safe receipts and hashes, not private
+source/original archives. ADR-0018 owns the trust rationale and unchanged
+production approval/reconciliation safeguards.
 
-- After owner merge, `prepare` must validate the complete verified live baseline
-  and retained inputs, package `website/` plus `firebase.json`, and bind those
+The superseded prepare input path that downloads raw inputs from public Actions
+artifacts is incompatible with this revision. The replacement must consume only
+the safe reviewed receipt, site and authenticated baseline derivative.
+
+- After owner merge, `prepare` must verify the reviewed local source-validation
+  receipt and complete public baseline derivative, package `website/` plus
+  `firebase.json`, and bind those
   exact bytes to the actual merged commit SHA through `bind_merged_candidate`.
   A staged `PreparedPackage` has no eligible commit binding; a package with
   `candidate_commit` absent or `null` cannot enter an approved operation. Reject
@@ -320,14 +332,14 @@ described as an approved transport.
   initial live capture may have unknown source-commit provenance under
   ADR-0016; archived history alone does not establish live origin.
 - Carry the sealed package, package record/hash, baseline, publication context,
-  attestation, preparation-origin record, preparation manifest, candidate Git
-  bundle/hash, and immutable execution-source archive/hash into the protected
+  attestation, preparation-origin record, preparation manifest, local-validation
+  receipt, current-tree evidence/hash, and immutable execution-source archive/hash into the protected
   job. The preparation transport includes `package.tar.gz`/`package.sha256`,
   `package.json`/`package.json.sha256`, `baseline.json`,
   `publication-context.json`, `publication-attestation.json`,
   `preparation-origin.json`, `publication-preparation-manifest.json`,
   `baseline-public.tar.gz`, `baseline-sanitizer.json`,
-  `candidate.bundle`/`candidate.bundle.sha256`, and
+  `candidate-tree.tar.gz`/`candidate-tree.tar.gz.sha256`, and
   `execution-source.tar.gz`/`execution-source.sha256`. Its preparation artifact is
   `sportsrank-preparation-<GITHUB_SHA>`. Actions artifacts may duplicate state,
   but execute/reconcile/verify recover authority from an exact immutable sealed
@@ -337,7 +349,7 @@ described as an approved transport.
   `workflow_dispatch` on `refs/heads/main`, exact candidate/run/attempt
   identities, and package archive/package-record digests. A
   trusted bootstrap must authenticate the applicable preparation provenance, verify
-  the candidate bundle as the actual Git object graph, regenerate the execution
+  the candidate archive as the actual current Git object graph without parents, regenerate the execution
   source archive from that candidate and compare it before extraction, runtime
   installation or secret authentication. `preparation-origin.json` and hash
   files support context checks but are not standalone proof; a checksum or
@@ -356,9 +368,8 @@ described as an approved transport.
   durable evidence. Raw `baseline.tar.gz`, provider actor/auth metadata, and
   candidate Git bundles/history containing raw inputs remain private and are
   never uploaded here. Public IDs, safe digests, safe provenance, and intended
-  generated static output become public only after the private-input proof gate;
-  the current Actions transport is pending remediation under the 2026-09-24
-  policy revision.
+  generated static output become public only after the private-input proof gate.
+  Hosted preparation consumes the reviewed safe receipt, not raw input artifacts.
   The owner-approved two-dispatch procedure seals the exact intent before a
   separate fresh approved execution. Preserve its canonical reference before
   execution; it remains usable after a runner or state-upload loss.
@@ -399,8 +410,8 @@ described as an approved transport.
   snapshots, the original-prepared archive, and any Git bundle/history that
   contains them remain private durable evidence and are never uploaded as public
   artifacts. IDs, safe digests, safe provenance, and intended generated static
-  output are public only after the private-input proof gate; the current
-  Actions raw-input transport remains pending remediation.
+  output are public only after the private-input proof gate. Raw Actions inputs
+  and Git ancestry are excluded from new transports.
 - Validate against the verified live base and preserve the historical archive.
   Reconcile different base trees and provenance offline; changing a base
   identifier alone cannot make the prepared candidate valid. Immediately after
@@ -421,8 +432,8 @@ described as an approved transport.
   cannot establish state. Publish sanitized provenance only after the
   private-input proof gate, while retaining original provider actor/auth
   metadata privately with explicit source binding; raw inputs never enter
-  public Actions artifacts. The current raw-input transport remains pending
-  remediation.
+  public Actions artifacts. Historical public copies remain subject to a
+  separate owner cleanup decision.
   Independent locked backup is deferred under the accepted deletion risk.
 - Before the recovery cutover, disable the legacy automatic deployment routes
   and retire their repository-scoped deployment capability. Verify containment

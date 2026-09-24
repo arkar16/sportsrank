@@ -613,6 +613,7 @@ class AttemptIntentRecord:
     preparation_manifest_reference: ArchiveReference | None = None
     preparation_origin_reference: ArchiveReference | None = None
     candidate_bundle_reference: ArchiveReference | None = None
+    candidate_tree_reference: ArchiveReference | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -626,13 +627,23 @@ class AttemptIntentRecord:
             raise RecordValidationError("expected predecessor identity is invalid")
         if not isinstance(self.artifact_reference, ArchiveReference):
             raise RecordValidationError("artifact reference must be an immutable archive reference")
-        recovery_references = (
+        legacy_recovery_references = (
             self.package_record_reference,
             self.validation_reference,
             self.preparation_manifest_reference,
             self.preparation_origin_reference,
             self.candidate_bundle_reference,
         )
+        current_recovery_references = (
+            self.package_record_reference,
+            self.validation_reference,
+            self.preparation_manifest_reference,
+            self.preparation_origin_reference,
+            self.candidate_tree_reference,
+        )
+        if self.candidate_bundle_reference is not None and self.candidate_tree_reference is not None:
+            raise RecordValidationError("legacy and current candidate transports cannot be mixed")
+        recovery_references = current_recovery_references if self.candidate_tree_reference is not None else legacy_recovery_references
         if any(value is not None for value in recovery_references):
             if any(value is None for value in recovery_references):
                 raise RecordValidationError(
@@ -646,7 +657,7 @@ class AttemptIntentRecord:
                 (
                     "package_record_reference", "validation_reference",
                     "preparation_manifest_reference", "preparation_origin_reference",
-                    "candidate_bundle_reference",
+                    "candidate_tree_reference" if self.candidate_tree_reference is not None else "candidate_bundle_reference",
                 ),
                 normalized,
             ):
@@ -655,7 +666,11 @@ class AttemptIntentRecord:
                 getattr(self, name) for name in (
                     "package_record_reference", "validation_reference",
                     "preparation_manifest_reference", "preparation_origin_reference",
-                    "candidate_bundle_reference",
+                    (
+                        "candidate_tree_reference"
+                        if self.candidate_tree_reference is not None
+                        else "candidate_bundle_reference"
+                    ),
                 )
             )
             expected_names = {
@@ -663,7 +678,8 @@ class AttemptIntentRecord:
                 "validation_reference": "package-validation.json",
                 "preparation_manifest_reference": "publication-preparation-manifest.json",
                 "preparation_origin_reference": "preparation-origin.json",
-                "candidate_bundle_reference": "candidate.bundle",
+                ("candidate_tree_reference" if self.candidate_tree_reference is not None else "candidate_bundle_reference"):
+                    ("candidate-tree.tar.gz" if self.candidate_tree_reference is not None else "candidate.bundle"),
             }
             if any(
                 getattr(self, name).asset_name != expected
@@ -673,9 +689,13 @@ class AttemptIntentRecord:
                     "durable recovery reference asset names are invalid"
                 )
         evidence = _object(self.evidence_references, "evidence_references")
-        required_evidence = {"baseline", "source_inputs", "original_prepared"}
+        required_evidence = set() if self.candidate_tree_reference is not None else {"baseline", "source_inputs", "original_prepared"}
         if set(evidence) != required_evidence:
-            raise RecordValidationError("permanent baseline, source-input, and original-prepared references are required")
+            raise RecordValidationError(
+                "current attempts must not retain private evidence references"
+                if self.candidate_tree_reference is not None
+                else "permanent baseline, source-input, and original-prepared references are required"
+            )
         object.__setattr__(self, "evidence_references", MappingProxyType({name: ArchiveReference.from_value(value) for name, value in evidence.items()}))
         evidence_identities = {
             (reference.release_id, reference.asset_id)
@@ -760,6 +780,10 @@ class AttemptIntentRecord:
 
     @classmethod
     def create(cls, *, package: ValidatedPackageRecord, **values: Any) -> "AttemptIntentRecord":
+        if "candidate_bundle_reference" in values:
+            raise RecordValidationError(
+                "new attempt intents cannot use legacy Git-bundle transport"
+            )
         reference = ArchiveReference.from_value(values.get("artifact_reference"))
         if reference.sha256 != package.bundle_sha256:
             raise RecordValidationError("artifact reference does not bind the validated package bytes")
@@ -771,9 +795,14 @@ class AttemptIntentRecord:
                 values["package_record_reference"]
             )
             validation = ArchiveReference.from_value(values["validation_reference"])
+            candidate_reference_name = (
+                "candidate_tree_reference"
+                if "candidate_tree_reference" in values
+                else "candidate_bundle_reference"
+            )
             siblings = tuple(ArchiveReference.from_value(values[name]) for name in (
                 "preparation_manifest_reference", "preparation_origin_reference",
-                "candidate_bundle_reference",
+                candidate_reference_name,
             ))
             if package_record.sha256 != package.digest:
                 raise RecordValidationError(
@@ -790,7 +819,7 @@ class AttemptIntentRecord:
                 raise RecordValidationError(
                     "durable package evidence must share one immutable release"
                 )
-        version = 2 if "package_record_reference" in values else 1
+        version = 3 if "candidate_tree_reference" in values else (2 if "package_record_reference" in values else 1)
         return cls.from_dict({"schema_version": version, "record_type": "attempt_intent", "package_sha256": package.digest, **values}, package=package)
 
     @classmethod
@@ -802,12 +831,13 @@ class AttemptIntentRecord:
             "preparation_manifest_reference", "preparation_origin_reference",
             "candidate_bundle_reference",
         }
+        current_recovery_names = recovery_names - {"candidate_bundle_reference"} | {"candidate_tree_reference"}
         version = raw.get("schema_version")
-        if isinstance(version, bool) or not isinstance(version, int) or version not in {1, 2}:
+        if isinstance(version, bool) or not isinstance(version, int) or version not in {1, 2, 3}:
             raise RecordValidationError("unsupported attempt_intent schema_version")
         if raw.get("record_type") != "attempt_intent":
             raise RecordValidationError("expected record_type attempt_intent")
-        names = base_names if version == 1 else base_names | recovery_names
+        names = base_names if version == 1 else base_names | (current_recovery_names if version == 3 else recovery_names)
         _exact(raw, {"schema_version", "record_type", *names}, "attempt intent record")
         purpose = raw["purpose"]
         if purpose not in {"normal", "rollback", "correction"}:
@@ -837,13 +867,19 @@ class AttemptIntentRecord:
             artifact,
             MappingProxyType({str(name): ArchiveReference.from_value(v) for name, v in evidence.items()}),
             MappingProxyType({str(name): _text(value, f"protected_context.{name}") for name, value in context.items()}),
-            *(ArchiveReference.from_value(raw[name]) for name in (
+            *((ArchiveReference.from_value(raw[name]) for name in (
                 "package_record_reference", "validation_reference",
                 "preparation_manifest_reference", "preparation_origin_reference",
                 "candidate_bundle_reference",
-            )) if version == 2 else (None, None, None, None, None),
+            )) if version == 2 else (
+                *(ArchiveReference.from_value(raw[name]) for name in (
+                    "package_record_reference", "validation_reference",
+                    "preparation_manifest_reference", "preparation_origin_reference",
+                )), None,
+            ) if version == 3 else (None, None, None, None, None)),
+            None if version != 3 else ArchiveReference.from_value(raw["candidate_tree_reference"]),
         )
-        if package is not None and version == 2:
+        if package is not None and version in {2, 3}:
             if result.package_record_reference.sha256 != package.digest:  # type: ignore[union-attr]
                 raise RecordValidationError(
                     "package record reference does not bind the validated package"
@@ -856,7 +892,7 @@ class AttemptIntentRecord:
                 result.package_record_reference, result.validation_reference,
                 result.preparation_manifest_reference,
                 result.preparation_origin_reference,
-                result.candidate_bundle_reference,
+                result.candidate_tree_reference if version == 3 else result.candidate_bundle_reference,
             )
             if any(
                 (item.release_id, item.tag)
@@ -869,12 +905,13 @@ class AttemptIntentRecord:
         return result
 
     def to_dict(self) -> dict[str, Any]:
-        value = {"schema_version": 2 if self.package_record_reference is not None else 1, "record_type": "attempt_intent", "attempt_id": self.attempt_id, "purpose": self.purpose, "package_sha256": self.package_sha256, "expected_predecessor": self.expected_predecessor.to_dict(), "artifact_reference": self.artifact_reference.to_dict(), "evidence_references": {name: value.to_dict() for name, value in self.evidence_references.items()}, "protected_context": dict(self.protected_context)}
+        version = 3 if self.candidate_tree_reference is not None else (2 if self.package_record_reference is not None else 1)
+        value = {"schema_version": version, "record_type": "attempt_intent", "attempt_id": self.attempt_id, "purpose": self.purpose, "package_sha256": self.package_sha256, "expected_predecessor": self.expected_predecessor.to_dict(), "artifact_reference": self.artifact_reference.to_dict(), "evidence_references": {name: value.to_dict() for name, value in self.evidence_references.items()}, "protected_context": dict(self.protected_context)}
         if self.package_record_reference is not None:
             value.update({name: getattr(self, name).to_dict() for name in (
                 "package_record_reference", "validation_reference",
                 "preparation_manifest_reference", "preparation_origin_reference",
-                "candidate_bundle_reference",
+                "candidate_tree_reference" if version == 3 else "candidate_bundle_reference",
             )})
         return value
 

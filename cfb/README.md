@@ -156,16 +156,18 @@ The original prepared website is retained as private comparison evidence.
 Current provider-bound reconstruction uses the privately retained, hash-pinned
 source-input bundle with zero live CFBD calls. Local promotion follows
 independent acceptance; remote publication still requires owner merge and
-separate Gate 2 approval. The private storage provider and replacement
-transport are not yet selected.
+separate Gate 2 approval. The owner selected this computer for private
+retention and approved local source validation with a reviewed hash receipt.
+Implementation and acceptance of that path are tracked in SR-7.
 For a cumulative final candidate, `validate --published-site` must name the
 original Published Site, not an intermediate Release. This invokes the
 independent cumulative-chain validator and reports added, changed, and deleted
 public paths in JSON output before any explicit promotion.
 The protected publication workflow on `main` offers `prepare`, `seal-only`,
-`execute`, `reconcile`, and `verify-only`. Preparation validates the provider-
-backed baseline and retained inputs, then binds the exact site/configuration
-package to the actual merged commit. `seal-only` retains the exact package and
+`execute`, `reconcile`, and `verify-only`. Local preparation validates the
+provider-backed baseline and retained inputs. Hosted preparation verifies the
+reviewed receipt against safe site/code/configuration and input pins, then binds
+the exact package to the actual merged commit. `seal-only` retains the exact package and
 intent and emits canonical `SealedAttemptReference` JSON. A fresh separately
 owner-approved `execute` consumes that reference once. `normal`, `rollback`,
 and `correction` are purposes of the sealed attempt, not one-shot CLI routes.
@@ -182,14 +184,15 @@ retained evidence; archived history alone cannot establish live origin.
 Use `uv run --locked python -m cfb.publication_cli --help` and each operation's
 `--help` for the canonical grammar. The [publication runbook](../docs/operations/2026-season-recovery-morning.md)
 owns exact transport and recovery instructions. Its authenticated bootstrap
-verifies the actual GitHub commit/tree, candidate bundle and package/record
+verifies the actual GitHub commit/tree, current-tree evidence and package/record
 attestation before extracting runtime source, installing dependencies or using
 the gated secret. The protected runtime never checks out a mutable source ref
 or rebuilds the package. Committed `config/sr7-recovery-inputs.json` records
 trusted baseline and source-input identities independently of downloaded
-metadata; it does not authorize public raw-input transport. The current
-Actions-artifact input path is incompatible with the revised private-retention
-policy and pending remediation.
+metadata. The hosted path accepts no raw-input artifact; it consumes the
+reviewed safe website and local-validation receipt. Raw source validation runs
+locally using `uv run --locked python -m cfb.public_site export`; the `verify`
+operation checks only safe output and committed trust bindings.
 
 Public evidence is limited to intended generated static output and safe
 hashes/provenance. Raw `baseline.tar.gz`, raw source snapshots,
@@ -197,8 +200,8 @@ hashes/provenance. Raw `baseline.tar.gz`, raw source snapshots,
 provider actor/auth metadata remain private. Candidate Git bundles/history are
 subject to the same boundary when they contain raw inputs. The allowlisted
 `baseline-public.tar.gz` and `baseline-sanitizer.json` require the private-input
-proof gate before public retention; the current transport does not satisfy that
-gate. Concrete CLI adapters may make live provider/archive/approval requests;
+proof gate before public retention. Historical public snapshot copies remain
+subject to the separate cleanup decision. Concrete CLI adapters may make live provider/archive/approval requests;
 ordinary tests use offline fakes.
 `GITHUB_TOKEN` supplies authenticated provenance and approval reads,
 `FIREBASE_ACCESS_TOKEN` is confined to the protected production job, and

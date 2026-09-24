@@ -7,7 +7,7 @@ status: accepted
 Use immutable GitHub release assets in the existing repository for approved
 public site archives and safe hashes/provenance. Sanitized publication records
 are public only after the private-input proof gate; raw CFBD inputs require a
-separate private durable-retention path whose provider is not selected here.
+separate private retention path on the owner's computer for now.
 Enable and verify immutability before publishing archive releases; temporary
 Actions artifacts, editable release notes and the latest-release label are not
 durable authority.
@@ -62,8 +62,10 @@ inputs. Normalized snapshot copies retaining provider game/team records are
 subject to the same private boundary; changing schema or removing credentials
 does not turn source datasets into approved public ranking output.
 
-The private storage provider, transport, and restore mechanism have not yet
-been selected. Before publication can use retained inputs, an explicit gate
+The owner subsequently selected this computer for private retention for now.
+The owner also approved local source validation with a reviewed, hash-pinned
+receipt consumed by GitHub-hosted preparation.
+Before publication can use retained inputs, an explicit gate
 must prove all of the following against the exact pinned bytes and hashes:
 
 1. An authorized private retrieval returns the expected source snapshots and
@@ -79,5 +81,45 @@ must prove all of the following against the exact pinned bytes and hashes:
 The current prepare input path that downloads raw inputs from Actions artifacts
 is incompatible with this revision and remains pending remediation. It must not
 be described or treated as the approved private-retention solution. This
-revision changes the data-retention policy; it does not choose a replacement
-provider or transport and does not alter public URLs or CORS behavior.
+revision changes the data-retention policy and does not alter public URLs or
+CORS behavior.
+
+## Local retention selection — 2026-09-24
+
+The owner authorized implementation and verification using this computer for
+raw data for now. Keep exact original archives in a content-addressed local
+store outside Git, temporary directories and BB thread storage. Owner-only
+filesystem permissions, digest verification and an exact-byte restore drill
+are required. Missing, corrupt or insecurely stored inputs stop preparation.
+The local store does not provide an off-device backup or resilience to loss
+of this computer; no cloud provider, paid dependency or automatic migration
+is selected. Retain the prior copies until the new store passes restoration.
+
+The owner approved full local source validation followed by a reviewed public
+hash receipt. Existing recovery staging and source-derived validation run
+privately. A separate validated export replaces source payloads with strict
+provenance records while preserving reader pages and URLs. The reviewed receipt
+binds public inventory, serving configuration, validator/runtime/workflow
+source, trusted input identities, baseline and validation policy. Receipt
+generation excludes the receipt itself from the source fingerprint to avoid
+self-reference. Missing or mismatched bindings prevent hosted preparation.
+
+GitHub-hosted preparation verifies the committed receipt against the actual
+merged candidate, packages exact public-safe bytes and creates the hosted
+attestation. That attestation proves receipt verification and exact packaging;
+it does not assert that raw calculations ran on GitHub. Owner review/merge
+accepts the local validation receipt. This avoids a new cloud store, signing
+key or self-hosted runner while retaining the full local validation obligation.
+
+Retained candidate runtime evidence contains only the authenticated current
+tree and required commit identity, never ancestor payloads. Public records
+retain private evidence hashes and reviewed receipts rather than retrievable
+raw-input assets. Seal, execute and recovery do not fetch private input roles.
+Fresh owner production approval, immutable safe evidence, exact merged
+candidate binding, exclusive execution claims and live-predecessor checks
+remain required. Reconciliation and verification never deploy.
+
+Existing public release deletion and Git-history rewriting remain separate
+owner decisions. No complete historical-exposure cleanup is claimed by the
+prospective export change. Merge and production approval remain separate from
+this implementation request.

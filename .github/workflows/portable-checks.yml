@@ -44,6 +44,15 @@ jobs:
       - name: Compile the Python source
         run: uv run --locked python -m compileall -q cfb tools tests
 
+      - name: Verify the reviewed local validation receipt and public site
+        run: >-
+          uv run --locked python -m cfb.public_site verify
+          --receipt config/sr7-local-validation-receipt.json
+          --site website
+          --firebase-json firebase.json
+          --source-root .
+          --trusted-input-manifest config/sr7-recovery-inputs.json
+
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
