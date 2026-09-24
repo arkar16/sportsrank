@@ -28,11 +28,14 @@ from cfb.publication_cli import (
     _context_dict,
     _external_predecessor_reference_dict,
     _load_external_predecessor_reference,
+    _load_trusted_recovery_inputs,
     _validate_initial_baseline_exception,
     load_preparation_context,
     main,
     prepare_operation,
+    prepare_reviewed_operation,
 )
+from cfb.public_site import LocalValidationReceipt
 from cfb.publication_records import (
     AttemptIntentRecord,
     ArchiveReference,
@@ -49,6 +52,57 @@ from cfb.publication_records import (
 
 def _sha(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
+
+
+class CommittedRecoveryTrustTests(unittest.TestCase):
+    def test_committed_trust_manifest_loads_with_typed_public_references(self):
+        trust = _load_trusted_recovery_inputs(
+            Path(__file__).resolve().parents[1] / "config/sr7-recovery-inputs.json"
+        )
+        self.assertEqual(trust.baseline_public_reference.sha256, trust.baseline_public_archive_sha256)
+        self.assertEqual(trust.baseline_sanitizer_reference.sha256, trust.baseline_sanitizer_record_sha256)
+        self.assertEqual(trust.baseline_public_reference.repository, REPOSITORY)
+
+    def test_hosted_preparation_consumes_typed_committed_receipt_without_raw_inputs(self):
+        repo = Path(__file__).resolve().parents[1]
+        receipt_path = repo / "config/sr7-local-validation-receipt.json"
+        receipt = LocalValidationReceipt.from_bytes(receipt_path.read_bytes())
+        self.assertIsInstance(receipt.baseline_record, BaselineRecord)
+
+        class ReachedPackaging(Exception):
+            pass
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            tree = root / "candidate-tree.tar.gz"
+            tree.write_bytes(b"synthetic transport")
+            sanitizer = root / "sanitizer.json"
+            sanitizer.write_text("{}")
+            args = SimpleNamespace(
+                candidate_root=repo, candidate_commit="a" * 40,
+                candidate_tree_archive=tree, candidate_tree_sha256=_sha(tree.read_bytes()),
+                firebase_json=repo / "firebase.json", local_validation_receipt=receipt_path,
+                trusted_input_manifest=repo / "config/sr7-recovery-inputs.json",
+                baseline_public_archive=root / "safe-baseline.tar.gz",
+                baseline_sanitizer_record=sanitizer, output_directory=root / "output",
+            )
+            with patch.dict(os.environ, {"GITHUB_SHA": "a" * 40}), patch(
+                "cfb.publication_cli._verify_candidate_tree"
+            ), patch(
+                "cfb.publication_cli.verify_local_receipt", return_value=receipt
+            ), patch(
+                "cfb.publication_cli.import_sanitized_baseline",
+                return_value=SimpleNamespace(close=lambda: None),
+            ), patch(
+                "cfb.publication_cli.RecoveryInputBundle.from_directory",
+                side_effect=AssertionError("hosted preparation opened raw inputs"),
+            ), patch(
+                "cfb.publication_cli.prepare_reviewed_package",
+                side_effect=ReachedPackaging,
+            ) as package:
+                with self.assertRaises(ReachedPackaging):
+                    prepare_reviewed_operation(args)
+                self.assertEqual(package.call_args.kwargs["expected_predecessor"], receipt.expected_predecessor)
 
 
 def _inventory(site: Path) -> str:

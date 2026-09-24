@@ -177,9 +177,8 @@ class PreparationContext:
 class TrustedRecoveryInputs:
     """Reviewed SR7 input identities loaded from the exact candidate tree.
 
-    The downloaded input artifact remains transport only.  Its bytes are
-    accepted only when they match this tracked manifest; no digest or byte
-    count from the downloaded artifact becomes an authority.
+    Raw input hashes bind local validation. Hosted preparation retrieves only
+    the pinned public baseline derivative and safe provenance.
     """
 
     path: Path
@@ -255,9 +254,8 @@ def _require_commit(value: Any, name: str) -> str:
 def _load_trusted_recovery_inputs(path: str | Path) -> TrustedRecoveryInputs:
     """Load the reviewed SR7 input identities from the candidate source tree.
 
-    This file is intentionally separate from the retained-input artifact.  A
-    caller may choose the artifact run and filename, but cannot choose the
-    archive, raw snapshot, or public baseline identities accepted by prepare.
+    This file independently pins the private validation identities and the
+    public baseline evidence accepted by hosted preparation.
     The workflow supplies this path from the attested, immutable execution
     source; callers cannot override it through dispatch text.
     """
@@ -1025,13 +1023,12 @@ def prepare_reviewed_operation(args: argparse.Namespace) -> Path:
             args.trusted_input_manifest,
             code_root=candidate_root,
         )
-        baseline_record_raw = receipt.baseline_record
+        baseline_record = receipt.baseline_record
         predecessor_raw = receipt.expected_predecessor
-        if baseline_record_raw is None or predecessor_raw is None:
+        if baseline_record is None or predecessor_raw is None:
             raise PublicationCLIError(
                 "local-validation receipt lacks the baseline identity"
             )
-        baseline_record = BaselineRecord.from_dict(baseline_record_raw)
         predecessor = ProviderIdentity.from_value(predecessor_raw, target=TARGET)
         expected_baseline = _require_sha(
             receipt.expected_baseline_sha256, "receipt baseline record"

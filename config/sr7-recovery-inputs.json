@@ -46,7 +46,9 @@
       "sha256": "0e8cda0c3042b02f96f4c5ae12a502944b2f9742fa768b257616e171399eaa20",
       "size": 31679403,
       "tag": "sr16-retained-adapter-v2-aa6dcf7c54b6-baseline-sanitized",
-      "target_commit": "aa6dcf7c54b66a8bc68973f01751967b7634ecae"
+      "target_commit": "aa6dcf7c54b66a8bc68973f01751967b7634ecae",
+      "schema_version": 1,
+      "record_type": "archive_reference"
     },
     "baseline_sanitizer": {
       "asset_id": "578967345",
@@ -57,7 +59,9 @@
       "sha256": "d27c90bdc13b76169934543543613b5f225ae688457149677e17758d32d71063",
       "size": 1191590,
       "tag": "sr16-retained-adapter-v2-aa6dcf7c54b6-baseline-sanitized",
-      "target_commit": "aa6dcf7c54b66a8bc68973f01751967b7634ecae"
+      "target_commit": "aa6dcf7c54b66a8bc68973f01751967b7634ecae",
+      "schema_version": 1,
+      "record_type": "archive_reference"
     }
   },
   "evidence_archives": {
