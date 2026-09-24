@@ -38,57 +38,97 @@ def _run(repository: Path, *arguments: str, input_bytes: bytes | None = None) ->
         raise CandidateTreeError("cannot read the candidate Git tree") from exc
 
 
-def _object_bytes(repository: Path, oid: str) -> tuple[str, bytes]:
-    kind = _run(repository, "cat-file", "-t", oid).decode("ascii").strip()
-    if kind not in {"commit", "tree", "blob"}:
-        raise CandidateTreeError("candidate tree contains an unsupported Git object")
-    return kind, _run(repository, "cat-file", kind, oid)
-
-
 def _object_id(kind: str, value: bytes) -> str:
     return hashlib.sha1(f"{kind} {len(value)}\0".encode("ascii") + value).hexdigest()
+
+
+def _read_objects(
+    repository: Path, object_ids: set[str] | list[str] | tuple[str, ...]
+) -> dict[str, tuple[str, bytes]]:
+    requested = sorted(set(object_ids))
+    if not requested or any(not _SHA.fullmatch(oid) for oid in requested):
+        raise CandidateTreeError("candidate Git object request is invalid")
+    stream = _run(
+        repository, "cat-file", "--batch",
+        input_bytes=("\n".join(requested) + "\n").encode("ascii"),
+    )
+    offset = 0
+    objects: dict[str, tuple[str, bytes]] = {}
+    for expected_oid in requested:
+        newline = stream.find(b"\n", offset)
+        if newline < 0:
+            raise CandidateTreeError("candidate Git object batch is truncated")
+        try:
+            oid, kind, size_text = stream[offset:newline].decode("ascii").split(" ")
+            size = int(size_text)
+        except (UnicodeDecodeError, ValueError) as exc:
+            raise CandidateTreeError("candidate Git object header is malformed") from exc
+        if (
+            oid != expected_oid
+            or kind not in {"commit", "tree", "blob"}
+            or size < 0
+        ):
+            raise CandidateTreeError("candidate Git object header is invalid")
+        body_start = newline + 1
+        body_end = body_start + size
+        if body_end >= len(stream) or stream[body_end:body_end + 1] != b"\n":
+            raise CandidateTreeError("candidate Git object batch is truncated")
+        body = stream[body_start:body_end]
+        if _object_id(kind, body) != oid:
+            raise CandidateTreeError("candidate Git object failed identity verification")
+        objects[oid] = (kind, body)
+        offset = body_end + 1
+    if offset != len(stream):
+        raise CandidateTreeError("candidate Git object batch has unexpected output")
+    return objects
 
 
 def _tree_objects(repository: Path, tree: str) -> tuple[set[str], list[dict[str, str]]]:
     objects = {tree}
     files: list[dict[str, str]] = []
-
-    def visit(tree_oid: str, prefix: str) -> None:
-        raw = _run(repository, "ls-tree", "-z", tree_oid)
-        for entry in raw.split(b"\0"):
-            if not entry:
-                continue
-            try:
-                meta, name_bytes = entry.split(b"\t", 1)
-                mode, kind, oid = meta.decode("ascii").split(" ")
-                name = name_bytes.decode("utf-8")
-            except (ValueError, UnicodeDecodeError) as exc:
-                raise CandidateTreeError("candidate tree entry is malformed") from exc
-            path = f"{prefix}{name}"
-            if PurePosixPath(path).is_absolute() or ".." in PurePosixPath(path).parts:
-                raise CandidateTreeError("candidate tree path is unsafe")
-            objects.add(oid)
-            if kind == "tree":
-                if mode != "040000":
-                    raise CandidateTreeError("candidate directory mode is invalid")
-                visit(oid, path + "/")
-            elif kind == "blob":
-                if mode not in {"100644", "100755"}:
-                    raise CandidateTreeError(
-                        "candidate tree contains a symlink or unsupported file mode"
-                    )
-                files.append({"path": path, "mode": mode, "object": oid})
-            else:
-                raise CandidateTreeError("candidate tree contains a non-file entry")
-
-    visit(tree, "")
+    raw = _run(repository, "ls-tree", "-r", "-t", "-z", tree)
+    paths: set[str] = set()
+    for entry in raw.split(b"\0"):
+        if not entry:
+            continue
+        try:
+            meta, path_bytes = entry.split(b"\t", 1)
+            mode, kind, oid = meta.decode("ascii").split(" ")
+            path = path_bytes.decode("utf-8")
+        except (ValueError, UnicodeDecodeError) as exc:
+            raise CandidateTreeError("candidate tree entry is malformed") from exc
+        if (
+            not path
+            or path in paths
+            or PurePosixPath(path).is_absolute()
+            or ".." in PurePosixPath(path).parts
+            or not _SHA.fullmatch(oid)
+        ):
+            raise CandidateTreeError("candidate tree path is unsafe")
+        paths.add(path)
+        objects.add(oid)
+        if kind == "tree":
+            if mode != "040000":
+                raise CandidateTreeError("candidate directory mode is invalid")
+        elif kind == "blob":
+            if mode not in {"100644", "100755"}:
+                raise CandidateTreeError(
+                    "candidate tree contains a symlink or unsupported file mode"
+                )
+            files.append({"path": path, "mode": mode, "object": oid})
+        else:
+            raise CandidateTreeError("candidate tree contains a non-file entry")
     return objects, sorted(files, key=lambda item: item["path"])
 
 
-def _assert_public_safe(repository: Path, files: list[dict[str, str]]) -> None:
+def _assert_public_safe(
+    files: list[dict[str, str]], objects: dict[str, tuple[str, bytes]]
+) -> None:
     for item in files:
         path = item["path"]
-        value = _run(repository, "cat-file", "blob", item["object"])
+        kind, value = objects[item["object"]]
+        if kind != "blob":
+            raise CandidateTreeError("candidate file object is not a blob")
         try:
             assert_public_bytes(path, value)
         except ValueError as exc:
@@ -105,7 +145,7 @@ def create_candidate_tree_archive(
     repo = Path(repository).resolve()
     if not _SHA.fullmatch(candidate_commit):
         raise CandidateTreeError("candidate commit must be an exact SHA")
-    kind, commit_bytes = _object_bytes(repo, candidate_commit)
+    kind, commit_bytes = _read_objects(repo, {candidate_commit})[candidate_commit]
     if kind != "commit":
         raise CandidateTreeError("candidate identity is not a commit")
     tree_line = next(
@@ -117,14 +157,13 @@ def create_candidate_tree_archive(
     if not _SHA.fullmatch(tree):
         raise CandidateTreeError("candidate root tree identity is invalid")
     object_ids, files = _tree_objects(repo, tree)
-    _assert_public_safe(repo, files)
     object_ids.add(candidate_commit)
+    object_values = _read_objects(repo, object_ids)
+    _assert_public_safe(files, object_values)
     objects: list[dict[str, object]] = []
     encoded: dict[str, bytes] = {}
     for oid in sorted(object_ids):
-        object_kind, value = _object_bytes(repo, oid)
-        if _object_id(object_kind, value) != oid:
-            raise CandidateTreeError("candidate Git object failed identity verification")
+        object_kind, value = object_values[oid]
         objects.append({"object": oid, "type": object_kind, "size": len(value)})
         encoded[oid] = zlib.compress(
             f"{object_kind} {len(value)}\0".encode("ascii") + value
@@ -234,9 +273,11 @@ def materialize_candidate_tree_archive(
     except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError, tarfile.TarError, subprocess.CalledProcessError, zlib.error) as exc:
         raise CandidateTreeError("candidate tree archive is invalid") from exc
     # Git independently authenticates the commit and exact recursive path/mode/object map.
-    if _run(target, "cat-file", "-t", candidate_commit).strip() != b"commit":
+    declared = {item["object"] for item in raw["objects"]}
+    materialized_objects = _read_objects(target, declared)
+    commit_kind, materialized_commit = materialized_objects[candidate_commit]
+    if commit_kind != "commit":
         raise CandidateTreeError("candidate commit object is unavailable")
-    _commit_kind, materialized_commit = _object_bytes(target, candidate_commit)
     tree_line = next(
         (line for line in materialized_commit.splitlines() if line.startswith(b"tree ")),
         None,
@@ -248,14 +289,13 @@ def materialize_candidate_tree_archive(
         raise CandidateTreeError("candidate root tree differs from the commit")
     reachable, actual_files = _tree_objects(target, actual_tree)
     reachable.add(candidate_commit)
-    declared = {item["object"] for item in raw["objects"]}
     if reachable != declared:
         raise CandidateTreeError(
             "candidate archive contains missing or unreachable Git objects"
         )
     if actual_files != raw["files"]:
         raise CandidateTreeError("candidate file tree differs from its manifest")
-    _assert_public_safe(target, actual_files)
+    _assert_public_safe(actual_files, materialized_objects)
     return target
 
 

@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+from cfb import candidate_tree
 from cfb.candidate_tree import (
     CandidateTreeError,
     create_candidate_tree_archive,
@@ -189,6 +190,26 @@ class CandidateCurrentTreeTests(unittest.TestCase):
             archive = root / "candidate-tree.tar.gz"
             create_candidate_tree_archive(repo, _git(repo, "rev-parse", "HEAD"), archive)
             self.assertTrue(archive.is_file())
+
+    def test_creation_uses_bounded_git_processes_for_many_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            repo, _parent, _commit = self._repository(root)
+            many = repo / "many"
+            many.mkdir()
+            for index in range(200):
+                (many / f"file-{index:03d}.txt").write_text(
+                    f"safe public value {index}\n", encoding="utf-8"
+                )
+            _git(repo, "add", ".")
+            _git(repo, "commit", "--quiet", "-m", "many files")
+            with patch("cfb.candidate_tree._run", wraps=candidate_tree._run) as run:
+                create_candidate_tree_archive(
+                    repo,
+                    _git(repo, "rev-parse", "HEAD"),
+                    root / "candidate-tree.tar.gz",
+                )
+            self.assertEqual(run.call_count, 3)
 
 
 if __name__ == "__main__":
