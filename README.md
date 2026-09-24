@@ -73,8 +73,9 @@ merge. It provides `prepare`, `seal-only`, `execute`, `reconcile`, and
 each provider write follows the same two-dispatch procedure.
 
 Preparation independently validates the complete provider-backed baseline and
-retained recovery inputs, packages `website/` plus `firebase.json`, and binds
-those exact bytes to the actual merged commit. The protected `seal-only`
+privately retrieved retained recovery inputs after the private-input gate,
+packages `website/` plus `firebase.json`, and binds those exact bytes to the
+actual merged commit. The protected `seal-only`
 dispatch retains the package, provenance and attempt intent in immutable GitHub
 releases and returns the exact canonical sealed reference. A separate fresh
 owner-approved `execute` dispatch consumes that reference once, rechecks the
@@ -97,10 +98,16 @@ authority. A consumed or uncertain attempt requires reconciliation and a newly
 sealed, separately approved attempt for any further write. Failed verification
 pauses ordinary publication; there is no automatic rollback.
 
-The committed `config/sr7-recovery-inputs.json` pins trusted input identities.
-Public transport contains only the accepted sanitized baseline derivative and
-allowlisted provenance; raw provider actor/auth metadata remains private. The
-separately retained source-input archive is public historical evidence.
+The committed `config/sr7-recovery-inputs.json` records trusted input
+identities; it does not make raw bytes public or replace private retrieval.
+Public releases and artifacts are limited to intended generated static output
+and safe hashes/provenance. Raw CFBD source snapshots, the original-prepared
+archive containing them, provider actor/auth metadata, and any Git bundle or
+history containing that raw data remain in private durable storage. The current
+Actions-artifact raw-input transport is incompatible with this policy and
+pending remediation; the private storage provider and replacement transport
+are not yet selected. See the [ADR-0018 retention gate](docs/adr/0018-retain-publication-evidence-in-github-releases.md)
+and [publication runbook](docs/operations/2026-season-recovery-morning.md).
 Concrete operational commands may read or write GitHub/Firebase; offline tests
 use fakes and no CFBD key. Local hosting commands are emulator-only.
 

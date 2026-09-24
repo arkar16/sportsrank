@@ -287,6 +287,30 @@ reconstruction and final-head acceptance under SR-16. Gate 2 remains separate.
 
 ### Exact-artifact publication
 
+#### Data-retention policy revision — 2026-09-24
+
+The owner reverses the earlier interpretation that separately retained source
+inputs could be public historical evidence. Raw CFBD source snapshots and any
+original-prepared archive containing them are private durable evidence. Git
+bundles and Git history fall under the same boundary when they contain those
+snapshots, as do nested copies in archives or transports. Public immutable
+releases may carry intended generated static output and safe hashes/provenance
+only. This policy does not change public URLs, CORS behavior, or any preserved
+snapshot hash.
+
+The private storage provider, transport, and restore mechanism are not yet
+selected. Before the publication path can use retained inputs, the owner must
+accept a proof gate covering authorized private retrieval, SHA-256 verification
+against the committed pins, exact-byte restore, and access-control/audit
+behavior that prevents public readers and unapproved workflow contexts from
+retrieving raw inputs. Missing, mismatched, unrestorable, or exposed evidence
+fails closed.
+
+The current prepare input path that downloads raw inputs from public Actions
+artifacts is incompatible with this revision and pending remediation. It is
+not evidence that private retention has been implemented, and it must not be
+described as an approved transport.
+
 - After owner merge, `prepare` must validate the complete verified live baseline
   and retained inputs, package `website/` plus `firebase.json`, and bind those
   exact bytes to the actual merged commit SHA through `bind_merged_candidate`.
@@ -326,14 +350,15 @@ reconstruction and final-head acceptance under SR-16. Gate 2 remains separate.
   `baseline-sanitizer.json` record. The committed schema-1
   `config/sr7-recovery-inputs.json` manifest (`record_type`
   `sr7_recovery_input_trust`) from the exact candidate tree independently pins
-  baseline private/public/sanitizer and source-input
-  identities; downloaded artifact metadata cannot replace those pins.
-  `source-inputs.tar.gz` is excluded from this publication transport; its
-  separately retained archive is intentional public historical evidence under
-  SR-11. Raw `baseline.tar.gz` and provider actor/auth metadata remain private
-  task evidence and are never uploaded here. Public IDs, digests, `baseline.json`,
-  and accepted sanitized records are intentional evidence in public Actions
-  artifacts.
+  private baseline/source-input identities and any safe derivative identities;
+  downloaded artifact metadata cannot replace those pins. `source-inputs.tar.gz`
+  and any original-prepared archive containing raw snapshots remain private
+  durable evidence. Raw `baseline.tar.gz`, provider actor/auth metadata, and
+  candidate Git bundles/history containing raw inputs remain private and are
+  never uploaded here. Public IDs, safe digests, safe provenance, and intended
+  generated static output become public only after the private-input proof gate;
+  the current Actions transport is pending remediation under the 2026-09-24
+  policy revision.
   The owner-approved two-dispatch procedure seals the exact intent before a
   separate fresh approved execution. Preserve its canonical reference before
   execution; it remains usable after a runner or state-upload loss.
@@ -370,12 +395,12 @@ reconstruction and final-head acceptance under SR-16. Gate 2 remains separate.
   `CFBD_API_KEY` is absent. The owner's production approval is required; agents
   never approve on the owner's behalf.
 - Workflow summaries expose sanitized target, operation, state, and digest
-  identity. Raw provider actor/auth evidence and the original
-  `baseline.tar.gz` remain private task evidence and are never uploaded as
-  public artifacts. The separately retained source-input archive is public
-  historical evidence under SR-11 and is outside this publication transport.
-  IDs, digests, `baseline.json`, and accepted sanitized records are intentionally
-  public evidence.
+  identity. Raw provider actor/auth evidence, `baseline.tar.gz`, raw source
+  snapshots, the original-prepared archive, and any Git bundle/history that
+  contains them remain private durable evidence and are never uploaded as public
+  artifacts. IDs, safe digests, safe provenance, and intended generated static
+  output are public only after the private-input proof gate; the current
+  Actions raw-input transport remains pending remediation.
 - Validate against the verified live base and preserve the historical archive.
   Reconcile different base trees and provenance offline; changing a base
   identifier alone cannot make the prepared candidate valid. Immediately after
@@ -389,13 +414,15 @@ reconstruction and final-head acceptance under SR-16. Gate 2 remains separate.
   separately; after an interruption, reconcile provider state before any new
   publication. A failed post-deployment check pauses ordinary publication;
   rollback is an explicit approved publication, never an automatic action.
-- Use GitHub immutable release assets under ADR-0018. Seal the artifact and
-  intent before deployment, then append separate immutable provider-result and
-  verification records. Verify immutability, retrieval and hashes; mutable
-  notes or labels cannot establish state. Publish only the allowlisted
-  sanitized provenance while retaining original provider actor/auth metadata
-  privately with explicit source binding; those originals never enter public
-  Actions artifacts.
+- Use GitHub immutable release assets under ADR-0018 for approved generated
+  static output and safe hashes/provenance. Seal the artifact and intent before
+  deployment, then append separate immutable provider-result and verification
+  records. Verify immutability, retrieval and hashes; mutable notes or labels
+  cannot establish state. Publish sanitized provenance only after the
+  private-input proof gate, while retaining original provider actor/auth
+  metadata privately with explicit source binding; raw inputs never enter
+  public Actions artifacts. The current raw-input transport remains pending
+  remediation.
   Independent locked backup is deferred under the accepted deletion risk.
 - Before the recovery cutover, disable the legacy automatic deployment routes
   and retire their repository-scoped deployment capability. Verify containment

@@ -152,10 +152,12 @@ manifest and run `validate` before the explicit `promote` step. Promotion is
 local and should be followed by committing the reviewed `website/` tree, then
 using the protected, manual **Publish validated static site to Firebase Hosting**
 workflow only after production approval.
-The original prepared website is retained as comparison evidence. Current
-provider-bound reconstruction uses the pinned source-input bundle with zero
-live CFBD calls. Local promotion follows independent acceptance; remote
-publication still requires owner merge and separate Gate 2 approval.
+The original prepared website is retained as private comparison evidence.
+Current provider-bound reconstruction uses the privately retained, hash-pinned
+source-input bundle with zero live CFBD calls. Local promotion follows
+independent acceptance; remote publication still requires owner merge and
+separate Gate 2 approval. The private storage provider and replacement
+transport are not yet selected.
 For a cumulative final candidate, `validate --published-site` must name the
 original Published Site, not an intermediate Release. This invokes the
 independent cumulative-chain validator and reports added, changed, and deleted
@@ -183,14 +185,21 @@ owns exact transport and recovery instructions. Its authenticated bootstrap
 verifies the actual GitHub commit/tree, candidate bundle and package/record
 attestation before extracting runtime source, installing dependencies or using
 the gated secret. The protected runtime never checks out a mutable source ref
-or rebuilds the package. Committed `config/sr7-recovery-inputs.json` pins trusted
-baseline and source-input identities independently of downloaded metadata.
+or rebuilds the package. Committed `config/sr7-recovery-inputs.json` records
+trusted baseline and source-input identities independently of downloaded
+metadata; it does not authorize public raw-input transport. The current
+Actions-artifact input path is incompatible with the revised private-retention
+policy and pending remediation.
 
-Public evidence uses the allowlisted `baseline-public.tar.gz` and
-`baseline-sanitizer.json`; raw `baseline.tar.gz` and provider actor/auth metadata
-remain private. The separately archived source inputs are public historical
-evidence and excluded from publication transport. Concrete CLI adapters may
-make live provider/archive/approval requests; ordinary tests use offline fakes.
+Public evidence is limited to intended generated static output and safe
+hashes/provenance. Raw `baseline.tar.gz`, raw source snapshots,
+`source-inputs.tar.gz`, the original-prepared archive containing them, and
+provider actor/auth metadata remain private. Candidate Git bundles/history are
+subject to the same boundary when they contain raw inputs. The allowlisted
+`baseline-public.tar.gz` and `baseline-sanitizer.json` require the private-input
+proof gate before public retention; the current transport does not satisfy that
+gate. Concrete CLI adapters may make live provider/archive/approval requests;
+ordinary tests use offline fakes.
 `GITHUB_TOKEN` supplies authenticated provenance and approval reads,
 `FIREBASE_ACCESS_TOKEN` is confined to the protected production job, and
 `CFBD_API_KEY` is absent. A Pi-local path is never passed to a runner.

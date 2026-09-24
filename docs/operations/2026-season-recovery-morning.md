@@ -33,7 +33,7 @@ The workflow exposes five manual operations on `main`:
 
 | Operation | Effect |
 | --- | --- |
-| `prepare` | Independently validate retained inputs and the complete baseline; package site/configuration once and bind it to the actual merged commit. |
+| `prepare` | Once the private-input gate is satisfied, independently validate privately retrieved inputs and the complete baseline; package site/configuration once and bind it to the actual merged commit. |
 | `seal-only` | Retain the exact package, provenance and intent in immutable archives; return its canonical sealed reference. |
 | `execute` | Under fresh owner approval, consume that exact reference once and publish its validated bytes. |
 | `reconcile` | Retrieve sealed evidence and freshly observe actual Firebase state without deploying. |
@@ -60,15 +60,23 @@ with `candidate_commit` absent or `null` is ineligible. After owner merge,
 repeat preparation and independent validation against the actual merged SHA,
 even when its site bytes match the reviewed branch.
 
-The `sportsrank-preparation-<GITHUB_SHA>` transport includes exact package and
-record bytes/hashes, `baseline.json`, `publication-context.json`,
-`publication-attestation.json`, `preparation-origin.json`,
-`publication-preparation-manifest.json`, candidate Git bundle/hash, and runtime
-source archive/hash. `baseline-public.tar.gz` and `baseline-sanitizer.json`
-carry the allowlisted public baseline derivative. The committed schema-1
-`config/sr7-recovery-inputs.json` (`sr7_recovery_input_trust`) independently pins
-baseline private/public/sanitizer and retained source-input identities;
-downloaded metadata cannot authorize itself.
+The existing `sportsrank-preparation-<GITHUB_SHA>` design describes exact
+package and record bytes/hashes, `baseline.json`,
+`publication-context.json`, `publication-attestation.json`,
+`preparation-origin.json`, `publication-preparation-manifest.json`, a
+candidate Git bundle/hash, and a runtime source archive/hash. That Actions
+input transport is **incompatible with the 2026-09-24 retention policy and
+pending remediation** whenever it carries raw CFBD snapshots, an
+original-prepared archive, or Git bundles/history containing them. The same
+boundary applies to nested copies in archives and transports. It must not be
+used as the approved source of raw inputs until the private-input gate below
+has passed.
+
+The committed schema-1 `config/sr7-recovery-inputs.json`
+(`sr7_recovery_input_trust`) records expected identities for private baseline,
+source-input, sanitizer, and related evidence; hashes and downloaded metadata
+cannot authorize or replace private byte retrieval. The private storage
+provider, transport, and restore mechanism remain undecided.
 
 Before extracting runtime code, installing dependencies or using credentials,
 the trusted workflow bootstrap verifies authenticated GitHub run provenance,
@@ -81,11 +89,31 @@ they do not establish trust alone. The runtime reauthenticates provenance and
 Git objects before package use. The protected job never checks out a mutable
 source ref or rebuilds the site package.
 
-Public transport excludes original `baseline.tar.gz`, provider actor/auth
-metadata and `source-inputs.tar.gz`. Original provider evidence remains private;
-the separately archived source inputs are intentional public historical
-evidence. Public IDs, hashes, baseline records and sanitized derivatives are
-intentional evidence. Never upload credentials or raw account metadata.
+Public transport may contain intended generated static output and safe
+hashes/provenance only. Raw CFBD source snapshots, `baseline.tar.gz`,
+`source-inputs.tar.gz`, and any original-prepared archive containing them remain
+private durable evidence. Candidate Git bundles or Git history are private
+whenever they contain that raw data; provider actor/auth metadata and
+credentials are private as well. A sanitized derivative is eligible for public
+retention only after the private-input gate proves that it contains no raw
+snapshot or nested original-prepared content. Never upload raw inputs or
+account metadata to public Actions artifacts, logs, release assets, or pages.
+
+Normalized snapshots retaining provider game/team records are also private;
+schema conversion alone is not sanitization. Audit current packages and Git
+history as well as new uploads. Existing exposure requires an explicit
+remediation decision before claiming this boundary is satisfied.
+
+### Private-input proof gate
+
+Before `prepare` can be approved, document an owner-approved private durable
+store and verify authorized retrieval, SHA-256 checks against the committed
+pins, a restore drill that reproduces the exact bytes, and access
+control/audit behavior that blocks public readers and unapproved workflow
+contexts. Missing, inaccessible, mismatched, or unexpectedly exposed private
+evidence fails closed. Until that evidence exists, the current `input_run_id`
+and `input_artifact_name` Actions-artifact path is a pending implementation
+gap, not an approved transport.
 
 ## First-publication readiness
 
