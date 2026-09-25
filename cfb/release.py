@@ -293,6 +293,16 @@ def _page(title: str, timestamp: str, body: str, links: Sequence[tuple[str, str]
     )
 
 
+def _home_year_from_href(href: str) -> int | None:
+    """Return the season for a canonical home-page season link."""
+
+    path = urlparse(href).path.lstrip("/")
+    match = re.fullmatch(r"years/(\d{4})/(\d{4})_CFB\.html", path)
+    if match is None or match.group(1) != match.group(2):
+        return None
+    return int(match.group(1))
+
+
 def _snapshot_payload(snapshot: SeasonSnapshot) -> dict[str, Any]:
     schema_version = int(snapshot.metadata.get("schema_version", 2) or 2)
     return {
@@ -1466,7 +1476,7 @@ class ReleaseBuilder:
         home_links = [(item["label"], item["href"]) for item in merged_navigation]
         home_links.extend(
             (
-                (str(year), f"years/{year}/{year}_CFB.html"),
+                (f"Link to {year} {classification} CFB", f"years/{year}/{year}_CFB.html"),
                 ("National champions", f"years/history/nc_{classification}_CFB_output.html"),
                 ("Worst teams", f"years/history/wt_{classification}_CFB_output.html"),
             )
@@ -1478,6 +1488,16 @@ class ReleaseBuilder:
                 continue
             seen_home_hrefs.add(href)
             deduped_home_links.append((label, href))
+        year_links = sorted(
+            (item for item in deduped_home_links if _home_year_from_href(item[1]) is not None),
+            key=lambda item: _home_year_from_href(item[1]) or 0,
+            reverse=True,
+        )
+        year_iterator = iter(year_links)
+        deduped_home_links = [
+            next(year_iterator) if _home_year_from_href(item[1]) is not None else item
+            for item in deduped_home_links
+        ]
         write(
             "cfb/cfb.html",
             _page(

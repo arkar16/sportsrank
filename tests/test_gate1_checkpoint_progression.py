@@ -156,6 +156,86 @@ def _write_legacy_history(base: Path, *, year: int) -> None:
 
 
 class Gate1CheckpointProgressionTests(unittest.TestCase):
+    def test_cfb_home_lists_new_and_inherited_years_in_descending_order(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            base = _base(root, prior_year=2023)
+            home = base / "cfb/cfb.html"
+            home.parent.mkdir(parents=True, exist_ok=True)
+            home.write_text(
+                "<html><body>"
+                '<a href="years/history/nc_FBS_CFB_output.html">National champions</a>'
+                '<a href="years/2023/2023_CFB.html">Link to 2023 FBS CFB</a>'
+                '<a href="years/2022/2022_CFB.html">Link to 2022 FBS CFB</a>'
+                "</body></html>",
+                encoding="utf-8",
+            )
+            for year in (2023, 2022):
+                legacy_year = base / f"cfb/years/{year}/{year}_CFB.html"
+                legacy_year.parent.mkdir(parents=True, exist_ok=True)
+                legacy_year.write_text(f"<html><body>{year}</body></html>", encoding="utf-8")
+            prior = PreviousFinal(
+                {"Alpha State": 10.0, "Beta Tech": 8.0},
+                {"Alpha State": 0.0, "Beta Tech": 0.0},
+                year=2023,
+                classification="FBS",
+            )
+
+            first = build_release(
+                _season_snapshot(year=2024, complete_through_week=1, w0_score=(31, 20), w1_score=(17, 10)),
+                root / "final-2024",
+                release_id="final-2024",
+                phase="final",
+                target_week=1,
+                previous_final=prior,
+                published_site=base,
+                timestamp=STAMP,
+            )
+            first_home = BeautifulSoup(
+                (first.site / "cfb/cfb.html").read_text(encoding="utf-8"),
+                "html.parser",
+            )
+            first_year_links = [
+                (anchor.get_text(strip=True), anchor["href"])
+                for anchor in first_home.find_all("a", href=True)
+                if anchor["href"].startswith("years/") and "/history/" not in anchor["href"]
+            ]
+            self.assertEqual(
+                first_year_links,
+                [
+                    ("Link to 2024 FBS CFB", "years/2024/2024_CFB.html"),
+                    ("Link to 2023 FBS CFB", "years/2023/2023_CFB.html"),
+                    ("Link to 2022 FBS CFB", "years/2022/2022_CFB.html"),
+                ],
+            )
+
+            second = build_release(
+                _season_snapshot(year=2025, complete_through_week=-1),
+                root / "preseason-2025",
+                release_id="preseason-2025",
+                phase="preseason",
+                published_site=first.site,
+                timestamp=STAMP,
+            )
+            second_home = BeautifulSoup(
+                (second.site / "cfb/cfb.html").read_text(encoding="utf-8"),
+                "html.parser",
+            )
+            second_year_links = [
+                (anchor.get_text(strip=True), anchor["href"])
+                for anchor in second_home.find_all("a", href=True)
+                if anchor["href"].startswith("years/") and "/history/" not in anchor["href"]
+            ]
+            self.assertEqual(
+                second_year_links,
+                [
+                    ("Link to 2025 FBS CFB", "years/2025/2025_CFB.html"),
+                    ("Link to 2024 FBS CFB", "years/2024/2024_CFB.html"),
+                    ("Link to 2023 FBS CFB", "years/2023/2023_CFB.html"),
+                    ("Link to 2022 FBS CFB", "years/2022/2022_CFB.html"),
+                ],
+            )
+
     def test_preseason_w0_w1_final_progression_preserves_history_and_latest_scores(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
