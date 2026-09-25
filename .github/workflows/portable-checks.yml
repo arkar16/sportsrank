@@ -1,0 +1,67 @@
+name: Portable offline checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Run locked offline checks
+    runs-on: ubuntu-latest
+    env:
+      CFBD_API: ""
+      CFBD_API_KEY: ""
+    steps:
+      - name: Check out the submitted tree
+        uses: actions/checkout@v6
+
+      - name: Configure runner-local package caches
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "UV_CACHE_DIR=$RUNNER_TEMP/sportsrank-uv-cache" >> "$GITHUB_ENV"
+          echo "npm_config_cache=$RUNNER_TEMP/sportsrank-npm-cache" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/sportsrank-uv-cache" "$RUNNER_TEMP/sportsrank-npm-cache"
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: true
+
+      - name: Install locked Python dependencies
+        run: uv sync --locked
+
+      - name: Run the offline Python suite
+        run: uv run --locked python -m unittest discover -s tests -v
+
+      - name: Compile the Python source
+        run: uv run --locked python -m compileall -q cfb tools tests
+
+      - name: Verify the reviewed local validation receipt and public site
+        run: >-
+          uv run --locked python -m cfb.public_site verify
+          --receipt config/sr7-local-validation-receipt.json
+          --site website
+          --firebase-json firebase.json
+          --source-root .
+          --trusted-input-manifest config/sr7-recovery-inputs.json
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install locked hosting dependencies
+        run: npm ci
+
+      - name: Check static hosting tree
+        run: npm run build
