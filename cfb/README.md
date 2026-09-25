@@ -17,8 +17,10 @@ uv sync --locked
 export SPORTSRANK_DATA_DIR="$PWD/.sportsrank"
 ```
 
-Set `CFBD_API_KEY` only in the local terminal that performs a fetch. The
-adapter reads it as a bearer token and the request meter stores credential-free
+Configure `CFBD_API` in the BB environment variables settings for authorized
+local fetches. BB supplies it to the process environment; the adapter reads it
+as a bearer token without a dotenv file or legacy-variable fallback. The
+request meter stores credential-free
 audit rows in `$SPORTSRANK_DATA_DIR/cfbd_requests.sqlite3`.
 
 ## Supported commands
@@ -205,7 +207,7 @@ subject to the separate cleanup decision. Concrete CLI adapters may make live pr
 ordinary tests use offline fakes.
 `GITHUB_TOKEN` supplies authenticated provenance and approval reads,
 `FIREBASE_ACCESS_TOKEN` is confined to the protected production job, and
-`CFBD_API_KEY` is absent. A Pi-local path is never passed to a runner.
+`CFBD_API` is absent. A Pi-local path is never passed to a runner.
 
 [ADR-0016](../docs/adr/0016-bind-publication-to-verified-live-content.md)
 separates live identity from verification; [ADR-0018](../docs/adr/0018-retain-publication-evidence-in-github-releases.md)
@@ -215,3 +217,9 @@ the emulator only; use the gated workflow for publication.
 
 The older `cfb/main.py` script and batch file are retained for historical
 compatibility; new recovery work should use the staged interface above.
+
+## Future spread evaluation
+
+[ADR-0019](../docs/adr/0019-evaluate-predictions-against-market-lines.md) records the proposed future
+comparison with published betting lines. The provider, line timing and metric
+definition are open; current spread grading is unchanged.

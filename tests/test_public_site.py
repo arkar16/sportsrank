@@ -289,7 +289,7 @@ class PublicSiteTests(unittest.TestCase):
         template = (REPOSITORY / ".env.example").read_bytes()
         assert_public_bytes(".env.example", template)
         with self.assertRaisesRegex(ValueError, "private path"):
-            assert_public_bytes(".env.example", template + b"\nCFBD_API_KEY=synthetic-test-value\n")
+            assert_public_bytes(".env.example", template + b"\nCFBD_API=synthetic-test-value\n")
 
 
 if __name__ == "__main__":  # pragma: no cover

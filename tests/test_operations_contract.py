@@ -318,7 +318,8 @@ class OperationsContractTests(unittest.TestCase):
 
         portable = (WORKFLOW_ROOT / "portable-checks.yml").read_text(encoding="utf-8")
         self.assertRegex(portable, r"(?m)^\s*(push|pull_request):")
-        self.assertIn("CFBD_API_KEY", portable)
+        self.assertIn('CFBD_API: ""', portable)
+        self.assertIn('CFBD_API_KEY: ""', portable)
         self.assertIn("uv run --locked python -m unittest", portable)
         self.assertIn("npm run build", portable)
         self.assertNotIn("FirebaseExtended/action-hosting-deploy", portable)
@@ -795,7 +796,7 @@ class OperationsContractTests(unittest.TestCase):
         self.assertNotIn("npm run deploy", handoff)
 
         for marker in (
-            "CFBD_API_KEY",
+            "CFBD_API",
             "exactly six calls",
             "2024 FINAL",
             "2025 FINAL",

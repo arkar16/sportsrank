@@ -28,7 +28,7 @@ is convenient.
 - Run scheduled generation on the Raspberry Pi and serve the public site from Firebase Hosting.
 - Preserve existing public historical URLs or provide explicit redirects.
 - Preserve the current CORS model unless a task explicitly authorizes a model change.
-- Load the CFBD bearer token only from `CFBD_API_KEY`; keep credentials out of source, arguments, generated pages, fixtures, and logs.
+- Load the CFBD bearer token only from `CFBD_API`; keep credentials out of source, arguments, generated pages, fixtures, and logs.
 - Route every CFBD request through the metered Season Snapshot seam; enforce the 3,000-call monthly ceiling and make ordinary tests use recorded adapters rather than live calls.
 - Publish PRESEASON before Week 0; Week 0 contains real games and W0 is the ranking after those games.
 - Build every candidate as a full overlay of the Published Site, derive its required artifacts independently, and retain the last-known-good site on failure.

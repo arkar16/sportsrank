@@ -5,12 +5,27 @@ from pathlib import Path
 import cfbd
 
 
-API_KEY_ENV_VAR = "CFBD_API_KEY"
+API_KEY_ENV_VAR = "CFBD_API"
 DATA_DIR_ENV_VAR = "SPORTSRANK_DATA_DIR"
 
 
+def configured_api_key() -> str:
+    """Return the normalized provider credential from the BB environment."""
+
+    return os.environ.get(API_KEY_ENV_VAR, "").strip()
+
+
+def redact_api_key(message: str) -> str:
+    """Replace the normalized provider credential in an error message."""
+
+    api_key = configured_api_key()
+    if api_key:
+        return message.replace(api_key, "[redacted]")
+    return message
+
+
 def create_configuration():
-    api_key = os.environ.get(API_KEY_ENV_VAR, "").strip()
+    api_key = configured_api_key()
     if not api_key:
         raise RuntimeError(
             f"Set {API_KEY_ENV_VAR} in your environment before fetching CFBD data."

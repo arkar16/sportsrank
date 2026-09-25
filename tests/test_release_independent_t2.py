@@ -122,7 +122,9 @@ class ReleaseProvenanceIndependentTests(unittest.TestCase):
         games_api = MagicMock()
         output = StringIO()
         errors = StringIO()
-        with patch.dict(os.environ, {"CFBD_API_KEY": secret}, clear=True):
+        from cfb.cfbd_client import API_KEY_ENV_VAR
+
+        with patch.dict(os.environ, {API_KEY_ENV_VAR: secret}, clear=True):
             with patch("cfb.season_source.create_api_client") as create_client:
                 with patch("cfb.season_source.cfbd.TeamsApi", teams_api):
                     with patch("cfb.season_source.cfbd.GamesApi", games_api):

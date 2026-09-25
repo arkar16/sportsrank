@@ -159,7 +159,7 @@ The workflow guard requires the fixed repository, `refs/heads/main`, manual
 `workflow_dispatch`, and run attempt `1`. Production jobs require the owner's
 `production` approval. Agents never submit approval. `GITHUB_TOKEN` supplies
 provenance/archive/approval access; Firebase credentials are available only
-inside the protected job, and `CFBD_API_KEY` is absent.
+inside the protected job, and `CFBD_API` is absent.
 
 1. Select the exact validated preparation, expected baseline and purpose.
    Normal successors, rollback and correction need freshly reconciled verified

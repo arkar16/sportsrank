@@ -156,6 +156,7 @@ jobs:
       - name: Verify the reviewed local receipt and package its exact public bytes
         shell: bash
         env:
+          CFBD_API: ""
           CFBD_API_KEY: ""
         run: |
           set -euo pipefail
@@ -902,6 +903,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           GH_TOKEN: ${{ github.token }}
           FIREBASE_ACCESS_TOKEN: ${{ steps.firebase-auth.outputs.access_token }}
+          CFBD_API: ""
           CFBD_API_KEY: ""
           PRIOR_REFERENCE: ${{ inputs.prior_reference }}
           PRIOR_EXTERNAL_REFERENCE: ${{ inputs.prior_external_reference }}

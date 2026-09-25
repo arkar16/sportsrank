@@ -1,12 +1,11 @@
 import sys
 import time
 import logging
-import os
 from pathlib import Path
 try:
-    from .cfbd_client import get_snapshot_service
+    from .cfbd_client import get_snapshot_service, redact_api_key
 except ImportError:  # direct execution compatibility
-    from cfbd_client import get_snapshot_service
+    from cfbd_client import get_snapshot_service, redact_api_key
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -33,11 +32,7 @@ history_calc = None
 def _safe_message(error: BaseException) -> str:
     """Render legacy errors without echoing the CFBD credential."""
 
-    message = str(error)
-    secret = os.environ.get("CFBD_API_KEY", "")
-    if secret:
-        message = message.replace(secret, "[redacted]")
-    return message
+    return redact_api_key(str(error))
 
 def get_current_year_and_week():
     """Reject the removed calendar guess used by the old no-argument path."""

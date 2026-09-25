@@ -315,7 +315,9 @@ class PublicationCLIContextTests(unittest.TestCase):
         def fail(*_args, **_kwargs):
             raise RuntimeError(f"provider failed with {secret}")
 
-        with patch.dict(os.environ, {"CFBD_API_KEY": secret}, clear=True):
+        from cfb.cfbd_client import API_KEY_ENV_VAR
+
+        with patch.dict(os.environ, {API_KEY_ENV_VAR: secret}, clear=True):
             with patch.object(legacy_main, "single_week_calc", fail):
                 with self.assertLogs(level="ERROR") as logs:
                     with self.assertRaisesRegex(RuntimeError, secret):

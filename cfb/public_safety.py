@@ -17,7 +17,7 @@ from typing import Any, Mapping
 _ARCHIVES = ('.tar', '.tar.gz', '.tgz', '.zip', '.gz', '.bz2', '.xz', '.7z',
              '.bundle', '.sqlite', '.sqlite3', '.db', '.pickle', '.pkl')
 _PRIVATE_PARTS = {'.git', '.sportsrank', 'private', 'private-inputs', 'source-inputs'}
-_EXAMPLE_ENV_SHA256 = '3b1bb1cad55ecf66871db3834f70f218b26c4c29da66dea7eb6734ed2c9514d6'
+_EXAMPLE_ENV_SHA256 = 'bdb62cd13fcc1453ed4f703a85ea8b925a19c3c0c8dd1c7eb2d1338cd7b2d0cf'
 _SYNTHETIC_FIXTURES = {
     'tests/fixtures/cfbd/2024/fbs/games.json': '0d863d32a62e432919570a7018f02b1b4eab4ba471200d2e200f2b56099f1224',
     'tests/fixtures/cfbd/2024/fbs/teams.json': '19a81d384daf157765dae00f35e7a5241c3f93545d41c6434221107432eeab2f',

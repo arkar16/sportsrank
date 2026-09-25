@@ -196,7 +196,9 @@ class SeasonSourceIndependentTests(unittest.TestCase):
         source = ProductionSeasonSource(RequestMeter(meter_path))
         service = SeasonSnapshotService(source, SnapshotCache(cache_root))
 
-        with patch.dict(os.environ, {"CFBD_API_KEY": secret}, clear=True):
+        from cfb.cfbd_client import API_KEY_ENV_VAR
+
+        with patch.dict(os.environ, {API_KEY_ENV_VAR: secret}, clear=True):
             with self.assertRaises(MeteredRequestFailed) as raised:
                 service.get(2025, "FBS")
 

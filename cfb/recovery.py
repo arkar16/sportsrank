@@ -14,14 +14,13 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
 import json
-import os
 from pathlib import Path
 import re
 import sys
 from typing import Any, Iterable, Mapping
 
 try:
-    from .cfbd_client import get_snapshot_service
+    from .cfbd_client import get_snapshot_service, redact_api_key
     from .release import (
         Release,
         build_release,
@@ -39,7 +38,7 @@ try:
     from .season_source import FixtureSeasonSource, ProductionSeasonSource
     from .snapshot_cache import SnapshotCache
 except ImportError:  # pragma: no cover - direct execution compatibility
-    from cfbd_client import get_snapshot_service
+    from cfbd_client import get_snapshot_service, redact_api_key
     from release import (
         Release,
         build_release,
@@ -117,11 +116,7 @@ def _timestamp(value: str | None) -> str:
 def _safe_message(error: BaseException) -> str:
     """Render an error without ever echoing the environment secret."""
 
-    message = str(error)
-    secret = os.environ.get("CFBD_API_KEY", "")
-    if secret:
-        message = message.replace(secret, "[redacted]")
-    return message
+    return redact_api_key(str(error))
 
 
 def _service(

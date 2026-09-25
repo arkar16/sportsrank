@@ -12,6 +12,7 @@ jobs:
     name: Run locked offline checks
     runs-on: ubuntu-latest
     env:
+      CFBD_API: ""
       CFBD_API_KEY: ""
     steps:
       - name: Check out the submitted tree

@@ -32,18 +32,20 @@ The recovery contract above owns product requirements. Use
 Python 3.12 and the locked dependencies are required:
 
 ```sh
-env -u CFBD_API_KEY uv sync --locked
-env -u CFBD_API_KEY uv run --locked python -m unittest discover -s tests -v
-env -u CFBD_API_KEY uv run --locked python -m compileall -q cfb tools tests
-env -u CFBD_API_KEY npm ci
-env -u CFBD_API_KEY npm run build
+env -u CFBD_API -u CFBD_API_KEY uv sync --locked
+env -u CFBD_API -u CFBD_API_KEY uv run --locked python -m unittest discover -s tests -v
+env -u CFBD_API -u CFBD_API_KEY uv run --locked python -m compileall -q cfb tools tests
+env -u CFBD_API -u CFBD_API_KEY npm ci
+env -u CFBD_API -u CFBD_API_KEY npm run build
 ```
 
 These commands do not require a CFBD key and must not publish. Ordinary
 verification uses portable Schema 2/3 fixtures and does not depend on private
 or ignored caches. Static hosting build success does not establish strict
 Release, link, or HTML acceptance. The production adapter reads the project-
-only bearer token from `CFBD_API_KEY`; the value must never enter source,
+only bearer token from `CFBD_API`, supplied through the BB environment variables
+settings. The adapter does not fall back to `CFBD_API_KEY` or load a dotenv file.
+The value must never enter source,
 command arguments, tracked environment files, generated artifacts, logs,
 issues, or chat.
 

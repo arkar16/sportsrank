@@ -116,7 +116,7 @@ contradiction scan across all human- and machine-facing guidance.
 
 ### CFBD v2, cache, and request budget
 
-- Read the project-only secret only from `CFBD_API_KEY` and send it as a bearer
+- Read the project-only secret only from `CFBD_API` and send it as a bearer
   authorization header. Never accept it as an argument or write it to source,
   `.env`, fixtures, snapshots, manifests, pages, logs, exceptions, or CI
   artifacts.
@@ -403,7 +403,7 @@ the safe reviewed receipt, site and authenticated baseline derivative.
   for authenticated GitHub run/approval and artifact evidence, and deployment
   credentials are available only there. `GITHUB_TOKEN` supplies provenance and
   approval reads; `FIREBASE_ACCESS_TOKEN` is protected to that job and
-  `CFBD_API_KEY` is absent. The owner's production approval is required; agents
+  `CFBD_API` is absent. The owner's production approval is required; agents
   never approve on the owner's behalf.
 - Workflow summaries expose sanitized target, operation, state, and digest
   identity. Raw provider actor/auth evidence, `baseline.tar.gz`, raw source
