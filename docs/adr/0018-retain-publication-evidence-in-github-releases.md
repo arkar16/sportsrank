@@ -123,3 +123,14 @@ Existing public release deletion and Git-history rewriting remain separate
 owner decisions. No complete historical-exposure cleanup is claimed by the
 prospective export change. Merge and production approval remain separate from
 this implementation request.
+
+## Source versions for the current-season extension — 2026-09-25
+
+The owner requested current 2026 results in SR-17. Retain the original source
+versions unchanged alongside the new native Schema 4 snapshot in private local
+storage. Select each version by its verified source checksum; a year alone is
+ambiguous when multiple versions exist. Rebuild cumulative validation evidence
+against the expanded bundle instead of tolerating mismatched historical bundle
+hashes. This preserves strict provenance and old public archive URLs while
+allowing current results. The same local validation and public receipt boundary
+applies; no additional public raw-data retention or fetch allowance is implied.

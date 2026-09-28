@@ -30,7 +30,11 @@ def create_configuration():
         raise RuntimeError(
             f"Set {API_KEY_ENV_VAR} in your environment before fetching CFBD data."
         )
-    return cfbd.Configuration(access_token=api_key)
+    configuration = cfbd.Configuration(access_token=api_key)
+    # Each outbound attempt must cross RequestMeter; urllib3's default retries
+    # would otherwise issue extra requests inside one recorded attempt.
+    configuration.retries = 0
+    return configuration
 
 
 def create_api_client():

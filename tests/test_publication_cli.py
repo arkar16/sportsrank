@@ -104,6 +104,29 @@ class CommittedRecoveryTrustTests(unittest.TestCase):
                     prepare_reviewed_operation(args)
                 self.assertEqual(package.call_args.kwargs["expected_predecessor"], receipt.expected_predecessor)
 
+    def test_trusted_manifest_accepts_native_schema_four_path_and_rejects_mismatch(self):
+        repository = Path(__file__).resolve().parents[1]
+        original = json.loads(
+            (repository / "config/sr7-recovery-inputs.json").read_text(encoding="utf-8")
+        )
+        legacy = original["source_inputs"]["files"].pop("snapshots/cfb-fbs-2026.json")
+        native_path = f"snapshots/{legacy['snapshot_checksum']}/cfb-fbs-2026.json"
+        original["source_inputs"]["files"][native_path] = {
+            **legacy,
+            "schema_version": 4,
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            manifest = Path(directory) / "trusted.json"
+            manifest.write_bytes(canonical_json(original))
+            trusted = _load_trusted_recovery_inputs(manifest)
+            self.assertEqual(trusted.source_schema_version[native_path], 4)
+
+            forged = json.loads(manifest.read_text(encoding="utf-8"))
+            forged["source_inputs"]["files"][native_path]["schema_version"] = 3
+            manifest.write_bytes(canonical_json(forged))
+            with self.assertRaisesRegex(PublicationCLIError, "schema 4"):
+                _load_trusted_recovery_inputs(manifest)
+
 
 def _inventory(site: Path) -> str:
     return _sha(canonical_json({

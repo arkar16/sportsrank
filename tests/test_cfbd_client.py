@@ -4,6 +4,14 @@ from unittest.mock import patch
 
 
 class CfbdClientTests(unittest.TestCase):
+    def test_configuration_disables_unmetered_transport_retries(self):
+        from cfb.cfbd_client import create_configuration
+
+        with patch.dict(os.environ, {"CFBD_API": "synthetic-token"}, clear=True):
+            configuration = create_configuration()
+
+        self.assertEqual(configuration.retries, 0)
+
     def test_configuration_uses_bearer_token_from_environment(self):
         from cfb.cfbd_client import API_KEY_ENV_VAR, create_configuration
 

@@ -53,6 +53,11 @@ _SNAPSHOT_PATH = re.compile(
 _SNAPSHOT_ARCHIVE_PATH = re.compile(
     r"cfb/years/(?P<year>[0-9]{4})/data/snapshots/(?P<checksum>[0-9a-f]{64})\.json\Z"
 )
+_SOURCE_SNAPSHOT_PATH = re.compile(
+    r"snapshots/(?:(?P<directory_checksum>[0-9a-f]{64})/)?"
+    r"cfb-(?P<classification>[a-z0-9]+)-(?P<year>[0-9]{4})\.json\Z"
+)
+_SOURCE_SCHEMA_VERSIONS = frozenset({3, 4})
 _SAFE_RELEASE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,126}[A-Za-z0-9]\Z")
 _SOURCE_FINGERPRINT_EXCLUDED = frozenset(
     {
@@ -103,6 +108,65 @@ def _digest(value: Any, label: str) -> str:
     if not isinstance(value, str) or _SHA256.fullmatch(value) is None:
         raise PublicSiteError(f"{label} must be a lowercase SHA-256 digest")
     return value
+
+
+def _source_schema_version(value: Any, label: str, *, default: int = 3) -> int:
+    """Validate a source snapshot schema pin.
+
+    Schema-3 trust manifests predate versioned source storage and therefore
+    omit this field.  Their omission is deliberately interpreted as the
+    legacy schema only; a versioned native source path must carry an explicit
+    schema-4 pin.
+    """
+
+    if value is None:
+        value = default
+    if isinstance(value, bool) or not isinstance(value, int) or value not in _SOURCE_SCHEMA_VERSIONS:
+        raise PublicSiteError(f"{label} must be source schema 3 or 4")
+    return value
+
+
+def _source_path_identity(relative: Any, label: str = "source input path") -> tuple[str, int, int | None]:
+    """Return ``(classification, season, versioned checksum)`` for a source path."""
+
+    safe = _safe_relative(relative, label)
+    match = _SOURCE_SNAPSHOT_PATH.fullmatch(safe)
+    if match is None:
+        raise PublicSiteError(f"{label} is not a canonical source snapshot path")
+    classification = match.group("classification").upper()
+    return classification, int(match.group("year")), (
+        match.group("directory_checksum")
+        if match.group("directory_checksum") is not None
+        else None
+    )
+
+
+def _validate_source_identity_fields(
+    *,
+    path: Any,
+    season: Any,
+    sport: Any,
+    classification: Any,
+    schema_version: Any,
+    source_snapshot_checksum: Any,
+    label: str,
+) -> str:
+    """Validate path, domain identity, schema, and content-address binding."""
+
+    source_classification, source_season, directory_checksum = _source_path_identity(path, label)
+    if isinstance(season, bool) or not isinstance(season, int) or season != source_season:
+        raise PublicSiteError(f"{label} season does not match its path")
+    if sport != "cfb" or not isinstance(classification, str) or classification.upper() != source_classification:
+        raise PublicSiteError(f"{label} classification does not match its path")
+    schema = _source_schema_version(schema_version, f"{label} schema version")
+    checksum = _digest(source_snapshot_checksum, f"{label} snapshot checksum")
+    if directory_checksum is None and schema != 3:
+        raise PublicSiteError(f"{label} native schema 4 identity requires a versioned path")
+    if directory_checksum is not None and schema != 4:
+        raise PublicSiteError(f"{label} versioned path requires native schema 4")
+    if directory_checksum is not None and directory_checksum != checksum:
+        raise PublicSiteError(f"{label} checksum does not match its versioned path")
+    return checksum
 
 
 def _safe_relative(value: Any, label: str = "relative path") -> str:
@@ -323,6 +387,37 @@ def _trusted_manifest_details(
             safe = _safe_relative(relative, "trusted source-input path")
             if safe != relative:
                 raise PublicSiteError("trusted source-input path is not canonical")
+            if set(entry) not in (
+                {"sha256", "bytes", "snapshot_checksum"},
+                {"sha256", "bytes", "snapshot_checksum", "schema_version"},
+            ):
+                raise PublicSiteError("trusted source-input file identity fields are invalid")
+            schema = _source_schema_version(
+                entry.get("schema_version"),
+                f"trusted source-input schema version {safe}",
+            )
+            _, _, directory_checksum = _source_path_identity(
+                safe, "trusted source-input path"
+            )
+            snapshot_checksum = _digest(
+                entry.get("snapshot_checksum"),
+                f"trusted source-input snapshot checksum {safe}",
+            )
+            if directory_checksum is None and schema != 3:
+                raise PublicSiteError(
+                    f"trusted source-input schema 4 identity requires a versioned path: {safe}"
+                )
+            if directory_checksum is not None and schema != 4:
+                raise PublicSiteError(
+                    f"trusted source-input versioned path requires schema 4: {safe}"
+                )
+            if directory_checksum is not None and directory_checksum != snapshot_checksum:
+                raise PublicSiteError(
+                    f"trusted source-input snapshot checksum disagrees with its path: {safe}"
+                )
+            byte_count = entry.get("bytes")
+            if isinstance(byte_count, bool) or not isinstance(byte_count, int) or byte_count < 0:
+                raise PublicSiteError(f"trusted source-input byte count is invalid: {safe}")
             pins[safe] = _digest(entry.get("sha256"), f"trusted source-input digest {safe}")
     elif isinstance(raw.get("files"), list):
         # A direct inputs-manifest.json is useful for small local fixture runs.
@@ -331,12 +426,79 @@ def _trusted_manifest_details(
             if not isinstance(entry, Mapping):
                 raise PublicSiteError("source-input manifest entry is invalid")
             relative = _safe_relative(entry.get("path"), "source-input path")
+            allowed = {"path", "sha256", "bytes", "snapshot_checksum", "schema_version"}
+            if set(entry) - allowed or "sha256" not in entry or "bytes" not in entry:
+                raise PublicSiteError("source-input manifest entry fields are invalid")
+            schema = _source_schema_version(
+                entry.get("schema_version"), f"source-input schema version {relative}"
+            )
+            source_classification, source_season, _ = _source_path_identity(
+                relative, "source-input path"
+            )
+            if entry.get("snapshot_checksum") is not None:
+                _validate_source_identity_fields(
+                    path=relative,
+                    season=source_season,
+                    sport="cfb",
+                    classification=source_classification,
+                    schema_version=schema,
+                    source_snapshot_checksum=entry["snapshot_checksum"],
+                    label=f"source-input {relative}",
+                )
+            elif schema != 3:
+                raise PublicSiteError(
+                    f"source-input schema 4 identity requires a snapshot checksum: {relative}"
+                )
+            byte_count = entry.get("bytes")
+            if isinstance(byte_count, bool) or not isinstance(byte_count, int) or byte_count < 0:
+                raise PublicSiteError(f"source-input byte count is invalid: {relative}")
             pins[relative] = _digest(entry.get("sha256"), f"source-input digest {relative}")
     else:
         raise PublicSiteError("trusted input manifest schema is unsupported")
     if not pins:
         raise PublicSiteError("trusted input manifest has no source file pins")
     return trust_sha, pins, expected_manifest_sha, raw
+
+
+def _trusted_source_file_entries(trust_raw: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
+    """Return normalized trusted source entries with legacy schema defaults."""
+
+    source = trust_raw.get("source_inputs")
+    if isinstance(source, Mapping) and isinstance(source.get("files"), Mapping):
+        raw_entries = source["files"]
+        result: dict[str, Mapping[str, Any]] = {}
+        for relative, entry in raw_entries.items():
+            if not isinstance(entry, Mapping):
+                raise PublicSiteError("trusted source-input file identity is invalid")
+            safe = _safe_relative(relative, "trusted source-input path")
+            if safe != relative:
+                raise PublicSiteError("trusted source-input path is not canonical")
+            result[safe] = {
+                **dict(entry),
+                "schema_version": _source_schema_version(
+                    entry.get("schema_version"),
+                    f"trusted source-input schema version {safe}",
+                ),
+            }
+        return result
+    files = trust_raw.get("files")
+    if isinstance(files, list):
+        result = {}
+        for entry in files:
+            if not isinstance(entry, Mapping):
+                raise PublicSiteError("source-input manifest entry is invalid")
+            relative = _safe_relative(entry.get("path"), "source-input path")
+            if relative in result:
+                raise PublicSiteError("source-input manifest contains duplicate paths")
+            result[relative] = {
+                **dict(entry),
+                "schema_version": _source_schema_version(
+                    entry.get("schema_version"),
+                    f"source-input schema version {relative}",
+                ),
+            }
+        return result
+    raise PublicSiteError("trusted input manifest has no source-input file identities")
 
 
 def _source_bundle_manifest_sha(source_root: Path) -> str:
@@ -403,18 +565,31 @@ def _ensure_trusted_source_bundle(
         raise PublicSiteError("source-input manifest does not match trusted identity")
     if set(pins) != {identity.relative_path for identity in source_inputs.identities}:
         raise PublicSiteError("trusted source-input pins do not match the supplied bundle")
-    trusted_source = trust_raw.get("source_inputs")
-    trusted_files = trusted_source.get("files") if isinstance(trusted_source, Mapping) else None
-    if isinstance(trusted_files, Mapping):
-        for identity in source_inputs.identities:
-            entry = trusted_files.get(identity.relative_path)
-            if not isinstance(entry, Mapping):
-                raise PublicSiteError("trusted source-input identity is missing")
-            if entry.get("bytes") != identity.source_file_bytes:
-                raise PublicSiteError("trusted source-input byte count disagrees with the bundle")
-            expected_snapshot = entry.get("snapshot_checksum")
-            if expected_snapshot is not None and expected_snapshot != identity.source_snapshot_checksum:
-                raise PublicSiteError("trusted source-input snapshot checksum disagrees with the bundle")
+    trusted_files = _trusted_source_file_entries(trust_raw)
+    for identity in source_inputs.identities:
+        entry = trusted_files.get(identity.relative_path)
+        if not isinstance(entry, Mapping):
+            raise PublicSiteError("trusted source-input identity is missing")
+        if entry.get("bytes") != identity.source_file_bytes:
+            raise PublicSiteError("trusted source-input byte count disagrees with the bundle")
+        expected_snapshot = entry.get("snapshot_checksum")
+        if expected_snapshot is not None and expected_snapshot != identity.source_snapshot_checksum:
+            raise PublicSiteError("trusted source-input snapshot checksum disagrees with the bundle")
+        expected_schema = _source_schema_version(
+            entry.get("schema_version"),
+            f"trusted source-input schema version {identity.relative_path}",
+        )
+        if expected_schema != identity.schema_version:
+            raise PublicSiteError("trusted source-input schema version disagrees with the bundle")
+        source_classification, source_season, directory_checksum = _source_path_identity(
+            identity.relative_path, "trusted source-input path"
+        )
+        if (
+            source_season != identity.season
+            or source_classification != identity.classification.upper()
+            or (directory_checksum is not None and directory_checksum != identity.source_snapshot_checksum)
+        ):
+            raise PublicSiteError("trusted source-input path identity disagrees with the bundle")
     for identity in source_inputs.identities:
         if pins.get(identity.relative_path) != identity.source_file_sha256:
             raise PublicSiteError("trusted source-input pins disagree with the supplied bundle")
@@ -499,15 +674,32 @@ def _source_snapshot_records(
         archive_match = _SNAPSHOT_ARCHIVE_PATH.fullmatch(relative)
         if archive_match is not None and archive_match.group("checksum") != snapshot_checksum:
             raise PublicSiteError(f"private snapshot archive {relative} is not content-addressed")
-        identity = source_inputs.resolve(year, classification)
         migration = value.get("metadata", {}).get("migration_provenance") if isinstance(value.get("metadata"), Mapping) else None
         source_checksum = (
             migration.get("source_snapshot_checksum")
             if isinstance(migration, Mapping)
             else snapshot_checksum
         )
+        # A year can now have both an immutable legacy source and a native
+        # source version.  Resolve the exact source before constructing any
+        # public provenance; an unqualified year lookup is intentionally not
+        # an authority once the bundle contains multiple versions.
+        identity = source_inputs.resolve(
+            year,
+            classification,
+            source_snapshot_checksum=source_checksum,
+        )
         if source_checksum != identity.source_snapshot_checksum:
             raise PublicSiteError(f"private snapshot {relative} disagrees with trusted source input")
+        _validate_source_identity_fields(
+            path=identity.relative_path,
+            season=identity.season,
+            sport=identity.sport,
+            classification=identity.classification,
+            schema_version=identity.schema_version,
+            source_snapshot_checksum=identity.source_snapshot_checksum,
+            label=f"private snapshot {relative} source identity",
+        )
         provenance = {
             "schema_version": 1,
             "record_type": "public_snapshot_provenance",
@@ -556,7 +748,15 @@ def _public_provenance_bytes(provenance: Mapping[str, Any]) -> bytes:
         raise PublicSiteError("snapshot provenance version or sport is invalid")
     if not _YEAR.fullmatch(str(identity.get("season"))):
         raise PublicSiteError("snapshot provenance season is invalid")
-    _safe_relative(identity.get("source_path"), "snapshot provenance source path")
+    _validate_source_identity_fields(
+        path=identity.get("source_path"),
+        season=identity.get("season"),
+        sport=identity.get("sport"),
+        classification=identity.get("classification"),
+        schema_version=identity.get("source_schema_version"),
+        source_snapshot_checksum=provenance.get("source_snapshot_checksum"),
+        label="snapshot provenance source identity",
+    )
     if isinstance(provenance.get("source_file_bytes"), bool) or not isinstance(provenance.get("source_file_bytes"), int) or provenance.get("source_file_bytes") < 0:
         raise PublicSiteError("snapshot provenance byte count is invalid")
     if _deep_has_source_payload(provenance):
@@ -966,8 +1166,15 @@ def _validate_receipt_nested(value: Mapping[str, Any]) -> None:
         _digest(item["source_snapshot_checksum"], "receipt source input snapshot checksum")
         if isinstance(item["source_file_bytes"], bool) or not isinstance(item["source_file_bytes"], int) or item["source_file_bytes"] < 0:
             raise PublicSiteError("receipt source input byte count is invalid")
-        if item["schema_version"] != 3:
-            raise PublicSiteError("receipt source input schema version is invalid")
+        _validate_source_identity_fields(
+            path=item["path"],
+            season=item["season"],
+            sport=item["sport"],
+            classification=item["classification"],
+            schema_version=item["schema_version"],
+            source_snapshot_checksum=item["source_snapshot_checksum"],
+            label="receipt source input identity",
+        )
     if source_paths != sorted(source_paths) or len(source_paths) != len(set(source_paths)):
         raise PublicSiteError("receipt source input identities are not canonical")
 
@@ -1320,17 +1527,7 @@ def verify_local_receipt(
         and receipt.baseline.get("sanitizer_record_sha256") != trusted_evidence["baseline_sanitizer_record_sha256"]
     ):
         raise PublicSiteError("receipt baseline sanitizer record does not match trusted evidence")
-    trusted_source = trust_raw.get("source_inputs")
-    if isinstance(trusted_source, Mapping) and isinstance(trusted_source.get("files"), Mapping):
-        trusted_files = trusted_source["files"]
-    elif isinstance(trust_raw.get("files"), list):
-        trusted_files = {}
-        for entry in trust_raw["files"]:
-            if not isinstance(entry, Mapping):
-                raise PublicSiteError("trusted source-input file identity is invalid")
-            trusted_files[entry["path"]] = entry
-    else:
-        raise PublicSiteError("trusted input manifest has no source-input file identities")
+    trusted_files = _trusted_source_file_entries(trust_raw)
     receipt_source = evidence.get("source_inputs")
     expected_paths = sorted(trusted_files)
     if not isinstance(receipt_source, list) or [item.get("path") for item in receipt_source] != expected_paths:
@@ -1342,6 +1539,21 @@ def verify_local_receipt(
         expected_snapshot = expected.get("snapshot_checksum")
         if expected_snapshot is not None and expected_snapshot != item["source_snapshot_checksum"]:
             raise PublicSiteError("receipt source-input snapshot checksum does not match trusted manifest")
+        expected_schema = _source_schema_version(
+            expected.get("schema_version"),
+            f"trusted source-input schema version {item['path']}",
+        )
+        if expected_schema != item["schema_version"]:
+            raise PublicSiteError("receipt source-input schema version does not match trusted manifest")
+        _validate_source_identity_fields(
+            path=item["path"],
+            season=item["season"],
+            sport=item["sport"],
+            classification=item["classification"],
+            schema_version=item["schema_version"],
+            source_snapshot_checksum=item["source_snapshot_checksum"],
+            label="receipt source input identity",
+        )
     output_report = validate_public_output(site_path, expected_receipt=receipt)
     output_report.raise_for_failure()
     manifest = _json_file(site_path / "manifest.json", "public manifest")
@@ -1357,6 +1569,28 @@ def verify_local_receipt(
         raise PublicSiteError("public manifest Firebase binding does not match receipt")
     if receipt.transform.get("snapshot_paths") != [item["path"] for item in manifest.get("snapshot_provenance", [])]:
         raise PublicSiteError("receipt transform does not match public manifest snapshot bindings")
+    receipt_by_source_path = {item["path"]: item for item in receipt_source}
+    for binding in manifest.get("snapshot_provenance", []):
+        provenance = _json_file(site_path / binding["path"], "public snapshot provenance")
+        if not isinstance(provenance, Mapping):
+            raise PublicSiteError("public snapshot provenance is not an object")
+        identity = provenance.get("identity")
+        if not isinstance(identity, Mapping):
+            raise PublicSiteError("public snapshot provenance identity is invalid")
+        source_path = identity.get("source_path")
+        expected = receipt_by_source_path.get(source_path)
+        if expected is None:
+            raise PublicSiteError("public snapshot provenance source is not in the receipt")
+        if (
+            identity.get("season") != expected["season"]
+            or identity.get("sport") != expected["sport"]
+            or identity.get("classification") != expected["classification"]
+            or identity.get("source_schema_version") != expected["schema_version"]
+            or provenance.get("source_snapshot_checksum") != expected["source_snapshot_checksum"]
+            or provenance.get("source_file_sha256") != expected["source_file_sha256"]
+            or provenance.get("source_file_bytes") != expected["source_file_bytes"]
+        ):
+            raise PublicSiteError("public snapshot provenance does not match trusted source identity")
     if _inventory_hash(output_report.inventory) != receipt.public_site_inventory_sha256:
         raise PublicSiteError("public inventory digest does not match receipt")
     _ = repository, trusted_pins

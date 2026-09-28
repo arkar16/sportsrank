@@ -6,6 +6,23 @@ Earlier verification below is historical; the absent historical reconstruction
 output/log root is not fresh evidence. Original fetch budgets and completed
 steps do not authorize reruns. The owner retains merge and production approval.
 
+## Current-season extension — 2026-09-25
+
+The owner requested results through the current 2026 week. SR-17 extends SR-7
+and PR #3 to include completed Weeks 0–3 and the Week 4 slate/model forecasts,
+while preserving the original PRESEASON and historical pages. The one authorized
+metered 2026 games refresh is spent; further calls need a fresh allowance.
+Rebuild and validate offline from the retained snapshot. Week 4 is in progress
+and must not appear as a completed ranking checkpoint.
+
+Retain all three original Schema 3 sources unchanged, plus the native Schema 4
+refresh at a checksum-versioned path. Exact checksums select a source when a
+season has multiple versions; ambiguous selection fails. Rebuild the cumulative
+chain against the new bundle so every run retains strict manifest/archive
+bindings. Local validation, safe public export, reviewed receipt, owner merge
+and separate production approval remain required. Detailed scope and evidence
+belong to SR-17; the original mission below records the earlier recovery scope.
+
 ## Mission
 
 Use Goal Mode with the Heavy route to make the CFB/FBS static-site recovery

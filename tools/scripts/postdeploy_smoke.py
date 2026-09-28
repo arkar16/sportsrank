@@ -20,6 +20,11 @@ REQUIRED_PATHS = (
     "cfb/years/2025/rankings/2025_FINAL_FBS_cors.html",
     "cfb/years/2026/rankings/2026_PRESEASON_FBS_cors.html",
     "cfb/years/2026/data/slate/weekly_slate/2026_W0_FBS_slate.html",
+    "cfb/years/2026/rankings/2026_W3_FBS_cors.html",
+    "cfb/years/2026/data/results/weekly_results/2026_W3_FBS_results.html",
+    "cfb/years/2026/spread/2026_W3_FBS_spread_results.html",
+    "cfb/years/2026/data/slate/weekly_slate/2026_W4_FBS_slate.html",
+    "cfb/years/2026/spread/2026_W4_FBS_spread.html",
 )
 
 DEFAULT_ATTEMPTS = 3

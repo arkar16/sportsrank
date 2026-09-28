@@ -210,6 +210,19 @@ class P0AdversarialContractTests(unittest.TestCase):
                 "snapshots/cfb-fbs-2024.json",
                 "snapshots/cfb-fbs-2025.json",
                 "snapshots/cfb-fbs-2026.json",
+                "snapshots/9bf66d0ccab3878c7926f17b44664644774eed8ea95a7ffa73b3a206eb45296a/cfb-fbs-2026.json",
+            },
+        )
+        self.assertEqual(
+            {
+                path: entry.get("schema_version", 3)
+                for path, entry in trust["source_inputs"]["files"].items()
+            },
+            {
+                "snapshots/cfb-fbs-2024.json": 3,
+                "snapshots/cfb-fbs-2025.json": 3,
+                "snapshots/cfb-fbs-2026.json": 3,
+                "snapshots/9bf66d0ccab3878c7926f17b44664644774eed8ea95a7ffa73b3a206eb45296a/cfb-fbs-2026.json": 4,
             },
         )
         self.assertNotEqual(

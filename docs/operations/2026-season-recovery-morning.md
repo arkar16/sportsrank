@@ -188,7 +188,9 @@ inside the protected job, and `CFBD_API` is absent.
    later record in a separate sealed archive. Never append to a sealed release.
 5. Verify full inventory/configuration correspondence, both managed resources,
    and representative public pages: homepage, 2023 FINAL, 2024/2025 FINAL,
-   2026 PRESEASON and Week 0. A failed check pauses ordinary publication.
+   2026 PRESEASON, Weeks 0–3 rankings/results and Week 4 slate/model forecasts.
+   Week 4 must not appear as a completed ranking checkpoint. A failed check
+   pauses ordinary publication.
 
 ## Supplying the exact reference
 

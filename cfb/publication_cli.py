@@ -129,6 +129,11 @@ _INITIAL_BASELINE_OBSERVED = ProviderIdentity(
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 _COMMIT = re.compile(r"[0-9a-f]{40}\Z")
 _POSITIVE_ID = re.compile(r"[1-9][0-9]*\Z")
+_SOURCE_SCHEMA_VERSIONS = frozenset({3, 4})
+_SOURCE_INPUT_PATH = re.compile(
+    r"snapshots/(?:(?P<directory_checksum>[0-9a-f]{64})/)?"
+    r"cfb-(?P<classification>[a-z0-9]+)-(?P<season>[0-9]{4})\.json\Z"
+)
 _CONTEXT_FIELDS = {
     "schema_version",
     "record_type",
@@ -191,6 +196,7 @@ class TrustedRecoveryInputs:
     source_file_sha256: Mapping[str, str]
     source_file_bytes: Mapping[str, int]
     source_snapshot_checksum: Mapping[str, str]
+    source_schema_version: Mapping[str, int]
     original_prepared_archive_sha256: str
     evidence_archive_sha256: Mapping[str, str]
     baseline_public_reference: ArchiveReference
@@ -249,6 +255,35 @@ def _require_commit(value: Any, name: str) -> str:
     if not isinstance(value, str) or _COMMIT.fullmatch(value) is None:
         raise PublicationCLIError(f"{name} must be a lowercase 40-character commit SHA")
     return value
+
+
+def _require_source_schema_version(value: Any, name: str, *, default: int = 3) -> int:
+    if value is None:
+        value = default
+    if isinstance(value, bool) or not isinstance(value, int) or value not in _SOURCE_SCHEMA_VERSIONS:
+        raise PublicationCLIError(f"{name} must be source schema 3 or 4")
+    return value
+
+
+def _validate_trusted_source_path(relative: str, schema_version: int, checksum: str) -> None:
+    match = _SOURCE_INPUT_PATH.fullmatch(relative)
+    if match is None:
+        raise PublicationCLIError(
+            f"trusted source-input path is not canonical: {relative}"
+        )
+    directory_checksum = match.group("directory_checksum")
+    if directory_checksum is None and schema_version != 3:
+        raise PublicationCLIError(
+            f"trusted source-input schema 4 identity requires a versioned path: {relative}"
+        )
+    if directory_checksum is not None and schema_version != 4:
+        raise PublicationCLIError(
+            f"trusted source-input versioned path requires schema 4: {relative}"
+        )
+    if directory_checksum is not None and directory_checksum != checksum:
+        raise PublicationCLIError(
+            f"trusted source-input checksum disagrees with its path: {relative}"
+        )
 
 
 def _load_trusted_recovery_inputs(path: str | Path) -> TrustedRecoveryInputs:
@@ -311,11 +346,13 @@ def _load_trusted_recovery_inputs(path: str | Path) -> TrustedRecoveryInputs:
         file_sha256: dict[str, str] = {}
         file_bytes: dict[str, int] = {}
         file_checksums: dict[str, str] = {}
+        file_schema_versions: dict[str, int] = {}
         for relative, value in files.items():
             safe = _safe_relative(relative, "trusted source-input path")
-            if safe != relative or not isinstance(value, Mapping) or set(value) != {
-                "sha256", "bytes", "snapshot_checksum"
-            }:
+            if safe != relative or not isinstance(value, Mapping) or set(value) not in (
+                {"sha256", "bytes", "snapshot_checksum"},
+                {"sha256", "bytes", "snapshot_checksum", "schema_version"},
+            ):
                 raise PublicationCLIError(
                     f"trusted source-input identity is invalid: {relative}"
                 )
@@ -331,6 +368,13 @@ def _load_trusted_recovery_inputs(path: str | Path) -> TrustedRecoveryInputs:
             file_checksums[safe] = _require_sha(
                 value["snapshot_checksum"],
                 f"trusted source-input snapshot checksum {safe}",
+            )
+            file_schema_versions[safe] = _require_source_schema_version(
+                value.get("schema_version"),
+                f"trusted source-input schema version {safe}",
+            )
+            _validate_trusted_source_path(
+                safe, file_schema_versions[safe], file_checksums[safe]
             )
 
         original = raw["original_prepared"]
@@ -394,6 +438,7 @@ def _load_trusted_recovery_inputs(path: str | Path) -> TrustedRecoveryInputs:
         file_sha256,
         file_bytes,
         file_checksums,
+        file_schema_versions,
         original_prepared,
         evidence_sha256,
         baseline_public_reference,
@@ -419,6 +464,8 @@ def _assert_trusted_source_bundle(
             or trusted.source_file_bytes.get(relative) != identity.source_file_bytes
             or trusted.source_snapshot_checksum.get(relative)
             != identity.source_snapshot_checksum
+            or trusted.source_schema_version.get(relative, 3)
+            != identity.schema_version
         ):
             raise PublicationCLIError(
                 f"source input identity is not the reviewed SR7 input: {relative}"

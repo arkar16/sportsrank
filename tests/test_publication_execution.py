@@ -980,7 +980,7 @@ class PublicationExecutionTests(unittest.TestCase):
             FirebasePublicationAdapter(TARGET, backend).deploy(
                 artifact, attempt_id="bulk"
             )
-            self.assertEqual(backend.populate_batch_sizes, [1000, 7])
+            self.assertEqual(backend.populate_batch_sizes, [1000, len(REQUIRED_PATHS) + 1])
             self.assertEqual(
                 artifact.provider_payloads[artifact.provider_hashes["/index.html"]],
                 _deterministic_gzip(artifact.files["index.html"]),

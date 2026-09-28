@@ -155,6 +155,14 @@ local and should be followed by committing the reviewed `website/` tree, then
 using the protected, manual **Publish validated static site to Firebase Hosting**
 workflow only after production approval.
 The original prepared website is retained as private comparison evidence.
+The current-season extension retains native Schema 4 sources alongside the
+unchanged historical Schema 3 inputs. Additional versions live at
+`snapshots/<source-checksum>/cfb-fbs-YEAR.json` inside the private bundle.
+`RecoveryInputBundle.resolve(..., source_snapshot_checksum=...)` selects an
+exact version; selection without a checksum fails when the season is ambiguous.
+Public receipts bind each source's schema, path and checksum. A refreshed source
+requires a new reviewed receipt and offline cumulative validation; it does not
+replace historical source identities or authorize further provider calls.
 Current provider-bound reconstruction uses the privately retained, hash-pinned
 source-input bundle with zero live CFBD calls. Local promotion follows
 independent acceptance; remote publication still requires owner merge and

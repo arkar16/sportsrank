@@ -19,7 +19,7 @@ from cfb.public_site import (
     validate_public_output,
     verify_local_receipt,
 )
-from cfb.recovery_inputs import RecoveryInputBundle
+from cfb.recovery_inputs import RecoveryInputBundle, RecoveryInputError
 from cfb.public_safety import assert_public_bytes
 from cfb.release import build_release
 from cfb.season_snapshot import SeasonSnapshot, _checksum
@@ -119,6 +119,135 @@ def _fixture(root: Path) -> tuple[Path, Path, RecoveryInputBundle, Path, Path]:
     return candidate.site, baseline, source_inputs, firebase, manifest_path
 
 
+def _versioned_2026_fixture(
+    root: Path,
+) -> tuple[Path, Path, Path, Path, RecoveryInputBundle, Path, Path]:
+    """Build matching legacy/native 2026 source versions for export tests."""
+
+    teams = (SourceTeam("Alpha", "Test"), SourceTeam("Beta", "Test"))
+    fetched_at = "2026-09-01T00:00:00+00:00"
+    source = root / "versioned-source"
+
+    def write_source(schema_version: int, path: Path) -> tuple[str, SeasonSnapshot]:
+        state: dict[str, object] = {
+            "schema_version": schema_version,
+            "sport": "cfb",
+            "classification": "FBS",
+            "year": 2026,
+            "teams_fetched_at": fetched_at,
+            "games_fetched_at": fetched_at,
+            "complete_through_week": -1,
+            "teams": teams,
+            "games": (),
+        }
+        if schema_version == 4:
+            state.update(
+                {
+                    "calendar_provenance": None,
+                    "correction_registry_provenance": None,
+                    "migration_provenance": None,
+                }
+            )
+        checksum = _checksum(state, teams, ())
+        raw = {
+            key: value
+            for key, value in state.items()
+            if key not in {"teams", "games"}
+        }
+        raw["teams"] = [{"school": team.school, "conference": team.conference} for team in teams]
+        raw["games"] = []
+        raw["checksum"] = checksum
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(_canonical(raw))
+        metadata = {
+            key: value
+            for key, value in raw.items()
+            if key
+            not in {"sport", "classification", "year", "teams", "games", "checksum"}
+        }
+        return checksum, SeasonSnapshot(
+            "cfb", "FBS", 2026, teams, (), metadata, checksum
+        )
+
+    legacy_checksum, legacy_snapshot = write_source(
+        3, source / "snapshots/cfb-fbs-2026.json"
+    )
+    native_checksum, native_snapshot = write_source(
+        4, source / "snapshots" / ("0" * 64) / "cfb-fbs-2026.json"
+    )
+    placeholder = source / "snapshots" / ("0" * 64)
+    placeholder.rename(source / "snapshots" / native_checksum)
+
+    pins: dict[str, str] = {}
+    entries: list[dict[str, object]] = []
+    for path in sorted((source / "snapshots").rglob("*.json")):
+        relative = path.relative_to(source).as_posix()
+        content = path.read_bytes()
+        digest = hashlib.sha256(content).hexdigest()
+        pins[relative] = digest
+        entries.append(
+            {
+                "path": relative,
+                "sha256": digest,
+                "bytes": len(content),
+                "snapshot_checksum": (
+                    native_checksum if relative.count("/") == 2 else legacy_checksum
+                ),
+                "schema_version": 4 if relative.count("/") == 2 else 3,
+            }
+        )
+    manifest_path = source / "inputs-manifest.json"
+    manifest_path.write_bytes(_canonical({"files": entries}))
+    source_inputs = RecoveryInputBundle.from_directory(
+        source, trusted_file_sha256=pins
+    )
+
+    baseline = root / "versioned-baseline"
+    baseline.mkdir()
+    (baseline / "index.html").write_text("retained baseline", encoding="utf-8")
+    prior_path = baseline / "cfb/years/2025/rankings/2025_FINAL_FBS_cors.html"
+    prior_path.parent.mkdir(parents=True)
+    prior_path.write_text(
+        "<html><body><table><thead><tr><th>school</th><th>cors</th>"
+        "<th>wins_vs_expected</th></tr></thead><tbody>"
+        "<tr><td>Alpha</td><td>0.0</td><td>0.0</td></tr>"
+        "<tr><td>Beta</td><td>1.0</td><td>0.0</td></tr>"
+        "</tbody></table></body></html>",
+        encoding="utf-8",
+    )
+    legacy_candidate = build_release(
+        legacy_snapshot,
+        root / "legacy-candidate",
+        release_id="legacy-candidate",
+        phase="preseason",
+        published_site=baseline,
+        previous_final={"Alpha": 0.0, "Beta": 1.0},
+        source_inputs=source_inputs,
+        timestamp=fetched_at,
+    )
+    native_candidate = build_release(
+        native_snapshot,
+        root / "native-candidate",
+        release_id="native-candidate",
+        phase="preseason",
+        published_site=baseline,
+        previous_final={"Alpha": 0.0, "Beta": 1.0},
+        source_inputs=source_inputs,
+        timestamp=fetched_at,
+    )
+    firebase = root / "versioned-firebase.json"
+    firebase.write_bytes(_canonical({"hosting": {"public": "website"}}))
+    return (
+        legacy_candidate.site,
+        native_candidate.site,
+        baseline,
+        firebase,
+        source_inputs,
+        manifest_path,
+        source,
+    )
+
+
 class PublicSiteTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory()
@@ -175,6 +304,131 @@ class PublicSiteTests(unittest.TestCase):
         self.assertNotIn("teams", snapshot)
         self.assertNotIn("games", snapshot)
         self.assertEqual(receipt.inventory_sha256, verified.inventory_sha256)
+
+    def test_versioned_legacy_and_native_2026_exports_bind_exact_source(self) -> None:
+        (
+            legacy_candidate,
+            native_candidate,
+            baseline,
+            firebase,
+            source_inputs,
+            trust,
+            source_root,
+        ) = _versioned_2026_fixture(self.root)
+        with self.assertRaisesRegex(RecoveryInputError, "ambiguous"):
+            source_inputs.resolve(2026, "FBS")
+
+        legacy_site = self.root / "legacy-public"
+        legacy_receipt_path = self.root / "legacy-receipt.json"
+        legacy_receipt = validate_and_export(
+            legacy_candidate,
+            baseline,
+            source_inputs,
+            firebase,
+            legacy_site,
+            legacy_receipt_path,
+            source_root=source_root,
+            trusted_input_manifest=trust,
+            code_root=REPOSITORY,
+        )
+        native_site = self.root / "native-public"
+        native_receipt_path = self.root / "native-receipt.json"
+        native_receipt = validate_and_export(
+            native_candidate,
+            baseline,
+            source_inputs,
+            firebase,
+            native_site,
+            native_receipt_path,
+            source_root=source_root,
+            trusted_input_manifest=trust,
+            code_root=REPOSITORY,
+        )
+
+        legacy_provenance = json.loads(
+            (legacy_site / "cfb/years/2026/data/snapshot.json").read_text()
+        )
+        native_provenance = json.loads(
+            (native_site / "cfb/years/2026/data/snapshot.json").read_text()
+        )
+        self.assertEqual(legacy_provenance["identity"]["source_schema_version"], 3)
+        self.assertEqual(native_provenance["identity"]["source_schema_version"], 4)
+        self.assertNotEqual(
+            legacy_provenance["identity"]["source_path"],
+            native_provenance["identity"]["source_path"],
+        )
+        self.assertNotIn("teams", native_provenance)
+        self.assertNotIn("games", native_provenance)
+
+        trusted_copy = self.root / "versioned-trust-copy.json"
+        shutil.copyfile(trust, trusted_copy)
+        shutil.rmtree(source_root / "snapshots")
+        verify_local_receipt(
+            legacy_receipt_path,
+            legacy_site,
+            firebase,
+            REPOSITORY,
+            trusted_copy,
+        )
+        verify_local_receipt(
+            native_receipt_path,
+            native_site,
+            firebase,
+            REPOSITORY,
+            trusted_copy,
+        )
+
+    def test_versioned_schema_and_checksum_tampering_fails_closed(self) -> None:
+        (
+            _legacy_candidate,
+            native_candidate,
+            baseline,
+            firebase,
+            source_inputs,
+            trust,
+            source_root,
+        ) = _versioned_2026_fixture(self.root)
+        forged_trust = self.root / "forged-trust.json"
+        trust_value = json.loads(trust.read_text())
+        native_entry = next(
+            entry
+            for entry in trust_value["files"]
+            if entry["schema_version"] == 4
+        )
+        native_entry["schema_version"] = 3
+        forged_trust.write_bytes(_canonical(trust_value))
+        with self.assertRaisesRegex(PublicSiteError, "schema 4"):
+            validate_and_export(
+                native_candidate,
+                baseline,
+                source_inputs,
+                firebase,
+                self.root / "forged-public",
+                self.root / "forged-receipt.json",
+                source_root=source_root,
+                trusted_input_manifest=forged_trust,
+                code_root=REPOSITORY,
+            )
+
+        native_site = self.root / "native-public"
+        native_receipt_path = self.root / "native-receipt.json"
+        validate_and_export(
+            native_candidate,
+            baseline,
+            source_inputs,
+            firebase,
+            native_site,
+            native_receipt_path,
+            source_root=source_root,
+            trusted_input_manifest=trust,
+            code_root=REPOSITORY,
+        )
+        provenance_path = native_site / "cfb/years/2026/data/snapshot.json"
+        provenance = json.loads(provenance_path.read_text())
+        provenance["source_snapshot_checksum"] = "0" * 64
+        provenance_path.write_bytes(_canonical(provenance))
+        with self.assertRaisesRegex(PublicSiteError, "checksum"):
+            validate_public_output(native_site).raise_for_failure()
 
     def test_changed_ranking_fails_private_independent_validation(self) -> None:
         ranking = next(self.candidate.glob("cfb/years/1897/rankings/*PRESEASON*.html"))

@@ -21,7 +21,9 @@ from typing import Any, Mapping
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 _SNAPSHOT_NAME = re.compile(r"cfb-([a-z0-9]+)-(\d{4})\.json\Z")
 _MANIFEST_NAME = "inputs-manifest.json"
-_SCHEMA_VERSION = 3
+_LEGACY_SCHEMA_VERSION = 3
+_NATIVE_SCHEMA_VERSION = 4
+_SUPPORTED_SCHEMA_VERSIONS = frozenset({_LEGACY_SCHEMA_VERSION, _NATIVE_SCHEMA_VERSION})
 
 
 class RecoveryInputError(ValueError):
@@ -54,18 +56,54 @@ def _safe_relative(value: Any) -> str:
     return path.as_posix()
 
 
-def _canonical_schema3_checksum(state: Mapping[str, Any], *, path: Path) -> str:
-    """Recompute the normalized Schema 3 checksum without trusting the file."""
+def _verified_snapshot_identity(
+    state: Mapping[str, Any], *, path: Path
+) -> tuple[int, str]:
+    """Validate a retained source snapshot and return its schema/checksum."""
 
     try:
-        from .season_snapshot import _checksum
-        from .season_source import SourceGame, SourceTeam, normalize_game
+        from .season_snapshot import (
+            _checksum,
+            _complete_through,
+            _validate_provider_week_mapping,
+            _validate_repair_metadata,
+        )
+        from .season_source import SourceTeam, normalize_game
 
+        schema_version = state.get("schema_version")
+        if (
+            isinstance(schema_version, bool)
+            or schema_version not in _SUPPORTED_SCHEMA_VERSIONS
+        ):
+            raise RecoveryInputError(
+                f"source snapshot schema is unsupported: {path}"
+            )
         teams = tuple(SourceTeam(**item) for item in (state.get("teams") or []))
         games = tuple(normalize_game(item) for item in (state.get("games") or []))
-        return _checksum(state, teams, games)
+        season = int(state["year"])
+        _validate_provider_week_mapping(season, games)
+        if int(state.get("complete_through_week", -1)) != _complete_through(games):
+            raise RecoveryInputError(
+                f"source snapshot completion metadata is invalid: {path}"
+            )
+        if schema_version == _NATIVE_SCHEMA_VERSION:
+            if state.get("migration_provenance") is not None:
+                raise RecoveryInputError(
+                    f"source Schema 4 snapshot must be native provider evidence: {path}"
+                )
+            _validate_repair_metadata(state, games, teams)
+        checksum = state.get("checksum")
+        if not isinstance(checksum, str) or _SHA256.fullmatch(checksum) is None:
+            raise RecoveryInputError(f"source snapshot checksum is invalid: {path}")
+        if checksum != _checksum(state, teams, games):
+            raise RecoveryInputError(
+                f"source snapshot canonical checksum mismatch: {path}"
+            )
+        return int(schema_version), checksum
+    except RecoveryInputError:
+        raise
     except (KeyError, TypeError, ValueError, AttributeError) as exc:
-        raise RecoveryInputError(f"source Schema 3 snapshot is invalid: {path}") from exc
+        raise RecoveryInputError(f"source snapshot is invalid: {path}") from exc
 
 
 @dataclass(frozen=True)
@@ -79,7 +117,7 @@ class SourceInputIdentity:
     source_file_sha256: str
     source_file_bytes: int
     source_snapshot_checksum: str
-    schema_version: int = _SCHEMA_VERSION
+    schema_version: int = _LEGACY_SCHEMA_VERSION
     bundle_sha256: str | None = None
     manifest_sha256: str | None = None
     source_path: Path = field(default=Path("."), repr=False, compare=False)
@@ -101,7 +139,7 @@ class SourceInputIdentity:
 
 @dataclass(frozen=True)
 class RecoveryInputBundle:
-    """A re-checkable view of a trusted external Schema 3 input bundle."""
+    """A re-checkable view of trusted, immutable source snapshots."""
 
     root: Path
     manifest_path: Path
@@ -192,11 +230,16 @@ class RecoveryInputBundle:
 
         identities: list[SourceInputIdentity] = []
         for relative, entry in sorted(entries.items()):
-            match = _SNAPSHOT_NAME.fullmatch(PurePosixPath(relative).name)
-            if (
-                match is None
-                or PurePosixPath(relative).parent.as_posix() != "snapshots"
-            ):
+            relative_path = PurePosixPath(relative)
+            match = _SNAPSHOT_NAME.fullmatch(relative_path.name)
+            path_parts = relative_path.parts
+            is_original_path = len(path_parts) == 2 and path_parts[0] == "snapshots"
+            is_versioned_path = (
+                len(path_parts) == 3
+                and path_parts[0] == "snapshots"
+                and _SHA256.fullmatch(path_parts[1]) is not None
+            )
+            if match is None or not (is_original_path or is_versioned_path):
                 raise RecoveryInputError(f"source input path is not a canonical snapshot path: {relative}")
             filename_classification, filename_year = match.groups()
             path = root_path / relative
@@ -211,27 +254,28 @@ class RecoveryInputBundle:
             try:
                 state = json.loads(path.read_text(encoding="utf-8"))
             except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-                raise RecoveryInputError(f"source Schema 3 snapshot is unreadable: {relative}") from exc
+                raise RecoveryInputError(f"source snapshot is unreadable: {relative}") from exc
             if not isinstance(state, Mapping):
-                raise RecoveryInputError(f"source Schema 3 snapshot is not an object: {relative}")
+                raise RecoveryInputError(f"source snapshot is not an object: {relative}")
             try:
                 season = int(state["year"])
             except (KeyError, TypeError, ValueError) as exc:
-                raise RecoveryInputError(f"source Schema 3 snapshot has no valid year: {relative}") from exc
+                raise RecoveryInputError(f"source snapshot has no valid year: {relative}") from exc
             classification = str(state.get("classification", "")).upper()
             if (
-                state.get("schema_version") != _SCHEMA_VERSION
-                or state.get("sport") != "cfb"
+                state.get("sport") != "cfb"
                 or str(state.get("classification", "")).lower() != filename_classification
                 or season != int(filename_year)
                 or classification != filename_classification.upper()
             ):
-                raise RecoveryInputError(f"source Schema 3 identity does not match its path: {relative}")
-            snapshot_checksum = state.get("checksum")
-            if not isinstance(snapshot_checksum, str) or _SHA256.fullmatch(snapshot_checksum) is None:
-                raise RecoveryInputError(f"source Schema 3 checksum is invalid: {relative}")
-            if snapshot_checksum != _canonical_schema3_checksum(state, path=path):
-                raise RecoveryInputError(f"source Schema 3 canonical checksum mismatch: {relative}")
+                raise RecoveryInputError(f"source snapshot identity does not match its path: {relative}")
+            schema_version, snapshot_checksum = _verified_snapshot_identity(
+                state, path=path
+            )
+            if is_versioned_path and path_parts[1] != snapshot_checksum:
+                raise RecoveryInputError(
+                    f"source snapshot checksum does not match its versioned path: {relative}"
+                )
             identities.append(
                 SourceInputIdentity(
                     season=season,
@@ -241,15 +285,23 @@ class RecoveryInputBundle:
                     source_file_sha256=actual_digest,
                     source_file_bytes=actual_bytes,
                     source_snapshot_checksum=snapshot_checksum,
+                    schema_version=schema_version,
                     bundle_sha256=bundle_sha256,
                     manifest_sha256=manifest_sha256,
                     source_path=path,
                 )
             )
 
-        seasons = [identity.season for identity in identities]
-        if len(seasons) != len(set(seasons)):
-            raise RecoveryInputError("source input bundle contains duplicate seasons")
+        identity_keys = [
+            (
+                identity.season,
+                identity.classification.upper(),
+                identity.source_snapshot_checksum,
+            )
+            for identity in identities
+        ]
+        if len(identity_keys) != len(set(identity_keys)):
+            raise RecoveryInputError("source input bundle contains a duplicate source version")
         return cls(
             root=root_path,
             manifest_path=manifest_path,
@@ -325,16 +377,45 @@ class RecoveryInputBundle:
         if current.manifest_sha256 != self.manifest_sha256 or current.provenance() != self.provenance():
             raise RecoveryInputError("source input bundle identity changed after verification")
 
-    def resolve(self, year: int, classification: str = "FBS") -> SourceInputIdentity:
+    def resolve(
+        self,
+        year: int,
+        classification: str = "FBS",
+        *,
+        source_snapshot_checksum: str | None = None,
+    ) -> SourceInputIdentity:
         """Resolve and recheck one source file by its domain identity."""
 
         self.assert_current()
         wanted = (int(year), str(classification).upper())
-        for identity in self.identities:
-            if (identity.season, identity.classification.upper()) == wanted:
-                return identity
+        if source_snapshot_checksum is not None and (
+            not isinstance(source_snapshot_checksum, str)
+            or _SHA256.fullmatch(source_snapshot_checksum) is None
+        ):
+            raise RecoveryInputError("source snapshot checksum selector is invalid")
+        matches = [
+            identity
+            for identity in self.identities
+            if (identity.season, identity.classification.upper()) == wanted
+            and (
+                source_snapshot_checksum is None
+                or identity.source_snapshot_checksum == source_snapshot_checksum
+            )
+        ]
+        if len(matches) == 1:
+            return matches[0]
+        if len(matches) > 1:
+            raise RecoveryInputError(
+                f"trusted source input is ambiguous for {wanted[1]} {wanted[0]}; "
+                "select source_snapshot_checksum"
+            )
         raise RecoveryInputError(
             f"trusted source input is missing for {wanted[1]} {wanted[0]}"
+            + (
+                f" at checksum {source_snapshot_checksum}"
+                if source_snapshot_checksum is not None
+                else ""
+            )
         )
 
     def provenance(self) -> dict[str, Any]:

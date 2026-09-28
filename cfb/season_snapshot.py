@@ -584,7 +584,11 @@ def migrate_postseason_cache(
             )
             source_checksum = str(state["checksum"])
             if source_inputs is not None:
-                identity = source_inputs.resolve(season, classification)
+                identity = source_inputs.resolve(
+                    season,
+                    classification,
+                    source_snapshot_checksum=source_checksum,
+                )
                 if identity.source_snapshot_checksum != source_checksum:
                     raise ValueError(
                         "postseason migration source checksum disagrees with the trusted input bundle"

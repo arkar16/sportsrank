@@ -819,17 +819,26 @@ def _source_input_provenance(
     snapshot: SeasonSnapshot,
     source_inputs: RecoveryInputBundle | None,
 ) -> dict[str, Any] | None:
-    """Bind a migrated snapshot to a re-checkable external source bundle."""
+    """Bind a source-backed snapshot to one exact retained source version."""
 
     migration = snapshot.metadata.get("migration_provenance")
-    if not isinstance(migration, Mapping):
-        return None
     if source_inputs is None:
-        raise ValueError(
-            "trusted external source inputs are required for migrated snapshots"
-        )
+        if isinstance(migration, Mapping):
+            raise ValueError(
+                "trusted external source inputs are required for migrated snapshots"
+            )
+        return None
     source_inputs.assert_current()
-    identity = source_inputs.resolve(snapshot.year, snapshot.classification)
+    source_checksum = (
+        migration.get("source_snapshot_checksum")
+        if isinstance(migration, Mapping)
+        else snapshot.checksum
+    )
+    identity = source_inputs.resolve(
+        snapshot.year,
+        snapshot.classification,
+        source_snapshot_checksum=str(source_checksum),
+    )
     expected = identity.to_dict()
     expected.update(
         {
@@ -837,7 +846,11 @@ def _source_input_provenance(
             "bundle_sha256": source_inputs.bundle_sha256,
         }
     )
-    if migration.get("source_snapshot_checksum") != identity.source_snapshot_checksum:
+    if (
+        isinstance(migration, Mapping)
+        and migration.get("source_snapshot_checksum")
+        != identity.source_snapshot_checksum
+    ):
         raise ValueError(
             "migrated snapshot source checksum does not match the trusted bundle"
         )
@@ -1890,7 +1903,13 @@ def _validate_release(
                 manifest_path,
             )
     for index, (run, run_snapshot) in enumerate(run_contexts):
-        if not isinstance(run_snapshot.metadata.get("migration_provenance"), Mapping):
+        has_source_evidence = isinstance(
+            run.get("source_input_provenance"), Mapping
+        )
+        if (
+            not isinstance(run_snapshot.metadata.get("migration_provenance"), Mapping)
+            and not has_source_evidence
+        ):
             continue
         if source_inputs is None:
             _failure(
@@ -2065,7 +2084,10 @@ def _validate_release(
             _failure(failures, "snapshot.identity", "snapshot sport mismatch")
         if snapshot.year != int(manifest.get("season", snapshot.year)):
             _failure(failures, "snapshot.identity", "snapshot season mismatch")
-        if isinstance(snapshot.metadata.get("migration_provenance"), Mapping):
+        if (
+            isinstance(snapshot.metadata.get("migration_provenance"), Mapping)
+            or isinstance(manifest.get("source_input_provenance"), Mapping)
+        ):
             if source_inputs is None:
                 _failure(
                     failures,

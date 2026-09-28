@@ -7,7 +7,8 @@ has no Python, Node, database, or server runtime.
 ## Current recovery delivery
 
 SportsRank BB task SR-7 (`bb tasks show SR-7`) owns the remaining recovery and
-protected-publication work in PR #3. Earlier Gate 1 reports are historical;
+protected-publication work in PR #3. SR-17 extends the prepared recovery through
+2026 Week 3, with Week 4 slate/model forecasts. Earlier Gate 1 reports are historical;
 fresh reconstruction and independent acceptance are required. The owner retains
 merge and production approval. See the [recovery contract](docs/plans/2026-p0-recovery-and-backfill.md)
 and [publication runbook](docs/operations/2026-season-recovery-morning.md).
