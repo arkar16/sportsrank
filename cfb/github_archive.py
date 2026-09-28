@@ -139,6 +139,37 @@ class GitHubReleaseArchive:
             raise ArchiveError("draft archive identity changed during discovery")
         return exact
 
+    def _create_draft(self, spec: ArchiveSpec) -> Mapping[str, object]:
+        raw = self._run([
+            "api", "--method", "POST", f"repos/{spec.repository}/releases",
+            "-f", f"tag_name={spec.tag}",
+            "-f", f"target_commitish={spec.target_commit}",
+            "-f", f"name={spec.title}",
+            "-f", "body=Immutable SportsRank publication evidence",
+            "-F", "draft=true",
+        ])
+        try:
+            created = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise ArchiveError("GitHub draft creation response is invalid") from exc
+        if not isinstance(created, Mapping):
+            raise ArchiveError("GitHub draft creation response is invalid")
+        release_id = _api_id(created.get("id"), "release ID")
+        if (
+            created.get("tag_name") != spec.tag
+            or created.get("target_commitish") != spec.target_commit
+            or created.get("draft") is not True
+        ):
+            raise ArchiveError("GitHub draft creation identity differs from the request")
+        exact = self._release_by_id(spec.repository, release_id)
+        if (
+            exact.get("tag_name") != spec.tag
+            or exact.get("target_commitish") != spec.target_commit
+            or exact.get("draft") is not True
+        ):
+            raise ArchiveError("GitHub draft identity changed after creation")
+        return exact
+
     def _tag_commit(self, repository: str, tag: str) -> str | None:
         value = self._api_json(
             f"repos/{repository}/git/ref/tags/{quote(tag, safe='')}",
@@ -258,10 +289,7 @@ class GitHubReleaseArchive:
             release = self._draft(spec.repository, spec.tag)
         if release is None:
             self._ensure_tag_commit(spec.repository, spec.tag, spec.target_commit)
-            self._run(["release", "create", spec.tag, "--repo", spec.repository, "--target", spec.target_commit, "--title", spec.title, "--notes", "Immutable SportsRank publication evidence", "--draft"])
-            release = self._draft(spec.repository, spec.tag)
-            if release is None:
-                raise ArchiveError("created draft archive cannot be discovered by stable ID")
+            release = self._create_draft(spec)
         if release.get("draft") is True and release.get("immutable") is not True:
             if release.get("tag_name") != spec.tag:
                 raise ArchiveError("draft archive tag differs from the specification")
@@ -286,14 +314,7 @@ class GitHubReleaseArchive:
         if self._draft(spec.repository, spec.tag) is not None:
             raise ArchiveError("exclusive archive claim already exists")
         self._ensure_tag_commit(spec.repository, spec.tag, spec.target_commit)
-        self._run([
-            "release", "create", spec.tag, "--repo", spec.repository,
-            "--target", spec.target_commit, "--title", spec.title,
-            "--notes", "Immutable SportsRank publication evidence", "--draft",
-        ])
-        release = self._draft(spec.repository, spec.tag)
-        if release is None:
-            raise ArchiveError("exclusive archive claim creation is uncertain")
+        release = self._create_draft(spec)
         release_id = _api_id(release.get("id"), "release ID")
         self._require_tag_commit(spec.repository, spec.tag, spec.target_commit)
         if self._draft_assets(spec, release, allow_missing=True):

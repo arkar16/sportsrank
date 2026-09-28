@@ -206,6 +206,115 @@ class PublicationArchiveTests(unittest.TestCase):
                 mutations[0][4], "repos/owner/repository/releases/77"
             )
 
+    def test_new_draft_uses_creation_id_when_release_listing_is_stale(self):
+        for method in ("seal_or_reconcile", "seal_exclusive"):
+            with self.subTest(method=method), tempfile.TemporaryDirectory() as directory:
+                asset = Path(directory) / "asset.tar.gz"
+                asset.write_bytes(b"asset bytes")
+                empty = {
+                    "id": 77, "tag_name": "evidence-1",
+                    "target_commitish": "c" * 40,
+                    "draft": True, "immutable": False, "assets": [],
+                }
+                complete = {
+                    **empty,
+                    "assets": [{
+                        "id": 78, "name": asset.name,
+                        "digest": f"sha256:{sha(asset.read_bytes())}",
+                        "size": asset.stat().st_size, "state": "uploaded",
+                    }],
+                }
+                published = {**complete, "draft": False, "immutable": True}
+                by_id_reads = 0
+                list_reads = 0
+                commands = []
+
+                def gh(arguments, **kwargs):
+                    nonlocal by_id_reads, list_reads
+                    commands.append(arguments)
+                    if arguments[1:4] == ["api", "--method", "POST"]:
+                        endpoint = arguments[4]
+                        if endpoint == "repos/owner/repository/releases":
+                            return subprocess.CompletedProcess(
+                                arguments, 0, json.dumps(empty).encode(), b""
+                            )
+                        if endpoint.startswith("https://uploads.github.com/"):
+                            return subprocess.CompletedProcess(arguments, 0, b"{}", b"")
+                    if arguments[1:4] == ["api", "--method", "PATCH"]:
+                        return subprocess.CompletedProcess(arguments, 0, b"{}", b"")
+                    endpoint = arguments[2]
+                    if endpoint.endswith("/releases/tags/evidence-1"):
+                        return subprocess.CompletedProcess(arguments, 1, b"", b"HTTP 404")
+                    if "/releases?per_page=100&page=1" in endpoint:
+                        list_reads += 1
+                        return subprocess.CompletedProcess(arguments, 0, b"[]", b"")
+                    if endpoint.endswith("/releases/77"):
+                        states = (empty, complete, published)
+                        result = states[by_id_reads]
+                        by_id_reads += 1
+                        return subprocess.CompletedProcess(
+                            arguments, 0, json.dumps(result).encode(), b""
+                        )
+                    if endpoint.endswith("/git/ref/tags/evidence-1"):
+                        tag = {"object": {"type": "commit", "sha": "c" * 40}}
+                        return subprocess.CompletedProcess(
+                            arguments, 0, json.dumps(tag).encode(), b""
+                        )
+                    raise AssertionError(arguments)
+
+                archive = GitHubReleaseArchive()
+                spec = ArchiveSpec(
+                    "owner/repository", "evidence-1", "c" * 40,
+                    {asset.name: asset}, "title",
+                )
+                with patch("cfb.github_archive.subprocess.run", side_effect=gh):
+                    reference = getattr(archive, method)(spec)[asset.name]
+
+                self.assertEqual(reference.release_id, "77")
+                self.assertEqual(list_reads, 1)
+                creation = next(
+                    command for command in commands
+                    if command[1:5] == [
+                        "api", "--method", "POST",
+                        "repos/owner/repository/releases",
+                    ]
+                )
+                self.assertIn("tag_name=evidence-1", creation)
+                self.assertIn(f"target_commitish={'c' * 40}", creation)
+                self.assertIn("draft=true", creation)
+
+    def test_new_draft_creation_response_identity_is_fail_closed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            asset = Path(directory) / "asset.tar.gz"
+            asset.write_bytes(b"asset bytes")
+            spec = ArchiveSpec(
+                "owner/repository", "evidence-1", "c" * 40,
+                {asset.name: asset}, "title",
+            )
+            valid = {
+                "id": 77, "tag_name": "evidence-1",
+                "target_commitish": "c" * 40,
+                "draft": True, "immutable": False, "assets": [],
+            }
+            invalid_payloads = (
+                b"{",
+                json.dumps([]).encode(),
+                json.dumps({**valid, "id": 0}).encode(),
+                json.dumps({**valid, "id": "77"}).encode(),
+                json.dumps({**valid, "tag_name": "other"}).encode(),
+                json.dumps({**valid, "target_commitish": "d" * 40}).encode(),
+                json.dumps({**valid, "draft": False}).encode(),
+            )
+            for payload in invalid_payloads:
+                with self.subTest(payload=payload):
+                    archive = GitHubReleaseArchive()
+                    with patch.object(
+                        archive, "_run", return_value=payload
+                    ), patch.object(archive, "_release_by_id") as read_by_id:
+                        with self.assertRaises(ArchiveError):
+                            archive._create_draft(spec)
+                    read_by_id.assert_not_called()
+
     def test_draft_upload_and_publish_use_the_exact_numeric_release_id(self):
         with tempfile.TemporaryDirectory() as directory:
             asset = Path(directory) / "asset.tar.gz"
