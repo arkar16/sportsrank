@@ -1,17 +1,14 @@
 {
   "name": "sportsrank",
   "version": "1.0.0",
-  "description": "a work in process",
+  "description": "Static College Football CORS rankings and Firebase Hosting pipeline",
+  "private": true,
   "main": "index.js",
   "scripts": {
-    "build": "vite build",
-    "build:client": "vite build",
-    "serve": "firebase serve --only functions",
-    "shell": "firebase functions:shell",
-    "start": "npm run shell",
-    "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log",
-    "test": "pytest"
+    "build": "npm run verify:hosting",
+    "verify:hosting": "test -f website/index.html && test -f website/404.html",
+    "serve": "firebase emulators:start --only hosting",
+    "hosting:serve": "npm run serve"
   },
   "repository": {
     "type": "git",
@@ -24,7 +21,6 @@
   },
   "homepage": "https://github.com/arkar16/sportsrank#readme",
   "devDependencies": {
-    "typescript": "^6.0.2",
-    "vite": "^8.0.3"
+    "firebase-tools": "15.29.0"
   }
 }

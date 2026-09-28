@@ -1,0 +1,213 @@
+# Latest Session Work
+
+## Gate 1 Postseason Acceptance
+
+The PR #3 postseason repair is integrated and reviewer-accepted. The owning
+orchestration worked only in
+`/Users/aryakarnik/Developer/sportsrank-postseason-calendar-repair-20260909-src`
+from base `379caab4283dacc940516be75967a0d1bbe7a4b1`; the reviewer kept the main
+checkout separate, fast-forwarded it to cleanup merge `4ed68400`, and then
+integrated repair commit `68d9ec51` without overwriting cleanup work.
+
+The repair moves the 92 verified 2024/2025 postseason rows from canonical Week
+1 to chronological Weeks 16–22, retains raw provider phase/playoff metadata,
+and adds the official inclusive 2026–27 window December 12, 2026 through
+January 25, 2027. A historical recovery registry is not a future provider-ID
+allowlist: fresh games pass only with authoritative provider postseason phase,
+while missing, contradictory, or unclassified late-Week-1 data fails closed.
+CFP matchup names, seeds, bracket slots, and round labels never choose the week.
+
+The full offline suite passes 225/225 tests in 17.978 seconds, compilation and
+the static build pass, and the three release stages validate directly and
+against their immediate bases. The separate V7 reconstruction has zero added,
+changed, or deleted paths relative to V6 at all stages. The promoted final site
+has 11,634 files; `manifest.json` SHA-256 is
+`4e31e2e0c367ffecffb78a78b3887d3ed986a13ae3f4a2d0615358174fba7c9a`.
+The build and review made zero CFBD calls. Gate 2/Firebase publication remains
+pending and was not performed.
+
+## Current Cleanup Integration
+
+Heavy deployment `sportsrank_cleanup_integration_20260909` resumes the paused
+cleanup after Gate 1 reviewer acceptance. Work is isolated in
+`/Users/aryakarnik/Developer/sportsrank-cleanup` on
+`chore/repository-structure-cleanup`. The accepted recovery base, including the
+reviewer's final documentation correction, is
+`379caab4283dacc940516be75967a0d1bbe7a4b1` on
+`feature/season-2026-recovery` (PR #3).
+
+Scope: byte-preserving relocation of the two NFL experiments to `legacy/nfl/`,
+repository navigation, conditional cleanup roadmap, and complementary project
+memory. CFB source, tests, workflow, public artifacts, and dependency contracts
+are inherited unchanged. Independent final product verification at
+`7827602a851f5d00dea87a61fec9b7d2cbc84f1f` passes:
+
+- Full key-unset unittest suite: 193/193 tests.
+- Additional socket-blocked subset: 191/191 tests; the two local HTTP-server
+  tests are covered by the complete 193-test run.
+- Static build, `uv lock --check`, compilation, and diff checks.
+- Byte-identical NFL relocation, clean-environment direct invocation, and
+  reference checks showing no active CFB/tools/tests NFL caller.
+- Exact cleanup scope: README navigation, six workflow documents, cleanup
+  plan, legacy README, and two 100% NFL renames. CFB source, tests, workflow,
+  dependency files, and all website bytes match the accepted base.
+
+The subsequent handoff status update changes only these operational documents.
+
+The original main-based commits were `71299766` and `3ed83d62`. Their ignored
+local handoff was saved before rebase at
+`/tmp/sportsrank-cleanup-agent-docs.n3yWsQ/originals/`. The accepted recovery
+memory below remains canonical for Gate 1 evidence; the old eight-test baseline
+does not establish integrated recovery acceptance.
+
+The cleanup task is `01a08454-4690-7813-8d02-d5dac29d2833`; reviewer coordination
+is `01a08450-a5fb-7543-84f2-fb7d0dc178f1`. Integration and technical acceptance
+are complete. Cleanup [PR #4](https://github.com/arkar16/sportsrank/pull/4) is
+open, non-draft, and reported mergeable. GitHub reports no checks; the completed
+offline verification above is the acceptance evidence. The PR head branch is
+`chore/repository-structure-cleanup` and base is
+`feature/season-2026-recovery`. Review it after PR #3. Preserve PR #3's accepted
+commit and the independent Gate 2 production approval. No cleanup operation
+has rebuilt or deployed the accepted candidate or requested provider data.
+
+## Accepted Gate 1 Baseline
+
+- Deployment: `gate1_review_repairs_20260909`, Heavy route.
+- Goal: repair all seven reviewer findings, including the later CI URL/retry
+  correction, with cached inputs only and return fresh evidence for acceptance.
+- Source, workflow, and tests are frozen. Full offline verification passes
+  193 tests. V5's three release validations and history-value checks pass.
+  Isolated promotion and the final actual-key scan pass. Local implementation
+  and verification are complete. Reviewer final acceptance of the sealed V5
+  package was granted on 2026-09-09, and the exact candidate is promoted into
+  tracked `website/`.
+- Human approval of the V4 Gate 1 package and reviewer final acceptance of V5
+  are granted; Gate 2 production approval is pending.
+- Branch: `feature/season-2026-recovery`; reviewed implementation commit
+  `f058ecf513db518fcf891a9369f914a827edb271` is pushed. Review PR #3 is open at
+  `https://github.com/arkar16/sportsrank/pull/3`. The delegated repair made no
+  Git or deployment mutation; the reviewer performed the accepted promotion,
+  commit, push, and PR handoff. Firebase deployment remains unauthorized.
+
+## Repairs and Regressions
+
+Pick'em lines retain the actual home/away result or tied-game push, while
+favorite, underdog, and `ats_correct` remain absent. All 35 real historical
+zero-line rows now have blank favorite-pick correctness rather than `True`.
+Home win, away win, and tie behavior have explicit regressions.
+
+Numbered-week overlays emit or preserve the Season's PRESEASON artifact and
+validate its exact fields, including when inherited. Resealed deletion is
+rejected. Existing same-season checkpoint, timestamp, and history protections
+remain covered.
+
+`SeasonSnapshot.complete_through_week` derives its result from game completion
+and canceled/not-played dispositions. Release checks reject forged metadata or
+targets beyond the derived boundary. Malformed numeric manifest fields return
+structured validation failures instead of uncaught conversion errors. An
+`OSError` reading inherited `cfb/cfb.html` now aborts rather than losing links.
+
+The publication workflow uses reviewer-supplied `astral-sh/setup-uv@v9.0.0` and
+stable concurrency group `sportsrank-production-publication` with
+`cancel-in-progress: false`. GitHub concurrency does not guarantee FIFO order.
+`tools/scripts/postdeploy_smoke.py` is bundled and SHA-bound in the validated
+artifact chain, verified before execution, and receives the explicit
+`https://www.sportsrank.top` URL instead of unsupported `job.environment.url`.
+It compares homepage, 2023/2024/2025 FINAL, 2026 PRESEASON, and the W0 slate
+byte-for-byte with the validated artifact. Defaults are three full-check
+attempts, a two-second delay, ten-second per-page timeout, and a 180-second
+window. CLI caps are five attempts, thirty-second delay, and 180-second window.
+HTTP/network/content failures may retry; missing/empty local artifacts and
+invalid URLs fail before transport. Exhaustion fails the job. All behavior was
+verified offline; no GitHub workflow or production deployment was executed.
+
+## Verification Evidence
+
+Evidence root: `.sportsrank/gate1-review-repairs-20260909/`.
+The final full suite passed 193/193 tests; see `verification/full-suite-final2.log`.
+CI focused tests pass 10/10, including exact invoked URL, full retry restart,
+transient recovery, exhaustion, and bounds with fake fetch/clock/sleep.
+Independent tests cover the five release defects and publication contracts.
+Compilation, locked dependency checks, npm build, and diff checks pass.
+`verification/source-hashes-final.txt` records the final verified source.
+
+The three completed V5 validator reports have zero structural failures, with
+116, 226, and 234 checked artifacts respectively. Final overlay diff:
+142 added, 93 changed, zero deleted paths. The final candidate retains 335
+inherited legacy findings on unchanged pages. All 35 pick'em rows are ungraded;
+W0 slates contain 4/5/8 games for 2024/2025/2026, and no scored 2026 W0 artifacts
+are present.
+
+History checks preserve the 127 pre-2024 rows and add 2024/2025 for 129 rows.
+Finite numeric values are compared independently of trailing-zero formatting;
+legacy NaN/blank equivalence never treats zero as missing. See
+`evidence/history-independent.log` and `evidence/cache-independent.log`.
+Earlier monolithic verifier attempts had formatting assumptions and execution
+failures; completed successful stage evidence is retained, while the isolated
+promotion check is recorded under `verification/promotion-check/`.
+Its corrected `promotion-check-report.json` confirms CLI promotion succeeded,
+the initial temporary copy and backup matched the original, and the promoted
+files matched the candidate exactly by relative-path SHA maps and byte checks.
+Post-promotion validation checked 234 artifacts with zero structural failures.
+The reviewer independently confirmed the same public-CLI result at
+`/tmp/sportsrank-v5-promotion-review.RxjjKi/website`, with `diff -qr` exit zero.
+Absolute-root metadata caused false comparison flags in the original helper
+report; a later timed-out rerun is superseded and did not change product inputs.
+
+The final `evidence/credential-scan-v5.json` reports `present=true`,
+`value_scanned=true`, and `scan_complete=true`, with zero matches and zero read
+errors across all thirteen scopes. These cover source, original/refreshed caches,
+V5 and superseded candidates, evidence and verifier outputs, and the Published
+Site. The actual environment value was scanned privately and never recorded.
+The sealed evidence index retains its contemporaneous status
+`local_verification_complete_pending_reviewer_v5_acceptance`; reviewer
+acceptance was granted afterward on 2026-09-09.
+
+## Candidate and Input Identities
+
+Candidate:
+`.sportsrank/gate1-review-repairs-20260909/releases-v5/2026-preseason/site`.
+Review index: `evidence/index-v5.json`; human entry: `evidence/human-review-v5.md`;
+exact repair paths: `evidence/changed-source-paths-v5.txt`.
+
+Final site aggregate SHA256 (11,559 files, operator path-record algorithm):
+`06f66ee7a91abb3b508ab59993ff76ce047defb02cecb56c2890541919c971c3`.
+Final manifest SHA256:
+`0ff932b26521b914de31e400aeacfa7e345008e16c581e04165effcabeb69f68`.
+Verified generator `cfb/release.py` SHA256:
+`91bb943d750a5b7ca489cf79c4a9120a6ce6f748fdde28fe3795a924ba8819a7`.
+Verified snapshot module SHA256:
+`775b73ce39ad33a96f9a7c987edc9f84fa433a10cdd0b0a209a8332e0637c8b7`.
+Smoke helper SHA256:
+`c08d4fd4e415d6cee52f3817e6b46a93d630ea64f60796b2604627b66e21358b`.
+Workflow SHA256:
+`7b941d48701336962ec731e77d31ff930001f0a5c72071a7ef34af01fe343576`.
+The candidate records `working-tree`; later CI/documentation-only edits do not
+imply an HTML rebuild. This is not a merged commit or deployment attestation.
+
+Builds used the existing
+`.sportsrank/gate1-recovery-20260908/metadata-refresh-data/snapshots` inputs,
+with `CFBD_API_KEY` unset and socket transport blocked. No data calls occurred.
+The nine-row ledger still contains the original six calls plus the three prior
+metadata-repair refreshes. Existing input identities are preserved:
+
+- Original cache: seven files, aggregate
+  `a21b77321e2c202a05f42fbf67bd5ced17a275ca83c92ee06bb829f30b0baacc`.
+- Refreshed cache: seven files, aggregate
+  `8fca32c605ac2265dca42c1088d99eb166d936f069bc399beabb71469a1ab341`.
+- Published Site: 11,417 files, aggregate
+  `5e42b5eec90653072783d056b3f87d0df2ab36497e0f2c923c897a7524a9c922`.
+
+An initial offline helper pointed at the cache package root and created one
+empty lock. Only that known temporary lock was removed; all snapshot and audit
+bytes stayed unchanged, and the complete cache digest returned to the V4 value.
+`evidence/cache-reconciliation-v5.json` records the comparison. V4 historical
+candidate and evidence files were not rewritten.
+
+## Gate 1 Publication Boundary
+
+The reviewer accepted the sealed V5 candidate, promoted it byte-for-byte into
+tracked `website/`, and pushed reviewed implementation commit
+`f058ecf513db518fcf891a9369f914a827edb271`. PR #3 is open for human review.
+Do not perform further provider data requests. Gate 2 remains separate and
+is not authorization for Firebase deployment.
