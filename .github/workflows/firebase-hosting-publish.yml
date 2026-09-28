@@ -300,14 +300,12 @@ jobs:
           set -euo pipefail
           [[ "$PREPARATION_RUN_ID" =~ ^[1-9][0-9]*$ ]]
           [[ "$PREPARATION_ARTIFACT_NAME" =~ ^[A-Za-z0-9_.-]+$ ]]
-          run_json="$(gh run view "$PREPARATION_RUN_ID" \
-            --repo arkar16/sportsrank \
-            --json databaseId,path,event,headBranch,headSha,runAttempt,status,conclusion)"
+          run_json="$(gh api "repos/arkar16/sportsrank/actions/runs/$PREPARATION_RUN_ID")"
           jq -e \
             --arg run_id "$PREPARATION_RUN_ID" \
-            '.databaseId == ($run_id | tonumber) and .path == ".github/workflows/firebase-hosting-publish.yml" and .event == "workflow_dispatch" and .headBranch == "main" and .runAttempt == 1 and .status == "completed" and .conclusion == "success"' \
+            '.id == ($run_id | tonumber) and .path == ".github/workflows/firebase-hosting-publish.yml" and .event == "workflow_dispatch" and .head_branch == "main" and .run_attempt == 1 and .status == "completed" and .conclusion == "success"' \
             <<< "$run_json" > /dev/null
-          preparation_head_sha="$(jq -r '.headSha' <<< "$run_json")"
+          preparation_head_sha="$(jq -r '.head_sha' <<< "$run_json")"
           [[ "$preparation_head_sha" =~ ^[0-9a-f]{40}$ ]]
           candidate="$(jq -r '.candidate_commit' "$RUNNER_TEMP/preparation/publication-context.json")"
           [[ "$candidate" =~ ^[0-9a-f]{40}$ ]]
@@ -326,13 +324,11 @@ jobs:
             --arg origin_head_sha "$origin_head_sha" \
             '.schema_version == 1 and .record_type == "publication_preparation_origin" and .repository == $repository and .workflow_path == $workflow_path and .event == "workflow_dispatch" and .ref == "refs/heads/main" and .run_id == $origin_run_id and .run_attempt == "1" and .head_sha == $origin_head_sha' \
             "$origin_file" > /dev/null
-          origin_json="$(gh run view "$origin_run_id" \
-            --repo arkar16/sportsrank \
-            --json databaseId,path,event,headBranch,headSha,runAttempt,status,conclusion)"
+          origin_json="$(gh api "repos/arkar16/sportsrank/actions/runs/$origin_run_id")"
           jq -e \
             --arg run_id "$origin_run_id" \
             --arg head_sha "$origin_head_sha" \
-            '.databaseId == ($run_id | tonumber) and .path == ".github/workflows/firebase-hosting-publish.yml" and .event == "workflow_dispatch" and .headBranch == "main" and .headSha == $head_sha and .runAttempt == 1 and .status == "completed" and .conclusion == "success"' \
+            '.id == ($run_id | tonumber) and .path == ".github/workflows/firebase-hosting-publish.yml" and .event == "workflow_dispatch" and .head_branch == "main" and .head_sha == $head_sha and .run_attempt == 1 and .status == "completed" and .conclusion == "success"' \
             <<< "$origin_json" > /dev/null
           test "$candidate" = "$origin_head_sha"
           package_archive_sha256="$(sha256sum "$RUNNER_TEMP/preparation/package.tar.gz" | cut -d' ' -f1)"
@@ -585,9 +581,9 @@ jobs:
           origin_run_id="$(jq -r '.run_id' "$RUNNER_TEMP/durable/preparation-origin.json")"
           origin_sha="$(jq -r '.head_sha' "$RUNNER_TEMP/durable/preparation-origin.json")"
           [[ "$origin_run_id" =~ ^[1-9][0-9]*$ && "$origin_sha" = "$candidate" ]]
-          origin_json="$(gh run view "$origin_run_id" --repo arkar16/sportsrank --json databaseId,path,event,headBranch,headSha,runAttempt,status,conclusion)"
+          origin_json="$(gh api "repos/arkar16/sportsrank/actions/runs/$origin_run_id")"
           jq -e --arg run_id "$origin_run_id" --arg head_sha "$candidate" \
-            '.databaseId == ($run_id | tonumber) and .path == ".github/workflows/firebase-hosting-publish.yml" and .event == "workflow_dispatch" and .headBranch == "main" and .headSha == $head_sha and .runAttempt == 1 and .status == "completed" and .conclusion == "success"' \
+            '.id == ($run_id | tonumber) and .path == ".github/workflows/firebase-hosting-publish.yml" and .event == "workflow_dispatch" and .head_branch == "main" and .head_sha == $head_sha and .run_attempt == 1 and .status == "completed" and .conclusion == "success"' \
             <<< "$origin_json" >/dev/null
           trusted_repo="$RUNNER_TEMP/durable/candidate.git"
           authenticated_commit="$(gh api "repos/arkar16/sportsrank/commits/$candidate")"
