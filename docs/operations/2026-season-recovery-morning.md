@@ -196,13 +196,14 @@ inside the protected job, and `CFBD_API` is absent.
 
 After merge and the required review, preserve the file emitted by `seal-only`
 as `sealed-reference.json`. Send workflow inputs through JSON stdin so the
-canonical reference's final newline survives. Do not use shell command
+canonical reference's final newline survives. The `gh workflow run --json`
+interface requires string values, including `"true"` for boolean inputs. Do not use shell command
 substitution around `cat`, which removes trailing newlines.
 
 For an initial normal execution, the dispatch shape is:
 
 ```sh
-python3 -c 'import json, pathlib; print(json.dumps({"operation": "execute", "purpose": "normal", "initial_baseline": True, "sealed_reference": pathlib.Path("sealed-reference.json").read_text()}))' |
+python3 -c 'import json, pathlib; print(json.dumps({"operation": "execute", "purpose": "normal", "initial_baseline": "true", "sealed_reference": pathlib.Path("sealed-reference.json").read_text()}))' |
   gh workflow run firebase-hosting-publish.yml \
     --repo arkar16/sportsrank --ref main --json
 ```
