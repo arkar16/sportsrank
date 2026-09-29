@@ -4,14 +4,14 @@ SportsRank publishes College Football CORS rankings as a barebones static HTML
 website under `website/`. Firebase Hosting serves those files; the public site
 has no Python, Node, database, or server runtime.
 
-## Current recovery delivery
+## Current work
 
-SportsRank BB task SR-7 (`bb tasks show SR-7`) owns the remaining recovery and
-protected-publication work in PR #3. SR-17 extends the prepared recovery through
-2026 Week 3, with Week 4 slate/model forecasts. Earlier Gate 1 reports are historical;
-fresh reconstruction and independent acceptance are required. The owner retains
-merge and production approval. See the [recovery contract](docs/plans/2026-p0-recovery-and-backfill.md)
-and [publication runbook](docs/operations/2026-season-recovery-morning.md).
+Start with [current work](docs/work/current.md) for active tasks and their
+acceptance records. Historical recovery evidence is indexed in
+[Gate 1 evidence](docs/evidence/2026-gate1.md). The
+[recovery contract](docs/plans/2026-p0-recovery-and-backfill.md) and
+[publication runbook](docs/operations/2026-season-recovery-morning.md) retain
+the implementation and operating requirements.
 
 ## Repository navigation
 
@@ -21,7 +21,8 @@ and [publication runbook](docs/operations/2026-season-recovery-morning.md).
 | [Website](website/) | Permanent public static HTML artifacts and their supporting files. |
 | `tests/` | Automated tests for the ranking runtime and published-site contracts. |
 | [Docs](docs/) | ADRs (`docs/adr/`), plans (`docs/plans/`), and operational notes (`docs/operations/`). |
-| `agent_docs/` | Current Codex Workflow project state and handoff records. |
+| [Architecture](docs/architecture/overview.md) | Current module boundaries and deferred architecture. |
+| [Current work](docs/work/current.md) | Active tasks and acceptance records. |
 | [Legacy NFL](legacy/nfl/) | Unsupported historical standalone NFL experiments and their preserved direct script entry point. |
 | [`mainpage.py`](mainpage.py), [`webconfig.py`](webconfig.py) | Path-sensitive legacy batch helpers retained at the repository root. |
 
@@ -126,13 +127,10 @@ states. [ADR-0016](docs/adr/0016-bind-publication-to-verified-live-content.md)
 and [ADR-0018](docs/adr/0018-retain-publication-evidence-in-github-releases.md)
 record the accepted behavior and retention limits.
 
-## Project memory
+## Working with agents
 
-- `CONTEXT.md` defines SportsRank domain language.
-- `docs/adr/` records durable architectural decisions and rationale.
-- `docs/plans/` records active implementation contracts.
-- `agent_docs/` records current Codex Workflow execution state and evidence.
-
-These sources are complementary. A contradiction among them or with executable
-interfaces is a work blocker and must be reconciled before implementation or
-publication continues.
+[AGENTS.md](AGENTS.md) is the portable repository entry point.
+[Project memory](docs/agents/project-memory.md) assigns one home to each kind
+of information. Installed ask-matt skills guide design and delivery; BB owns
+thread and environment state. Historical workflow records are retained in the
+[frozen archive](docs/archive/codex-workflow/2026-09-10/README.md).

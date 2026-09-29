@@ -26,6 +26,12 @@ A team with authoritative, source-cited evidence that it newly joins a Classific
 **Season**:
 The named competition year whose games contribute to a sequence of weekly and final rankings.
 
+**Conference Standings**:
+Teams' positions within a conference according to that Season's competition results and governing rules. CORS strength is additional context and does not determine championship qualification.
+
+**Projected Championship Matchup**:
+The conference championship pairing indicated by Conference Standings at a specified checkpoint, subject to eligibility and unresolved ties. It can change as the Season progresses and is distinct from confirmed championship participants.
+
 **Preseason Ranking**:
 The CORS Ranking published before a Season's scored games contribute. It is initialized through Season Carryover and is used to calculate the Week 0 slate and spreads.
 _Avoid_: Week 0 Ranking
@@ -46,9 +52,45 @@ _Avoid_: Seed, previous-year copy
 
 ## Rankings and publication
 
+**CORS Rating**:
+A team's numerical strength assessment from the CORS model at one Season checkpoint. Its position in the ordered CORS Ranking is distinct from the rating itself.
+
 **CORS Ranking**:
-SportsRank's ordered assessment of teams for one sport, classification, Season, and completed checkpoint using the CORS model. A checkpoint may be PRESEASON, a numbered Week, or FINAL.
+SportsRank's ordered assessment of team strength for one sport, classification, Season, and completed checkpoint using the CORS model, intended to forecast game outcomes and scoring margins. A checkpoint may be PRESEASON, a numbered Week, or FINAL.
 _Avoid_: Poll, power ranking
+
+**Model Spread**:
+The scoring margin forecast by CORS for one Game.
+
+**Forecast Cutoff**:
+The time boundary before a matchup's kickoff that limits the information eligible for its Model Spread. A later recalculation does not move that boundary.
+
+**Graded Forecast**:
+The last CORS forecast published before a Game's kickoff, preserved as the basis for evaluating that Game.
+
+**Market Line**:
+A bookmaker's published point spread for one Game, used as a reference for evaluating CORS forecasts.
+
+**Predicted Winner**:
+The team CORS selects to win one Game.
+
+**Pick'em**:
+A CORS forecast with an exactly zero Model Spread and no Predicted Winner.
+
+**Straight-Up Result**:
+The outcome of CORS's Predicted Winner choice for one Game, independent of the size of the winning margin.
+
+**CORS Line Coverage**:
+Whether CORS's selected favorite covered its own Model Spread, with Cover, No cover and Push outcomes. A Pick'em has no selected favorite to grade.
+
+**Market ATS**:
+The performance of a CORS selection against a bookmaker's Market Line.
+
+**Before Excitement Value (BEV)**:
+A Game's anticipated appeal in a pregame watch guide, emphasizing team quality assessed by CORS alongside expected competitiveness and potential upsets suggested by CORS's comparison with Market Lines.
+
+**After Excitement Value (AEV)**:
+A Game's experienced drama, including sustained suspense and dramatic swings, assessed after it finishes, with actual drama taking priority over team quality and surprise. When game-flow evidence is incomplete, AEV is an estimate from the available historical evidence.
 
 **Ranking Run**:
 One attempt to calculate a CORS Ranking through a specified season week and prepare it for validation.

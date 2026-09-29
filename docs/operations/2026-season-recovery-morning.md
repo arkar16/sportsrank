@@ -2,7 +2,7 @@
 
 Before any publication action, read the authoritative SportsRank task SR-7 (`bb tasks show SR-7`) and
 verify the actual merged candidate SHA and complete live baseline. Historical acceptance
-and artifact identities are indexed in [historical Gate 1 reports](../../agent_docs/latest_session_work.md).
+and artifact identities are indexed in [historical Gate 1 reports](../evidence/2026-gate1.md).
 This runbook is a procedure, not an approval or a current verification report.
 
 The implementation and test contract is

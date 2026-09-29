@@ -4,7 +4,7 @@ The CFB boundary currently supports FBS data from CFBD and renders static
 HTML. The supported recovery entry point is `python -m cfb.recovery`; it keeps
 external fetching, cached snapshots, Release generation, validation, and local
 promotion as separate stages. See SportsRank task SR-7 (`bb tasks show SR-7`)
-for the recorded approval boundary and [historical Gate 1 reports](../agent_docs/latest_session_work.md)
+for the recorded approval boundary and [historical Gate 1 reports](../docs/evidence/2026-gate1.md)
 for historical verification. Commands below describe interfaces; fetch and
 publication examples do not grant authorization to execute them.
 
@@ -228,6 +228,7 @@ compatibility; new recovery work should use the staged interface above.
 
 ## Future spread evaluation
 
-[ADR-0019](../docs/adr/0019-evaluate-predictions-against-market-lines.md) records the proposed future
-comparison with published betting lines. The provider, line timing and metric
-definition are open; current spread grading is unchanged.
+[ADR-0019](../docs/adr/0019-evaluate-predictions-against-market-lines.md) records
+the accepted forecast-preservation and evaluation design, owned by task SR-26.
+Market-line selection and timing remain deferred. The current runtime's spread
+grading is unchanged; the accepted design is not yet an implemented evaluator.

@@ -12,8 +12,9 @@ The owner requested results through the current 2026 week. SR-17 extends SR-7
 and PR #3 to include completed Weeks 0–3 and the Week 4 slate/model forecasts,
 while preserving the original PRESEASON and historical pages. The one authorized
 metered 2026 games refresh is spent; further calls need a fresh allowance.
-Rebuild and validate offline from the retained snapshot. Week 4 is in progress
-and must not appear as a completed ranking checkpoint.
+Rebuild and validate offline from the retained snapshot. Week 4 was in progress
+at the September 25 snapshot and must not appear as a completed ranking
+checkpoint in this recovery candidate.
 
 Retain all three original Schema 3 sources unchanged, plus the native Schema 4
 refresh at a checksum-versioned path. Exact checksums select a source when a
@@ -25,7 +26,7 @@ belong to SR-17; the original mission below records the earlier recovery scope.
 
 ## Mission
 
-Use Goal Mode with the Heavy route to make the CFB/FBS static-site recovery
+The approved recovery mission was to make the CFB/FBS static-site recovery
 safe to run with the user's new CFBD key, rebuild 2024 and 2025 in carryover
 order, prepare 2026 PRESEASON plus the Week 0 slate and spreads, and produce a
 fully validated local diff. Work on
@@ -40,14 +41,13 @@ publication approval, and no external review-thread handoff is required.
 
 ## Consistency gate
 
-Before editing, read `AGENTS.md`, `docs/agents/project-memory.md`, `CONTEXT.md`,
-ADRs 0001–0014, this document, current Codex Workflow state, and the decisive
-source/tests. Codex Workflow records current execution and evidence;
-`CONTEXT.md` defines domain language; ADRs explain durable decisions; this plan
-defines the active implementation goal.
+Before changing a recovery contract, read `AGENTS.md`, `CONTEXT.md`, the
+relevant ADRs from the index, the affected sections here, and decisive
+source/tests. `docs/work/current.md` locates current execution and evidence;
+this plan owns the recovery requirements.
 
 A contradiction among agent instructions, domain language, accepted ADRs,
-this plan, workflow state, operator documentation, or executable interfaces is
+this plan, current task state, operator documentation, or executable interfaces is
 a work blocker. Stop that lane, report the conflict to the main agent, resolve
 the underlying decision, and update every affected source in the same change.
 Do not choose one source silently, preserve stale commands as current, or
@@ -539,17 +539,12 @@ goal and adds it to the P0 work before repaired technical acceptance.
 
 ## Completion and review handoff
 
-Use bounded Heavy-route ownership: CFB ranking semantics, shared release
+Use bounded worker ownership when delegating: CFB ranking semantics, shared release
 integrity, shared CI/publication, and independent testing are separate lanes.
 Workers must not revert another lane's edits and must escalate cross-boundary
 conflicts. The main agent owns architecture, integration, root-cause decisions,
-the two gates, and final evidence. Run the required Closure Steward handoff once
-after implementation and verification.
+the two gates, and final evidence. Record completion in the task and link its
+evidence from current work; follow the repository delegation policy.
 
-The V6 local repair remains the frozen baseline: its 218/218 suite and
-152/298/306 artifact validation are prior evidence. The current V7 window and
-provider-phase follow-up passes 225/225 offline tests and compilation with
-provider access blocked. All three direct/immediate reconstructions have zero
-failures and zero added/changed/deleted paths, with exact site and release JSON
-bytes matching V6. V7 reviewer acceptance is complete; Gate 2 is the
-separate protected production approval.
+Historical V6/V7 verification and acceptance are indexed in
+`docs/evidence/2026-gate1.md`; this contract does not replace current approval state.
