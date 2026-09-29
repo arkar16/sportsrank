@@ -1,59 +1,62 @@
-# Project memory for agents
+# Project knowledge and task context
 
-SportsRank keeps three different kinds of memory because each answers a
-different question. Treating them as interchangeable destroys context.
+Each fact has one maintained home. Links and short navigation summaries may
+repeat; policies, acceptance criteria, and evolving status should not.
 
-## Codex Workflow: where are we now?
+| Question | Canonical home |
+| --- | --- |
+| How should an agent work here? | Root `AGENTS.md` |
+| How do I run a design/delivery process? | Installed ask-matt skills, loaded on demand |
+| What do domain terms mean? | Root `CONTEXT.md`, glossary only |
+| Why did we choose this? | Accepted `docs/adr/` records |
+| How is the current implementation organized? | `docs/architecture/overview.md`; code owns exact interfaces |
+| What should this task deliver? | Its BB task and linked canonical spec/plan; GitHub issue when using the tracker fallback |
+| What is active and what happens next? | `docs/work/current.md`, a short pointer to active work |
+| What proves a completed result? | Task/PR evidence and `docs/evidence/` references |
+| What happened in the old workflow? | Frozen `docs/archive/codex-workflow/2026-09-10/` |
+| Where is the execution running? | BB threads and environments |
 
-The files under `agent_docs/` are operational memory. They describe the current
-goal, verified repository state, work completed, evidence collected, next
-milestone, and continuation point. Use the selected Codex Workflow route to
-coordinate execution and keep this state coherent across sessions and agents.
+## Design, then execution
 
-A workflow document may change whenever the project advances. Its value is an
-accurate handoff, not a permanent historical record.
+Use ask-matt to select a skill. Design may stay in one conversation while
+terms and decisions crystallize. Record hard-to-reverse, surprising trade-offs
+as ADRs; use a spec for behavior and acceptance rather than turning every task
+into an ADR. Supersede an old ADR when an accepted decision changes.
 
-## Context: what do our words mean?
+For a multi-session build, create self-contained tickets with blocking edges.
+Each ticket names its canonical spec, relevant ADRs, scope, owned files or
+boundaries, acceptance evidence, and unresolved decisions. A small task may
+stay in the design conversation without producing tickets.
 
-`CONTEXT.md` is the domain glossary. Read it before introducing terminology or
-interpreting terms such as Classification, Ranking Run, Release, and
-Publication. Update it when the domain meaning is clarified. Keep
-implementation choices out of it.
+Start a fresh Astra orchestration thread when the build contract is ready.
+Supply the ticket/spec rather than the complete design transcript. The agent
+reads relevant primary documents and follows the delegation policy in
+`AGENTS.md`. BB manages execution; the linked task remains the portable scope
+and acceptance record. A script is optional for a repeatable BB pipeline.
 
-## ADRs: why is the system shaped this way?
+## Updating and resuming
 
-The files under `docs/adr/` are decision memory. They preserve accepted,
-hard-to-reverse choices whose tradeoffs are not obvious from the code. Read the
-relevant ADR before proposing a conflicting architecture. Add or supersede an
-ADR when a real tradeoff produces a new durable decision; preserve the old
-record so future agents can understand the change.
+Keep `docs/work/current.md` short: active task links, current position, next
+decision/action, and blockers. Detailed evidence lives with its task; historical
+test counts and experiment logs do not belong in always-loaded instructions.
+Once a local spec becomes a GitHub issue, make one authoritative and replace
+the other with a pointer rather than maintaining mirrored requirements.
 
-An ADR is not a task log, progress report, implementation plan, or description
-of whatever the code happens to do today.
+A handoff is needed when relevant work must travel to another session, directory,
+or person. Record missing evidence explicitly, including local or temporary
+paths that are unavailable in a fresh checkout. Past verification is not a
+claim that the current checkout was just tested.
 
-## Working sequence
+Keep stable instructions stable; read task-specific material when needed and
+re-read changed sections when freshness matters. Continue a coherent task while
+its context remains useful; use a fresh ticket thread for independent work.
+Avoid loading archives or creating workers merely to maintain the process.
 
-1. Read the current Codex Workflow state to locate the active goal and evidence.
-2. Read `CONTEXT.md` and relevant ADRs before making domain or architecture decisions.
-3. Execute through the selected workflow route and verify observable outcomes.
-4. Update operational state through the workflow handoff.
-5. Record only qualifying durable tradeoffs as ADRs and clarified domain language in `CONTEXT.md`.
+## Migration boundary
 
-When work is delegated, give each agent ownership of one Sport boundary or one
-shared infrastructure boundary. Cross-boundary changes remain explicitly
-coordinated so future sports can evolve without agents editing one another's
-domain logic by accident.
-
-Completion means a future agent can answer all three questions without
-guessing: where the project is, what its terms mean, and why its durable
-architecture was chosen.
-
-## Consistency gate
-
-Project memory is complementary only when its sources agree within their
-roles. A contradiction among agent instructions, `CONTEXT.md`, accepted ADRs,
-active plans, workflow state, or executable interfaces is a work blocker: stop
-before implementation or publication, identify every conflicting statement,
-and reconcile the affected sources in the same change. Do not silently choose
-one source, preserve a stale command as if it were current, or weaken an
-accepted invariant to make documents agree.
+ADR-0015 replaces SportsRank's Codex Workflow requirement. SportsRank and
+International Cricket Sim now have independent project-local roles and no
+managed workflow entry points or local workflow state. The shared global
+installation remains installed separately; neither migrated repo depends on it.
+SportsRank's `.codex/agents/` files own its worker behavior/model/reasoning and
+override same-named global roles. They carry no workflow ownership markers.
