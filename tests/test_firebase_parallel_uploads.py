@@ -264,7 +264,7 @@ class FirebaseParallelUploadTests(unittest.TestCase):
         self.assertEqual(backend.version_calls, 3)
         self.assertEqual(
             sleep.call_args_list[-2:],
-            [((2,), {}), ((4,), {})],
+            [((10,), {}), ((20,), {})],
         )
         self.assertEqual(backend.release_calls, 1)
 
@@ -285,10 +285,10 @@ class FirebaseParallelUploadTests(unittest.TestCase):
                 )
 
         self.assertNotIn("raw provider", str(raised.exception))
-        self.assertEqual(backend.version_calls, 6)
+        self.assertEqual(backend.version_calls, 7)
         self.assertEqual(
-            [call.args[0] for call in sleep.call_args_list[-5:]],
-            [2, 4, 8, 16, 30],
+            [call.args[0] for call in sleep.call_args_list[-6:]],
+            [10, 20, 30, 60, 60, 60],
         )
         self.assertEqual(backend.release_calls, 0)
 

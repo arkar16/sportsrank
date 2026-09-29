@@ -603,8 +603,8 @@ class FirebasePublicationBackend(Protocol):
 
 
 _MAX_PARALLEL_UPLOADS = 64
-_MAX_FINALIZED_VERSION_READS = 6
-_FINALIZED_VERSION_RETRY_DELAYS = (2, 4, 8, 16, 30)
+_MAX_FINALIZED_VERSION_READS = 7
+_FINALIZED_VERSION_RETRY_DELAYS = (10, 20, 30, 60, 60, 60)
 
 
 def _upload_required_files(
