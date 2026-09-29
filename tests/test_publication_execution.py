@@ -266,6 +266,30 @@ def coordinator(
 
 
 class PublicationExecutionTests(unittest.TestCase):
+    def test_finalize_uses_the_documented_camel_case_update_mask(self):
+        backend = FirebaseRestPublicationBackend(lambda: "offline-token")
+        requests = []
+
+        def respond(request, timeout):
+            requests.append(request)
+            body = json.dumps({
+                "name": "sites/fixture-site/versions/version",
+                "status": "FINALIZED",
+            }).encode()
+            return StubHttpResponse(200, request.full_url, body)
+
+        with patch("cfb.firebase.urlopen", side_effect=respond):
+            backend.finalize_version("sites/fixture-site/versions/version")
+
+        self.assertEqual(len(requests), 1)
+        self.assertEqual(requests[0].method, "PATCH")
+        self.assertEqual(
+            requests[0].full_url,
+            "https://firebasehosting.googleapis.com/v1beta1/"
+            "sites/fixture-site/versions/version?updateMask=status",
+        )
+        self.assertNotIn("update_mask", requests[0].full_url)
+
     def test_first_publication_delivers_exact_bytes_and_seals_result_and_verification(self):
         with tempfile.TemporaryDirectory() as directory:
             fx = fixture(Path(directory))

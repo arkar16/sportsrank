@@ -781,7 +781,7 @@ class FirebaseRestPublicationBackend:
 
     def finalize_version(self, version: str) -> Mapping[str, Any]:
         return self._json(
-            "PATCH", version, query={"update_mask": "status"},
+            "PATCH", version, query={"updateMask": "status"},
             value={"status": "FINALIZED"}, write=True,
         )
 
@@ -810,6 +810,7 @@ def _provider_inventory(
     if not values or len(values) > 100_000:
         raise FirebasePublicationError("Firebase version inventory size is invalid")
     result: dict[str, str] = {}
+    managed: set[str] = set()
     for value in values:
         path = value.get("path")
         provider_sha = value.get("hash")
@@ -817,15 +818,32 @@ def _provider_inventory(
             not isinstance(path, str)
             or not path.startswith("/")
             or path in result
-            or path.startswith("/__/")
+            or path in managed
             or value.get("status") != "ACTIVE"
             or not isinstance(provider_sha, str)
             or not re.fullmatch(r"[0-9a-fA-F]{64}", provider_sha)
         ):
             raise FirebasePublicationError("Firebase version inventory is invalid")
+        if path.startswith("/__/"):
+            if path not in _MANAGED_RESOURCE_PATHS:
+                raise FirebasePublicationError(
+                    "Firebase version inventory has an unexpected managed resource"
+                )
+            managed.add(path)
+            continue
         _safe_deploy_path(path[1:])
         result[path] = provider_sha.lower()
+    if managed != set(_MANAGED_RESOURCE_PATHS):
+        raise FirebasePublicationError(
+            "Firebase version inventory is missing a managed resource"
+        )
     return MappingProxyType(result)
+
+
+_MANAGED_RESOURCE_PATHS = (
+    "/__/firebase/init.js",
+    "/__/firebase/init.json",
+)
 
 
 def _configuration_digest(value: Mapping[str, Any]) -> str:
@@ -935,7 +953,8 @@ class FirebasePublicationAdapter:
             finalized.get("name") != version
             or finalized.get("status") != "FINALIZED"
             or finalized.get("config", {}) != dict(artifact.serving_config)
-            or str(finalized.get("fileCount")) != str(len(artifact.files))
+            or str(finalized.get("fileCount"))
+            != str(len(artifact.files) + len(_MANAGED_RESOURCE_PATHS))
         ):
             raise ProviderWriteUncertain("Firebase finalize receipt is invalid")
         released = self.backend.release_version(self.target, version)
@@ -1002,9 +1021,7 @@ class FirebasePublicationAdapter:
             for key in ("project_id", "messaging_sender_id", "auth_domain", "storage_bucket")
         } if len(expected_managed) == 2 else {}
         try:
-            if tuple(item.path for item in expected_managed) != (
-                "/__/firebase/init.js", "/__/firebase/init.json"
-            ):
+            if tuple(item.path for item in expected_managed) != _MANAGED_RESOURCE_PATHS:
                 raise FirebasePublicationError(
                     "managed-resource expectation is incomplete"
                 )
@@ -1023,7 +1040,8 @@ class FirebasePublicationAdapter:
             if (
                 version.get("name") != identity.version
                 or version.get("status") != "FINALIZED"
-                or str(version.get("fileCount")) != str(len(artifact.files))
+                or str(version.get("fileCount"))
+                != str(len(artifact.files) + len(_MANAGED_RESOURCE_PATHS))
             ):
                 raise FirebasePublicationError("deployed version receipt is invalid")
             if version.get("config", {}) != dict(artifact.serving_config):
@@ -1042,7 +1060,7 @@ class FirebasePublicationAdapter:
             inventory_sha = artifact.package.inventory_sha256
 
             identities: list[Mapping[str, str]] = []
-            for path in ("/__/firebase/init.js", "/__/firebase/init.json"):
+            for path in _MANAGED_RESOURCE_PATHS:
                 resource = self._public(path)
                 app = _managed_app_identity(path, resource.body)
                 identities.append(app)
@@ -1241,6 +1259,14 @@ class FakeFirebasePublicationBackend:
             {"path": path, "hash": digest, "status": "ACTIVE"}
             for path, digest in sorted(self._expected.items())
         ]
+        values.extend(
+            {
+                "path": path,
+                "hash": _digest(("provider:" + path).encode()),
+                "status": "ACTIVE",
+            }
+            for path in _MANAGED_RESOURCE_PATHS
+        )
         if self.verification_failure == "inventory" and self._created_status == "FINALIZED":
             values = values[:-1]
         return tuple(values)
@@ -1253,7 +1279,7 @@ class FakeFirebasePublicationBackend:
             "name": version,
             "status": self._created_status,
             "config": config,
-            "fileCount": str(len(self._expected)),
+            "fileCount": str(len(self._expected) + len(_MANAGED_RESOURCE_PATHS)),
         }
 
     def finalize_version(self, version: str) -> Mapping[str, Any]:
@@ -1262,7 +1288,8 @@ class FakeFirebasePublicationBackend:
         self._write("finalize", apply=apply)
         return {
             "name": version, "status": "FINALIZED", "config": dict(self.config),
-            "fileCount": str(len(self._expected)), "versionBytes": "1",
+            "fileCount": str(len(self._expected) + len(_MANAGED_RESOURCE_PATHS)),
+            "versionBytes": "1",
         }
 
     def release_version(
