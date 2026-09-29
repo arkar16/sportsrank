@@ -12,6 +12,7 @@ from pathlib import Path
 import re
 import tarfile
 import tempfile
+import time
 from types import MappingProxyType
 from typing import Any, Callable, Mapping, Protocol, Sequence
 from urllib.error import HTTPError, URLError
@@ -395,6 +396,12 @@ class FirebaseFinalizedVersionReceiptUncertain(ProviderWriteUncertain):
     """The freshly read finalized version failed exact validation."""
 
 
+class FirebaseFinalizedVersionStatisticsUncertain(
+    FirebaseFinalizedVersionReceiptUncertain
+):
+    """The finalized version never returned its computed file statistics."""
+
+
 class FirebaseReleaseWriteUncertain(ProviderWriteUncertain):
     """The release write did not return a conclusive response."""
 
@@ -596,6 +603,8 @@ class FirebasePublicationBackend(Protocol):
 
 
 _MAX_PARALLEL_UPLOADS = 64
+_MAX_FINALIZED_VERSION_READS = 6
+_FINALIZED_VERSION_RETRY_DELAYS = (2, 4, 8, 16, 30)
 
 
 def _upload_required_files(
@@ -928,6 +937,43 @@ class FirebasePublicationAdapter:
     def observe(self) -> ProviderIdentity:
         return self.backend.observe(self.target)
 
+    def _read_finalized_version(
+        self,
+        version: str,
+        expected_config: Mapping[str, Any],
+        expected_file_count: int,
+    ) -> Mapping[str, Any]:
+        for read_number in range(_MAX_FINALIZED_VERSION_READS):
+            try:
+                finalized_version = self.backend.version(version)
+            except FirebasePublicationError as exc:
+                raise FirebaseFinalizedVersionReadUncertain(
+                    "Firebase finalized version read is unavailable"
+                ) from exc
+            if (
+                not isinstance(finalized_version, Mapping)
+                or finalized_version.get("name") != version
+                or finalized_version.get("status") != "FINALIZED"
+                or "config" not in finalized_version
+                or finalized_version.get("config") != dict(expected_config)
+            ):
+                raise FirebaseFinalizedVersionReceiptUncertain(
+                    "Firebase finalized version receipt is invalid"
+                )
+            if "fileCount" not in finalized_version:
+                if read_number == len(_FINALIZED_VERSION_RETRY_DELAYS):
+                    raise FirebaseFinalizedVersionStatisticsUncertain(
+                        "Firebase finalized version file statistics are unavailable"
+                    )
+                time.sleep(_FINALIZED_VERSION_RETRY_DELAYS[read_number])
+                continue
+            if str(finalized_version.get("fileCount")) != str(expected_file_count):
+                raise FirebaseFinalizedVersionReceiptUncertain(
+                    "Firebase finalized version receipt is invalid"
+                )
+            return finalized_version
+        raise AssertionError("unreachable finalized version read limit")
+
     def deploy(
         self, artifact: FirebaseDeployArtifact, *, attempt_id: str
     ) -> FirebaseDeploymentReceipt:
@@ -993,24 +1039,11 @@ class FirebasePublicationAdapter:
             raise FirebaseFinalizeReceiptUncertain(
                 "Firebase finalize receipt identity is invalid"
             )
-        try:
-            finalized_version = self.backend.version(version)
-        except FirebasePublicationError as exc:
-            raise FirebaseFinalizedVersionReadUncertain(
-                "Firebase finalized version read is unavailable"
-            ) from exc
-        if (
-            finalized_version.get("name") != version
-            or finalized_version.get("status") != "FINALIZED"
-            or "config" not in finalized_version
-            or finalized_version.get("config", {})
-            != dict(artifact.serving_config)
-            or str(finalized_version.get("fileCount"))
-            != str(len(artifact.files) + len(_MANAGED_RESOURCE_PATHS))
-        ):
-            raise FirebaseFinalizedVersionReceiptUncertain(
-                "Firebase finalized version receipt is invalid"
-            )
+        finalized_version = self._read_finalized_version(
+            version,
+            artifact.serving_config,
+            len(artifact.files) + len(_MANAGED_RESOURCE_PATHS),
+        )
         try:
             released = self.backend.release_version(self.target, version)
         except ProviderWriteUncertain as exc:

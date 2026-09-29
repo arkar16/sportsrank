@@ -13,6 +13,7 @@ from cfb.firebase import (
     FirebaseFinalizeWriteUncertain,
     FirebaseFinalizedVersionReadUncertain,
     FirebaseFinalizedVersionReceiptUncertain,
+    FirebaseFinalizedVersionStatisticsUncertain,
     FirebaseLiveObservationUncertain,
     FirebaseLiveReceiptUncertain,
     FirebasePublicationError,
@@ -243,6 +244,53 @@ class FirebaseParallelUploadTests(unittest.TestCase):
                     artifact, attempt_id=f"invalid-finalized-version-{index}"
                 )
             self.assertEqual(backend.release_calls, 0)
+
+    def test_finalized_version_waits_for_delayed_file_count(self):
+        artifact = _artifact(4)
+
+        class DelayedFileCountBackend(RecordingParallelBackend):
+            def version(self, version):
+                receipt = dict(super().version(version))
+                if self.version_calls <= 2:
+                    receipt.pop("fileCount")
+                return receipt
+
+        backend = DelayedFileCountBackend(set(artifact.provider_payloads))
+        with patch("cfb.firebase.time.sleep") as sleep:
+            FirebasePublicationAdapter(TARGET, backend).deploy(
+                artifact, attempt_id="delayed-file-count"
+            )
+
+        self.assertEqual(backend.version_calls, 3)
+        self.assertEqual(
+            sleep.call_args_list[-2:],
+            [((2,), {}), ((4,), {})],
+        )
+        self.assertEqual(backend.release_calls, 1)
+
+    def test_missing_file_count_exhausts_bounded_wait_without_release(self):
+        artifact = _artifact(4)
+
+        class MissingFileCountBackend(RecordingParallelBackend):
+            def version(self, version):
+                receipt = dict(super().version(version))
+                receipt.pop("fileCount")
+                return receipt
+
+        backend = MissingFileCountBackend(set(artifact.provider_payloads))
+        with patch("cfb.firebase.time.sleep") as sleep:
+            with self.assertRaises(FirebaseFinalizedVersionStatisticsUncertain) as raised:
+                FirebasePublicationAdapter(TARGET, backend).deploy(
+                    artifact, attempt_id="missing-file-count"
+                )
+
+        self.assertNotIn("raw provider", str(raised.exception))
+        self.assertEqual(backend.version_calls, 6)
+        self.assertEqual(
+            [call.args[0] for call in sleep.call_args_list[-5:]],
+            [2, 4, 8, 16, 30],
+        )
+        self.assertEqual(backend.release_calls, 0)
 
     def test_post_upload_failure_stages_are_fixed_and_sanitized(self):
         artifact = _artifact(4)
