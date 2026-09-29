@@ -557,7 +557,7 @@ class PublicationExecutionTests(unittest.TestCase):
 
     def test_each_complete_verification_failure_preserves_actual_identity_and_pauses(self):
         for failure in (
-            "inventory", "configuration", "managed", "managed-missing",
+            "inventory", "managed", "managed-missing",
             "managed-generated", "public",
         ):
             with self.subTest(failure=failure), tempfile.TemporaryDirectory() as directory:
@@ -582,6 +582,39 @@ class PublicationExecutionTests(unittest.TestCase):
                 )
                 self.assertFalse(result.ordinary_successor_allowed)
                 self.assertEqual(result.permitted_next_operations, ("reconcile",))
+
+    def test_finalized_version_mismatch_stops_before_release_with_safe_stage(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fx = fixture(Path(directory))
+            backend = FakeFirebasePublicationBackend(
+                TARGET, fx.package.expected_predecessor,
+                managed_identity=APP_IDENTITY,
+                verification_failure="configuration",
+            )
+            result = coordinator(fx, backend)._publish_normal_legacy(
+                fx.package, prepared=fx.prepared,
+                commit_reader=fx.reader, runtime=fx.runtime,
+                baseline=fx.baseline, evidence_references=fx.evidence,
+                tags=tags("finalized-version-mismatch"),
+                attempt_id="finalized-version-mismatch",
+                retrieval_directory=fx.root / "receipts",
+            )
+
+            self.assertEqual(result.state, "provider_unknown")
+            self.assertEqual(result.provider_result.outcome, "unknown")
+            self.assertNotIn("release", backend.write_steps)
+            source = json.loads(
+                result.provider_evidence.retrieved_source.read_bytes()
+            )
+            self.assertEqual(
+                source["failure"],
+                "FirebaseFinalizedVersionReceiptUncertain",
+            )
+            self.assertEqual(
+                set(source),
+                {"schema_version", "record_type", "outcome", "failure",
+                 "release", "version"},
+            )
 
     def test_unavailable_verification_identity_is_explicitly_unknown(self):
         with tempfile.TemporaryDirectory() as directory:
