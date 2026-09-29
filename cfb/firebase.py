@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import gzip
@@ -562,6 +563,55 @@ class FirebasePublicationBackend(Protocol):
     def public_resource(self, target: ProviderTarget, path: str) -> PublicResource: ...
 
 
+_MAX_PARALLEL_UPLOADS = 64
+
+
+def _upload_required_files(
+    backend: FirebasePublicationBackend,
+    upload_url: str,
+    required: set[str],
+    payloads: Mapping[str, bytes],
+) -> None:
+    pending_values = iter(sorted(required))
+    executor = ThreadPoolExecutor(max_workers=_MAX_PARALLEL_UPLOADS)
+    pending: dict[Future[None], str] = {}
+    failure: BaseException | None = None
+
+    def submit_next() -> bool:
+        try:
+            provider_sha = next(pending_values)
+        except StopIteration:
+            return False
+        future = executor.submit(
+            backend.upload_file,
+            upload_url,
+            provider_sha,
+            payloads[provider_sha],
+        )
+        pending[future] = provider_sha
+        return True
+
+    try:
+        for _ in range(min(_MAX_PARALLEL_UPLOADS, len(required))):
+            submit_next()
+        while pending:
+            completed, _ = wait(pending, return_when=FIRST_COMPLETED)
+            for future in completed:
+                pending.pop(future)
+                future.result()
+            for _ in completed:
+                submit_next()
+    except BaseException as exc:
+        failure = exc
+    finally:
+        if failure is not None:
+            for future in pending:
+                future.cancel()
+        executor.shutdown(wait=True, cancel_futures=failure is not None)
+    if failure is not None:
+        raise failure
+
+
 class FirebaseRestPublicationBackend:
     """Concrete Hosting REST backend with explicit uncertain-write errors."""
 
@@ -866,11 +916,9 @@ class FirebasePublicationAdapter:
             ):
                 raise ProviderWriteUncertain("Firebase populate receipt is invalid")
             required.update(hashes)
-        for provider_sha in sorted(required):
-            self.backend.upload_file(
-                expected_upload, provider_sha,
-                artifact.provider_payloads[provider_sha],
-            )
+        _upload_required_files(
+            self.backend, expected_upload, required, artifact.provider_payloads
+        )
 
         try:
             inventory = _provider_inventory(self.backend.inventory(version))
