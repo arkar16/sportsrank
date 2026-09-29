@@ -9,8 +9,16 @@ from unittest.mock import patch
 import cfb.firebase as firebase_module
 from cfb.firebase import (
     FirebaseDeployArtifact,
+    FirebaseFinalizeReceiptUncertain,
+    FirebaseFinalizeWriteUncertain,
+    FirebaseFinalizedVersionReadUncertain,
+    FirebaseFinalizedVersionReceiptUncertain,
+    FirebaseLiveObservationUncertain,
+    FirebaseLiveReceiptUncertain,
     FirebasePublicationError,
     FirebasePublicationAdapter,
+    FirebaseReleaseReceiptUncertain,
+    FirebaseReleaseWriteUncertain,
     ProviderWriteUncertain,
     _provider_inventory,
 )
@@ -49,7 +57,9 @@ class RecordingParallelBackend:
         self.active = 0
         self.max_active = 0
         self.finalize_calls = 0
+        self.version_calls = 0
         self.release_calls = 0
+        self.events: list[str] = []
         self.identity = ProviderIdentity(
             TARGET,
             "sites/fixture-site/channels/live/releases/parallel-release",
@@ -57,6 +67,7 @@ class RecordingParallelBackend:
         )
 
     def observe(self, target):
+        self.events.append("observe")
         return self.identity
 
     def create_version(self, target, config, labels):
@@ -111,6 +122,15 @@ class RecordingParallelBackend:
             if self.active or self.completed != self.required:
                 raise AssertionError("finalization ran before every upload settled")
         self.finalize_calls += 1
+        self.events.append("finalize")
+        return {
+            "name": VERSION,
+            "status": "FINALIZED",
+        }
+
+    def version(self, version):
+        self.version_calls += 1
+        self.events.append("version")
         return {
             "name": VERSION,
             "status": "FINALIZED",
@@ -120,6 +140,7 @@ class RecordingParallelBackend:
 
     def release_version(self, target, version):
         self.release_calls += 1
+        self.events.append("release")
         return {
             "name": self.identity.release,
             "type": "DEPLOY",
@@ -177,7 +198,99 @@ class FirebaseParallelUploadTests(unittest.TestCase):
         self.assertEqual(backend.attempts, Counter({digest: 1 for digest in backend.required}))
         self.assertEqual(backend.completed, backend.required)
         self.assertEqual(backend.finalize_calls, 1)
+        self.assertEqual(backend.version_calls, 1)
         self.assertEqual(backend.release_calls, 1)
+        self.assertEqual(
+            backend.events[-4:], ["finalize", "version", "release", "observe"]
+        )
+
+    def test_fresh_finalized_version_read_must_be_available_and_exact(self):
+        artifact = _artifact(4)
+
+        class UnavailableVersionBackend(RecordingParallelBackend):
+            def version(self, version):
+                self.version_calls += 1
+                self.events.append("version")
+                raise FirebasePublicationError("raw provider detail must stay private")
+
+        unavailable = UnavailableVersionBackend(set(artifact.provider_payloads))
+        with self.assertRaises(FirebaseFinalizedVersionReadUncertain) as raised:
+            FirebasePublicationAdapter(TARGET, unavailable).deploy(
+                artifact, attempt_id="unavailable-finalized-version"
+            )
+        self.assertNotIn("raw provider detail", str(raised.exception))
+        self.assertEqual(unavailable.release_calls, 0)
+
+        invalid_receipts = (
+            {"name": VERSION, "status": "FINALIZED", "fileCount": "6"},
+            {"name": VERSION + "-wrong", "status": "FINALIZED", "config": {}, "fileCount": "6"},
+            {"name": VERSION, "status": "CREATED", "config": {}, "fileCount": "6"},
+            {"name": VERSION, "status": "FINALIZED", "config": {"cleanUrls": True}, "fileCount": "6"},
+            {"name": VERSION, "status": "FINALIZED", "config": {}, "fileCount": "5"},
+        )
+        for index, receipt in enumerate(invalid_receipts):
+            class InvalidVersionBackend(RecordingParallelBackend):
+                def version(self, version):
+                    self.version_calls += 1
+                    self.events.append("version")
+                    return receipt
+
+            backend = InvalidVersionBackend(set(artifact.provider_payloads))
+            with self.subTest(index=index), self.assertRaises(
+                FirebaseFinalizedVersionReceiptUncertain
+            ):
+                FirebasePublicationAdapter(TARGET, backend).deploy(
+                    artifact, attempt_id=f"invalid-finalized-version-{index}"
+                )
+            self.assertEqual(backend.release_calls, 0)
+
+    def test_post_upload_failure_stages_are_fixed_and_sanitized(self):
+        artifact = _artifact(4)
+
+        cases = (
+            ("finalize_write", FirebaseFinalizeWriteUncertain),
+            ("finalize_receipt", FirebaseFinalizeReceiptUncertain),
+            ("release_write", FirebaseReleaseWriteUncertain),
+            ("release_receipt", FirebaseReleaseReceiptUncertain),
+            ("live_observation", FirebaseLiveObservationUncertain),
+            ("live_receipt", FirebaseLiveReceiptUncertain),
+        )
+        for stage, expected in cases:
+            class StageFailureBackend(RecordingParallelBackend):
+                def finalize_version(self, version):
+                    result = super().finalize_version(version)
+                    if stage == "finalize_write":
+                        raise ProviderWriteUncertain("sensitive finalize response")
+                    if stage == "finalize_receipt":
+                        return {"name": VERSION + "-wrong", "status": "FINALIZED"}
+                    return result
+
+                def release_version(self, target, version):
+                    result = super().release_version(target, version)
+                    if stage == "release_write":
+                        raise ProviderWriteUncertain("sensitive release response")
+                    if stage == "release_receipt":
+                        return {**result, "type": "ROLLBACK"}
+                    return result
+
+                def observe(self, target):
+                    if stage == "live_observation":
+                        raise FirebasePublicationError("sensitive account metadata")
+                    if stage == "live_receipt":
+                        return ProviderIdentity(
+                            TARGET,
+                            "sites/fixture-site/channels/live/releases/other-release",
+                            VERSION,
+                        )
+                    return super().observe(target)
+
+            backend = StageFailureBackend(set(artifact.provider_payloads))
+            with self.subTest(stage=stage), self.assertRaises(expected) as raised:
+                FirebasePublicationAdapter(TARGET, backend).deploy(
+                    artifact, attempt_id=f"stage-{stage}"
+                )
+            self.assertEqual(type(raised.exception).__name__, expected.__name__)
+            self.assertNotIn("sensitive", str(raised.exception))
 
     def test_failure_cancels_pending_work_settles_running_and_never_finalizes(self):
         artifact = _artifact(40)

@@ -379,6 +379,38 @@ class ProviderWriteUncertain(FirebasePublicationError):
     """A write was sent but its response was lost or unreadable."""
 
 
+class FirebaseFinalizeWriteUncertain(ProviderWriteUncertain):
+    """The finalization write did not return a conclusive response."""
+
+
+class FirebaseFinalizeReceiptUncertain(ProviderWriteUncertain):
+    """The finalization response did not identify the requested transition."""
+
+
+class FirebaseFinalizedVersionReadUncertain(ProviderWriteUncertain):
+    """The freshly finalized version could not be read completely."""
+
+
+class FirebaseFinalizedVersionReceiptUncertain(ProviderWriteUncertain):
+    """The freshly read finalized version failed exact validation."""
+
+
+class FirebaseReleaseWriteUncertain(ProviderWriteUncertain):
+    """The release write did not return a conclusive response."""
+
+
+class FirebaseReleaseReceiptUncertain(ProviderWriteUncertain):
+    """The release response failed exact validation."""
+
+
+class FirebaseLiveObservationUncertain(ProviderWriteUncertain):
+    """The live channel could not be observed after release."""
+
+
+class FirebaseLiveReceiptUncertain(ProviderWriteUncertain):
+    """The live channel did not match the accepted release response."""
+
+
 _DEFINITE_REJECTION_HTTP_STATUSES = frozenset({
     400, 401, 403, 404, 405, 410, 411, 413, 414, 415, 422,
 })
@@ -948,16 +980,43 @@ class FirebasePublicationAdapter:
             raise ProviderWriteUncertain(
                 "Firebase pre-finalization inventory is incomplete"
             )
-        finalized = self.backend.finalize_version(version)
+        try:
+            finalized = self.backend.finalize_version(version)
+        except ProviderWriteUncertain as exc:
+            raise FirebaseFinalizeWriteUncertain(
+                "Firebase finalize write response is unavailable"
+            ) from exc
         if (
             finalized.get("name") != version
             or finalized.get("status") != "FINALIZED"
-            or finalized.get("config", {}) != dict(artifact.serving_config)
-            or str(finalized.get("fileCount"))
+        ):
+            raise FirebaseFinalizeReceiptUncertain(
+                "Firebase finalize receipt identity is invalid"
+            )
+        try:
+            finalized_version = self.backend.version(version)
+        except FirebasePublicationError as exc:
+            raise FirebaseFinalizedVersionReadUncertain(
+                "Firebase finalized version read is unavailable"
+            ) from exc
+        if (
+            finalized_version.get("name") != version
+            or finalized_version.get("status") != "FINALIZED"
+            or "config" not in finalized_version
+            or finalized_version.get("config", {})
+            != dict(artifact.serving_config)
+            or str(finalized_version.get("fileCount"))
             != str(len(artifact.files) + len(_MANAGED_RESOURCE_PATHS))
         ):
-            raise ProviderWriteUncertain("Firebase finalize receipt is invalid")
-        released = self.backend.release_version(self.target, version)
+            raise FirebaseFinalizedVersionReceiptUncertain(
+                "Firebase finalized version receipt is invalid"
+            )
+        try:
+            released = self.backend.release_version(self.target, version)
+        except ProviderWriteUncertain as exc:
+            raise FirebaseReleaseWriteUncertain(
+                "Firebase release write response is unavailable"
+            ) from exc
         try:
             identity = ProviderIdentity.from_value(
                 {
@@ -967,21 +1026,28 @@ class FirebasePublicationAdapter:
                 target=self.target,
             )
         except (KeyError, TypeError, ValueError) as exc:
-            raise ProviderWriteUncertain("Firebase release receipt is invalid") from exc
-        try:
-            observed = self.backend.observe(self.target)
-        except FirebasePublicationError as exc:
-            raise ProviderWriteUncertain(
-                "Firebase live release observation is unavailable"
+            raise FirebaseReleaseReceiptUncertain(
+                "Firebase release receipt is invalid"
             ) from exc
         if (
             identity.version != version
             or released.get("type") != "DEPLOY"
             or released.get("version", {}).get("status") != "FINALIZED"
             or not isinstance(released.get("releaseTime"), str)
-            or observed != identity
         ):
-            raise ProviderWriteUncertain("Firebase live release receipt is incomplete")
+            raise FirebaseReleaseReceiptUncertain(
+                "Firebase release receipt is incomplete"
+            )
+        try:
+            observed = self.backend.observe(self.target)
+        except FirebasePublicationError as exc:
+            raise FirebaseLiveObservationUncertain(
+                "Firebase live release observation is unavailable"
+            ) from exc
+        if observed != identity:
+            raise FirebaseLiveReceiptUncertain(
+                "Firebase live release receipt is incomplete"
+            )
         return FirebaseDeploymentReceipt(
             identity,
             {
@@ -997,7 +1063,9 @@ class FirebasePublicationAdapter:
                 "serving_configuration_sha256": _configuration_digest(
                     artifact.serving_config
                 ),
-                "version_bytes": str(finalized.get("versionBytes", "unknown")),
+                "version_bytes": str(
+                    finalized_version.get("versionBytes", "unknown")
+                ),
             },
         )
 
