@@ -720,6 +720,42 @@ class PublicationCLIContextTests(unittest.TestCase):
             self.assertEqual(payload["attempt"]["package"]["candidate_commit"], package.candidate_commit)
             self.assertNotIn("FIREBASE_ACCESS_TOKEN", result_path.read_text(encoding="utf-8"))
 
+            for unsafe_state in (
+                "rejected",
+                "provider_unknown",
+                "provider_result_unsealed",
+                "verification_unsealed",
+                "verification_failed",
+                "verification_unknown",
+            ):
+                with self.subTest(unsafe_state=unsafe_state):
+                    run.state = unsafe_state
+                    run.deployment_may_have_changed = True
+                    run.permitted_next_operations = ("reconcile",)
+                    unsafe_path = root / f"{unsafe_state}-run.json"
+                    with patch.dict(
+                        os.environ, {"GITHUB_TOKEN": "offline-fixture"}
+                    ), patch(
+                        "cfb.publication_cli._runtime", return_value=object()
+                    ):
+                        unsafe_status = main(
+                            [
+                                "execute",
+                                "--sealed-reference", str(reference_path),
+                                "--baseline-record", str(baseline_path),
+                                "--purpose", "normal",
+                                "--attempt-id", f"cli-test-{unsafe_state}",
+                                "--result", str(unsafe_path),
+                            ],
+                            coordinator=coordinator,
+                        )
+                    self.assertEqual(unsafe_status, 1)
+                    self.assertTrue(unsafe_path.is_file())
+                    self.assertEqual(
+                        json.loads(unsafe_path.read_text(encoding="utf-8"))["state"],
+                        unsafe_state,
+                    )
+
     def test_execute_rejects_missing_canonical_reference_newline_before_coordinator(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

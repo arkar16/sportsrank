@@ -9,8 +9,10 @@ from unittest.mock import patch
 import cfb.firebase as firebase_module
 from cfb.firebase import (
     FirebaseDeployArtifact,
+    FirebasePublicationError,
     FirebasePublicationAdapter,
     ProviderWriteUncertain,
+    _provider_inventory,
 )
 from cfb.publication_records import ProviderIdentity, ProviderTarget
 
@@ -94,10 +96,15 @@ class RecordingParallelBackend:
                 self.active -= 1
 
     def inventory(self, version):
-        return tuple(
+        application = tuple(
             {"path": path, "hash": digest, "status": "ACTIVE"}
             for path, digest in sorted(_artifact(len(self.required)).provider_hashes.items())
         )
+        managed = tuple(
+            {"path": path, "hash": "f" * 64, "status": "ACTIVE"}
+            for path in ("/__/firebase/init.js", "/__/firebase/init.json")
+        )
+        return application + managed
 
     def finalize_version(self, version):
         with self.lock:
@@ -108,7 +115,7 @@ class RecordingParallelBackend:
             "name": VERSION,
             "status": "FINALIZED",
             "config": {},
-            "fileCount": str(len(self.required)),
+            "fileCount": str(len(self.required) + 2),
         }
 
     def release_version(self, target, version):
@@ -122,6 +129,39 @@ class RecordingParallelBackend:
 
 
 class FirebaseParallelUploadTests(unittest.TestCase):
+    def test_inventory_separates_exact_managed_resources_from_application(self):
+        application = {
+            "path": "/index.html", "hash": "a" * 64, "status": "ACTIVE"
+        }
+        managed = [
+            {"path": path, "hash": digest * 64, "status": "ACTIVE"}
+            for path, digest in (
+                ("/__/firebase/init.js", "b"),
+                ("/__/firebase/init.json", "c"),
+            )
+        ]
+        self.assertEqual(
+            dict(_provider_inventory([application, *managed])),
+            {"/index.html": "a" * 64},
+        )
+
+        invalid = (
+            [application, managed[0]],
+            [application, *managed, managed[0]],
+            [application, *managed, {
+                "path": "/__/firebase/other", "hash": "d" * 64,
+                "status": "ACTIVE",
+            }],
+            [application, *managed, {
+                "path": "/other.html", "hash": "not-a-hash", "status": "ACTIVE",
+            }],
+            [application, {**managed[0], "status": "EXPECTED"}, managed[1]],
+            [application, {**managed[0], "hash": "not-a-hash"}, managed[1]],
+        )
+        for values in invalid:
+            with self.subTest(values=values), self.assertRaises(FirebasePublicationError):
+                _provider_inventory(values)
+
     def test_uploads_are_bounded_once_each_and_finish_before_finalization(self):
         self.assertEqual(firebase_module._MAX_PARALLEL_UPLOADS, 64)
         artifact = _artifact(40)

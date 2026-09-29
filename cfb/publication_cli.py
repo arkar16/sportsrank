@@ -2120,6 +2120,7 @@ def main(
     coordinator: PublicationCoordinator | None = None,
 ) -> int:
     args = build_parser().parse_args(argv)
+    unsafe_execute_state: object | None = None
     try:
         if args.operation == "prepare-reviewed":
             path = prepare_reviewed_operation(args)
@@ -2127,6 +2128,9 @@ def main(
             path = seal_only_operation(args, coordinator=coordinator)
         elif args.operation == "execute":
             path = execute_operation(args, coordinator=coordinator)
+            unsafe_execute_state = _json_object(
+                path, "publication execution result"
+            ).get("state")
         elif args.operation == "reconcile":
             path = reconcile_operation(args, coordinator=coordinator)
         elif args.operation == "verify-only":
@@ -2150,6 +2154,12 @@ def main(
         print(f"publication {args.operation} failed: {exc}", file=sys.stderr)
         return 1
     print(json.dumps({"operation": args.operation, "result": str(path.name)}, sort_keys=True))
+    if args.operation == "execute" and unsafe_execute_state != "verified":
+        print(
+            "publication execute completed without verified provider acceptance",
+            file=sys.stderr,
+        )
+        return 1
     return 0
 
 
