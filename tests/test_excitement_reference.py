@@ -189,6 +189,20 @@ class ComparableEstimateTests(unittest.TestCase):
         self.assertAlmostEqual(result.components.drama_points, 30.0)
         self.assertAlmostEqual(result.value, 30.0 + 3 * result.components.quality)
 
+    def test_target_exclusion_preserves_frozen_unequal_feature_scales(self):
+        games = tuple(
+            _reference(str(value), margin=value, total=value, drama=30.0)
+            for value in (10, 20, 30, 40, 100)
+        )
+        artifact = fit_reference_artifact(games, artifact_id="frozen-unequal")
+        # Linear quartiles of [10, 20, 30, 40, 100] are 20 and 40.
+        # Removing the target from neighbors must not refit to the IQR of 15.
+        result = estimate_aev(_pregame(), _final("100", 100, 0), artifact)
+        self.assertEqual(result.evidence.reference_scale, (20.0, 20.0))
+        self.assertEqual(result.evidence.reference_support, 4)
+        self.assertNotIn("100", result.evidence.reference_neighbor_ids)
+        self.assertAlmostEqual(result.evidence.reference_cutoff_distance, (2 * (90 / 20) ** 2) ** 0.5)
+
     def test_unknown_overtime_uses_mixed_target_without_extra_ot_bonus(self):
         games = (
             _reference("normal", margin=10, total=30, drama=20),

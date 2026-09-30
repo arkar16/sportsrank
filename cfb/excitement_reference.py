@@ -384,7 +384,6 @@ def estimate_aev(
 
     validate_reference_artifact(artifact)
     tier, target = _target_features(final)
-    target_is_reference = any(game.game_id == final.game_id for game in artifact.games)
     candidates = tuple(
         game
         for game in artifact.games
@@ -406,23 +405,19 @@ def estimate_aev(
             pool_name = "all"
             pool = candidates
         target_field = "drama_target"
-    scale = (
-        _scale(pool, tier)
-        if target_is_reference
-        else next(
-            (
-                record.divisors
-                for record in artifact.scales
-                if record.tier == tier and record.overtime_pool == pool_name
-            ),
-            None,
-        )
+    scale = next(
+        (
+            record.divisors
+            for record in artifact.scales
+            if record.tier == tier and record.overtime_pool == pool_name
+        ),
+        None,
     )
     if scale is None:
         # Target exclusion can empty a fitted status pool; the accepted fallback is all-status.
         pool_name = "all"
         pool = candidates
-        scale = _scale(pool, tier) if target_is_reference else next(
+        scale = next(
             record.divisors
             for record in artifact.scales
             if record.tier == tier and record.overtime_pool == "all"
