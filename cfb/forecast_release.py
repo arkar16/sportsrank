@@ -133,7 +133,8 @@ def validate_forecast_sources(
 
     sources_by_digest: dict[str, list[ForecastSourceCheckpoint]] = defaultdict(list)
     for source in checkpoints:
-        sources_by_digest[source.snapshot_digest].append(source)
+        if source not in sources_by_digest[source.snapshot_digest]:
+            sources_by_digest[source.snapshot_digest].append(source)
     candidates = tuple(ForecastCandidate.from_dict(item) for item in ledger["candidates"])
     issued_ids = {
         PublicationReceipt.from_dict(item).candidate_version_id

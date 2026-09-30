@@ -291,6 +291,93 @@ def _prepare_renderer_base(path: Path) -> PreviousFinal:
     return PreviousFinal(cors, {school: 0.0 for school in schools})
 
 
+def _prepare_three_team_base(path: Path) -> PreviousFinal:
+    """Prepare the synthetic legacy base used by the upgrade lifecycle."""
+    _prepare_base(path)
+    for year in (2024, 2025):
+        ranking = path / f"cfb/years/{year}/rankings/{year}_FINAL_FBS_cors.html"
+        html = ranking.read_text(encoding="utf-8")
+        html = html.replace(
+            "</tbody>",
+            "<tr><td>Rival</td><td>15</td><td>0</td></tr></tbody>",
+        )
+        ranking.write_text(html, encoding="utf-8")
+    return PreviousFinal(
+        {"Home": 10.0, "Away": 20.0, "Rival": 15.0},
+        {"Home": 0.0, "Away": 0.0, "Rival": 0.0},
+    )
+
+
+def _synthetic_upgrade_snapshot(
+    *,
+    provider_ids: bool,
+    week_one_completed: bool,
+) -> SeasonSnapshot:
+    """Return the portable three-game legacy2→3 source fixture.
+
+    The v2 archive deliberately has no provider Game identities, matching the
+    old source shape.  The next retained checkpoint supplies stable identities
+    for all games and makes Week 2 the active natural-margin forecast.
+    """
+    teams = tuple(SourceTeam(school, "X") for school in ("Home", "Away", "Rival"))
+    provider = (lambda value: value) if provider_ids else (lambda value: None)
+    games = (
+        SourceGame(
+            0, "Home", "fbs", 21, "Away", "fbs", 14, False,
+            provider_id=provider("legacy-g0"), completed=True,
+        ),
+        SourceGame(
+            1, "Away", "fbs", 17 if week_one_completed else None,
+            "Rival", "fbs", 14 if week_one_completed else None, False,
+            provider_id=provider("legacy-g1"), completed=week_one_completed,
+        ),
+        SourceGame(
+            2, "Rival", "fbs", None, "Home", "fbs", None, False,
+            provider_id=provider("active-g2"), completed=False,
+        ),
+    )
+    state = {
+        "schema_version": 2,
+        "sport": "cfb",
+        "classification": "FBS",
+        "year": 2026,
+        "teams_fetched_at": None,
+        "games_fetched_at": None,
+        "complete_through_week": 1 if week_one_completed else 0,
+        "calendar_provenance": None,
+        "correction_registry_provenance": None,
+        "migration_provenance": None,
+    }
+    return SeasonSnapshot(
+        "cfb", "FBS", 2026, teams, games, MappingProxyType(state),
+        _checksum(state, teams, games),
+    )
+
+
+def _downgrade_to_synthetic_legacy_v2(release) -> None:
+    """Convert a generated fixture into a self-contained artifact-contract2 archive."""
+    manifest = json.loads(release.manifest_path.read_text(encoding="utf-8"))
+    manifest["manifest_version"] = 2
+    manifest["artifact_contract"] = 2
+    for run in manifest["runs"]:
+        run["artifact_contract"] = 2
+        for field in (
+            "forecast_contract", "forecast_ledger_path", "forecast_evaluation_path",
+        ):
+            run.pop(field, None)
+    metadata = json.loads(release.metadata_path.read_text(encoding="utf-8"))
+    metadata["manifest_version"] = 2
+    metadata["artifact_contract"] = 2
+    for run in metadata["runs"]:
+        run["artifact_contract"] = 2
+        for field in (
+            "forecast_contract", "forecast_ledger_path", "forecast_evaluation_path",
+        ):
+            run.pop(field, None)
+    release.metadata_path.write_bytes(canonical_json(metadata) + b"\n")
+    _resign_manifest(release, manifest)
+
+
 def _html_table_values(page: str, required_header: str) -> dict[str, str]:
     """Read one generated table by its headers, independent of column order."""
     soup = BeautifulSoup(page, "html.parser")
@@ -1160,6 +1247,138 @@ class ForecastLifecycleIndependentTests(unittest.TestCase):
             report = validate_release(release, published_site=base)
             self.assertFalse(report.valid)
             self.assertIn("forecast.contract", {item.code for item in report.failures})
+
+    def test_synthetic_legacy_upgrade_preserves_pages_then_activates_next_natural_forecast(self):
+        """A portable v2 archive upgrades without rewriting pages or downgrading the next run."""
+        legacy_snapshot = _synthetic_upgrade_snapshot(
+            provider_ids=False, week_one_completed=False,
+        )
+        next_snapshot = _synthetic_upgrade_snapshot(
+            provider_ids=True, week_one_completed=True,
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            base = root / "published"
+            previous = _prepare_three_team_base(base)
+            legacy = build_release(
+                legacy_snapshot, root / "legacy", release_id="legacy",
+                target_week=0, phase="week", previous_final=previous,
+                timestamp="2026-09-01T20:00:00+00:00", published_site=base,
+            )
+            _downgrade_to_synthetic_legacy_v2(legacy)
+            legacy_paths = (
+                "cfb/years/2026/spread/2026_W0_FBS_spread.html",
+                "cfb/years/2026/spread/2026_W1_FBS_spread.html",
+            )
+            legacy_bytes = {relative: (legacy.site / relative).read_bytes() for relative in legacy_paths}
+            legacy_report = validate_release(
+                legacy, published_site=base, expected_manifest_version=2,
+            )
+            self.assertTrue(legacy_report.valid, [str(item) for item in legacy_report.failures])
+
+            upgrade = build_release(
+                legacy_snapshot, root / "upgrade", release_id="upgrade",
+                target_week=0, phase="week", previous_final=previous,
+                timestamp="2026-09-02T20:00:00+00:00", published_site=legacy.site,
+            )
+            self.assertEqual(
+                json.loads(upgrade.manifest_path.read_text(encoding="utf-8"))["manifest_version"],
+                3,
+            )
+            for relative, original in legacy_bytes.items():
+                self.assertEqual((upgrade.site / relative).read_bytes(), original)
+            upgrade_report = validate_release(upgrade, published_site=legacy.site)
+            self.assertTrue(upgrade_report.valid, [str(item) for item in upgrade_report.failures])
+
+            next_release = build_release(
+                next_snapshot, root / "next", release_id="next",
+                target_week=1, phase="week", previous_final=previous,
+                timestamp="2026-09-03T20:00:00+00:00", published_site=upgrade.site,
+            )
+            next_report = validate_release(next_release, published_site=upgrade.site)
+            original_base_report = validate_release(next_release, published_site=base)
+            self.assertTrue(next_report.valid, [str(item) for item in next_report.failures])
+            self.assertTrue(
+                original_base_report.valid,
+                [str(item) for item in original_base_report.failures],
+            )
+            for relative, original in legacy_bytes.items():
+                self.assertEqual((next_release.site / relative).read_bytes(), original)
+
+            manifest = json.loads(next_release.manifest_path.read_text(encoding="utf-8"))
+            ledger = json.loads(
+                (next_release.site / manifest["forecast_ledger_path"]).read_text(encoding="utf-8")
+            )
+            active = next(
+                item for item in ledger["candidates"]
+                if item["game"]["provider_id"] == "active-g2"
+            )
+            expected_rankings = season_rankings(next_snapshot, 1, previous)
+            expected_spread = next(
+                row for row in spreads_for_week(
+                    next_snapshot, 2, expected_rankings[1],
+                    hfa=HFA, legacy_half_point=False,
+                )
+                if row["home_team"] == "Rival" and row["away_team"] == "Home"
+            )
+            self.assertEqual(active["forecast"]["home_margin"], expected_spread["home_margin"])
+            self.assertEqual(active["forecast"]["precision"], 2)
+            self.assertEqual(
+                active["provenance"]["source_snapshot_digest"],
+                "sha256:" + next_snapshot.checksum,
+            )
+
+            original_manifest = next_release.manifest_path.read_bytes()
+            retained = manifest["retained_legacy_forecast_digests"]
+            retained_path, _ = next(iter(retained.items()))
+            for case in ("removed retained digest", "added retained digest"):
+                with self.subTest(case=case):
+                    tampered = json.loads(original_manifest)
+                    if case == "removed retained digest":
+                        tampered["retained_legacy_forecast_digests"].pop(retained_path)
+                    else:
+                        tampered["retained_legacy_forecast_digests"][
+                            "cfb/years/2026/spread/2026_W9_FBS_spread.html"
+                        ] = "0" * 64
+                    _resign_manifest(next_release, tampered)
+                    report = validate_release(next_release, published_site=upgrade.site)
+                    self.assertFalse(report.valid)
+                    self.assertIn("forecast.contract", {item.code for item in report.failures})
+                    next_release.manifest_path.write_bytes(original_manifest)
+
+            # Removing the current contract marker and all forecast map entries,
+            # then resealing the manifest, cannot turn the current run into a
+            # valid legacy inspection candidate.
+            forecast_paths = [
+                path for path in manifest["owned_artifacts"]
+                if "/forecasts/" in path or path.endswith("_forecast_results.html")
+            ]
+            saved_forecast_files = {
+                relative: (next_release.site / relative).read_bytes()
+                for relative in forecast_paths
+                if (next_release.site / relative).is_file()
+            }
+            for relative in forecast_paths:
+                path = next_release.site / relative
+                if path.is_file():
+                    path.unlink()
+                manifest["artifact_checksums"].pop(relative, None)
+                manifest["owned_artifacts"].remove(relative)
+            for key in (
+                "artifact_contract", "forecast_contract", "forecast_ledger_path",
+                "forecast_evaluation_path",
+            ):
+                manifest.pop(key, None)
+                manifest["runs"][-1].pop(key, None)
+            _resign_manifest(next_release, manifest)
+            downgraded = validate_release(next_release, published_site=upgrade.site)
+            self.assertFalse(downgraded.valid)
+            self.assertIn("forecast.contract", {item.code for item in downgraded.failures})
+            for relative, content in saved_forecast_files.items():
+                path = next_release.site / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(content)
+            next_release.manifest_path.write_bytes(original_manifest)
 
     def test_literal_legacy_v2_run_remains_readable_only_at_explicit_legacy_version(self):
         with tempfile.TemporaryDirectory() as temporary:
