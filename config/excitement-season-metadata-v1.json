@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "pilot_id": "adr21-season-metadata-v1",
+  "purpose": "historical",
+  "max_attempts": 5,
+  "attempts_per_request": 1,
+  "redirects": false,
+  "retries": 0,
+  "source_archive_sha256": "86a27f80709549c48bfaca763f4e925b3168dbae232745d534986e6fee43da37",
+  "requests": [
+    {
+      "request_id": "2024-games-regular",
+      "endpoint": "/games",
+      "params": {
+        "year": 2024,
+        "seasonType": "regular",
+        "classification": "fbs"
+      },
+      "expected_game_id": null,
+      "parent_snapshot_checksum": "35b3783a78ca6fa64905a802be51e82b0b5006fae17ee475bd3cd3c45a3905a1",
+      "parent_snapshot_path": "snapshots/cfb-fbs-2024.json",
+      "parent_snapshot_sha256": "81202378ba0a862a92a8e168e00f5df0f3c1827b3f5ac2876c7e8efd4d7a5633"
+    },
+    {
+      "request_id": "2024-games-postseason",
+      "endpoint": "/games",
+      "params": {
+        "year": 2024,
+        "seasonType": "postseason",
+        "classification": "fbs"
+      },
+      "expected_game_id": null,
+      "parent_snapshot_checksum": "35b3783a78ca6fa64905a802be51e82b0b5006fae17ee475bd3cd3c45a3905a1",
+      "parent_snapshot_path": "snapshots/cfb-fbs-2024.json",
+      "parent_snapshot_sha256": "81202378ba0a862a92a8e168e00f5df0f3c1827b3f5ac2876c7e8efd4d7a5633"
+    },
+    {
+      "request_id": "2025-games-regular",
+      "endpoint": "/games",
+      "params": {
+        "year": 2025,
+        "seasonType": "regular",
+        "classification": "fbs"
+      },
+      "expected_game_id": null,
+      "parent_snapshot_checksum": "7663694144e27034bab79a4db4a7a37ce27d0f0dede34704654cd74d02171853",
+      "parent_snapshot_path": "snapshots/cfb-fbs-2025.json",
+      "parent_snapshot_sha256": "8f9e919d81fbaf71a23c67cd2da73d59d9225513c115f08d5060bb1caf300f47"
+    },
+    {
+      "request_id": "2025-games-postseason",
+      "endpoint": "/games",
+      "params": {
+        "year": 2025,
+        "seasonType": "postseason",
+        "classification": "fbs"
+      },
+      "expected_game_id": null,
+      "parent_snapshot_checksum": "7663694144e27034bab79a4db4a7a37ce27d0f0dede34704654cd74d02171853",
+      "parent_snapshot_path": "snapshots/cfb-fbs-2025.json",
+      "parent_snapshot_sha256": "8f9e919d81fbaf71a23c67cd2da73d59d9225513c115f08d5060bb1caf300f47"
+    },
+    {
+      "request_id": "2026-games-regular",
+      "endpoint": "/games",
+      "params": {
+        "year": 2026,
+        "seasonType": "regular",
+        "classification": "fbs"
+      },
+      "expected_game_id": null,
+      "parent_snapshot_checksum": "9bf66d0ccab3878c7926f17b44664644774eed8ea95a7ffa73b3a206eb45296a",
+      "parent_snapshot_path": "snapshots/9bf66d0ccab3878c7926f17b44664644774eed8ea95a7ffa73b3a206eb45296a/cfb-fbs-2026.json",
+      "parent_snapshot_sha256": "8a99677a4c98e3bddfd5ee3d2f80b0eab4813ef8772cc6d9c47f74303f547d8a"
+    }
+  ]
+}

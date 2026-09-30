@@ -1,6 +1,6 @@
 """Credential-safe source qualification for ADR-0021 excitement inputs.
 
-The qualification pilot is deliberately a small, immutable supplement to the
+The qualification plans are deliberately small, immutable supplements to the
 Season Snapshot boundary.  This module does not normalize provider plays,
 quarters, or market semantics.  It records the exact response bytes returned
 for each reviewed request, together with path-free provenance that is safe to
@@ -67,6 +67,12 @@ MAX_ATTEMPTS = 9
 REQUESTS_PER_KEY = 1
 REQUEST_PURPOSE = "historical"
 DEFAULT_CONFIG = Path("config/excitement-pilot-v1.json")
+SEASON_METADATA_PILOT_ID = "adr21-season-metadata-v1"
+SEASON_METADATA_MANIFEST_SHA256 = (
+    "5a6958eacd97e87fb3676e30cd01fc9444bb42a3ba516fbc3a7efc88d22a9bd8"
+)
+SEASON_METADATA_MAX_ATTEMPTS = 5
+SEASON_METADATA_CONFIG = Path("config/excitement-season-metadata-v1.json")
 API_BASE_URL = "https://api.collegefootballdata.com"
 # Keep the transport destination independent from the public compatibility
 # constant.  A caller can otherwise monkey-patch the latter before
@@ -76,6 +82,35 @@ _CFBD_BASE_URL = "https://api.collegefootballdata.com"
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 _SAFE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}\Z")
 _SYSTEM_PATH_ALIASES = {Path("/tmp"), Path("/var")}
+
+
+@dataclass(frozen=True, slots=True)
+class _PlanDescriptor:
+    """One source plan that this adapter is explicitly allowed to execute."""
+
+    pilot_id: str
+    manifest_sha256: str
+    max_attempts: int
+    config_path: Path
+
+
+_PLAN_REGISTRY: Mapping[str, _PlanDescriptor] = MappingProxyType({
+    PILOT_ID: _PlanDescriptor(
+        pilot_id=PILOT_ID,
+        manifest_sha256=PILOT_MANIFEST_SHA256,
+        max_attempts=MAX_ATTEMPTS,
+        config_path=DEFAULT_CONFIG,
+    ),
+    SEASON_METADATA_PILOT_ID: _PlanDescriptor(
+        pilot_id=SEASON_METADATA_PILOT_ID,
+        manifest_sha256=SEASON_METADATA_MANIFEST_SHA256,
+        max_attempts=SEASON_METADATA_MAX_ATTEMPTS,
+        config_path=SEASON_METADATA_CONFIG,
+    ),
+})
+_PLAN_BY_MANIFEST_SHA256: Mapping[str, _PlanDescriptor] = MappingProxyType({
+    descriptor.manifest_sha256: descriptor for descriptor in _PLAN_REGISTRY.values()
+})
 
 
 class PilotError(RuntimeError):
@@ -175,7 +210,7 @@ class PilotRequest:
     request_id: str
     endpoint: str
     params: tuple[tuple[str, str | int], ...]
-    expected_game_id: str
+    expected_game_id: str | None
     parent_snapshot_checksum: str
     parent_snapshot_path: str
     parent_snapshot_sha256: str
@@ -184,7 +219,8 @@ class PilotRequest:
         _safe_id(self.request_id, "request_id")
         if self.endpoint not in {"/plays", "/games", "/lines"}:
             raise PilotManifestError("pilot endpoint is not allowlisted")
-        _safe_id(self.expected_game_id, "expected_game_id")
+        if self.expected_game_id is not None:
+            _safe_id(self.expected_game_id, "expected_game_id")
         _digest(self.parent_snapshot_checksum, "parent snapshot checksum")
         _digest(self.parent_snapshot_sha256, "parent snapshot SHA-256")
         if (
@@ -205,22 +241,28 @@ class PilotRequest:
         if self.endpoint == "/plays":
             required = {"classification", "seasonType", "team", "week", "year"}
         elif self.endpoint == "/games":
-            required = {"classification", "id", "seasonType", "year"}
+            required = (
+                {"classification", "seasonType", "year"}
+                if self.expected_game_id is None
+                else {"classification", "id", "seasonType", "year"}
+            )
         else:
             required = {"gameId", "seasonType", "year"}
         if set(expected) != required:
             raise PilotManifestError("pilot request has undeclared or missing parameters")
         if expected.get("classification") not in {None, "fbs"}:
             raise PilotManifestError("pilot classification is not fbs")
-        if expected.get("seasonType") != "regular":
-            raise PilotManifestError("pilot seasonType must be regular")
+        if expected.get("seasonType") not in {"regular", "postseason"}:
+            raise PilotManifestError("pilot seasonType is not allowlisted")
         if self.endpoint == "/plays":
             if expected.get("team") not in {"Georgia", "Ohio State"}:
                 raise PilotManifestError("pilot plays team is not allowlisted")
-        else:
+        elif self.expected_game_id is not None:
             field = "id" if self.endpoint == "/games" else "gameId"
             if expected.get(field) != int(self.expected_game_id):
                 raise PilotManifestError("pilot game identity is not bound to the request")
+        elif self.endpoint != "/games":
+            raise PilotManifestError("pilot request is missing its reviewed game identity")
 
     @property
     def year(self) -> int:
@@ -273,7 +315,8 @@ class PilotManifest:
             manifest_path, error_type=PilotManifestError, label="pilot manifest"
         )
         digest = _sha256_bytes(raw)
-        if digest != PILOT_MANIFEST_SHA256:
+        descriptor = _PLAN_BY_MANIFEST_SHA256.get(digest)
+        if descriptor is None:
             raise PilotManifestError("pilot manifest digest is not the reviewed frozen identity")
         if not isinstance(value, Mapping):
             raise PilotManifestError("pilot manifest must be a JSON object")
@@ -292,10 +335,10 @@ class PilotManifest:
             raise PilotManifestError("pilot manifest fields do not match the reviewed schema")
         if value.get("schema_version") != 1:
             raise PilotManifestError("unsupported pilot manifest schema")
-        if value.get("pilot_id") != PILOT_ID or value.get("purpose") != REQUEST_PURPOSE:
+        if value.get("pilot_id") != descriptor.pilot_id or value.get("purpose") != REQUEST_PURPOSE:
             raise PilotManifestError("pilot identity or purpose is not approved")
-        if value.get("max_attempts") != MAX_ATTEMPTS:
-            raise PilotManifestError("pilot attempt cap is not nine")
+        if value.get("max_attempts") != descriptor.max_attempts:
+            raise PilotManifestError("pilot attempt cap is not approved")
         if value.get("attempts_per_request") != REQUESTS_PER_KEY:
             raise PilotManifestError("pilot request cap is not one")
         if value.get("redirects") is not False or value.get("retries") != 0:
@@ -303,18 +346,18 @@ class PilotManifest:
         if value.get("source_archive_sha256") != SOURCE_ARCHIVE_SHA256:
             raise PilotManifestError("pilot source archive pin is not approved")
         entries = value.get("requests")
-        if not isinstance(entries, list) or len(entries) != MAX_ATTEMPTS:
-            raise PilotManifestError("pilot must contain exactly nine requests")
+        if not isinstance(entries, list) or len(entries) != descriptor.max_attempts:
+            raise PilotManifestError("pilot request count is not approved")
         requests = tuple(cls._request(entry) for entry in entries)
-        cls._validate_allowlist(requests)
+        cls._validate_allowlist(requests, descriptor=descriptor)
         return cls(
-            pilot_id=PILOT_ID,
+            pilot_id=descriptor.pilot_id,
             purpose=REQUEST_PURPOSE,
-            max_attempts=MAX_ATTEMPTS,
+            max_attempts=descriptor.max_attempts,
             attempts_per_request=REQUESTS_PER_KEY,
             redirects=False,
             retries=0,
-            source_archive_sha256=SOURCE_ARCHIVE_SHA256,
+            source_archive_sha256=value["source_archive_sha256"],  # type: ignore[arg-type]
             requests=requests,
             manifest_sha256=digest,
         )
@@ -350,21 +393,36 @@ class PilotManifest:
         )
 
     @staticmethod
-    def _validate_allowlist(requests: Sequence[PilotRequest]) -> None:
-        expected = (
-            ("2024-plays-401628439", "/plays", 2024, "Georgia", "401628439"),
-            ("2024-games-401628439", "/games", 2024, None, "401628439"),
-            ("2024-lines-401628439", "/lines", 2024, None, "401628439"),
-            ("2025-plays-401752677", "/plays", 2025, "Ohio State", "401752677"),
-            ("2025-games-401752677", "/games", 2025, None, "401752677"),
-            ("2025-lines-401752677", "/lines", 2025, None, "401752677"),
-            ("2026-plays-401858432", "/plays", 2026, "Ohio State", "401858432"),
-            ("2026-games-401858432", "/games", 2026, None, "401858432"),
-            ("2026-lines-401858432", "/lines", 2026, None, "401858432"),
-        )
+    def _validate_allowlist(
+        requests: Sequence[PilotRequest], *, descriptor: _PlanDescriptor
+    ) -> None:
+        if descriptor.pilot_id == PILOT_ID:
+            expected = (
+                ("2024-plays-401628439", "/plays", 2024, "Georgia", "401628439", "regular"),
+                ("2024-games-401628439", "/games", 2024, None, "401628439", "regular"),
+                ("2024-lines-401628439", "/lines", 2024, None, "401628439", "regular"),
+                ("2025-plays-401752677", "/plays", 2025, "Ohio State", "401752677", "regular"),
+                ("2025-games-401752677", "/games", 2025, None, "401752677", "regular"),
+                ("2025-lines-401752677", "/lines", 2025, None, "401752677", "regular"),
+                ("2026-plays-401858432", "/plays", 2026, "Ohio State", "401858432", "regular"),
+                ("2026-games-401858432", "/games", 2026, None, "401858432", "regular"),
+                ("2026-lines-401858432", "/lines", 2026, None, "401858432", "regular"),
+            )
+        elif descriptor.pilot_id == SEASON_METADATA_PILOT_ID:
+            expected = (
+                ("2024-games-regular", "/games", 2024, None, None, "regular"),
+                ("2024-games-postseason", "/games", 2024, None, None, "postseason"),
+                ("2025-games-regular", "/games", 2025, None, None, "regular"),
+                ("2025-games-postseason", "/games", 2025, None, None, "postseason"),
+                ("2026-games-regular", "/games", 2026, None, None, "regular"),
+            )
+        else:  # pragma: no cover - registry construction is module-local
+            raise PilotManifestError("pilot plan is not registered")
         if len(requests) != len(expected):
-            raise PilotManifestError("pilot request count is not nine")
-        for request, (request_id, endpoint, year, team, game_id) in zip(requests, expected):
+            raise PilotManifestError("pilot request count is not approved")
+        for request, (request_id, endpoint, year, team, game_id, season_type) in zip(
+            requests, expected
+        ):
             if (
                 request.request_id != request_id
                 or request.endpoint != endpoint
@@ -372,13 +430,18 @@ class PilotManifest:
                 or request.expected_game_id != game_id
             ):
                 raise PilotManifestError("pilot request is outside the reviewed allowlist")
+            params = request.parameter_map
+            if params.get("seasonType") != season_type:
+                raise PilotManifestError("pilot season type is outside the reviewed allowlist")
             if endpoint == "/plays":
-                params = request.parameter_map
                 if params.get("week") != (14 if year == 2024 else 1) or params.get("team") != team:
                     raise PilotManifestError("pilot plays filter is outside the reviewed allowlist")
-            elif endpoint == "/lines" and set(request.parameter_map) != {"gameId", "seasonType", "year"}:
+            elif endpoint == "/games" and game_id is None:
+                if set(params) != {"classification", "seasonType", "year"} or params.get("classification") != "fbs":
+                    raise PilotManifestError("pilot season metadata filter is outside the reviewed allowlist")
+            elif endpoint == "/lines" and set(params) != {"gameId", "seasonType", "year"}:
                 raise PilotManifestError("pilot lines filter has an undeclared field")
-        if len({request.request_key for request in requests}) != MAX_ATTEMPTS:
+        if len({request.request_key for request in requests}) != descriptor.max_attempts:
             raise PilotManifestError("pilot request keys are not unique")
 
     def validate_instance(self) -> None:
@@ -394,13 +457,16 @@ class PilotManifest:
 
         if type(self) is not PilotManifest:
             raise PilotManifestError("pilot manifest has an invalid object type")
-        if not isinstance(self.pilot_id, str) or self.pilot_id != PILOT_ID:
+        if not isinstance(self.pilot_id, str):
+            raise PilotManifestError("pilot manifest identity is not approved")
+        descriptor = _PLAN_REGISTRY.get(self.pilot_id)
+        if descriptor is None or self.manifest_sha256 != descriptor.manifest_sha256:
             raise PilotManifestError("pilot manifest identity is not approved")
         if not isinstance(self.purpose, str) or self.purpose != REQUEST_PURPOSE:
             raise PilotManifestError("pilot manifest purpose is not approved")
         if (
             type(self.max_attempts) is not int
-            or self.max_attempts != MAX_ATTEMPTS
+            or self.max_attempts != descriptor.max_attempts
             or type(self.attempts_per_request) is not int
             or self.attempts_per_request != REQUESTS_PER_KEY
         ):
@@ -411,10 +477,10 @@ class PilotManifest:
             not isinstance(self.source_archive_sha256, str)
             or self.source_archive_sha256 != SOURCE_ARCHIVE_SHA256
             or not isinstance(self.manifest_sha256, str)
-            or self.manifest_sha256 != PILOT_MANIFEST_SHA256
+            or self.manifest_sha256 != descriptor.manifest_sha256
         ):
             raise PilotManifestError("pilot manifest digest binding is not approved")
-        if type(self.requests) is not tuple or len(self.requests) != MAX_ATTEMPTS:
+        if type(self.requests) is not tuple or len(self.requests) != descriptor.max_attempts:
             raise PilotManifestError("pilot manifest request set is not approved")
         for request in self.requests:
             if type(request) is not PilotRequest:
@@ -427,7 +493,7 @@ class PilotManifest:
                 raise
             except Exception as exc:  # pragma: no cover - defensive object guard
                 raise PilotManifestError("pilot manifest request is malformed") from exc
-        self._validate_allowlist(self.requests)
+        self._validate_allowlist(self.requests, descriptor=descriptor)
 
     def safe_dict(self) -> dict[str, object]:
         return {
@@ -466,19 +532,22 @@ class PilotAllowance:
         allowance_id = value.get("allowance_id")
         try:
             _safe_id(allowance_id, "allowance_id")
-            _digest(value.get("pilot_manifest_sha256"), "allowance pilot manifest SHA-256")
+            manifest_sha256 = _digest(
+                value.get("pilot_manifest_sha256"), "allowance pilot manifest SHA-256"
+            )
         except PilotError as exc:
             raise PilotAllowanceError(str(exc)) from None
+        descriptor = _PLAN_BY_MANIFEST_SHA256.get(manifest_sha256)
         if (
-            value.get("pilot_manifest_sha256") != PILOT_MANIFEST_SHA256
-            or value.get("max_attempts") != MAX_ATTEMPTS
+            descriptor is None
+            or value.get("max_attempts") != descriptor.max_attempts
             or value.get("purpose") != REQUEST_PURPOSE
         ):
-            raise PilotAllowanceError("allowance is not approved for this frozen pilot")
+            raise PilotAllowanceError("allowance is not approved for a reviewed source plan")
         return cls(
             allowance_id=allowance_id,  # type: ignore[arg-type]
-            pilot_manifest_sha256=value["pilot_manifest_sha256"],  # type: ignore[arg-type]
-            max_attempts=MAX_ATTEMPTS,
+            pilot_manifest_sha256=manifest_sha256,
+            max_attempts=descriptor.max_attempts,
             purpose=REQUEST_PURPOSE,
             document_sha256=_sha256_bytes(raw),
         )
@@ -492,9 +561,11 @@ class PilotAllowance:
             _digest(self.document_sha256, "allowance document SHA-256")
         except PilotError as exc:
             raise PilotAllowanceError(str(exc)) from None
+        descriptor = _PLAN_BY_MANIFEST_SHA256.get(self.pilot_manifest_sha256)
         if (
-            type(self.max_attempts) is not int
-            or self.max_attempts != MAX_ATTEMPTS
+            descriptor is None
+            or type(self.max_attempts) is not int
+            or self.max_attempts != descriptor.max_attempts
             or self.purpose != REQUEST_PURPOSE
         ):
             raise PilotAllowanceError("allowance cap or purpose is not approved")
@@ -1529,7 +1600,10 @@ class PilotAdapter:
         if type(self.manifest) is not PilotManifest:
             raise PilotManifestError("pilot object has an invalid manifest type")
         try:
-            canonical = PilotManifest.load()
+            descriptor = _PLAN_REGISTRY.get(self.manifest.pilot_id)
+            if descriptor is None:
+                raise PilotManifestError("pilot object is not a registered source plan")
+            canonical = PilotManifest.load(descriptor.config_path)
             self.manifest.validate_instance()
         except PilotError:
             raise
@@ -1774,6 +1848,10 @@ __all__ = [
     "PilotRetentionError",
     "PilotSourceBindingError",
     "PilotTransportError",
+    "SEASON_METADATA_CONFIG",
+    "SEASON_METADATA_MANIFEST_SHA256",
+    "SEASON_METADATA_MAX_ATTEMPTS",
+    "SEASON_METADATA_PILOT_ID",
     "SOURCE_ARCHIVE_SHA256",
     "SourceBinding",
     "SupplementReceipt",
