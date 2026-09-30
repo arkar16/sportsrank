@@ -22,6 +22,7 @@ CANDIDATE_SCHEMA = "forecast-candidate/v1"
 RECEIPT_SCHEMA = "forecast-publication-receipt/v1"
 TIMING_SCHEMA = "game-timing-evidence/v1"
 SCORE_SCHEMA = "forecast-final-score/v1"
+OWNER_ATTESTATION_SCHEMA = "forecast-owner-attestation/v1"
 
 
 class ForecastContractError(ValueError):
@@ -491,6 +492,69 @@ class GameTimingEvidence:
         )
 
 
+@dataclass(frozen=True)
+class OwnerAttestation:
+    """Owner-confirmed evidence for a retained pre-contract forecast.
+
+    This record deliberately carries no provider publication event or invented
+    timestamp.  The retained page and the owner's bounded confirmation are
+    separate, pinned evidence sources; the attestation only establishes that
+    the candidate was issued before kickoff.
+    """
+
+    candidate_version_id: str
+    candidate_artifact_digest: str
+    source: EvidenceRef
+    attestation: EvidenceRef
+    attestation_id: str = ""
+    schema_version: str = OWNER_ATTESTATION_SCHEMA
+
+    def __post_init__(self) -> None:
+        _sha256(self.candidate_version_id, "owner_attestation.candidate_version_id")
+        _sha256(self.candidate_artifact_digest, "owner_attestation.candidate_artifact_digest")
+        if self.schema_version != OWNER_ATTESTATION_SCHEMA:
+            raise ForecastContractError("unsupported owner attestation schema")
+        _required_text(self.source.kind, "owner_attestation.source.kind")
+        _required_text(self.attestation.kind, "owner_attestation.attestation.kind")
+        content = {
+            "schema_version": self.schema_version,
+            "candidate_version_id": self.candidate_version_id,
+            "candidate_artifact_digest": self.candidate_artifact_digest,
+            "source": self.source.to_dict(),
+            "attestation": self.attestation.to_dict(),
+        }
+        expected = _digest(content)
+        if self.attestation_id and self.attestation_id != expected:
+            raise ForecastContractError("owner attestation_id does not match content")
+        object.__setattr__(self, "attestation_id", expected)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "attestation_id": self.attestation_id,
+            "candidate_version_id": self.candidate_version_id,
+            "candidate_artifact_digest": self.candidate_artifact_digest,
+            "source": self.source.to_dict(),
+            "attestation": self.attestation.to_dict(),
+        }
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> "OwnerAttestation":
+        names = {
+            "schema_version", "attestation_id", "candidate_version_id",
+            "candidate_artifact_digest", "source", "attestation",
+        }
+        _fields(data, names, names, "owner attestation")
+        return cls(
+            candidate_version_id=str(data["candidate_version_id"]),
+            candidate_artifact_digest=str(data["candidate_artifact_digest"]),
+            source=EvidenceRef.from_dict(data["source"]),
+            attestation=EvidenceRef.from_dict(data["attestation"]),
+            attestation_id=str(data["attestation_id"]),
+            schema_version=str(data["schema_version"]),
+        )
+
+
 def receipt_qualifies(candidate: ForecastCandidate, receipt: PublicationReceipt, timing: GameTimingEvidence) -> bool:
     """Return whether pinned facts establish exact candidate publication pregame."""
 
@@ -506,19 +570,33 @@ def receipt_qualifies(candidate: ForecastCandidate, receipt: PublicationReceipt,
 def select_graded_forecast(
     candidates: Sequence[ForecastCandidate],
     receipts: Sequence[PublicationReceipt],
-    timing: GameTimingEvidence,
+    timing: GameTimingEvidence | None = None,
+    owner_attestations: Sequence[OwnerAttestation] = (),
 ) -> ForecastCandidate | None:
-    """Select the last qualifying candidate along one explicit replacement chain."""
+    """Select the last qualifying candidate along one explicit replacement chain.
+
+    Owner attestations qualify retained candidates without fabricating a
+    publication timestamp.  A sentinel ordering value is used only to choose
+    a later automated replacement; it is never serialized as evidence.
+    """
 
     by_id = {candidate.version_id: candidate for candidate in candidates}
     if len(by_id) != len(candidates):
         raise ForecastContractError("duplicate candidate versions")
-    if any(candidate.game != timing.game for candidate in candidates):
+    if timing is not None and any(candidate.game != timing.game for candidate in candidates):
         raise ForecastContractError("candidate Game identity does not match timing evidence")
     qualifying: dict[str, datetime] = {}
+    owner_order = datetime.min.replace(tzinfo=timezone.utc)
+    for attestation in owner_attestations:
+        candidate = by_id.get(attestation.candidate_version_id)
+        if candidate is None:
+            continue
+        if attestation.candidate_artifact_digest != candidate.artifact_digest:
+            raise ForecastContractError("owner attestation does not bind the exact candidate bytes")
+        qualifying[candidate.version_id] = owner_order
     for receipt in receipts:
         candidate = by_id.get(receipt.candidate_version_id)
-        if candidate is not None and receipt_qualifies(candidate, receipt, timing):
+        if candidate is not None and timing is not None and receipt_qualifies(candidate, receipt, timing):
             # Re-serving unchanged bytes cannot move an ancestor's issuance
             # after its explicit correction.
             qualifying[candidate.version_id] = min(qualifying.get(candidate.version_id, receipt.public_by), receipt.public_by)
@@ -764,7 +842,7 @@ __all__ = [
     "CoverageResult", "EvidenceRef", "FinalScore", "ForecastAggregate",
     "ForecastCandidate", "ForecastContractError", "ForecastGrade",
     "ForecastDisposition", "ForecastProvenance", "ForecastSelection", "GameIdentity",
-    "GameTimingEvidence", "PublicationReceipt", "ScoreRevision",
+    "GameTimingEvidence", "OwnerAttestation", "PublicationReceipt", "ScoreRevision",
     "StraightUpResult", "VersionBinding", "aggregate_grades",
     "grade_forecast", "receipt_qualifies", "select_graded_forecast",
 ]
