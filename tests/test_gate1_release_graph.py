@@ -115,7 +115,15 @@ class Gate1ReleaseGraphTests(unittest.TestCase):
             disposition_source=future.disposition_source,
         )
         games = partial.games[:-1] + (completed,)
-        metadata = MappingProxyType({**dict(partial.metadata), "complete_through_week": 2})
+        metadata = MappingProxyType(
+            {
+                **dict(partial.metadata),
+                "sport": partial.sport,
+                "classification": partial.classification,
+                "year": partial.year,
+                "complete_through_week": 2,
+            }
+        )
         return SeasonSnapshot(
             partial.sport,
             partial.classification,
@@ -317,7 +325,14 @@ class Gate1ReleaseGraphTests(unittest.TestCase):
             disposition="scheduled",
             disposition_source=future.disposition_source,
         )
-        metadata = MappingProxyType(dict(partial.metadata))
+        metadata = MappingProxyType(
+            {
+                **dict(partial.metadata),
+                "sport": partial.sport,
+                "classification": partial.classification,
+                "year": partial.year,
+            }
+        )
         scored_snapshot = SeasonSnapshot(
             partial.sport,
             partial.classification,
