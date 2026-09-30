@@ -6,6 +6,7 @@ serializer under test.
 """
 
 import json
+from dataclasses import replace
 from pathlib import Path
 import tempfile
 from types import MappingProxyType
@@ -381,6 +382,45 @@ class IndependentRankingProgressionTests(unittest.TestCase):
             self.assertIsNone(team.cells["W2"].points)
             self.assertIsNone(team.cells["W2"].rank)
 
+    def test_no_active_games_infers_preseason_instead_of_week_minus_one(self):
+        teams = (
+            SourceTeam("Alpha State", "Test Conference"),
+            SourceTeam("Independent College", "Independent"),
+            SourceTeam("Zulu Tech", "Test Conference"),
+        )
+        games = ()
+        metadata = MappingProxyType(
+            {
+                "schema_version": 3,
+                "sport": "cfb",
+                "classification": "FBS",
+                "year": 2025,
+                "teams_fetched_at": STAMP,
+                "games_fetched_at": STAMP,
+                "complete_through_week": -1,
+            }
+        )
+        snapshot = SeasonSnapshot(
+            "cfb",
+            "FBS",
+            2025,
+            teams,
+            games,
+            metadata,
+            _checksum(metadata, teams, games),
+        )
+
+        document = build_progression(snapshot)
+
+        self.assertEqual(document.phase, "preseason")
+        self.assertEqual(document.target_week, -1)
+        self.assertEqual(
+            [checkpoint.key for checkpoint in document.checkpoints],
+            ["PRESEASON", "FINAL"],
+        )
+        self.assertEqual(document.checkpoint("PRESEASON").reason, "ranking_missing")
+        self.assertEqual(document.checkpoint("FINAL").reason, "future_checkpoint")
+
     def test_invalid_checkpoint_and_row_contracts_fail_closed(self):
         snapshot = _snapshot(complete=True)
 
@@ -575,6 +615,36 @@ class IndependentRankingProgressionTests(unittest.TestCase):
             ["Alpha State", "Independent College", "Zulu Tech"],
         )
 
+        page = BeautifulSoup(html, "html.parser")
+        viewport = page.find("meta", attrs={"name": "viewport"})
+        self.assertIsNotNone(viewport)
+        self.assertEqual(viewport.get("content"), "width=device-width, initial-scale=1")
+        scroll_region = page.find(
+            attrs={"role": "region", "aria-label": "Ranking progression"}
+        )
+        self.assertIsNotNone(scroll_region)
+        self.assertEqual(scroll_region.get("tabindex"), "0")
+        described_by = scroll_region.get("aria-describedby")
+        self.assertIsNotNone(described_by)
+        self.assertIsNotNone(page.find(id=described_by))
+        self.assertIn("overflow:auto", page.find("style").get_text())
+
+        provenance = page.find("details")
+        self.assertIsNotNone(provenance)
+        self.assertNotIn("open", provenance.attrs)
+        self.assertEqual(
+            provenance.find("summary").get_text(strip=True), "Data provenance"
+        )
+        self.assertTrue(
+            all(header.get("scope") == "col" for header in table.select("thead th"))
+        )
+        self.assertTrue(
+            all(row.find("th").get("scope") == "row" for row in rows)
+        )
+        style = page.find("style").get_text()
+        self.assertRegex(style, r"thead\s+th\{[^}]*position:sticky[^}]*top:0")
+        self.assertRegex(style, r"tbody\s+th\{[^}]*position:sticky[^}]*left:0")
+
     def test_value_objects_reject_ambiguous_unavailable_cells(self):
         with self.assertRaisesRegex(ProgressionContractError, "require a reason"):
             ProgressionCell(available=False)
@@ -582,6 +652,51 @@ class IndependentRankingProgressionTests(unittest.TestCase):
             ProgressionCell(available=True, points=1.0)
         with self.assertRaisesRegex(ProgressionContractError, "cannot carry ranking values"):
             ProgressionCell(available=False, points=1.0, reason="missing")
+
+    def test_direct_construction_and_replace_cannot_reach_unsafe_serializers(self):
+        with self.assertRaisesRegex(ProgressionContractError, "finite number"):
+            ProgressionCell(available=True, points=float("nan"), rank=1)
+        with self.assertRaisesRegex(ProgressionContractError, "integer"):
+            ProgressionCell(available=True, points=1.0, rank="<img src=x>")
+        with self.assertRaisesRegex(ProgressionContractError, "unsafe text"):
+            ProgressionCell(available=False, reason="<script>alert(1)</script>")
+
+        document = build_progression(
+            _snapshot(complete=True),
+            FULL_RANKINGS,
+            phase="final",
+            dataset_id=DATASET,
+            carryover_identity=CARRYOVER,
+        )
+        with self.assertRaisesRegex(ProgressionContractError, "phase and target"):
+            progression_json(replace(document, phase="preseason", target_week=0))
+        with self.assertRaisesRegex(ProgressionContractError, "source_snapshot"):
+            render_progression_html(replace(document, source_snapshot="<script>"))
+
+        # ``replace`` validates the cell's own scalar fields, while the
+        # output boundary must also reject a positive but impossible rank
+        # that only the complete document roster can identify.
+        rank_outside_roster = replace(
+            document.team("Alpha State").cells["W0"], rank=len(document.teams) + 1
+        )
+        replaced_team = replace(
+            document.team("Alpha State"),
+            cells={
+                **document.team("Alpha State").cells,
+                "W0": rank_outside_roster,
+            },
+        )
+        replaced_document = replace(
+            document,
+            teams=tuple(
+                replaced_team if team.school == "Alpha State" else team
+                for team in document.teams
+            ),
+        )
+        with self.assertRaisesRegex(ProgressionContractError, "rank exceeds roster"):
+            progression_json(replaced_document)
+        with self.assertRaisesRegex(ProgressionContractError, "rank exceeds roster"):
+            render_progression_html(replaced_document)
 
     def test_independent_artifact_validator_rejects_semantic_tampering(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -668,6 +783,30 @@ class IndependentRankingProgressionTests(unittest.TestCase):
                 encoding="utf-8",
             )
             self.assertTrue(validate(), "a second table must fail validation")
+
+            html_path.write_text(
+                original_html.replace(
+                    "</body>", "<script>document.body.replaceChildren()</script></body>"
+                ),
+                encoding="utf-8",
+            )
+            self.assertTrue(validate(), "executable script markup must fail validation")
+
+            html_path.write_text(
+                original_html.replace(
+                    "<table>", '<table onclick="alert(1)">'
+                ),
+                encoding="utf-8",
+            )
+            self.assertTrue(validate(), "inline event handlers must fail validation")
+
+            html_path.write_text(
+                original_html.replace(
+                    "</nav>", '<a href="javascript:alert(1)">unsafe</a></nav>'
+                ),
+                encoding="utf-8",
+            )
+            self.assertTrue(validate(), "executable URLs must fail validation")
 
 
 if __name__ == "__main__":

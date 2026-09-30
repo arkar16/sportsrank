@@ -69,6 +69,8 @@ class ProgressionCell:
     reason: str | None = None
 
     def __post_init__(self) -> None:
+        if not isinstance(self.available, bool):
+            raise ProgressionContractError("cell availability must be boolean")
         if self.available:
             if self.points is None or self.rank is None:
                 raise ProgressionContractError(
@@ -78,6 +80,11 @@ class ProgressionCell:
                 raise ProgressionContractError(
                     "available progression cells cannot have an unavailable reason"
                 )
+            object.__setattr__(self, "points", _finite_number(self.points, "cell points"))
+            rank = _strict_int(self.rank, "cell rank")
+            if rank < 1:
+                raise ProgressionContractError("cell rank must be positive")
+            object.__setattr__(self, "rank", rank)
         elif self.points is not None or self.rank is not None:
             raise ProgressionContractError(
                 "unavailable progression cells cannot carry ranking values"
@@ -86,6 +93,8 @@ class ProgressionCell:
             raise ProgressionContractError(
                 "unavailable progression cells require a reason"
             )
+        else:
+            _text(self.reason, "cell reason")
 
     def to_dict(self) -> dict[str, Any]:
         if self.available:
@@ -662,7 +671,9 @@ def build_progression(
 
     requested_phase = _phase(phase)
     if requested_phase is None:
-        requested_phase = "final" if season_complete else "week"
+        requested_phase = (
+            "preseason" if complete_through < 0 else "final" if season_complete else "week"
+        )
     if target_week is not None:
         if isinstance(target_week, bool):
             raise ProgressionContractError("target_week must be a non-negative integer")
@@ -692,6 +703,8 @@ def build_progression(
         )
     if requested_phase == "preseason" and target_week != -1:
         raise ProgressionContractError("PRESEASON phase cannot have a numbered target_week")
+    if requested_phase == "week" and target_week < 0:
+        raise ProgressionContractError("weekly phase requires a completed numbered checkpoint")
 
     normalized_rankings: dict[str, Any] = {}
     if rankings is not None:
@@ -880,16 +893,84 @@ def build_progression(
     )
 
 
+def _validate_output_document(document: ProgressionDocument) -> None:
+    """Check public value objects even when constructed outside the builder."""
+    if not isinstance(document, ProgressionDocument):
+        raise ProgressionContractError("output requires a ProgressionDocument")
+    for name in ("sport", "classification", "dataset_id", "model_version", "source_snapshot", "carryover_identity"):
+        _text(getattr(document, name), name)
+    if type(document.season) is not int or document.season < 1:
+        raise ProgressionContractError("season must be a positive integer")
+    if type(document.schema_version) is not int or document.schema_version != SCHEMA_VERSION:
+        raise ProgressionContractError("unsupported progression schema")
+    if document.phase not in {"preseason", "week", "final"} or type(document.target_week) is not int:
+        raise ProgressionContractError("invalid progression phase or target")
+    if (document.phase == "preseason" and document.target_week != -1) or (
+        document.phase != "preseason" and document.target_week < 0
+    ):
+        raise ProgressionContractError("phase and target disagree")
+    if not re.fullmatch(r"[0-9a-f]{64}", document.source_snapshot):
+        raise ProgressionContractError("source_snapshot must be a SHA-256 digest")
+    keys: list[str] = []
+    for checkpoint in document.checkpoints:
+        if not isinstance(checkpoint, ProgressionCheckpoint):
+            raise ProgressionContractError("invalid checkpoint value object")
+        key = checkpoint.key
+        if key != _normalize_checkpoint_key(key) or key in keys:
+            raise ProgressionContractError("duplicate or noncanonical checkpoint")
+        kind = "preseason" if key == PRESEASON else "final" if key == FINAL else "week"
+        week = int(key[1:]) if kind == "week" else None
+        if checkpoint.kind != kind or checkpoint.week != week or isinstance(checkpoint.week, bool):
+            raise ProgressionContractError("checkpoint identity disagrees")
+        if not isinstance(checkpoint.available, bool):
+            raise ProgressionContractError("checkpoint availability must be boolean")
+        if checkpoint.available and checkpoint.reason is not None:
+            raise ProgressionContractError("available checkpoint has a reason")
+        if not checkpoint.available:
+            _text(checkpoint.reason, "checkpoint reason")
+        for name in ("source_snapshot", "dataset_id", "model_version"):
+            if getattr(checkpoint, name) != getattr(document, name):
+                raise ProgressionContractError("checkpoint provenance disagrees")
+        keys.append(key)
+    if not keys or not document.teams:
+        raise ProgressionContractError("progression output requires checkpoints and teams")
+    names: set[str] = set()
+    for team in document.teams:
+        if not isinstance(team, ProgressionTeam):
+            raise ProgressionContractError("invalid team value object")
+        _text(team.school, "team")
+        _text(team.conference, "conference")
+        if team.school in names or set(team.cells) != set(keys):
+            raise ProgressionContractError("duplicate team or inconsistent checkpoint cells")
+        names.add(team.school)
+        for checkpoint in document.checkpoints:
+            cell = team.cells[checkpoint.key]
+            if not isinstance(cell, ProgressionCell):
+                raise ProgressionContractError("invalid cell value object")
+            if type(cell.available) is not bool:
+                raise ProgressionContractError("cell availability must be boolean")
+            if cell.available:
+                _finite_number(cell.points, "cell points")
+                if type(cell.rank) is not int or cell.rank < 1:
+                    raise ProgressionContractError("cell rank must be a positive integer")
+            elif cell.points is not None or cell.rank is not None:
+                raise ProgressionContractError("unavailable cell carries ranking values")
+            if cell.available != checkpoint.available or cell.reason != checkpoint.reason:
+                raise ProgressionContractError("cell availability disagrees with checkpoint")
+            if cell.available and cell.rank > len(document.teams):
+                raise ProgressionContractError("cell rank exceeds roster")
+
+
 def progression_json(document: ProgressionDocument) -> str:
     """Serialize only safe derived rows and provenance as canonical JSON."""
 
-    if not isinstance(document, ProgressionDocument):
-        raise ProgressionContractError("progression_json requires a ProgressionDocument")
+    _validate_output_document(document)
     return json.dumps(
         document.to_dict(),
         ensure_ascii=False,
         sort_keys=True,
         separators=(",", ":"),
+        allow_nan=False,
     ) + "\n"
 
 
@@ -953,6 +1034,7 @@ def render_progression_html(
         raise ProgressionContractError(
             "render_progression_html requires a ProgressionDocument"
         )
+    _validate_output_document(document)
     if title is None:
         title = (
             f"{document.season} CORS ranking progression — "
@@ -986,7 +1068,7 @@ def render_progression_html(
                 cells.extend(
                     (
                         f'<td class="points">{html.escape(_display_number(cell.points))}</td>',
-                        f'<td class="rank">{cell.rank}</td>',
+                        f'<td class="rank">{html.escape(str(cell.rank))}</td>',
                     )
                 )
             else:
@@ -999,6 +1081,9 @@ def render_progression_html(
                 )
         body_rows.append("<tr>" + "".join(cells) + "</tr>")
     provenance = document.provenance
+    checkpoint_label = (
+        f"W{document.target_week}" if document.phase == "week" else document.phase.upper()
+    )
     timestamp_html = (
         f"<p>Last updated: {html.escape(timestamp)}</p>\n"
         if timestamp is not None
@@ -1009,10 +1094,25 @@ def render_progression_html(
         "<html lang=\"en\">\n"
         "<head>\n"
         "<meta charset=\"utf-8\">\n"
+        "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
         f"<title>{html.escape(title)}</title>\n"
-        "<style>body{font-family:system-ui,sans-serif;margin:2rem}"
-        "table{border-collapse:collapse;font-variant-numeric:tabular-nums}"
-        "th,td{border:1px solid #bbb;padding:.35rem .5rem;text-align:right}"
+        "<style>body{font-family:system-ui,sans-serif;margin:1rem;color:#17212b}"
+        "h1{font-size:clamp(1.4rem,4vw,2rem)}"
+        "nav{display:flex;flex-wrap:wrap;gap:.5rem 1rem}"
+        "nav a{padding:.25rem 0}"
+        "details{margin:1rem 0}summary{cursor:pointer}"
+        ".provenance{overflow-wrap:anywhere}"
+        ".table-scroll{max-width:100%;max-height:70vh;overflow:auto;"
+        "border:1px solid #bbb;isolation:isolate}"
+        ".table-scroll:focus-visible{outline:3px solid #2463a3;outline-offset:2px}"
+        "table{border-collapse:separate;border-spacing:0;"
+        "font-variant-numeric:tabular-nums}"
+        "th,td{border-right:1px solid #bbb;border-bottom:1px solid #bbb;"
+        "padding:.5rem;text-align:right;background:#fff}"
+        "thead th{position:sticky;top:0;z-index:2;background:#edf2f7;min-width:5rem}"
+        "tbody th{position:sticky;left:0;z-index:1;background:#f5f7fa}"
+        "th:first-child{min-width:8rem;max-width:11rem;overflow-wrap:anywhere}"
+        "thead th:first-child{left:0;z-index:3}"
         "th:first-child,td:first-child,td:nth-child(2){text-align:left}"
         ".unavailable{color:#666;font-style:italic}</style>\n"
         "</head>\n"
@@ -1020,17 +1120,21 @@ def render_progression_html(
         f"<h1>{html.escape(title)}</h1>\n"
         f"<nav>{nav}</nav>\n"
         "<p>CORS points and national rank are shown at each checkpoint.</p>\n"
-        f"<p>Phase: {html.escape(document.phase)}; target: {document.target_week}.</p>\n"
+        f"<p>Checkpoint: {html.escape(checkpoint_label)}</p>\n"
         + timestamp_html
+        + "<details><summary>Data provenance</summary>\n"
         + f"<p class=\"provenance\">Season {provenance['season']} · "
         f"Dataset {html.escape(str(provenance['dataset_id']))} · "
         f"Model {html.escape(str(provenance['model_version']))} · "
-        f"Source snapshot {html.escape(str(provenance['source_snapshot']))}</p>\n"
+        f"Source snapshot {html.escape(str(provenance['source_snapshot']))}</p>\n</details>\n"
+        "<p id=\"table-help\">Scroll across for later checkpoints. Team names stay visible.</p>\n"
+        "<div class=\"table-scroll\" role=\"region\" aria-label=\"Ranking progression\" "
+        "aria-describedby=\"table-help\" tabindex=\"0\">\n"
         "<table>\n<thead><tr>"
         + "".join(header_cells)
         + "</tr></thead>\n<tbody>"
         + "".join(body_rows)
-        + "</tbody>\n</table>\n"
+        + "</tbody>\n</table>\n</div>\n"
         "</body>\n</html>\n"
     )
 

@@ -114,6 +114,20 @@ derivation state, not permission for Release to omit calculated history.
         failures.append(f"progression JSON unavailable or malformed: {exc}")
     try:
         document = BeautifulSoup(html_path.read_text(encoding="utf-8"), "html.parser")
+        # This artifact promises static content. A valid table hidden behind
+        # executable markup must not pass merely because its initial DOM agrees.
+        if document.find(["script", "iframe", "object", "embed", "base"]):
+            failures.append("progression HTML contains executable or embedded content")
+        for node in document.find_all(True):
+            for attribute, value in node.attrs.items():
+                if attribute.lower().startswith("on") or attribute.lower() == "srcdoc":
+                    failures.append("progression HTML contains an executable attribute")
+                if attribute.lower() in {"href", "src", "action", "formaction", "xlink:href"}:
+                    normalized = "".join(str(value).split()).lower()
+                    if normalized.startswith(("javascript:", "vbscript:", "data:")):
+                        failures.append("progression HTML contains an executable URL")
+            if node.name == "meta" and node.get("http-equiv", "").lower() == "refresh":
+                failures.append("progression HTML contains a redirect")
         title = f"{year} CORS ranking progression — {classification}"
         if document.title is None or document.title.get_text(strip=True) != title:
             failures.append("progression HTML title differs")
