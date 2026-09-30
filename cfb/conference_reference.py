@@ -17,7 +17,7 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from datetime import date, datetime, time, timezone
+from datetime import date, datetime, time, timedelta, timezone
 import math
 import re
 from statistics import median
@@ -111,26 +111,31 @@ def _optional_timestamp(value: Any, field: str) -> datetime | None:
     return _timestamp(value, field)
 
 
-def _game_start_at(game: SourceGame) -> datetime | None:
-    """Parse a retained game's start date for checkpoint/cutoff ordering."""
+def _game_start_bounds(game: SourceGame) -> tuple[datetime, datetime] | None:
+    """Bound start timing without assigning a timezone to a calendar-only date."""
 
     raw = getattr(game, "date", None)
     if raw is None:
         return None
     if isinstance(raw, datetime):
-        return _timestamp(raw, "game date")
+        instant = _timestamp(raw, "game date")
+        return instant, instant
     if not isinstance(raw, str):
         raise ConferenceReferenceError("game date must be an ISO date or timestamp")
     text = raw.strip()
     if not text:
         raise ConferenceReferenceError("game date must be an ISO date or timestamp")
     if "T" in text or " " in text:
-        return _timestamp(text, "game date")
+        instant = _timestamp(text, "game date")
+        return instant, instant
     try:
         parsed = date.fromisoformat(text)
     except ValueError as exc:
         raise ConferenceReferenceError("game date must be an ISO date or timestamp") from exc
-    return datetime.combine(parsed, time.min, tzinfo=timezone.utc)
+    midnight = datetime.combine(parsed, time.min, tzinfo=timezone.utc)
+    # A local calendar date without timezone can span UTC+14 through UTC-12.
+    # Keep that uncertainty; do not manufacture a midnight-UTC kickoff.
+    return midnight - timedelta(hours=14), midnight + timedelta(days=1, hours=12)
 
 
 def _reject_games_at_or_after_cutoff(
@@ -139,8 +144,8 @@ def _reject_games_at_or_after_cutoff(
     if cutoff is None:
         return
     for game in selected_games:
-        started_at = _game_start_at(game)
-        if started_at is not None and started_at >= cutoff:
+        bounds = _game_start_bounds(game)
+        if bounds is not None and bounds[0] >= cutoff:
             raise ConferenceReferenceError(
                 f"checkpoint includes game {getattr(game, 'provider_id', None)!r} "
                 "at or after the cutoff"
@@ -376,6 +381,7 @@ class InterconferenceRecord:
     regular: Record
     postseason: Record
     combined: Record
+    unknown: Record = Record()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "conference", _text(self.conference, "interconference conference"))
@@ -384,7 +390,7 @@ class InterconferenceRecord:
         if kind not in {"conference", "independent", "fcs"}:
             raise ConferenceReferenceError("unsupported interconference opponent kind")
         object.__setattr__(self, "opponent_kind", kind)
-        if not all(isinstance(value, Record) for value in (self.regular, self.postseason, self.combined)):
+        if not all(isinstance(value, Record) for value in (self.regular, self.postseason, self.combined, self.unknown)):
             raise ConferenceReferenceError("interconference records must be Record values")
 
     def to_dict(self) -> dict[str, Any]:
@@ -395,6 +401,7 @@ class InterconferenceRecord:
             "regular": self.regular.to_dict(),
             "postseason": self.postseason.to_dict(),
             "combined": self.combined.to_dict(),
+            "unknown": self.unknown.to_dict(),
         }
 
 
@@ -443,6 +450,7 @@ class ChampionshipProjection:
             "membership_evidence_unavailable", "game_designation_evidence_unavailable",
             "no_qualifying_results", "unresolved_qualification", "unresolved_site",
             "no_championship",
+            "ambiguous_game_timing",
         }
         if self.reason is not None and self.reason not in reasons:
             raise ConferenceReferenceError("unsupported projection reason")
@@ -574,10 +582,11 @@ def _game_phase(game: SourceGame, designation: ConferenceGameDesignation) -> str
     # qualification records even in retained snapshots whose phase is null.
     if designation.title_game:
         return "postseason"
-    # Legacy fixtures without phase metadata are treated as regular-season
-    # games for descriptive reconciliation.  Production source validation
-    # remains responsible for requiring provider phase provenance where needed.
-    return "regular"
+    # ADR0014 retains unknown chronology. Count the completed result in its
+    # own scope and combined totals without inventing a regular-season phase.
+    if raw is None or (isinstance(raw, str) and raw.strip().lower() in {"", "unknown"}):
+        return "unknown"
+    raise ConferenceReferenceError("game has an unsupported phase")
 
 
 def _validate_checkpoint_games(
@@ -705,34 +714,34 @@ def _add_game_records(
             opponent_kind = "conference"
             for conference, opponent, own, other in pairs:
                 phase = _game_phase(game, designation)
-                bucket = inter.setdefault((conference, opponent, opponent_kind), {"regular": _MutableRecord(), "postseason": _MutableRecord()})
+                bucket = inter.setdefault((conference, opponent, opponent_kind), {"regular": _MutableRecord(), "postseason": _MutableRecord(), "unknown": _MutableRecord()})
                 bucket[phase].add(own, other)
         elif home_conf and away_member and away_member.independent:
             phase = _game_phase(game, designation)
-            bucket = inter.setdefault((home_conf, "FBS Independents", "independent"), {"regular": _MutableRecord(), "postseason": _MutableRecord()})
+            bucket = inter.setdefault((home_conf, "FBS Independents", "independent"), {"regular": _MutableRecord(), "postseason": _MutableRecord(), "unknown": _MutableRecord()})
             bucket[phase].add(home_points, away_points)
         elif away_conf and home_member and home_member.independent:
             phase = _game_phase(game, designation)
-            bucket = inter.setdefault((away_conf, "FBS Independents", "independent"), {"regular": _MutableRecord(), "postseason": _MutableRecord()})
+            bucket = inter.setdefault((away_conf, "FBS Independents", "independent"), {"regular": _MutableRecord(), "postseason": _MutableRecord(), "unknown": _MutableRecord()})
             bucket[phase].add(away_points, home_points)
         elif home_conf and not away_member and away_class == "FCS":
             phase = _game_phase(game, designation)
-            bucket = inter.setdefault((home_conf, "FCS", "fcs"), {"regular": _MutableRecord(), "postseason": _MutableRecord()})
+            bucket = inter.setdefault((home_conf, "FCS", "fcs"), {"regular": _MutableRecord(), "postseason": _MutableRecord(), "unknown": _MutableRecord()})
             bucket[phase].add(home_points, away_points)
         elif away_conf and not home_member and home_class == "FCS":
             phase = _game_phase(game, designation)
-            bucket = inter.setdefault((away_conf, "FCS", "fcs"), {"regular": _MutableRecord(), "postseason": _MutableRecord()})
+            bucket = inter.setdefault((away_conf, "FCS", "fcs"), {"regular": _MutableRecord(), "postseason": _MutableRecord(), "unknown": _MutableRecord()})
             bucket[phase].add(away_points, home_points)
     frozen_overall = {team: record.frozen() for team, record in overall.items()}
     frozen_qualification = {team: record.frozen() for team, record in qualification.items()}
     return frozen_overall, frozen_qualification, inter
 
 
-def _combined(regular: Record, postseason: Record) -> Record:
+def _combined(regular: Record, postseason: Record, unknown: Record) -> Record:
     return Record(
-        wins=regular.wins + postseason.wins,
-        losses=regular.losses + postseason.losses,
-        ties=regular.ties + postseason.ties,
+        wins=regular.wins + postseason.wins + unknown.wins,
+        losses=regular.losses + postseason.losses + unknown.losses,
+        ties=regular.ties + postseason.ties + unknown.ties,
     )
 
 
@@ -990,6 +999,17 @@ def _projection(
                 contenders=(), selection_basis=None, site_state="unavailable",
                 host_team=None, neutral_site=None, confirmation_id=None, reason=reason,
             )
+    for game in selected_games:
+        if game.home_team not in conference_members and game.away_team not in conference_members:
+            continue
+        bounds = _game_start_bounds(game)
+        if bounds is None or bounds[1] >= cutoff:
+            return ChampionshipProjection(
+                conference=conference, status="unavailable", participants=(),
+                contenders=(), selection_basis=None, site_state="unavailable",
+                host_team=None, neutral_site=None, confirmation_id=None,
+                reason="ambiguous_game_timing",
+            )
     eligible = _eligible_teams(rule)
     rows = [row for row in standings.rows if eligible.get(row.school, False)]
     if any(row.conference_record.winning_percentage is None for row in rows) or not rows:
@@ -1239,28 +1259,24 @@ def derive_conference_reference(
             if opponent != conference:
                 inter_mutable.setdefault(
                     (conference, opponent, "conference"),
-                    {"regular": _MutableRecord(), "postseason": _MutableRecord()},
+                    {"regular": _MutableRecord(), "postseason": _MutableRecord(), "unknown": _MutableRecord()},
                 )
         if any(member.independent for member in members.values()):
             inter_mutable.setdefault(
                 (conference, "FBS Independents", "independent"),
-                {"regular": _MutableRecord(), "postseason": _MutableRecord()},
+                {"regular": _MutableRecord(), "postseason": _MutableRecord(), "unknown": _MutableRecord()},
             )
-        if any(
-            str(getattr(game, "home_classification", "")).upper() == "FCS"
-            or str(getattr(game, "away_classification", "")).upper() == "FCS"
-            for game in selected_games
-        ):
-            inter_mutable.setdefault(
-                (conference, "FCS", "fcs"),
-                {"regular": _MutableRecord(), "postseason": _MutableRecord()},
-            )
+        inter_mutable.setdefault(
+            (conference, "FCS", "fcs"),
+            {"regular": _MutableRecord(), "postseason": _MutableRecord(), "unknown": _MutableRecord()},
+        )
 
     interconference: list[InterconferenceRecord] = []
     for conference, opponent, kind in sorted(inter_mutable):
         bucket = inter_mutable[(conference, opponent, kind)]
         regular = bucket["regular"].frozen()
         postseason = bucket["postseason"].frozen()
+        unknown = bucket["unknown"].frozen()
         interconference.append(
             InterconferenceRecord(
                 conference=conference,
@@ -1268,7 +1284,8 @@ def derive_conference_reference(
                 opponent_kind=kind,
                 regular=regular,
                 postseason=postseason,
-                combined=_combined(regular, postseason),
+                combined=_combined(regular, postseason, unknown),
+                unknown=unknown,
             )
         )
 

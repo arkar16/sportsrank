@@ -570,7 +570,7 @@ class ConferenceReferenceTests(unittest.TestCase):
     def test_selected_game_start_at_cutoff_is_rejected(self) -> None:
         original = _snapshot()
         games = tuple(
-            replace(game, date="2025-09-10") if game.provider_id == "g-red" else game
+            replace(game, date="2025-09-10T00:00:00+00:00") if game.provider_id == "g-red" else game
             for game in original.games
         )
         provisional = replace(original, games=games, checksum="0" * 64)

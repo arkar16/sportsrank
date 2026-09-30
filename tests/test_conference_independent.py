@@ -348,6 +348,64 @@ class IndependentConferenceTests(unittest.TestCase):
         self.assertEqual([row.school for row in reference.independent_rows], ["Independent"])
         self.assertFalse(any(row.school == "FCS U" for row in reference.independent_rows))
 
+    def test_unknown_non_title_phase_has_its_own_interconference_bucket(self):
+        snapshot, supplement = _core_fixture()
+        unknown_games = tuple(
+            replace(game, phase="unknown", phase_source="provider")
+            if game.provider_id == "red-blue" else game
+            for game in snapshot.games
+        )
+        unknown_snapshot = _seal_snapshot(
+            snapshot.teams, unknown_games, complete_through_week=0
+        )
+        unknown_supplement = replace(
+            supplement, snapshot_checksum=unknown_snapshot.checksum
+        )
+        reference = _derive(unknown_snapshot, unknown_supplement)
+
+        red_blue = next(
+            item for item in reference.interconference
+            if item.conference == "Red" and item.opponent == "Blue"
+        )
+        self.assertEqual(red_blue.regular, Record())
+        self.assertEqual(red_blue.postseason, Record())
+        self.assertEqual(red_blue.unknown, Record(1, 0, 0))
+        self.assertEqual(red_blue.combined, Record(1, 0, 0))
+
+    def test_fcs_zero_bucket_is_present_without_fcs_games_in_preseason(self):
+        snapshot, supplement = _core_fixture()
+        no_fcs_games = tuple(
+            game for game in snapshot.games if game.provider_id != "red-fcs"
+        )
+        no_fcs_snapshot = _seal_snapshot(
+            snapshot.teams, no_fcs_games, complete_through_week=0
+        )
+        no_fcs_supplement = replace(
+            supplement,
+            snapshot_checksum=no_fcs_snapshot.checksum,
+            games=tuple(
+                game for game in supplement.games
+                if game.provider_id != "red-fcs"
+            ),
+        )
+        reference = _derive(
+            no_fcs_snapshot,
+            no_fcs_supplement,
+            phase="preseason",
+            target_week=None,
+        )
+
+        for conference in ("Blue", "Red"):
+            with self.subTest(conference=conference):
+                fcs = next(
+                    item for item in reference.interconference
+                    if item.conference == conference and item.opponent == "FCS"
+                )
+                self.assertEqual(fcs.regular, Record())
+                self.assertEqual(fcs.postseason, Record())
+                self.assertEqual(fcs.unknown, Record())
+                self.assertEqual(fcs.combined, Record())
+
     def test_derived_public_json_keeps_independents_separate_from_comparisons(self):
         snapshot, supplement = _core_fixture()
         reference = _derive(snapshot, supplement)
@@ -619,6 +677,66 @@ class IndependentConferenceTests(unittest.TestCase):
         self.assertEqual(red_projection.status, "projected")
         self.assertIsNone(red_projection.reason)
         self.assertEqual(red_projection.participants, ("Red One", "Red Two"))
+
+    def test_date_only_game_on_cutoff_day_is_ambiguous_but_records_are_retained(self):
+        snapshot, supplement = _core_fixture()
+        date_only_games = tuple(
+            replace(game, date="2025-09-10")
+            if game.provider_id == "red-league" else game
+            for game in snapshot.games
+        )
+        date_only_snapshot = _seal_snapshot(
+            snapshot.teams, date_only_games, complete_through_week=0
+        )
+        date_only_supplement = replace(
+            supplement, snapshot_checksum=date_only_snapshot.checksum
+        )
+        reference = _derive(
+            date_only_snapshot, date_only_supplement, cutoff=EARLY_CUTOFF
+        )
+        red_projection = next(
+            item for item in reference.projections if item.conference == "Red"
+        )
+        self.assertEqual(red_projection.status, "unavailable")
+        self.assertEqual(red_projection.reason, "ambiguous_game_timing")
+        red = next(item for item in reference.standings if item.conference == "Red")
+        red_one = next(row for row in red.rows if row.school == "Red One")
+        red_two = next(row for row in red.rows if row.school == "Red Two")
+        self.assertEqual(red_one.conference_record, Record(1, 0, 0))
+        self.assertEqual(red_two.conference_record, Record(0, 1, 0))
+
+        missing_date_games = tuple(
+            replace(game, date=None)
+            if game.provider_id == "red-league" else game
+            for game in snapshot.games
+        )
+        missing_date_snapshot = _seal_snapshot(
+            snapshot.teams, missing_date_games, complete_through_week=0
+        )
+        missing_date_supplement = replace(
+            supplement, snapshot_checksum=missing_date_snapshot.checksum
+        )
+        missing_date_reference = _derive(
+            missing_date_snapshot, missing_date_supplement, cutoff=EARLY_CUTOFF
+        )
+        missing_date_projection = next(
+            item for item in missing_date_reference.projections
+            if item.conference == "Red"
+        )
+        self.assertEqual(missing_date_projection.status, "unavailable")
+        self.assertEqual(missing_date_projection.reason, "ambiguous_game_timing")
+        missing_date_red = next(
+            item for item in missing_date_reference.standings
+            if item.conference == "Red"
+        )
+        missing_date_red_one = next(
+            row for row in missing_date_red.rows if row.school == "Red One"
+        )
+        missing_date_red_two = next(
+            row for row in missing_date_red.rows if row.school == "Red Two"
+        )
+        self.assertEqual(missing_date_red_one.conference_record, Record(1, 0, 0))
+        self.assertEqual(missing_date_red_two.conference_record, Record(0, 1, 0))
 
     def test_forged_validated_wrapper_cannot_bypass_underlying_coverage_or_digest(self):
         snapshot, supplement = _core_fixture()
