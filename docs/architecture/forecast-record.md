@@ -47,7 +47,10 @@ reason. Both versions remain in the ledger. An unchanged re-publication remains
 the same content-addressed forecast. Multiple unrelated originals or sibling
 replacements are rejected rather than resolved by an arbitrary timestamp.
 
-A representative sanitized candidate has this shape (digest values abbreviated):
+The public wire format contains derived participant identities, not provider Game
+records. Internal domain attributes remain `home_team` and `away_team`; the
+strict public identity uses `home`/`away` name and classification objects. A
+representative candidate has this shape (digest values abbreviated):
 
 ```json
 {
@@ -57,10 +60,8 @@ A representative sanitized candidate has this shape (digest values abbreviated):
     "provider_id": "401752001",
     "season": 2026,
     "week": 1,
-    "home_team": "Home",
-    "away_team": "Away",
-    "home_classification": "fbs",
-    "away_classification": "fbs",
+    "home": {"name": "Home", "classification": "fbs"},
+    "away": {"name": "Away", "classification": "fbs"},
     "neutral_site": false
   },
   "forecast": {

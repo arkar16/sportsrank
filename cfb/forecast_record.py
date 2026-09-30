@@ -128,6 +128,8 @@ def _instant_text(value: datetime) -> str:
 
 
 def _fields(data: Mapping[str, Any], expected: set[str], required: set[str], label: str) -> None:
+    if not isinstance(data, Mapping):
+        raise ForecastContractError(f"{label} must be an object")
     extras = set(data) - expected
     missing = required - set(data)
     if extras:
@@ -155,7 +157,7 @@ class EvidenceRef:
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> "EvidenceRef":
         _fields(data, {"kind", "reference", "digest"}, {"kind", "reference", "digest"}, "evidence")
-        return cls(str(data["kind"]), str(data["reference"]), str(data["digest"]))
+        return cls(data["kind"], data["reference"], data["digest"])
 
 
 @dataclass(frozen=True)
@@ -215,17 +217,20 @@ class GameIdentity:
     def to_dict(self) -> dict[str, Any]:
         return {
             "provider_id": self.provider_id, "season": self.season, "week": self.week,
-            "home_team": self.home_team, "away_team": self.away_team,
-            "home_classification": self.home_classification,
-            "away_classification": self.away_classification,
+            "home": {"name": self.home_team, "classification": self.home_classification},
+            "away": {"name": self.away_team, "classification": self.away_classification},
             "neutral_site": self.neutral_site,
         }
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> "GameIdentity":
-        names = {"provider_id", "season", "week", "home_team", "away_team", "home_classification", "away_classification", "neutral_site"}
+        names = {"provider_id", "season", "week", "home", "away", "neutral_site"}
         _fields(data, names, names, "game")
-        return cls(**data)  # type: ignore[arg-type]
+        for side in ("home", "away"):
+            _fields(data[side], {"name", "classification"}, {"name", "classification"}, f"game.{side}")
+        return cls(data["provider_id"], data["season"], data["week"],
+                   data["home"]["name"], data["away"]["name"],
+                   data["home"]["classification"], data["away"]["classification"], data["neutral_site"])
 
 
 @dataclass(frozen=True)
@@ -246,11 +251,13 @@ class ForecastProvenance:
     def __post_init__(self) -> None:
         for name in ("rating_checkpoint", "rating_cutoff", "rating_artifact_digest", "source_snapshot_digest", "model_version", "source_kind", "code_revision"):
             _required_text(getattr(self, name), f"provenance.{name}")
+        for name in ("rating_artifact_digest", "source_snapshot_digest"):
+            _sha256(getattr(self, name), f"provenance.{name}")
         for name in ("home_rating", "away_rating", "home_field_advantage"):
             object.__setattr__(self, name, _decimal(getattr(self, name), f"provenance.{name}"))
         for name in ("home_rank", "away_rank"):
             value = getattr(self, name)
-            if value is not None and (isinstance(value, bool) or value < 1):
+            if value is not None and (type(value) is not int or value < 1):
                 raise ForecastContractError(f"provenance.{name} must be a positive integer")
 
     def to_dict(self) -> dict[str, str]:
@@ -314,6 +321,7 @@ class ForecastCandidate:
     def __post_init__(self) -> None:
         if self.schema_version != CANDIDATE_SCHEMA:
             raise ForecastContractError("unsupported forecast candidate schema")
+        object.__setattr__(self, "bindings", tuple(self.bindings))
         margin = _decimal(self.home_margin, "forecast.home_margin")
         handicap = _decimal(self.home_handicap, "forecast.home_handicap")
         object.__setattr__(self, "home_margin", margin)
@@ -572,6 +580,7 @@ class FinalScore:
     def __post_init__(self) -> None:
         if self.schema_version != SCORE_SCHEMA or not self.revisions:
             raise ForecastContractError("final score requires a supported schema and revision")
+        object.__setattr__(self, "revisions", tuple(self.revisions))
         previous = None
         observed_at = None
         for revision in self.revisions:
