@@ -37,8 +37,17 @@ the same authenticated immutable publication package. A hash link, a bare
 receipt supplied by a caller, or a package containing only the candidate does
 not prove that the BEV artifact was public.
 
-Selection follows the existing pregame correction chain. A late or unverified
-correction cannot displace an earlier qualifying issued value. Historical
+The history loader accepts at most 256 independently authenticated publication
+attempts. It retains each candidate’s actual publication receipt and requires
+the bound BEV bytes in that same package. A later package cannot supply missing
+BEV bytes to an earlier receipt. Copies of predecessors in a correction package
+do not establish earlier publication.
+
+Selection follows the existing pregame correction chain across these distinct
+attempts. A late correction cannot displace an earlier qualifying issued value.
+Ordinary rebuilds retain the earliest qualifying receipt and exact artifact;
+republishing an ancestor cannot roll back a child. Conflicting or unverified
+history fails closed. Historical
 reconstruction stays explicitly reconstructed and outside recorded forecast
 evaluation. Its input cutoff must be supported as pregame; the act of
 reconstructing history need not occur before the historical game.
@@ -49,6 +58,8 @@ digests, model and forecast anchor, semantic input cutoff time, and source
 evidence reference. Every field must correspond to the candidate before the
 separate game-timing comparison can qualify that cutoff. An older qualification
 for different inputs cannot be reused merely because its timestamp is pregame.
+The same correspondence check applies to artifact construction and wire readers,
+so regenerating an outer digest cannot legitimize altered qualification fields.
 
 The external caller must qualify the retained source/checkpoint evidence.
 Neither the typed value nor its content hash independently proves source truth

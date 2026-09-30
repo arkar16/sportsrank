@@ -16,7 +16,7 @@ import json
 import math
 from pathlib import Path
 import re
-from typing import Any, Literal, Mapping
+from typing import Any, Literal, Mapping, Sequence
 
 from .excitement import SCORING_VERSION, QualifiedPregame, calculate_bev
 from .forecast_publication import VerifiedForecastPublication, load_verified_forecasts
@@ -28,6 +28,7 @@ from .forecast_record import (
     GameTimingEvidence,
     PublicationReceipt,
     VersionBinding,
+    receipt_qualifies,
     select_graded_forecast,
 )
 from .public_safety import assert_public_bytes
@@ -37,6 +38,7 @@ from .publication import RecordedPublicationAttempt, _retrieve_recorded_attempt
 BEV_SCHEMA = "forecast-bev/v1"
 BEV_BINDING_KIND = "excitement-bev"
 BEV_PATH_PREFIX = "excitement/bev"
+MAX_BEV_PUBLICATION_HISTORY = 256
 _SHA256 = re.compile(r"sha256:[0-9a-f]{64}\Z")
 
 
@@ -250,6 +252,21 @@ class ReconstructionProvenance:
         )
 
 
+def _validate_reconstruction_qualification(
+    candidate: ForecastCandidate,
+    qualified_input: ReconstructionInputQualification,
+) -> None:
+    expected_anchor = _anchor_digest(_anchor(candidate))
+    if qualified_input.forecast_anchor_digest != expected_anchor:
+        raise ExcitementForecastError(
+            "reconstruction qualification belongs to a different forecast anchor"
+        )
+    if qualified_input.provenance.to_dict() != candidate.provenance.to_dict():
+        raise ExcitementForecastError(
+            "reconstruction qualification does not match forecast provenance"
+        )
+
+
 @dataclass(frozen=True)
 class BevArtifact:
     """Canonical, public-safe result bound to one immutable forecast anchor."""
@@ -309,7 +326,11 @@ class BevArtifact:
         if self.artifact_id and self.artifact_id != content_id:
             raise ExcitementForecastError("BEV artifact_id does not match content")
         object.__setattr__(self, "artifact_id", content_id)
-        _candidate_from_anchor(anchor)
+        anchored_candidate = _candidate_from_anchor(anchor)
+        if self.reconstruction is not None:
+            _validate_reconstruction_qualification(
+                anchored_candidate, self.reconstruction.qualified_input
+            )
         self._validate_score()
 
     def _content_dict(self) -> dict[str, Any]:
@@ -340,7 +361,11 @@ class BevArtifact:
         # revalidate current state before any bytes cross a trust boundary.
         if self.artifact_id != _digest(_canonical_json(self._content_dict())):
             raise ExcitementForecastError("BEV artifact changed after validation")
-        _candidate_from_anchor(self.forecast_anchor)
+        anchored_candidate = _candidate_from_anchor(self.forecast_anchor)
+        if self.reconstruction is not None:
+            _validate_reconstruction_qualification(
+                anchored_candidate, self.reconstruction.qualified_input
+            )
         self._validate_score()
         raw = _canonical_json(self.to_dict())
         # The unchanged project scanner remains the final public-byte boundary.
@@ -537,11 +562,7 @@ def prepare_reconstructed_bev(
     if timing.game != checked.game:
         raise ExcitementForecastError("reconstruction timing Game identity differs")
     _instant_text(reconstructed_at)
-    expected_anchor = _anchor_digest(_anchor(checked))
-    if qualified_input.forecast_anchor_digest != expected_anchor:
-        raise ExcitementForecastError("reconstruction qualification belongs to a different forecast anchor")
-    if qualified_input.provenance.to_dict() != checked.provenance.to_dict():
-        raise ExcitementForecastError("reconstruction qualification does not match forecast provenance")
+    _validate_reconstruction_qualification(checked, qualified_input)
     inputs_as_of = qualified_input.inputs_as_of
     if timing.actual_started_at is not None:
         qualified = inputs_as_of < timing.actual_started_at
@@ -588,6 +609,169 @@ class IssuedBev:
         object.__setattr__(self, "publication", publication)
 
 
+@dataclass(frozen=True)
+class _AuthenticatedBevAttempt:
+    candidate: ForecastCandidate
+    artifact: BevArtifact
+    artifact_bytes: bytes
+    receipt: PublicationReceipt
+    publication: VerifiedForecastPublication
+    overlay: bool
+
+
+def _validate_history_graph(candidates: Mapping[str, ForecastCandidate]) -> None:
+    roots: dict[str, list[str]] = {}
+    children: dict[str, list[str]] = {}
+    for candidate in candidates.values():
+        if candidate.predecessor_version_id is None:
+            roots.setdefault(candidate.game.key, []).append(candidate.version_id)
+        else:
+            children.setdefault(candidate.predecessor_version_id, []).append(candidate.version_id)
+    if any(len(values) > 1 for values in roots.values()):
+        raise ExcitementForecastError("publication history has conflicting original forecasts")
+    if any(len(values) > 1 for values in children.values()):
+        raise ExcitementForecastError("publication history has conflicting sibling corrections")
+    for candidate in candidates.values():
+        seen = {candidate.version_id}
+        predecessor = candidate.predecessor_version_id
+        while predecessor in candidates:
+            if predecessor in seen:
+                raise ExcitementForecastError("publication history correction chain is cyclic")
+            seen.add(predecessor)
+            predecessor = candidates[predecessor].predecessor_version_id
+
+
+def _load_bev_attempt(
+    recorded: RecordedPublicationAttempt,
+    *,
+    archive: Any,
+    repository: str,
+    destination: Path,
+    timing: GameTimingEvidence,
+) -> tuple[_AuthenticatedBevAttempt, ...]:
+    """Authenticate exact BEV-bearing candidates from one publication attempt."""
+
+    publication = load_verified_forecasts(
+        recorded, archive=archive, repository=repository,
+        destination=destination / "forecast-publication",
+    )
+    candidates = tuple(item for item in publication.candidates if item.game == timing.game)
+    candidate_ids = {item.version_id for item in candidates}
+    if len(candidate_ids) != len(candidates):
+        raise ExcitementForecastError("publication attempt contains duplicate forecast versions")
+    # A predecessor copied into the same correction package does not establish
+    # that it was public before that correction.  Only a separate authenticated
+    # attempt can supply the predecessor's earlier issuance fact.
+    overlays = {
+        item.predecessor_version_id for item in candidates
+        if item.predecessor_version_id in candidate_ids
+    }
+    receipts: dict[str, PublicationReceipt] = {}
+    for receipt in publication.receipts:
+        if receipt.candidate_version_id not in candidate_ids:
+            continue
+        if receipt.candidate_version_id in receipts:
+            raise ExcitementForecastError("publication attempt has duplicate candidate receipts")
+        receipts[receipt.candidate_version_id] = receipt
+    package = _retrieve_recorded_attempt(
+        recorded, archive=archive, repository=repository,
+        destination=destination / "bev-package",
+    )
+    result: list[_AuthenticatedBevAttempt] = []
+    for candidate in candidates:
+        own = _own_bindings(candidate)
+        if len(own) > 1:
+            raise ExcitementForecastError("issued forecast has duplicate BEV bindings")
+        if not own:
+            continue
+        path = bev_relative_path(candidate, own[0].version_id)
+        raw = package.files.get(path)
+        # A candidate link without its exact artifact does not establish BEV
+        # issuance.  It is deliberately unavailable rather than borrowed from
+        # another, possibly later, package.
+        if raw is None:
+            continue
+        if _digest(raw) != own[0].digest:
+            raise ExcitementForecastError("authenticated package has conflicting bound BEV bytes")
+        artifact = BevArtifact.from_bytes(raw)
+        checked, _ = bind_bev(candidate, artifact)
+        receipt = receipts.get(checked.version_id)
+        if receipt is None:
+            raise ExcitementForecastError("authenticated BEV candidate lacks its publication receipt")
+        result.append(_AuthenticatedBevAttempt(
+            checked, artifact, raw, receipt, publication,
+            checked.version_id in overlays,
+        ))
+    return tuple(result)
+
+
+def load_issued_bev_history(
+    recorded_attempts: Sequence[RecordedPublicationAttempt],
+    *,
+    archive: Any,
+    repository: str,
+    destination: str | Path,
+    timing: GameTimingEvidence,
+) -> IssuedBev | None:
+    """Select one issued BEV from independently authenticated publications.
+
+    Every attempt is revalidated.  Candidate timestamps are retained per
+    package, and only an attempt containing the exact bound BEV bytes can
+    establish that BEV's issuance.  Rebuilds retain the earliest authentic
+    publication fact; copied predecessors in a correction package cannot
+    manufacture an earlier point in the correction chain.
+    """
+
+    target = Path(destination)
+    if not isinstance(recorded_attempts, Sequence) or isinstance(recorded_attempts, (str, bytes)):
+        raise ExcitementForecastError("publication history must be a sequence of attempts")
+    if len(recorded_attempts) > MAX_BEV_PUBLICATION_HISTORY:
+        raise ExcitementForecastError(
+            f"publication history exceeds {MAX_BEV_PUBLICATION_HISTORY} attempts"
+        )
+    attempts: list[_AuthenticatedBevAttempt] = []
+    for index, recorded in enumerate(recorded_attempts):
+        attempts.extend(_load_bev_attempt(
+            recorded, archive=archive, repository=repository,
+            destination=target / f"attempt-{index:04d}", timing=timing,
+        ))
+    candidates: dict[str, ForecastCandidate] = {}
+    artifact_bytes: dict[str, bytes] = {}
+    for attempt in attempts:
+        previous = candidates.setdefault(attempt.candidate.version_id, attempt.candidate)
+        if previous != attempt.candidate:
+            raise ExcitementForecastError("publication history conflicts on forecast content")
+        previous_bytes = artifact_bytes.setdefault(attempt.candidate.version_id, attempt.artifact_bytes)
+        if previous_bytes != attempt.artifact_bytes:
+            raise ExcitementForecastError("publication history conflicts on BEV artifact bytes")
+    _validate_history_graph(candidates)
+    receipts = tuple(attempt.receipt for attempt in attempts if not attempt.overlay)
+    candidate = select_graded_forecast(tuple(candidates.values()), receipts, timing)
+    if candidate is None:
+        return None
+    selected_attempts = [
+        attempt for attempt in attempts
+        if not attempt.overlay
+        and attempt.candidate.version_id == candidate.version_id
+        and receipt_qualifies(candidate, attempt.receipt, timing)
+    ]
+    if not selected_attempts:
+        raise ExcitementForecastError(
+            "selected BEV lacks corresponding qualifying package evidence"
+        )
+    selected = min(
+        selected_attempts,
+        key=lambda item: (
+            item.receipt.public_by,
+            item.receipt.receipt_id,
+        ),
+    )
+    return IssuedBev(
+        selected.candidate, selected.artifact, selected.artifact_bytes,
+        selected.receipt, selected.publication, _token=_ISSUED_TOKEN,
+    )
+
+
 def load_issued_bev(
     recorded: RecordedPublicationAttempt,
     *,
@@ -596,43 +780,18 @@ def load_issued_bev(
     destination: str | Path,
     timing: GameTimingEvidence,
 ) -> IssuedBev | None:
-    """Authenticate an issued candidate and its exact packaged BEV bytes."""
+    """Authenticate one attempt through the bounded history selector."""
 
-    target = Path(destination)
-    publication = load_verified_forecasts(
-        recorded, archive=archive, repository=repository,
-        destination=target / "forecast-publication",
+    return load_issued_bev_history(
+        (recorded,), archive=archive, repository=repository,
+        destination=destination, timing=timing,
     )
-    candidates = tuple(item for item in publication.candidates if item.game == timing.game)
-    candidate_ids = {item.version_id for item in candidates}
-    receipts = tuple(item for item in publication.receipts if item.candidate_version_id in candidate_ids)
-    candidate = select_graded_forecast(candidates, receipts, timing)
-    if candidate is None:
-        return None
-    own = _own_bindings(candidate)
-    if len(own) != 1:
-        raise ExcitementForecastError("issued forecast requires exactly one BEV binding")
-    artifact = _retrieve_recorded_attempt(
-        recorded, archive=archive, repository=repository,
-        destination=target / "bev-package",
-    )
-    path = bev_relative_path(candidate, own[0].version_id)
-    raw = artifact.files.get(path)
-    if raw is None or _digest(raw) != own[0].digest:
-        raise ExcitementForecastError("authenticated publication lacks exact bound BEV bytes")
-    parsed = BevArtifact.from_bytes(raw)
-    checked, _ = bind_bev(candidate, parsed)
-    receipt = next(
-        item for item in publication.receipts
-        if item.candidate_version_id == checked.version_id
-        and item.candidate_artifact_digest == checked.artifact_digest
-    )
-    return IssuedBev(checked, parsed, raw, receipt, publication, _token=_ISSUED_TOKEN)
 
 
 __all__ = [
-    "BEV_BINDING_KIND", "BEV_SCHEMA", "BevArtifact", "ExcitementForecastError",
+    "BEV_BINDING_KIND", "BEV_SCHEMA", "MAX_BEV_PUBLICATION_HISTORY",
+    "BevArtifact", "ExcitementForecastError",
     "IssuedBev", "ReconstructionInputQualification", "ReconstructionProvenance",
     "bev_relative_path", "bind_bev",
-    "load_issued_bev", "prepare_reconstructed_bev",
+    "load_issued_bev", "load_issued_bev_history", "prepare_reconstructed_bev",
 ]

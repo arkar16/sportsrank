@@ -18,6 +18,7 @@ import tempfile
 import unittest
 
 from cfb import excitement_forecast as sut
+from cfb.firebase import FakeFirebasePublicationBackend
 from cfb.github_archive import ArchiveSpec
 from cfb.forecast_record import (
     EvidenceRef,
@@ -30,7 +31,9 @@ from cfb.forecast_record import (
 from cfb.publication_records import canonical_json
 from cfb.publication import PreparedPackage, _deterministic_package, bind_merged_candidate
 from tests.test_forecast_publication import forecast_fixture, publish, recorded
-from tests.test_publication_execution import approval, inventory, validation
+from tests.test_publication_execution import (
+    APP_IDENTITY, TARGET, FakeImmutableArchive, approval, fixture, inventory, validation,
+)
 
 
 DIGEST = "sha256:" + ("a" * 64)
@@ -107,6 +110,56 @@ def _artifact_bytes(artifact) -> bytes:
     if not isinstance(raw, bytes):
         raise AssertionError("BEV artifact serialization must return bytes")
     return raw
+
+
+def publication_fixture(
+    root: Path,
+    pairs: list[tuple[ForecastCandidate, object]],
+    *,
+    archive: FakeImmutableArchive | None = None,
+    include_artifacts: bool = True,
+):
+    """Build one authenticated fake package without relying on scratch files."""
+    fx = fixture(root, archive=archive)
+    for item, artifact in pairs:
+        forecast_path = fx.prepared.site / f"cfb/years/{item.game.season}/forecasts/{item.version_id[7:]}.json"
+        forecast_path.parent.mkdir(parents=True, exist_ok=True)
+        forecast_path.write_bytes(canonical_json(item.to_dict()).rstrip(b"\n"))
+        if include_artifacts:
+            bev_path = fx.prepared.site / sut.bev_relative_path(item, artifact.artifact_id)
+            bev_path.parent.mkdir(parents=True, exist_ok=True)
+            bev_path.write_bytes(_artifact_bytes(artifact))
+    repository = root / "repository"
+    subprocess.run(["git", "-C", str(repository), "add", "website"], check=True, capture_output=True)
+    subprocess.run([
+        "git", "-C", str(repository), "-c", "user.name=Fixture",
+        "-c", "user.email=fixture@example.invalid", "commit", "-qm", "history fixture",
+    ], check=True, capture_output=True)
+    commit = subprocess.check_output(["git", "-C", str(repository), "rev-parse", "HEAD"]).decode().strip()
+    files = {
+        f"website/{path.relative_to(fx.prepared.site).as_posix()}": path.read_bytes()
+        for path in fx.prepared.site.rglob("*") if path.is_file()
+    }
+    files["firebase.json"] = fx.prepared.firebase_json.read_bytes()
+    inventory_sha = inventory(files)
+    configuration_sha = hashlib.sha256(files["firebase.json"]).hexdigest()
+    archive_path = root / "history-package.tar.gz"
+    bundle_sha = _deterministic_package(fx.prepared.site, fx.prepared.firebase_json, archive_path)
+    fx.prepared = PreparedPackage._create(
+        archive_path, bundle_sha, inventory_sha, configuration_sha,
+        fx.baseline.digest, fx.package.expected_predecessor, "6" * 64,
+        validation(inventory_sha, configuration_sha, fx.baseline.digest, "6" * 64),
+        fx.prepared.site, fx.prepared.firebase_json,
+    )
+    fx.package = bind_merged_candidate(fx.prepared, candidate_commit=commit, reader=fx.reader)
+    fx.approval, fx.runtime = approval(commit)
+    for role in fx.evidence:
+        path = root / f"{role}.tar.gz"
+        fx.evidence[role] = fx.archive.seal_or_reconcile(ArchiveSpec(
+            "owner/repository", f"history-{root.name}-{role}", commit,
+            {path.name: path}, role,
+        ))[path.name]
+    return fx
 
 
 class IndependentBEVOracleTests(unittest.TestCase):
@@ -299,6 +352,193 @@ class IndependentBEVReconstructionTests(unittest.TestCase):
                 qualified_input=qualified,
                 timing=timing,
             )
+
+    def test_resealed_reconstruction_provenance_mismatches_are_rejected(self):
+        candidate = _candidate("parse-shape", margin="2")
+        timing = GameTimingEvidence(
+            candidate.game, EvidenceRef("synthetic", "kickoff", DIGEST),
+            actual_started_at=datetime(2026, 9, 1, 18, tzinfo=timezone.utc),
+        )
+        qualified = self._qualified_input(candidate)
+        artifact = sut.prepare_reconstructed_bev(
+            candidate,
+            reconstructed_at=datetime(2026, 9, 1, 20, tzinfo=timezone.utc),
+            qualified_input=qualified,
+            timing=timing,
+        )
+        mismatches = {
+            "rating_checkpoint": "WEEK_99",
+            "rating_cutoff": "after-week-99",
+            "rating_artifact_digest": "sha256:" + "b" * 64,
+            "source_snapshot_digest": "sha256:" + "c" * 64,
+            "model_version": "forged-model",
+        }
+        for field, value in mismatches.items():
+            with self.subTest(field=field):
+                tampered = json.loads(json.dumps(artifact.to_dict()))
+                tampered["reconstruction"]["qualified_input"]["forecast_provenance"][field] = value
+                with self.assertRaises(Exception):
+                    sut.BevArtifact.from_bytes(reseal(tampered))
+
+
+class _TimedFirebaseBackend(FakeFirebasePublicationBackend):
+    def __init__(self, *args, release_time: str, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._release_time = release_time
+
+    def release_version(self, target, version):
+        value = dict(super().release_version(target, version))
+        value["releaseTime"] = self._release_time
+        return value
+
+
+class IndependentBEVHistoryTests(unittest.TestCase):
+    def _fixture(
+        self,
+        root: Path,
+        archive: FakeImmutableArchive,
+        pairs,
+        *,
+        release_time: str,
+        name: str,
+        include_artifacts: bool = True,
+    ):
+        fx = publication_fixture(root, pairs, archive=archive, include_artifacts=include_artifacts)
+        backend = _TimedFirebaseBackend(
+            TARGET, fx.package.expected_predecessor, managed_identity=APP_IDENTITY,
+            release_time=release_time,
+        )
+        _, _, run = publish(fx, backend=backend, name=name)
+        return recorded(run)
+
+    @staticmethod
+    def _timing(candidate: ForecastCandidate, hour: int = 12) -> GameTimingEvidence:
+        return GameTimingEvidence(
+            candidate.game, EvidenceRef("synthetic", "kickoff", DIGEST),
+            actual_started_at=datetime(2026, 9, 1, hour, tzinfo=timezone.utc),
+        )
+
+    def test_pregame_correction_selects_child_and_late_correction_retains_original(self):
+        original, original_artifact = _binding_result(sut.bind_bev(_candidate("history", margin="2")))
+        child, child_artifact = _binding_result(
+            sut.bind_bev(_candidate("history", margin="1.5", predecessor=original.version_id))
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archive = FakeImmutableArchive()
+            attempts = [
+                self._fixture(root / "original", archive, [(original, original_artifact)],
+                              release_time="2026-09-01T10:00:00Z", name="original"),
+                self._fixture(root / "child", archive, [(child, child_artifact)],
+                              release_time="2026-09-01T11:00:00Z", name="child"),
+            ]
+            issued = sut.load_issued_bev_history(
+                attempts, archive=archive, repository="owner/repository",
+                destination=root / "selected", timing=self._timing(original),
+            )
+            self.assertIsNotNone(issued)
+            self.assertEqual(issued.candidate.version_id, child.version_id)
+            self.assertEqual(issued.artifact_bytes, child_artifact.to_bytes())
+
+            late_attempts = [
+                self._fixture(root / "late-original", archive, [(original, original_artifact)],
+                              release_time="2026-09-01T10:00:00Z", name="late-original"),
+                self._fixture(root / "late-child", archive, [(child, child_artifact)],
+                              release_time="2026-09-01T13:00:00Z", name="late-child"),
+            ]
+            retained = sut.load_issued_bev_history(
+                late_attempts, archive=archive, repository="owner/repository",
+                destination=root / "late-selected", timing=self._timing(original),
+            )
+            self.assertIsNotNone(retained)
+            self.assertEqual(retained.candidate.version_id, original.version_id)
+            self.assertEqual(retained.artifact_bytes, original_artifact.to_bytes())
+
+    def test_rebuild_keeps_earliest_receipt_and_republished_ancestor_cannot_rollback_child(self):
+        original, original_artifact = _binding_result(sut.bind_bev(_candidate("rebuild", margin="2")))
+        child, child_artifact = _binding_result(
+            sut.bind_bev(_candidate("rebuild", margin="1.5", predecessor=original.version_id))
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archive = FakeImmutableArchive()
+            attempts = [
+                self._fixture(root / "first", archive, [(original, original_artifact)],
+                              release_time="2026-09-01T10:00:00Z", name="first"),
+                self._fixture(root / "child", archive, [(child, child_artifact)],
+                              release_time="2026-09-01T11:00:00Z", name="child"),
+                self._fixture(root / "ancestor-republished", archive, [(original, original_artifact)],
+                              release_time="2026-09-01T12:00:00Z", name="ancestor-republished"),
+                self._fixture(root / "rebuild", archive, [(original, original_artifact)],
+                              release_time="2026-09-01T13:00:00Z", name="rebuild"),
+            ]
+            issued = sut.load_issued_bev_history(
+                attempts, archive=archive, repository="owner/repository",
+                destination=root / "selected", timing=self._timing(original, hour=14),
+            )
+            self.assertIsNotNone(issued)
+            self.assertEqual(issued.candidate.version_id, child.version_id)
+            self.assertIn("child", issued.receipt.attempt_id)
+
+    def test_conflicting_or_unverified_history_is_rejected(self):
+        original, original_artifact = _binding_result(sut.bind_bev(_candidate("conflict", margin="2")))
+        sibling_a, sibling_a_artifact = _binding_result(
+            sut.bind_bev(_candidate("conflict", margin="1.5", predecessor=original.version_id))
+        )
+        sibling_b, sibling_b_artifact = _binding_result(
+            sut.bind_bev(_candidate("conflict", margin="1", predecessor=original.version_id))
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archive = FakeImmutableArchive()
+            conflicting = [
+                self._fixture(root / "original", archive, [(original, original_artifact)],
+                              release_time="2026-09-01T10:00:00Z", name="original"),
+                self._fixture(root / "sibling-a", archive, [(sibling_a, sibling_a_artifact)],
+                              release_time="2026-09-01T11:00:00Z", name="sibling-a"),
+                self._fixture(root / "sibling-b", archive, [(sibling_b, sibling_b_artifact)],
+                              release_time="2026-09-01T11:30:00Z", name="sibling-b"),
+            ]
+            with self.assertRaises(Exception):
+                sut.load_issued_bev_history(
+                    conflicting, archive=archive, repository="owner/repository",
+                    destination=root / "conflicting", timing=self._timing(original),
+                )
+
+            unverified_fx = publication_fixture(root / "unverified", [(original, original_artifact)], archive=archive)
+            backend = _TimedFirebaseBackend(
+                TARGET, unverified_fx.package.expected_predecessor,
+                managed_identity=APP_IDENTITY, release_time="2026-09-01T10:00:00Z",
+            )
+            _, _, unverified_run = publish(unverified_fx, backend=backend, name="unverified")
+            unverified = recorded(unverified_run)
+            from cfb.publication import RecordedPublicationAttempt
+            unverified = RecordedPublicationAttempt(
+                unverified.attempt, unverified.provider_result, unverified.provider_evidence,
+            )
+            with self.assertRaises(Exception):
+                sut.load_issued_bev_history(
+                    [unverified], archive=archive, repository="owner/repository",
+                    destination=root / "unverified-result", timing=self._timing(original),
+                )
+
+    def test_pregame_candidate_with_bev_added_only_late_cannot_claim_pregame_bev(self):
+        original, original_artifact = _binding_result(sut.bind_bev(_candidate("late-bev", margin="2")))
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archive = FakeImmutableArchive()
+            attempts = [
+                self._fixture(root / "candidate-only", archive, [(original, original_artifact)],
+                              release_time="2026-09-01T10:00:00Z", name="candidate-only",
+                              include_artifacts=False),
+                self._fixture(root / "bev-late", archive, [(original, original_artifact)],
+                              release_time="2026-09-01T13:00:00Z", name="bev-late"),
+            ]
+            issued = sut.load_issued_bev_history(
+                attempts, archive=archive, repository="owner/repository",
+                destination=root / "late-bev-result", timing=self._timing(original),
+            )
+            self.assertIsNone(issued)
 
     def test_unverified_recorded_attempt_cannot_claim_issued_bev(self):
         candidate, artifact = _binding_result(sut.bind_bev(_candidate("unissued", margin="2")))

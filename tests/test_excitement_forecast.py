@@ -9,15 +9,18 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from cfb.excitement_forecast import (
     BEV_BINDING_KIND,
+    MAX_BEV_PUBLICATION_HISTORY,
     BevArtifact,
     ExcitementForecastError,
     ReconstructionInputQualification,
     bev_relative_path,
     bind_bev,
     load_issued_bev,
+    load_issued_bev_history,
     prepare_reconstructed_bev,
 )
 from cfb.forecast_record import (
@@ -27,10 +30,13 @@ from cfb.forecast_record import (
     GameIdentity,
     GameTimingEvidence,
 )
-from cfb.github_archive import ArchiveSpec
+from cfb.firebase import FakeFirebasePublicationBackend
+from cfb.github_archive import ArchiveSpec, FakeImmutableArchive
 from cfb.publication import PreparedPackage, _deterministic_package, bind_merged_candidate
 from tests.test_forecast_publication import publish, recorded
-from tests.test_publication_execution import approval, fixture, inventory, sha, validation
+from tests.test_publication_execution import (
+    APP_IDENTITY, TARGET, approval, fixture, inventory, sha, validation,
+)
 
 
 UTC = timezone.utc
@@ -112,8 +118,13 @@ def qualification(
     return ReconstructionInputQualification(**values)
 
 
-def publication_fixture(root: Path, pairs: list[tuple[ForecastCandidate, BevArtifact]]):
-    fx = fixture(root)
+def publication_fixture(
+    root: Path,
+    pairs: list[tuple[ForecastCandidate, BevArtifact]],
+    *,
+    archive: FakeImmutableArchive | None = None,
+):
+    fx = fixture(root, archive=archive)
     for item, artifact in pairs:
         forecast_path = fx.prepared.site / f"cfb/years/{item.game.season}/forecasts/{item.version_id[7:]}.json"
         forecast_path.parent.mkdir(parents=True, exist_ok=True)
@@ -149,10 +160,21 @@ def publication_fixture(root: Path, pairs: list[tuple[ForecastCandidate, BevArti
     for role in fx.evidence:
         path = root / f"{role}.tar.gz"
         fx.evidence[role] = fx.archive.seal_or_reconcile(ArchiveSpec(
-            "owner/repository", f"bev-retained-{role}", commit,
+            "owner/repository", f"bev-retained-{root.name}-{role}", commit,
             {path.name: path}, role,
         ))[path.name]
     return fx
+
+
+class TimedBackend(FakeFirebasePublicationBackend):
+    def __init__(self, *args, release_time: str, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.release_time = release_time
+
+    def release_version(self, target, version):
+        value = dict(super().release_version(target, version))
+        value["releaseTime"] = self.release_time
+        return value
 
 
 class BevBindingTests(unittest.TestCase):
@@ -220,6 +242,41 @@ class BevBindingTests(unittest.TestCase):
         self.assertEqual(artifact.forecast_state, "reconstructed")
         self.assertEqual(artifact.reconstruction.reconstructed_at, instant(20))
         self.assertEqual(artifact.reconstruction.qualified_input.inputs_as_of, instant(10))
+        forged = artifact.to_dict()
+        forged["reconstruction"]["qualified_input"]["forecast_provenance"][
+            "rating_checkpoint"
+        ] = "WEEK_99"
+        with self.assertRaisesRegex(
+            ExcitementForecastError, "does not match forecast provenance"
+        ):
+            BevArtifact.from_bytes(reseal(forged))
+        forged = artifact.to_dict()
+        wrong_digest = "sha256:" + "b" * 64
+        forged["reconstruction"]["qualified_input"]["source"]["digest"] = wrong_digest
+        forged["reconstruction"]["qualified_input"]["forecast_provenance"][
+            "source_snapshot_digest"
+        ] = wrong_digest
+        resealed = reseal(forged)
+        for parse in (BevArtifact.from_dict, lambda value: BevArtifact.from_bytes(resealed)):
+            with self.subTest(parser=parse), self.assertRaisesRegex(
+                ExcitementForecastError, "does not match forecast provenance"
+            ):
+                parse(forged)
+        wrong_qualification = replace(
+            artifact.reconstruction.qualified_input,
+            source=EvidenceRef("synthetic-test", "wrong-source", wrong_digest),
+            source_snapshot_digest=wrong_digest,
+        )
+        with self.assertRaisesRegex(
+            ExcitementForecastError, "does not match forecast provenance"
+        ):
+            replace(
+                artifact,
+                reconstruction=replace(
+                    artifact.reconstruction, qualified_input=wrong_qualification
+                ),
+                artifact_id="",
+            )
         with self.assertRaisesRegex(ExcitementForecastError, "inputs are not proven pregame"):
             prepare_reconstructed_bev(
                 item, reconstructed_at=instant(20),
@@ -267,6 +324,65 @@ class BevBindingTests(unittest.TestCase):
             self.assertIsNotNone(issued)
             self.assertEqual(issued.candidate, first[0])
             self.assertEqual(issued.artifact_bytes, first[1].to_bytes())
+
+    def test_authenticated_history_uses_distinct_receipts_and_rejects_overlay_only(self) -> None:
+        original = bind_bev(candidate("history-chain"))
+        correction = bind_bev(candidate(
+            "history-chain", margin="1.5", predecessor=original[0].version_id
+        ))
+        timing = GameTimingEvidence(
+            original[0].game, evidence("history-start"),
+            actual_started_at=datetime(2026, 9, 2, tzinfo=UTC),
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archive = FakeImmutableArchive()
+            original_fx = publication_fixture(root / "original", [original], archive=archive)
+            correction_fx = publication_fixture(
+                root / "correction-overlay", [original, correction], archive=archive
+            )
+            original_backend = TimedBackend(
+                TARGET, original_fx.package.expected_predecessor,
+                managed_identity=APP_IDENTITY, release_time="2026-09-01T10:00:00Z",
+            )
+            correction_backend = TimedBackend(
+                TARGET, correction_fx.package.expected_predecessor,
+                managed_identity=APP_IDENTITY, release_time="2026-09-01T11:00:00Z",
+            )
+            _, _, original_run = publish(original_fx, original_backend, name="history-original")
+            _, _, correction_run = publish(
+                correction_fx, correction_backend, name="history-correction"
+            )
+            correction_attempt = recorded(correction_run)
+            self.assertIsNone(load_issued_bev_history(
+                (correction_attempt,), archive=archive, repository="owner/repository",
+                destination=root / "overlay-only", timing=timing,
+            ))
+            issued = load_issued_bev_history(
+                (correction_attempt, recorded(original_run)),
+                archive=archive, repository="owner/repository",
+                destination=root / "history", timing=timing,
+            )
+            self.assertIsNotNone(issued)
+            self.assertEqual(issued.candidate.version_id, correction[0].version_id)
+            self.assertEqual(issued.receipt.public_by, datetime(2026, 9, 1, 11, tzinfo=UTC))
+
+    def test_publication_history_has_an_explicit_attempt_limit(self) -> None:
+        item = candidate("history-limit")
+        timing = GameTimingEvidence(item.game, evidence("limit-start"), actual_started_at=instant(12))
+        with self.assertRaisesRegex(ExcitementForecastError, "exceeds 256"):
+            load_issued_bev_history(
+                [None] * (MAX_BEV_PUBLICATION_HISTORY + 1),
+                archive=None, repository="owner/repository",
+                destination="unused", timing=timing,
+            )
+        with patch("cfb.excitement_forecast._load_bev_attempt", return_value=()) as loader:
+            self.assertIsNone(load_issued_bev_history(
+                [None] * MAX_BEV_PUBLICATION_HISTORY,
+                archive=None, repository="owner/repository",
+                destination="unused", timing=timing,
+            ))
+            self.assertEqual(loader.call_count, MAX_BEV_PUBLICATION_HISTORY)
 
 
 if __name__ == "__main__":
