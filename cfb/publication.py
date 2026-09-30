@@ -18,7 +18,11 @@ import subprocess
 import tarfile
 import tempfile
 import threading
-from typing import Any, Callable, Mapping, Protocol
+from typing import Any, Callable, Mapping, Protocol, Sequence, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .forecast_publication import VerifiedForecastPublication
+    from .forecast_record import GameTimingEvidence
 
 from .baseline import BaselineValidationError, VerifiedBaseline
 from .candidate_tree import CandidateTreeError, materialize_candidate_tree_archive
@@ -57,6 +61,7 @@ from .publication_records import (
 )
 from .recovery_inputs import RecoveryInputBundle
 from .release import Release, ReleaseValidationError, validate_release
+from .forecast_release import CURRENT_ARTIFACT_CONTRACT
 
 
 class PublicationPreparationError(ValueError):
@@ -185,6 +190,8 @@ def prepare_review_package(
     source_inputs: RecoveryInputBundle,
     retained_inputs_sha256: str,
     output: str | Path,
+    forecast_publications: Sequence[VerifiedForecastPublication] = (),
+    timing_evidence: Sequence[GameTimingEvidence] = (),
 ) -> PreparedPackage:
     """Revalidate and package staged bytes without asserting Git eligibility."""
 
@@ -192,7 +199,10 @@ def prepare_review_package(
     source_inputs.assert_current()
     if source_inputs.bundle_sha256 != retained_inputs_sha256:
         raise PublicationPreparationError("retained input archive does not match the supplied provenance")
-    report = validate_release(candidate, published_site=baseline, source_inputs=source_inputs)
+    report = validate_release(candidate, published_site=baseline, source_inputs=source_inputs,
+                              forecast_publications=forecast_publications,
+                              timing_evidence=timing_evidence,
+                              expected_manifest_version=CURRENT_ARTIFACT_CONTRACT)
     if not report.ok:
         raise ReleaseValidationError("publication candidate failed independent release validation", report)
     site = _site(candidate).resolve()
@@ -244,6 +254,11 @@ def prepare_reviewed_package(
     """
 
     site = _site(candidate).resolve()
+    from .public_site import CURRENT_RELEASE_CONTRACT, validate_public_output
+    validate_public_output(site).raise_for_failure()
+    manifest = _json_object(site / "manifest.json", "public manifest")
+    if manifest.get("schema_version") != 2 or manifest.get("artifact_contract") != CURRENT_RELEASE_CONTRACT:
+        raise PublicationPreparationError("current preparation requires the current public artifact contract")
     config_path = Path(firebase_json).resolve()
     try:
         config = json.loads(config_path.read_text(encoding="utf-8"))
