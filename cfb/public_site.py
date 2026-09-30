@@ -25,7 +25,11 @@ import shutil
 import stat
 import sys
 import tempfile
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping, Sequence, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .forecast_publication import VerifiedForecastPublication
+    from .forecast_record import GameTimingEvidence
 
 try:
     from .baseline import VerifiedBaseline, import_baseline
@@ -33,15 +37,20 @@ try:
     from .release import Release, validate_release
     from .recovery_inputs import RecoveryInputBundle, RecoveryInputError
     from .public_safety import assert_public_bytes, has_source_payload as _deep_has_source_payload
+    from .forecast_release import CURRENT_ARTIFACT_CONTRACT as CURRENT_RELEASE_CONTRACT
 except ImportError:  # pragma: no cover - direct execution compatibility
     from baseline import VerifiedBaseline, import_baseline
     from publication_records import BaselineRecord, ProviderIdentity, ProviderTarget
     from release import Release, validate_release
     from recovery_inputs import RecoveryInputBundle, RecoveryInputError
     from public_safety import assert_public_bytes, has_source_payload as _deep_has_source_payload
+    from forecast_release import CURRENT_ARTIFACT_CONTRACT as CURRENT_RELEASE_CONTRACT
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
+# Supported historical semantics are independent of the current preparation
+# expectation. A later contract must extend this set without reinterpreting 3.
+PUBLIC_RELEASE_CONTRACTS = frozenset({3})
 RECORD_TYPE = "local_validation_receipt"
 PUBLIC_MANIFEST_TYPE = "public_site_manifest"
 PUBLIC_RELEASE_TYPE = "public_site_release"
@@ -772,7 +781,11 @@ def _public_manifest_bytes(value: Mapping[str, Any]) -> bytes:
         "firebase_json_sha256", "source_fingerprint",
         "trusted_input_manifest_sha256",
     }
-    if set(value) != expected or value.get("schema_version") != 1 or value.get("record_type") != PUBLIC_MANIFEST_TYPE or value.get("format") != "public-export-v1":
+    if value.get("schema_version") == 2:
+        expected.add("artifact_contract")
+        if type(value.get("artifact_contract")) is not int or value["artifact_contract"] not in PUBLIC_RELEASE_CONTRACTS:
+            raise PublicSiteError("public manifest artifact contract is invalid")
+    if set(value) != expected or type(value.get("schema_version")) is not int or value.get("schema_version") not in (1, 2) or value.get("record_type") != PUBLIC_MANIFEST_TYPE or value.get("format") != "public-export-v1":
         raise PublicSiteError("public manifest schema is invalid")
     release_id = value.get("source_release_id")
     if not isinstance(release_id, str) or _SAFE_RELEASE_ID.fullmatch(release_id) is None:
@@ -850,10 +863,15 @@ def _validate_public_json(site: Path, relative: str, path: Path) -> None:
         return
     if _deep_has_source_payload(value):
         raise PublicSiteValidationError(f"public JSON {relative} contains a source snapshot payload")
+    if re.fullmatch(r"cfb/years/\d{4}/forecasts/(?:ledger|evaluation|[0-9a-f]{64})\.json", relative):
+        from .forecast_release import validate_public_forecast_json
+        if not validate_public_forecast_json(value):
+            raise PublicSiteValidationError(f"public forecast {relative} has an invalid schema")
     if relative == "manifest.json":
         if not isinstance(value, Mapping):
             raise PublicSiteValidationError("public manifest must be an object")
-        _public_manifest_bytes(value)
+        if raw != _public_manifest_bytes(value):
+            raise PublicSiteValidationError("public manifest bytes are not canonical")
     elif relative == "release.json":
         if not isinstance(value, Mapping) or set(value) != {
             "schema_version", "record_type", "manifest_sha256", "source_release_id",
@@ -897,6 +915,24 @@ def validate_public_output(site: str | Path, *, expected_receipt: "LocalValidati
         for relative, path in files:
             assert_public_bytes(relative, path.read_bytes())
             _validate_public_json(root, relative, path)
+        # Public-side rechecking can verify the derived numerical contract
+        # without exposing retained sources. The reviewed local receipt binds
+        # the stronger source/game and authenticated-publication validation.
+        from .forecast_release import validate_evaluation_semantics
+        from .forecast_record import ForecastCandidate
+        for relative, path in files:
+            if re.fullmatch(r"cfb/years/\d{4}/forecasts/ledger\.json", relative):
+                ledger = _json_file(path, "forecast ledger")
+                evaluation = _json_file(path.with_name("evaluation.json"), "forecast evaluation")
+                validate_evaluation_semantics(ledger, evaluation)
+                for item in ledger["candidates"]:
+                    candidate = ForecastCandidate.from_dict(item)
+                    artifact = path.with_name(candidate.version_id.removeprefix("sha256:") + ".json")
+                    if not artifact.is_file() or _sha256_file(artifact) != candidate.artifact_digest.removeprefix("sha256:"):
+                        raise PublicSiteValidationError("public forecast ledger candidate binding differs")
+            elif re.fullmatch(r"cfb/years/\d{4}/forecasts/evaluation\.json", relative):
+                if not path.with_name("ledger.json").is_file():
+                    raise PublicSiteValidationError("public forecast evaluation has no ledger")
         if not (root / "manifest.json").is_file() or not (root / "release.json").is_file():
             raise PublicSiteValidationError("public site requires manifest.json and release.json")
         manifest = _json_file(root / "manifest.json", "public manifest")
@@ -1081,7 +1117,7 @@ class LocalValidationReceipt:
             "independent_validation", "transform",
         }:
             raise PublicSiteError("local validation receipt fields do not match its schema")
-        if value.get("schema_version") != SCHEMA_VERSION or value.get("record_type") != RECORD_TYPE:
+        if type(value.get("schema_version")) is not int or value.get("schema_version") not in (1, 2) or value.get("record_type") != RECORD_TYPE:
             raise PublicSiteError("local validation receipt schema is unsupported")
         inventory = _validate_inventory(value.get("public_site_inventory"), "receipt inventory")
         for name in ("public_site_inventory_sha256", "firebase_json_sha256", "source_fingerprint", "trusted_input_manifest_sha256"):
@@ -1102,6 +1138,7 @@ class LocalValidationReceipt:
             dict(value["baseline"]),
             dict(value["independent_validation"]),
             dict(value["transform"]),
+            schema_version=value["schema_version"],
         )
 
     @classmethod
@@ -1207,7 +1244,12 @@ def _validate_receipt_nested(value: Mapping[str, Any]) -> None:
         raise PublicSiteError("path-backed receipt baseline cannot claim a record")
 
     independent = value.get("independent_validation")
-    if set(independent) != {"validator", "success", "failure_count", "checked_artifacts"}:
+    validation_fields = {"validator", "success", "failure_count", "checked_artifacts"}
+    if value.get("schema_version") == 2:
+        validation_fields.add("artifact_contract")
+        if type(independent.get("artifact_contract")) is not int or independent["artifact_contract"] not in PUBLIC_RELEASE_CONTRACTS:
+            raise PublicSiteError("receipt artifact contract is invalid")
+    if set(independent) != validation_fields:
         raise PublicSiteError("receipt validation fields do not match its schema")
     if independent["validator"] != "cfb.release.validate_release" or independent["success"] is not True or independent["failure_count"] != 0:
         raise PublicSiteError("receipt does not prove successful independent validation")
@@ -1262,6 +1304,8 @@ def validate_and_export(
     source_root: str | Path | None = None,
     trusted_input_manifest: str | Path | Mapping[str, Any] | None = None,
     code_root: str | Path | None = None,
+    forecast_publications: Sequence[VerifiedForecastPublication] = (),
+    timing_evidence: Sequence[GameTimingEvidence] = (),
 ) -> LocalValidationReceipt:
     """Validate a private candidate, then create a provenance-only site."""
 
@@ -1318,6 +1362,9 @@ def validate_and_export(
         private_candidate,
         published_site=baseline,
         source_inputs=source_inputs,
+        forecast_publications=forecast_publications,
+        timing_evidence=timing_evidence,
+        expected_manifest_version=CURRENT_RELEASE_CONTRACT,
     )
     if not report.ok:
         detail = "; ".join(str(failure) for failure in report.failures[:8])
@@ -1370,7 +1417,8 @@ def validate_and_export(
         if not isinstance(release_id, str) or _SAFE_RELEASE_ID.fullmatch(release_id) is None:
             raise PublicSiteError("private candidate release identity is invalid")
         public_manifest = {
-            "schema_version": 1,
+            "schema_version": 2,
+            "artifact_contract": CURRENT_RELEASE_CONTRACT,
             "record_type": PUBLIC_MANIFEST_TYPE,
             "format": "public-export-v1",
             "source_release_id": release_id,
@@ -1413,6 +1461,7 @@ def validate_and_export(
             **trusted_evidence,
         }
         independent = {
+            "artifact_contract": CURRENT_RELEASE_CONTRACT,
             "validator": "cfb.release.validate_release",
             "success": True,
             "failure_count": 0,
@@ -1471,6 +1520,8 @@ def verify_local_receipt(
 
     receipt_file = _resolved_file(receipt_path, "local validation receipt")
     receipt = LocalValidationReceipt.from_bytes(receipt_file.read_bytes())
+    if receipt.schema_version != 2 or receipt.independent_validation.get("artifact_contract") != CURRENT_RELEASE_CONTRACT:
+        raise PublicSiteError("current preparation requires a current Release contract receipt")
     site_path = _resolved_directory(site, "public site")
     firebase_path = _resolved_file(firebase_json, "firebase.json")
     if receipt_file == site_path or receipt_file in site_path.parents:
@@ -1557,6 +1608,8 @@ def verify_local_receipt(
     output_report = validate_public_output(site_path, expected_receipt=receipt)
     output_report.raise_for_failure()
     manifest = _json_file(site_path / "manifest.json", "public manifest")
+    if manifest.get("schema_version") != 2 or manifest.get("artifact_contract") != CURRENT_RELEASE_CONTRACT:
+        raise PublicSiteError("current preparation requires a current public artifact contract")
     if (manifest.get("source_candidate_tree_sha256") != evidence["candidate_tree_sha256"]
             or manifest.get("source_release_id") != evidence["candidate_release_id"]):
         raise PublicSiteError("public manifest private candidate binding does not match receipt")
@@ -1648,6 +1701,8 @@ def build_parser() -> argparse.ArgumentParser:
     export.add_argument("--output-site", "--site", dest="output_site", type=Path, required=True)
     export.add_argument("--receipt", "--receipt-path", dest="receipt_path", type=Path, required=True)
     export.add_argument("--code-root", type=Path)
+    from .forecast_inputs import add_forecast_arguments
+    add_forecast_arguments(export)
 
     verify = commands.add_parser("verify", help="verify a local validation receipt and public site")
     verify.add_argument("--receipt", "--receipt-path", dest="receipt_path", type=Path, required=True)
@@ -1663,6 +1718,8 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         if args.command == "export":
+            from .forecast_inputs import load_forecast_inputs
+            forecasts = load_forecast_inputs(args)
             source_inputs = _load_cli_source_inputs(args)
             baseline = import_baseline(
                 args.baseline_archive,
@@ -1680,6 +1737,8 @@ def main(argv: list[str] | None = None) -> int:
                     source_root=args.source_root,
                     trusted_input_manifest=args.trusted_input_manifest,
                     code_root=args.code_root,
+                    forecast_publications=forecasts.publications,
+                    timing_evidence=forecasts.timing,
                 )
             finally:
                 baseline.close()

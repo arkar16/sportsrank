@@ -18,7 +18,11 @@ import subprocess
 import tarfile
 import tempfile
 import threading
-from typing import Any, Callable, Mapping, Protocol
+from typing import Any, Callable, Mapping, Protocol, Sequence, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .forecast_publication import VerifiedForecastPublication
+    from .forecast_record import GameTimingEvidence
 
 from .baseline import BaselineValidationError, VerifiedBaseline
 from .candidate_tree import CandidateTreeError, materialize_candidate_tree_archive
@@ -57,6 +61,7 @@ from .publication_records import (
 )
 from .recovery_inputs import RecoveryInputBundle
 from .release import Release, ReleaseValidationError, validate_release
+from .forecast_release import CURRENT_ARTIFACT_CONTRACT
 
 
 class PublicationPreparationError(ValueError):
@@ -185,6 +190,8 @@ def prepare_review_package(
     source_inputs: RecoveryInputBundle,
     retained_inputs_sha256: str,
     output: str | Path,
+    forecast_publications: Sequence[VerifiedForecastPublication] = (),
+    timing_evidence: Sequence[GameTimingEvidence] = (),
 ) -> PreparedPackage:
     """Revalidate and package staged bytes without asserting Git eligibility."""
 
@@ -192,7 +199,10 @@ def prepare_review_package(
     source_inputs.assert_current()
     if source_inputs.bundle_sha256 != retained_inputs_sha256:
         raise PublicationPreparationError("retained input archive does not match the supplied provenance")
-    report = validate_release(candidate, published_site=baseline, source_inputs=source_inputs)
+    report = validate_release(candidate, published_site=baseline, source_inputs=source_inputs,
+                              forecast_publications=forecast_publications,
+                              timing_evidence=timing_evidence,
+                              expected_manifest_version=CURRENT_ARTIFACT_CONTRACT)
     if not report.ok:
         raise ReleaseValidationError("publication candidate failed independent release validation", report)
     site = _site(candidate).resolve()
@@ -244,6 +254,11 @@ def prepare_reviewed_package(
     """
 
     site = _site(candidate).resolve()
+    from .public_site import CURRENT_RELEASE_CONTRACT, validate_public_output
+    validate_public_output(site).raise_for_failure()
+    manifest = _json_object(site / "manifest.json", "public manifest")
+    if manifest.get("schema_version") != 2 or manifest.get("artifact_contract") != CURRENT_RELEASE_CONTRACT:
+        raise PublicationPreparationError("current preparation requires the current public artifact contract")
     config_path = Path(firebase_json).resolve()
     try:
         config = json.loads(config_path.read_text(encoding="utf-8"))
@@ -1621,27 +1636,14 @@ def _verify_prior_publication(
         raise PublicationExecutionError(
             "retrieved predecessor records differ from their immutable references"
         )
-    _exact_source(provider_source, {
-        "schema_version": 1,
-        "record_type": "firebase_reconciled_provider_result",
-        "outcome": "accepted",
-        "release": result.observed_release,
-        "version": result.observed_version,
-        "artifact_sha256": prior.intent.artifact_reference.sha256,
-        "content_correspondence": "verified",
-        "prior_result_evidence": provider_source.get("prior_result_evidence"),
-        "prior_verification_evidence": provider_source.get(
-            "prior_verification_evidence"
-        ),
-    }, "provider result")
-    if provider_source["prior_result_evidence"] not in {
-        "archive_consistent_untrusted", "missing_or_invalid"
-    } or provider_source["prior_verification_evidence"] not in {
-        "archive_consistent_untrusted", "missing_or_invalid"
-    }:
-        raise PublicationExecutionError(
-            "provider result source has an invalid prior-evidence status"
+    from .publication_timing import original_publication_facts
+    try:
+        original_publication_facts(
+            provider_source, result, prior.intent, archive=archive,
+            repository=repository, destination=destination / "original-publication",
         )
+    except (ValueError, ArchiveError) as exc:
+        raise PublicationExecutionError("original publication evidence is invalid") from exc
     _exact_source(verification_source, {
         "schema_version": 1,
         "record_type": "firebase_verification_observation",
@@ -1929,6 +1931,8 @@ class PublicationCoordinator:
                 next_operations=("reconcile",),
             )
         provider_source = dict(receipt.source)
+        if provider_source.get("schema_version") == 2:
+            provider_source["attempt_id"] = attempt.intent.attempt_id
         result = ProviderResultRecord.create(
             intent=attempt.intent,
             outcome="accepted",
@@ -2316,6 +2320,17 @@ class PublicationCoordinator:
                 else "missing_or_invalid"
             ),
         }
+        # Append exact references to the original authenticated observation.
+        # Never change its bytes or replace its timestamp with this run's clock.
+        if prior_claims_observed and recorded.provider_evidence is not None:
+            provider_source["schema_version"] = 2
+            prior_verification = recorded.verification_evidence if verification_evidence_valid else None
+            provider_source["original_evidence"] = {
+                "provider_result": recorded.provider_evidence.record_reference.to_dict(),
+                "provider_source": recorded.provider_evidence.source_reference.to_dict(),
+                "verification": prior_verification.record_reference.to_dict() if prior_verification else None,
+                "verification_source": prior_verification.source_reference.to_dict() if prior_verification else None,
+            }
         provider_result = ProviderResultRecord.create(
             intent=recorded.attempt.intent,
             outcome=result_outcome,
