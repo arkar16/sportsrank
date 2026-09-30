@@ -1240,7 +1240,7 @@ class ReleaseBuilder:
                 spread_ranking = rankings[target_week]
             else:
                 spread_ranking = rankings[week - 1]
-            spread_rows = spreads_for_week(snapshot, week, spread_ranking, hfa=self.hfa)
+            spread_rows = spreads_for_week(snapshot, week, spread_ranking, hfa=self.hfa, legacy_half_point=True)
             spread_title = f"CORS {self.model_version} - {year} W{week} Spread - {classification} CFB"
             spread_relative = base / "spread" / f"{year}_W{week}_{classification}_spread.html"
             write(
@@ -2769,7 +2769,7 @@ def _validate_run_exact(
             prior_rows = rankings[target_week]
         else:
             prior_rows = rankings[week - 1]
-        expected_spreads = spreads_for_week(snapshot, week, prior_rows)
+        expected_spreads = spreads_for_week(snapshot, week, prior_rows, legacy_half_point=True)
         spread_path = root / "spread" / f"{year}_W{week}_{cls}_spread.html"
         spread_fields = ("week", "home_team", "away_team", "neutral_site", "home_cors", "away_cors", "spread_value", "spread")
         validate_exact_rows(spread_path, expected_spreads, spread_fields, "spread.reconcile")

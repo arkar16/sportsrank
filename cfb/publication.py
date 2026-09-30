@@ -1621,27 +1621,14 @@ def _verify_prior_publication(
         raise PublicationExecutionError(
             "retrieved predecessor records differ from their immutable references"
         )
-    _exact_source(provider_source, {
-        "schema_version": 1,
-        "record_type": "firebase_reconciled_provider_result",
-        "outcome": "accepted",
-        "release": result.observed_release,
-        "version": result.observed_version,
-        "artifact_sha256": prior.intent.artifact_reference.sha256,
-        "content_correspondence": "verified",
-        "prior_result_evidence": provider_source.get("prior_result_evidence"),
-        "prior_verification_evidence": provider_source.get(
-            "prior_verification_evidence"
-        ),
-    }, "provider result")
-    if provider_source["prior_result_evidence"] not in {
-        "archive_consistent_untrusted", "missing_or_invalid"
-    } or provider_source["prior_verification_evidence"] not in {
-        "archive_consistent_untrusted", "missing_or_invalid"
-    }:
-        raise PublicationExecutionError(
-            "provider result source has an invalid prior-evidence status"
+    from .publication_timing import original_publication_facts
+    try:
+        original_publication_facts(
+            provider_source, result, prior.intent, archive=archive,
+            repository=repository, destination=destination / "original-publication",
         )
+    except (ValueError, ArchiveError) as exc:
+        raise PublicationExecutionError("original publication evidence is invalid") from exc
     _exact_source(verification_source, {
         "schema_version": 1,
         "record_type": "firebase_verification_observation",
@@ -1929,6 +1916,8 @@ class PublicationCoordinator:
                 next_operations=("reconcile",),
             )
         provider_source = dict(receipt.source)
+        if provider_source.get("schema_version") == 2:
+            provider_source["attempt_id"] = attempt.intent.attempt_id
         result = ProviderResultRecord.create(
             intent=attempt.intent,
             outcome="accepted",
@@ -2316,6 +2305,17 @@ class PublicationCoordinator:
                 else "missing_or_invalid"
             ),
         }
+        # Append exact references to the original authenticated observation.
+        # Never change its bytes or replace its timestamp with this run's clock.
+        if prior_claims_observed and recorded.provider_evidence is not None:
+            provider_source["schema_version"] = 2
+            prior_verification = recorded.verification_evidence if verification_evidence_valid else None
+            provider_source["original_evidence"] = {
+                "provider_result": recorded.provider_evidence.record_reference.to_dict(),
+                "provider_source": recorded.provider_evidence.source_reference.to_dict(),
+                "verification": prior_verification.record_reference.to_dict() if prior_verification else None,
+                "verification_source": prior_verification.source_reference.to_dict() if prior_verification else None,
+            }
         provider_result = ProviderResultRecord.create(
             intent=recorded.attempt.intent,
             outcome=result_outcome,
