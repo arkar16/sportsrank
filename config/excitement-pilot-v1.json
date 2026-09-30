@@ -1,0 +1,138 @@
+{
+  "attempts_per_request": 1,
+  "max_attempts": 9,
+  "pilot_id": "adr21-qualification-pilot-v1",
+  "purpose": "historical",
+  "redirects": false,
+  "requests": [
+    {
+      "endpoint": "/plays",
+      "expected_game_id": "401628439",
+      "params": {
+        "classification": "fbs",
+        "seasonType": "regular",
+        "team": "Georgia",
+        "week": 14,
+        "year": 2024
+      },
+      "parent_snapshot_checksum": "35b3783a78ca6fa64905a802be51e82b0b5006fae17ee475bd3cd3c45a3905a1",
+      "parent_snapshot_path": "snapshots/cfb-fbs-2024.json",
+      "parent_snapshot_sha256": "81202378ba0a862a92a8e168e00f5df0f3c1827b3f5ac2876c7e8efd4d7a5633",
+      "request_id": "2024-plays-401628439"
+    },
+    {
+      "endpoint": "/games",
+      "expected_game_id": "401628439",
+      "params": {
+        "classification": "fbs",
+        "id": 401628439,
+        "seasonType": "regular",
+        "year": 2024
+      },
+      "parent_snapshot_checksum": "35b3783a78ca6fa64905a802be51e82b0b5006fae17ee475bd3cd3c45a3905a1",
+      "parent_snapshot_path": "snapshots/cfb-fbs-2024.json",
+      "parent_snapshot_sha256": "81202378ba0a862a92a8e168e00f5df0f3c1827b3f5ac2876c7e8efd4d7a5633",
+      "request_id": "2024-games-401628439"
+    },
+    {
+      "endpoint": "/lines",
+      "expected_game_id": "401628439",
+      "params": {
+        "gameId": 401628439,
+        "seasonType": "regular",
+        "year": 2024
+      },
+      "parent_snapshot_checksum": "35b3783a78ca6fa64905a802be51e82b0b5006fae17ee475bd3cd3c45a3905a1",
+      "parent_snapshot_path": "snapshots/cfb-fbs-2024.json",
+      "parent_snapshot_sha256": "81202378ba0a862a92a8e168e00f5df0f3c1827b3f5ac2876c7e8efd4d7a5633",
+      "request_id": "2024-lines-401628439"
+    },
+    {
+      "endpoint": "/plays",
+      "expected_game_id": "401752677",
+      "params": {
+        "classification": "fbs",
+        "seasonType": "regular",
+        "team": "Ohio State",
+        "week": 1,
+        "year": 2025
+      },
+      "parent_snapshot_checksum": "7663694144e27034bab79a4db4a7a37ce27d0f0dede34704654cd74d02171853",
+      "parent_snapshot_path": "snapshots/cfb-fbs-2025.json",
+      "parent_snapshot_sha256": "8f9e919d81fbaf71a23c67cd2da73d59d9225513c115f08d5060bb1caf300f47",
+      "request_id": "2025-plays-401752677"
+    },
+    {
+      "endpoint": "/games",
+      "expected_game_id": "401752677",
+      "params": {
+        "classification": "fbs",
+        "id": 401752677,
+        "seasonType": "regular",
+        "year": 2025
+      },
+      "parent_snapshot_checksum": "7663694144e27034bab79a4db4a7a37ce27d0f0dede34704654cd74d02171853",
+      "parent_snapshot_path": "snapshots/cfb-fbs-2025.json",
+      "parent_snapshot_sha256": "8f9e919d81fbaf71a23c67cd2da73d59d9225513c115f08d5060bb1caf300f47",
+      "request_id": "2025-games-401752677"
+    },
+    {
+      "endpoint": "/lines",
+      "expected_game_id": "401752677",
+      "params": {
+        "gameId": 401752677,
+        "seasonType": "regular",
+        "year": 2025
+      },
+      "parent_snapshot_checksum": "7663694144e27034bab79a4db4a7a37ce27d0f0dede34704654cd74d02171853",
+      "parent_snapshot_path": "snapshots/cfb-fbs-2025.json",
+      "parent_snapshot_sha256": "8f9e919d81fbaf71a23c67cd2da73d59d9225513c115f08d5060bb1caf300f47",
+      "request_id": "2025-lines-401752677"
+    },
+    {
+      "endpoint": "/plays",
+      "expected_game_id": "401858432",
+      "params": {
+        "classification": "fbs",
+        "seasonType": "regular",
+        "team": "Ohio State",
+        "week": 1,
+        "year": 2026
+      },
+      "parent_snapshot_checksum": "9bf66d0ccab3878c7926f17b44664644774eed8ea95a7ffa73b3a206eb45296a",
+      "parent_snapshot_path": "snapshots/9bf66d0ccab3878c7926f17b44664644774eed8ea95a7ffa73b3a206eb45296a/cfb-fbs-2026.json",
+      "parent_snapshot_sha256": "8a99677a4c98e3bddfd5ee3d2f80b0eab4813ef8772cc6d9c47f74303f547d8a",
+      "request_id": "2026-plays-401858432"
+    },
+    {
+      "endpoint": "/games",
+      "expected_game_id": "401858432",
+      "params": {
+        "classification": "fbs",
+        "id": 401858432,
+        "seasonType": "regular",
+        "year": 2026
+      },
+      "parent_snapshot_checksum": "9bf66d0ccab3878c7926f17b44664644774eed8ea95a7ffa73b3a206eb45296a",
+      "parent_snapshot_path": "snapshots/9bf66d0ccab3878c7926f17b44664644774eed8ea95a7ffa73b3a206eb45296a/cfb-fbs-2026.json",
+      "parent_snapshot_sha256": "8a99677a4c98e3bddfd5ee3d2f80b0eab4813ef8772cc6d9c47f74303f547d8a",
+      "request_id": "2026-games-401858432"
+    },
+    {
+      "endpoint": "/lines",
+      "expected_game_id": "401858432",
+      "params": {
+        "gameId": 401858432,
+        "seasonType": "regular",
+        "year": 2026
+      },
+      "parent_snapshot_checksum": "9bf66d0ccab3878c7926f17b44664644774eed8ea95a7ffa73b3a206eb45296a",
+      "parent_snapshot_path": "snapshots/9bf66d0ccab3878c7926f17b44664644774eed8ea95a7ffa73b3a206eb45296a/cfb-fbs-2026.json",
+      "parent_snapshot_sha256": "8a99677a4c98e3bddfd5ee3d2f80b0eab4813ef8772cc6d9c47f74303f547d8a",
+      "request_id": "2026-lines-401858432"
+    }
+  ],
+  "retries": 0,
+  "schema_version": 1,
+  "source_archive_sha256": "86a27f80709549c48bfaca763f4e925b3168dbae232745d534986e6fee43da37"
+}
