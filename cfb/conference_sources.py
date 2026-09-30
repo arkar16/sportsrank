@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import date, datetime, time, timedelta, timezone
 import hashlib
 import json
 import re
@@ -30,6 +30,7 @@ if TYPE_CHECKING:  # pragma: no cover - import only for static type checkers
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _SAFE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]*$")
 _SAFE_TEXT = re.compile(r"^[^\x00-\x1f\x7f<>]+$")
+_TEMPORAL_PRECISIONS = {"instant", "date", "local_datetime", "unknown"}
 
 
 class ConferenceSourceError(ValueError):
@@ -99,6 +100,224 @@ def _optional_date(value: Any, field: str) -> date | None:
     return _calendar_date(value, field)
 
 
+def _date_upper_bound(value: date) -> datetime:
+    """Return the latest UTC instant covered by an unzoned calendar date.
+
+    An official date can refer to any local timezone.  UTC-12 is the last
+    timezone to finish that calendar date, so the conservative upper bound is
+    noon UTC on the following date.  The bound is metadata about availability,
+    never an observed publication instant.
+    """
+
+    return datetime.combine(value + timedelta(days=1), time(hour=12), tzinfo=timezone.utc)
+
+
+def _date_lower_bound(value: date) -> datetime:
+    """Return the earliest UTC instant covered by an unzoned calendar date."""
+
+    # UTC+14 is the first timezone to enter that local calendar date.
+    return datetime.combine(value, time.min, tzinfo=timezone.utc) - timedelta(hours=14)
+
+
+def _local_datetime_bounds(value: datetime) -> tuple[datetime, datetime]:
+    """Return safe UTC bounds for a timezone-free local clock value."""
+
+    if value.tzinfo is not None or value.utcoffset() is not None:
+        raise ConferenceSourceError("local datetime bounds require a naive datetime")
+    return (
+        (value - timedelta(hours=14)).replace(tzinfo=timezone.utc),
+        (value + timedelta(hours=12)).replace(tzinfo=timezone.utc),
+    )
+
+
+def _local_datetime(value: Any, field: str) -> datetime:
+    if isinstance(value, datetime):
+        parsed = value
+    elif isinstance(value, str):
+        try:
+            parsed = datetime.fromisoformat(value.strip())
+        except ValueError as exc:
+            raise ConferenceSourceError(f"{field} must be an ISO local datetime") from exc
+    else:
+        raise ConferenceSourceError(f"{field} must be an ISO local datetime")
+    if parsed.tzinfo is not None or parsed.utcoffset() is not None:
+        raise ConferenceSourceError(f"{field} must not include a timezone")
+    return parsed
+
+
+def _temporal(
+    value: Any,
+    field: str,
+    precision: str | None,
+    raw: Any,
+    upper_bound: Any,
+    canonical_date: Any,
+    canonical_local_datetime: Any,
+) -> tuple[
+    datetime | None,
+    str,
+    str | None,
+    datetime | None,
+    date | None,
+    datetime | None,
+]:
+    """Parse an exact, local-clock, calendar-date, or unknown source time.
+
+    The exact value is kept separate from a date-only upper bound.  This makes
+    it impossible for a date-derived bound to be rendered as if it were an
+    observed timestamp while still giving cutoff checks a safe ordering value.
+    """
+
+    if precision is not None:
+        precision = _text(precision, f"{field} precision").lower()
+        if precision not in _TEMPORAL_PRECISIONS:
+            raise ConferenceSourceError(f"{field} precision is unsupported")
+
+    raw_text: str | None = None
+    if raw is not None:
+        raw_text = _text(raw, f"{field} raw")
+    elif isinstance(value, str):
+        raw_text = value.strip()
+        if not raw_text:
+            raise ConferenceSourceError(f"{field} cannot be empty")
+    elif isinstance(value, (datetime, date)):
+        # Retain caller-provided source precision even when the value object is
+        # not a string.  This is especially important for naive clocks whose
+        # timezone cannot be reconstructed later.
+        raw_text = value.isoformat()
+
+    supplied_bound: datetime | None = None
+    if upper_bound is not None:
+        supplied_bound = _timestamp(upper_bound, f"{field} upper_bound")
+
+    if precision is None and value is None:
+        # Canonical wire fields are the source of truth when the observed
+        # ``*_at`` field is intentionally null.  Infer their precision so a
+        # literal payload or ``dataclasses.replace`` result is reconstructible
+        # without reparsing the preserved raw text.
+        if canonical_local_datetime is not None:
+            precision = "local_datetime"
+        elif canonical_date is not None:
+            precision = "date"
+        else:
+            precision = "unknown"
+
+    if precision == "unknown":
+        if (
+            value is not None
+            or supplied_bound is not None
+            or canonical_date is not None
+            or canonical_local_datetime is not None
+        ):
+            raise ConferenceSourceError(
+                f"{field} unknown precision cannot carry a parsed value or bound"
+            )
+        return None, "unknown", raw_text, None, None, None
+
+    if value is None and precision == "date" and canonical_date is not None:
+        value = canonical_date
+    if value is None and precision == "local_datetime" and canonical_local_datetime is not None:
+        value = canonical_local_datetime
+    if value is None:
+        raise ConferenceSourceError(f"{field} requires a value for known precision")
+
+    parsed_instant: datetime | None = None
+    parsed_date: date | None = None
+    parsed_local_datetime: datetime | None = None
+    if isinstance(value, datetime):
+        if value.tzinfo is None or value.utcoffset() is None:
+            # A naive clock carries a useful local datetime but no defensible
+            # timezone.  Keep its clock precision and never invent an offset.
+            parsed_local_datetime = value
+        else:
+            parsed_instant = _timestamp(value, field)
+    elif isinstance(value, date):
+        parsed_date = value
+    elif isinstance(value, str):
+        text = value.strip()
+        try:
+            if "T" in text or " " in text:
+                parsed_datetime = datetime.fromisoformat(text.replace("Z", "+00:00"))
+                if parsed_datetime.tzinfo is None or parsed_datetime.utcoffset() is None:
+                    parsed_local_datetime = parsed_datetime
+                else:
+                    parsed_instant = _timestamp(parsed_datetime, field)
+            else:
+                parsed_date = date.fromisoformat(text)
+        except (ValueError, ConferenceSourceError) as exc:
+            raise ConferenceSourceError(
+                f"{field} must be an ISO timestamp or calendar date"
+            ) from exc
+    else:
+        raise ConferenceSourceError(
+            f"{field} must be an ISO timestamp or calendar date"
+        )
+
+    detected = (
+        "instant"
+        if parsed_instant is not None
+        else "local_datetime"
+        if parsed_local_datetime is not None
+        else "date"
+    )
+    if precision is None:
+        precision = detected
+    elif precision != detected:
+        raise ConferenceSourceError(
+            f"{field} precision {precision!r} contradicts its value"
+        )
+
+    if precision == "instant":
+        if (
+            supplied_bound is not None
+            or canonical_date is not None
+            or canonical_local_datetime is not None
+        ):
+            raise ConferenceSourceError(
+                f"{field} exact timestamps cannot carry a date or upper bound"
+            )
+        return parsed_instant, precision, raw_text, None, None, None
+
+    if precision == "local_datetime":
+        assert parsed_local_datetime is not None
+        if canonical_local_datetime is not None:
+            declared_local_datetime = _local_datetime(canonical_local_datetime, f"{field} canonical_local_datetime")
+            if declared_local_datetime != parsed_local_datetime:
+                raise ConferenceSourceError(
+                    f"{field} canonical local datetime does not match its source value"
+                )
+        if canonical_date is not None:
+            raise ConferenceSourceError(
+                f"{field} local datetime cannot carry a canonical calendar date"
+            )
+        _, derived_bound = _local_datetime_bounds(parsed_local_datetime)
+        if supplied_bound is not None and supplied_bound != derived_bound:
+            raise ConferenceSourceError(
+                f"{field} local datetime bound does not match its timezone bounds"
+            )
+        return None, precision, raw_text, derived_bound, None, parsed_local_datetime
+
+    assert parsed_date is not None
+    if canonical_date is not None:
+        declared_date = _calendar_date(canonical_date, f"{field} canonical_date")
+        if declared_date != parsed_date:
+            raise ConferenceSourceError(
+                f"{field} canonical date does not match its source value"
+            )
+    derived_bound = _date_upper_bound(parsed_date)
+    if supplied_bound is not None and supplied_bound != derived_bound:
+        raise ConferenceSourceError(
+            f"{field} date bound does not match its conservative UTC-12 bound"
+        )
+    # Keep the canonical calendar date separate from the observed ``*_at``
+    # field.  The bound is the only value used for cutoff ordering.
+    if canonical_local_datetime is not None:
+        raise ConferenceSourceError(
+            f"{field} calendar date cannot carry a canonical local datetime"
+        )
+    return None, precision, raw_text, derived_bound, parsed_date, None
+
+
 def _strict_int(value: Any, field: str) -> int:
     if isinstance(value, bool):
         raise ConferenceSourceError(f"{field} must be an integer")
@@ -137,17 +356,36 @@ def _tuple_ids(values: Iterable[Any], field: str) -> tuple[str, ...]:
 
 @dataclass(frozen=True)
 class SourceEvidence:
-    """One hash-pinned source reference and its chronology."""
+    """One hash-pinned source reference and its chronology.
+
+    Existing callers may continue to provide timezone-aware ``datetime``
+    values.  A source that only exposes a calendar date may instead provide an
+    ISO date (or :class:`date`), which is retained as date precision and gets a
+    conservative ``*_at_upper_bound`` for cutoff ordering.  Unknown chronology
+    is explicit and cannot be inferred from retrieval or file metadata.
+    """
 
     evidence_id: str
     url: str
     source_sha256: str
-    published_at: datetime
+    published_at: datetime | date | str | None
     effective_from: date
-    known_at: datetime
+    known_at: datetime | date | str | None
     effective_to: date | None = None
     retrieved_at: datetime | None = None
     locator: str | None = None
+    published_precision: str | None = None
+    known_precision: str | None = None
+    published_raw: str | None = None
+    known_raw: str | None = None
+    published_at_upper_bound: datetime | str | None = None
+    known_at_upper_bound: datetime | str | None = None
+    published_date: date | str | None = None
+    known_date: date | str | None = None
+    published_local_datetime: datetime | str | None = None
+    known_local_datetime: datetime | str | None = None
+    timing_basis: str | None = None
+    timing_reason: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "evidence_id", _identity(self.evidence_id, "evidence_id"))
@@ -158,12 +396,78 @@ class SourceEvidence:
         object.__setattr__(
             self, "source_sha256", _sha256(self.source_sha256, "source_sha256")
         )
-        published = _timestamp(self.published_at, "published_at")
-        known = _timestamp(self.known_at, "known_at")
-        if published > known:
+        (
+            published,
+            published_precision,
+            published_raw,
+            published_bound,
+            published_date,
+            published_local_datetime,
+        ) = _temporal(
+            self.published_at,
+            "published_at",
+            self.published_precision,
+            self.published_raw,
+            self.published_at_upper_bound,
+            self.published_date,
+            self.published_local_datetime,
+        )
+        (
+            known,
+            known_precision,
+            known_raw,
+            known_bound,
+            known_date,
+            known_local_datetime,
+        ) = _temporal(
+            self.known_at,
+            "known_at",
+            self.known_precision,
+            self.known_raw,
+            self.known_at_upper_bound,
+            self.known_date,
+            self.known_local_datetime,
+        )
+        published_order = published if published_precision == "instant" else published_bound
+        known_order = known if known_precision == "instant" else known_bound
+        if published_order is not None and known_order is not None and published_order > known_order:
             raise ConferenceSourceError("published_at cannot be later than known_at")
         object.__setattr__(self, "published_at", published)
         object.__setattr__(self, "known_at", known)
+        object.__setattr__(self, "published_precision", published_precision)
+        object.__setattr__(self, "known_precision", known_precision)
+        object.__setattr__(self, "published_raw", published_raw)
+        object.__setattr__(self, "known_raw", known_raw)
+        object.__setattr__(self, "published_at_upper_bound", published_bound)
+        object.__setattr__(self, "known_at_upper_bound", known_bound)
+        object.__setattr__(self, "published_date", published_date)
+        object.__setattr__(self, "known_date", known_date)
+        object.__setattr__(self, "published_local_datetime", published_local_datetime)
+        object.__setattr__(self, "known_local_datetime", known_local_datetime)
+        if self.timing_basis is None:
+            basis = (
+                "exact_timestamp"
+                if published_precision == known_precision == "instant"
+                else "calendar_date_timezone_unknown"
+                if "date" in {published_precision, known_precision}
+                else "local_datetime_timezone_unknown"
+                if "local_datetime" in {published_precision, known_precision}
+                else "historical_timing_unknown"
+            )
+        else:
+            basis = _text(self.timing_basis, "timing_basis")
+        if "unknown" in {published_precision, known_precision}:
+            if self.timing_reason is None:
+                raise ConferenceSourceError(
+                    "unknown source timing requires an explicit timing_reason"
+                )
+            reason = _text(self.timing_reason, "timing_reason")
+        elif self.timing_reason is None:
+            reason = None
+        else:
+            reason = _text(self.timing_reason, "timing_reason")
+        object.__setattr__(self, "timing_basis", basis)
+        object.__setattr__(self, "timing_reason", reason)
         effective_from = _calendar_date(self.effective_from, "effective_from")
         effective_to = _optional_date(self.effective_to, "effective_to")
         if effective_to is not None and effective_to < effective_from:
@@ -171,11 +475,43 @@ class SourceEvidence:
         object.__setattr__(self, "effective_from", effective_from)
         object.__setattr__(self, "effective_to", effective_to)
         retrieved = _optional_timestamp(self.retrieved_at, "retrieved_at")
-        if retrieved is not None and retrieved < known:
+        if retrieved is not None and known_order is not None and retrieved < known_order:
             raise ConferenceSourceError("retrieved_at cannot precede known_at")
         object.__setattr__(self, "retrieved_at", retrieved)
         if self.locator is not None:
             object.__setattr__(self, "locator", _text(self.locator, "locator"))
+
+    @property
+    def published_at_bound(self) -> datetime | None:
+        """Safe availability ordering value for the publication chronology."""
+
+        return self.published_at if self.published_precision == "instant" else self.published_at_upper_bound
+
+    @property
+    def published_at_lower_bound(self) -> datetime | None:
+        if self.published_precision == "instant":
+            return self.published_at
+        if self.published_precision == "local_datetime" and self.published_local_datetime is not None:
+            return _local_datetime_bounds(self.published_local_datetime)[0]
+        if self.published_precision == "date" and self.published_date is not None:
+            return _date_lower_bound(self.published_date)
+        return None
+
+    @property
+    def known_at_bound(self) -> datetime | None:
+        """Safe availability ordering value, or ``None`` when unknown."""
+
+        return self.known_at if self.known_precision == "instant" else self.known_at_upper_bound
+
+    @property
+    def known_at_lower_bound(self) -> datetime | None:
+        if self.known_precision == "instant":
+            return self.known_at
+        if self.known_precision == "local_datetime" and self.known_local_datetime is not None:
+            return _local_datetime_bounds(self.known_local_datetime)[0]
+        if self.known_precision == "date" and self.known_date is not None:
+            return _date_lower_bound(self.known_date)
+        return None
 
 
 @dataclass(frozen=True)
@@ -258,13 +594,22 @@ class DivisionRule:
 @dataclass(frozen=True)
 class EligibilityRule:
     team: str
-    eligible: bool
+    eligible: bool | None
     evidence_ids: tuple[str, ...]
+    reason: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "team", _text(self.team, "eligibility team"))
-        if not isinstance(self.eligible, bool):
-            raise ConferenceSourceError("eligibility eligible must be boolean")
+        if self.eligible is not None and not isinstance(self.eligible, bool):
+            raise ConferenceSourceError("eligibility eligible must be boolean or unknown")
+        if self.eligible is None:
+            if self.reason is None:
+                raise ConferenceSourceError(
+                    "unknown eligibility requires an explicit reason"
+                )
+            object.__setattr__(self, "reason", _text(self.reason, "eligibility reason"))
+        elif self.reason is not None:
+            object.__setattr__(self, "reason", _text(self.reason, "eligibility reason"))
         object.__setattr__(self, "evidence_ids", _tuple_ids(self.evidence_ids, "eligibility evidence_ids"))
 
 
@@ -299,10 +644,11 @@ class ChampionshipRule:
     divisions: tuple[DivisionRule, ...]
     site: SitePolicy
     evidence_ids: tuple[str, ...]
+    reason: str | None = None
 
     def __post_init__(self) -> None:
         selection = _text(self.selection, "championship selection").lower()
-        if selection not in {"none", "top_two", "division_leaders"}:
+        if selection not in {"none", "top_two", "division_leaders", "unknown"}:
             raise ConferenceSourceError("championship selection is unsupported")
         object.__setattr__(self, "selection", selection)
         if not isinstance(self.eligibility, tuple):
@@ -316,6 +662,22 @@ class ChampionshipRule:
         if not isinstance(self.site, SitePolicy):
             raise ConferenceSourceError("championship site must use a SitePolicy value")
         object.__setattr__(self, "evidence_ids", _tuple_ids(self.evidence_ids, "championship evidence_ids"))
+        if selection == "unknown":
+            if self.divisions or self.eligibility:
+                raise ConferenceSourceError(
+                    "unknown championship rule cannot carry selection members"
+                )
+            if self.site.mode != "unresolved":
+                raise ConferenceSourceError(
+                    "unknown championship rule requires unresolved site policy"
+                )
+            if self.reason is None:
+                raise ConferenceSourceError(
+                    "unknown championship rule requires an explicit reason"
+                )
+            object.__setattr__(self, "reason", _text(self.reason, "championship reason"))
+        elif self.reason is not None:
+            object.__setattr__(self, "reason", _text(self.reason, "championship reason"))
         if selection == "none":
             if self.divisions or self.eligibility:
                 raise ConferenceSourceError("no-title rule cannot carry selection members")
@@ -349,16 +711,23 @@ class ConferenceRule:
 
 @dataclass(frozen=True)
 class DatedConfirmation:
-    """An official resolution that may be used only after ``known_at``."""
+    """An official resolution with explicit chronology precision."""
 
     confirmation_id: str
     conference: str
     participants: tuple[str, ...]
-    known_at: datetime
+    known_at: datetime | date | str | None
     evidence_ids: tuple[str, ...]
     kind: str = "participants"
     site_mode: str | None = None
     host_team: str | None = None
+    known_precision: str | None = None
+    known_raw: str | None = None
+    known_at_upper_bound: datetime | str | None = None
+    known_date: date | str | None = None
+    known_local_datetime: datetime | str | None = None
+    timing_basis: str | None = None
+    timing_reason: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "confirmation_id", _identity(self.confirmation_id, "confirmation_id"))
@@ -366,7 +735,52 @@ class DatedConfirmation:
         object.__setattr__(self, "participants", _tuple_text(self.participants, "confirmation participants"))
         if len(self.participants) != 2:
             raise ConferenceSourceError("a championship confirmation requires two participants")
-        object.__setattr__(self, "known_at", _timestamp(self.known_at, "confirmation known_at"))
+        (
+            known,
+            known_precision,
+            known_raw,
+            known_bound,
+            known_date,
+            known_local_datetime,
+        ) = _temporal(
+            self.known_at,
+            "confirmation known_at",
+            self.known_precision,
+            self.known_raw,
+            self.known_at_upper_bound,
+            self.known_date,
+            self.known_local_datetime,
+        )
+        if self.timing_basis is None:
+            basis = (
+                "exact_timestamp"
+                if known_precision == "instant"
+                else "calendar_date_timezone_unknown"
+                if known_precision == "date"
+                else "local_datetime_timezone_unknown"
+                if known_precision == "local_datetime"
+                else "historical_timing_unknown"
+            )
+        else:
+            basis = _text(self.timing_basis, "confirmation timing_basis")
+        if known_precision == "unknown":
+            if self.timing_reason is None:
+                raise ConferenceSourceError(
+                    "unknown confirmation timing requires an explicit timing_reason"
+                )
+            reason = _text(self.timing_reason, "confirmation timing_reason")
+        elif self.timing_reason is None:
+            reason = None
+        else:
+            reason = _text(self.timing_reason, "confirmation timing_reason")
+        object.__setattr__(self, "known_at", known)
+        object.__setattr__(self, "known_precision", known_precision)
+        object.__setattr__(self, "known_raw", known_raw)
+        object.__setattr__(self, "known_at_upper_bound", known_bound)
+        object.__setattr__(self, "known_date", known_date)
+        object.__setattr__(self, "known_local_datetime", known_local_datetime)
+        object.__setattr__(self, "timing_basis", basis)
+        object.__setattr__(self, "timing_reason", reason)
         object.__setattr__(self, "evidence_ids", _tuple_ids(self.evidence_ids, "confirmation evidence_ids"))
         kind = _text(self.kind, "confirmation kind").lower()
         if kind != "participants":
@@ -383,6 +797,22 @@ class DatedConfirmation:
             raise ConferenceSourceError("fixed_hosted confirmation requires host_team")
         if self.site_mode in {"neutral", "unresolved"} and self.host_team is not None:
             raise ConferenceSourceError("confirmation host_team conflicts with site_mode")
+
+    @property
+    def known_at_bound(self) -> datetime | None:
+        """Safe ordering value, or ``None`` when confirmation timing is unknown."""
+
+        return self.known_at if self.known_precision == "instant" else self.known_at_upper_bound
+
+    @property
+    def known_at_lower_bound(self) -> datetime | None:
+        if self.known_precision == "instant":
+            return self.known_at
+        if self.known_precision == "local_datetime" and self.known_local_datetime is not None:
+            return _local_datetime_bounds(self.known_local_datetime)[0]
+        if self.known_precision == "date" and self.known_date is not None:
+            return _date_lower_bound(self.known_date)
+        return None
 
 
 @dataclass(frozen=True)
@@ -469,15 +899,38 @@ def _time_text(value: datetime | None) -> str | None:
     return value.isoformat() if value is not None else None
 
 
+def _local_time_text(value: datetime | None) -> str | None:
+    if value is None:
+        return None
+    if value.tzinfo is not None or value.utcoffset() is not None:
+        raise ConferenceSourceError("local datetime must not include a timezone")
+    return value.isoformat()
+
+
 def _evidence_payload(item: SourceEvidence) -> dict[str, Any]:
     return {
         "evidence_id": item.evidence_id,
         "url": item.url,
         "source_sha256": item.source_sha256,
-        "published_at": _time_text(item.published_at),
+        # Date-derived bounds are deliberately separate from observed times.
+        "published_at": _time_text(item.published_at)
+        if item.published_precision == "instant"
+        else None,
+        "published_at_upper_bound": _time_text(item.published_at_upper_bound),
+        "published_date": _date_text(item.published_date),
+        "published_local_datetime": _local_time_text(item.published_local_datetime),
+        "published_precision": item.published_precision,
+        "published_raw": item.published_raw,
         "effective_from": _date_text(item.effective_from),
         "effective_to": _date_text(item.effective_to),
-        "known_at": _time_text(item.known_at),
+        "known_at": _time_text(item.known_at) if item.known_precision == "instant" else None,
+        "known_at_upper_bound": _time_text(item.known_at_upper_bound),
+        "known_date": _date_text(item.known_date),
+        "known_local_datetime": _local_time_text(item.known_local_datetime),
+        "known_precision": item.known_precision,
+        "known_raw": item.known_raw,
+        "timing_basis": item.timing_basis,
+        "timing_reason": item.timing_reason,
         "retrieved_at": _time_text(item.retrieved_at),
         "locator": item.locator,
     }
@@ -525,6 +978,7 @@ def _supplement_payload(supplement: ConferenceSupplement) -> dict[str, Any]:
                             "team": row.team,
                             "eligible": row.eligible,
                             "evidence_ids": list(row.evidence_ids),
+                            "reason": row.reason,
                         }
                         for row in item.championship.eligibility
                     ],
@@ -541,6 +995,7 @@ def _supplement_payload(supplement: ConferenceSupplement) -> dict[str, Any]:
                         "fixed_host": item.championship.site.fixed_host,
                         "evidence_ids": list(item.championship.site.evidence_ids),
                     },
+                    "reason": item.championship.reason,
                     "evidence_ids": list(item.championship.evidence_ids),
                 },
             }
@@ -551,7 +1006,16 @@ def _supplement_payload(supplement: ConferenceSupplement) -> dict[str, Any]:
                 "confirmation_id": item.confirmation_id,
                 "conference": item.conference,
                 "participants": list(item.participants),
-                "known_at": _time_text(item.known_at),
+                "known_at": _time_text(item.known_at)
+                if item.known_precision == "instant"
+                else None,
+                "known_at_upper_bound": _time_text(item.known_at_upper_bound),
+                "known_date": _date_text(item.known_date),
+                "known_local_datetime": _local_time_text(item.known_local_datetime),
+                "known_precision": item.known_precision,
+                "known_raw": item.known_raw,
+                "timing_basis": item.timing_basis,
+                "timing_reason": item.timing_reason,
                 "evidence_ids": list(item.evidence_ids),
                 "kind": item.kind,
                 "site_mode": item.site_mode,
@@ -722,7 +1186,12 @@ def validate_conference_supplement(
         }
         champ = rule.championship
         eligibility = {row.team: row for row in champ.eligibility}
-        if champ.selection == "none":
+        if champ.selection == "unknown":
+            if eligibility or champ.divisions:
+                raise ConferenceSourceError(
+                    f"unknown championship rule for {conference} carries derived members"
+                )
+        elif champ.selection == "none":
             if eligibility:
                 raise ConferenceSourceError("no-title rule cannot define eligibility")
         elif set(eligibility) != conference_members:
@@ -806,8 +1275,15 @@ def validate_conference_supplement(
         if item.host_team is not None and item.host_team not in item.participants:
             raise ConferenceSourceError("confirmation host is not a participant")
         _require_evidence(item.evidence_ids, evidence, f"confirmation {item.confirmation_id}")
-        if any(evidence[evidence_id].known_at > item.known_at for evidence_id in item.evidence_ids):
-            raise ConferenceSourceError("confirmation cannot be known before its evidence")
+        confirmation_bound = item.known_at_bound
+        if confirmation_bound is None:
+            continue
+        for evidence_id in item.evidence_ids:
+            evidence_bound = evidence[evidence_id].known_at_bound
+            # Unknown source chronology keeps the confirmation descriptive but
+            # prevents it from being used as a cutoff-qualified resolution.
+            if evidence_bound is not None and evidence_bound > confirmation_bound:
+                raise ConferenceSourceError("confirmation cannot be known before its evidence")
 
     return ValidatedConferenceSupplement(
         supplement=supplement,

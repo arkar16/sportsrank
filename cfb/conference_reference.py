@@ -448,6 +448,7 @@ class ChampionshipProjection:
         reasons = {
             "missing_cutoff", "rule_evidence_unavailable",
             "membership_evidence_unavailable", "game_designation_evidence_unavailable",
+            "selection_rule_unavailable", "eligibility_evidence_unavailable",
             "no_qualifying_results", "unresolved_qualification", "unresolved_site",
             "no_championship",
             "ambiguous_game_timing",
@@ -886,7 +887,7 @@ def _comparison(conference: str, rows: Sequence[StandingsRow]) -> RatingComparis
     )
 
 
-def _eligible_teams(rule: ConferenceRule) -> dict[str, bool]:
+def _eligible_teams(rule: ConferenceRule) -> dict[str, bool | None]:
     return {row.team: row.eligible for row in rule.championship.eligibility}
 
 
@@ -904,7 +905,8 @@ def _evidence_available_at_cutoff(
         item = evidence.get(evidence_id)
         if item is None:
             return False
-        if item.known_at > cutoff:
+        known_at = item.known_at_bound
+        if known_at is None or known_at > cutoff:
             return False
         if item.effective_from > cutoff.date():
             return False
@@ -956,6 +958,20 @@ def _projection(
             neutral_site=None,
             confirmation_id=None,
             reason="rule_evidence_unavailable",
+        )
+    if championship.selection == "unknown":
+        return ChampionshipProjection(
+            conference=conference, status="unavailable", participants=(),
+            contenders=(), selection_basis=None, site_state="unavailable",
+            host_team=None, neutral_site=None, confirmation_id=None,
+            reason="selection_rule_unavailable",
+        )
+    if any(row.eligible is None for row in championship.eligibility):
+        return ChampionshipProjection(
+            conference=conference, status="unavailable", participants=(),
+            contenders=(), selection_basis=None, site_state="unavailable",
+            host_team=None, neutral_site=None, confirmation_id=None,
+            reason="eligibility_evidence_unavailable",
         )
     if championship.selection == "none":
         return ChampionshipProjection(
@@ -1065,7 +1081,11 @@ def _projection(
         confirmation
         for confirmation in supplement.supplement.confirmations
         if confirmation.conference == conference
-        and (cutoff is not None and confirmation.known_at <= cutoff)
+        and (
+            cutoff is not None
+            and confirmation.known_at_bound is not None
+            and confirmation.known_at_bound <= cutoff
+        )
         and _evidence_available_at_cutoff(
             supplement, confirmation.evidence_ids, cutoff
         )
@@ -1091,14 +1111,73 @@ def _projection(
             selection_basis = None
             confirmation_id = None
         else:
-            confirmation_candidates.sort(key=lambda item: (item.known_at, item.confirmation_id))
-            latest_time = confirmation_candidates[-1].known_at
-            latest = [item for item in confirmation_candidates if item.known_at == latest_time]
-            confirmation_signatures = {
-                (item.participants, item.site_mode, item.host_team) for item in latest
-            }
-            if len(confirmation_signatures) == 1:
-                confirmation = latest[-1]
+            def signature(item: Any) -> tuple[tuple[str, ...], str | None, str | None]:
+                return item.participants, item.site_mode, item.host_team
+
+            grouped: dict[
+                tuple[tuple[str, ...], str | None, str | None], list[Any]
+            ] = defaultdict(list)
+            for item in confirmation_candidates:
+                grouped[signature(item)].append(item)
+
+            confirmation: Any | None = None
+            if len(grouped) == 1:
+                # If all confirmations assert the same signature, their
+                # chronology does not change the product fact. Prefer a
+                # provably latest record when one exists; otherwise choose a
+                # stable identity without pretending an overlapping interval
+                # has an exact order.
+                group = next(iter(grouped.values()))
+                provable = [
+                    item
+                    for item in group
+                    if item.known_at_lower_bound is not None
+                    and all(
+                        item.known_at_lower_bound > other.known_at_bound
+                        for other in group
+                        if other is not item
+                    )
+                ]
+                if len(provable) == 1:
+                    confirmation = provable[0]
+                else:
+                    confirmation = min(group, key=lambda item: item.confirmation_id)
+            else:
+                # A confirmation can supersede a different signature only
+                # when its earliest possible time is later than every
+                # confirmation of that competing signature.  Compare each
+                # candidate independently: an older record carrying the same
+                # signature must not prevent a later record from winning.
+                # Overlapping date/local-clock intervals cannot establish
+                # which participant/site assertion superseded the other.
+                provable_groups: dict[
+                    tuple[tuple[str, ...], str | None, str | None], Any
+                ] = {}
+                for current_signature, group in grouped.items():
+                    provable = [
+                        item
+                        for item in group
+                        if item.known_at_lower_bound is not None
+                        and all(
+                            item.known_at_lower_bound > other.known_at_bound
+                            for other_signature, other_group in grouped.items()
+                            if other_signature != current_signature
+                            for other in other_group
+                        )
+                    ]
+                    if provable:
+                        provable_groups[current_signature] = max(
+                            provable,
+                            key=lambda item: (
+                                item.known_at_lower_bound,
+                                item.known_at_bound,
+                                item.confirmation_id,
+                            ),
+                        )
+                if len(provable_groups) == 1:
+                    confirmation = next(iter(provable_groups.values()))
+
+            if confirmation is not None:
                 if all(eligible.get(team, False) for team in confirmation.participants):
                     selected = confirmation.participants
                     contenders = ()
@@ -1113,7 +1192,9 @@ def _projection(
                     confirmation_id = None
             else:
                 selected = None
-                contenders = tuple(sorted({team for item in latest for team in item.participants}))
+                contenders = tuple(
+                    sorted({team for item in confirmation_candidates for team in item.participants})
+                )
                 selection_basis = None
                 confirmation_id = None
     else:
