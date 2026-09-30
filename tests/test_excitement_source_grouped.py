@@ -96,6 +96,55 @@ EXPECTED_GROUPED_SCOPE_COUNTS = {
     (2026, "regular", 3): 57,
     (2026, "regular", 4): 1,
 }
+EXPECTED_SOURCE_ARCHIVE_RECEIPT = {
+    "role": "source-archive",
+    "sha256": "86a27f80709549c48bfaca763f4e925b3168dbae232745d534986e6fee43da37",
+    "size": 75165,
+}
+EXPECTED_SOURCE_SNAPSHOT_RECEIPTS = {
+    "snapshots/cfb-fbs-2024.json": {
+        "role": "source-snapshot",
+        "sha256": "81202378ba0a862a92a8e168e00f5df0f3c1827b3f5ac2876c7e8efd4d7a5633",
+        "size": 314911,
+    },
+    "snapshots/cfb-fbs-2025.json": {
+        "role": "source-snapshot",
+        "sha256": "8f9e919d81fbaf71a23c67cd2da73d59d9225513c115f08d5060bb1caf300f47",
+        "size": 319204,
+    },
+    "snapshots/9bf66d0ccab3878c7926f17b44664644774eed8ea95a7ffa73b3a206eb45296a/cfb-fbs-2026.json": {
+        "role": "source-snapshot",
+        "sha256": "8a99677a4c98e3bddfd5ee3d2f80b0eab4813ef8772cc6d9c47f74303f547d8a",
+        "size": 397634,
+    },
+}
+EXPECTED_METADATA_RECEIPTS = {
+    "2024-games-regular": {
+        "role": "adr21-season-metadata-v1.2024-games-regular",
+        "sha256": "496612994745bb632ca6a6a28dd97fe9e5f6744e05e756766473a249cb52b207",
+        "size": 685444,
+    },
+    "2024-games-postseason": {
+        "role": "adr21-season-metadata-v1.2024-games-postseason",
+        "sha256": "c2104ada734774a378046c3899c95438410a3c0a0a889ce3935f256170bfb4c5",
+        "size": 39620,
+    },
+    "2025-games-regular": {
+        "role": "adr21-season-metadata-v1.2025-games-regular",
+        "sha256": "28129e184b3a1d04a7bc0a709cc8ac87973f6d4d49efba3a2ea0a86d74f237b6",
+        "size": 696655,
+    },
+    "2025-games-postseason": {
+        "role": "adr21-season-metadata-v1.2025-games-postseason",
+        "sha256": "32f068194d374777aa97d9559bc459d849599b6e41f8f501371ff96cee391e30",
+        "size": 39216,
+    },
+    "2026-games-regular": {
+        "role": "adr21-season-metadata-v1.2026-games-regular",
+        "sha256": "006856376bdbbb220d3162ab812a06afd8582148fe52bb1d456680919b42959d",
+        "size": 670161,
+    },
+}
 
 
 class _BindingStore(LocalInputStore):
@@ -160,13 +209,12 @@ class GroupedPlaysPlanTests(unittest.TestCase):
         )
 
     def _binding(self, manifest: PilotManifest) -> SourceBinding:
-        snapshots = {}
-        for request in manifest.requests:
-            snapshots[request.parent_snapshot_path] = InputReference(
-                "parent-snapshot", request.parent_snapshot_sha256, 0
-            )
+        snapshots = {
+            path: InputReference.from_public_receipt(receipt)
+            for path, receipt in EXPECTED_SOURCE_SNAPSHOT_RECEIPTS.items()
+        }
         return SourceBinding(
-            InputReference("source-archive", SOURCE_ARCHIVE_SHA256, 0), snapshots
+            InputReference.from_public_receipt(EXPECTED_SOURCE_ARCHIVE_RECEIPT), snapshots
         )
 
     def _replay_binding(self, manifest: PilotManifest) -> _NoopBinding:
@@ -298,6 +346,33 @@ class GroupedPlaysPlanTests(unittest.TestCase):
         self.assertEqual(self.metadata_manifest.manifest_sha256, SEASON_METADATA_MANIFEST_SHA256)
         self.assertEqual(self.metadata_manifest.pilot_id, SEASON_METADATA_PILOT_ID)
         self.assertEqual(self.metadata_manifest.max_attempts, SEASON_METADATA_MAX_ATTEMPTS)
+
+    def test_literal_metadata_and_source_receipts_pin_the_reviewed_inputs(self):
+        self.assertEqual(
+            {
+                key: reference.public_receipt()
+                for key, reference in (self.manifest.metadata_sources or {}).items()
+            },
+            EXPECTED_METADATA_RECEIPTS,
+        )
+        self.assertEqual(
+            self.manifest.source_archive_sha256,
+            EXPECTED_SOURCE_ARCHIVE_RECEIPT["sha256"],
+        )
+        for request in self.manifest.requests:
+            self.assertEqual(
+                request.parent_snapshot_sha256,
+                EXPECTED_SOURCE_SNAPSHOT_RECEIPTS[request.parent_snapshot_path]["sha256"],
+            )
+        binding = self._binding(self.manifest)
+        self.assertEqual(binding.source_archive.public_receipt(), EXPECTED_SOURCE_ARCHIVE_RECEIPT)
+        self.assertEqual(
+            {
+                path: reference.public_receipt()
+                for path, reference in binding.snapshots.items()
+            },
+            EXPECTED_SOURCE_SNAPSHOT_RECEIPTS,
+        )
 
     def test_wrong_extra_reordered_and_altered_grouped_plans_fail_closed(self):
         raw = json.loads((REPO_ROOT / GROUPED_PLAYS_CONFIG).read_text(encoding="utf-8"))
