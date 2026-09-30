@@ -37,6 +37,9 @@ SCORE_TRAJECTORY_POLICY_SHA256 = (
     "5166109215b2a919160e2a2a8d79e4a595e01a854d7f15f8a6f42e29944963db"
 )
 _DIGEST_CHARS = frozenset("0123456789abcdef")
+_OPAQUE_ID_CHARS = frozenset(
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-"
+)
 _ARTIFACT_TOKEN = object()
 
 
@@ -53,6 +56,8 @@ class QualificationReason(StrEnum):
     PLAY_FIELDS_MISSING = "play-fields-missing"
     ORDER_EVIDENCE_MISSING = "order-evidence-missing"
     CLOCK_EVIDENCE_MISSING = "clock-evidence-missing"
+    CLOCK_ORDER_INVERSION = "clock-order-inversion"
+    SCORING_TRANSITION_MISSING = "scoring-transition-missing"
     AFTER_PLAY_UNKNOWN = "after-play-semantics-unknown"
     CAPTURE_PARTIAL = "capture-partial"
     CAPTURE_COMPLETENESS_UNKNOWN = "capture-completeness-unknown"
@@ -95,6 +100,21 @@ def _text(value: object, field_name: str) -> str:
     if any(ord(character) < 32 for character in value):
         raise _invalid("invalid-field", f"{field_name} contains a control character")
     return value
+
+
+def _opaque_id(value: object, field_name: str) -> str:
+    text = _text(value, field_name)
+    if (
+        len(text) > 128
+        or text in {".", ".."}
+        or not text[0].isalnum()
+        or any(character not in _OPAQUE_ID_CHARS for character in text)
+    ):
+        raise _invalid(
+            "unsafe-public-identifier",
+            f"{field_name} must be an opaque public identifier",
+        )
+    return text
 
 
 def _digest(value: object, field_name: str) -> str:
@@ -167,7 +187,7 @@ class TargetGame:
             raise _invalid("invalid-completion", "completion is unsupported")
         if self.game_format not in {"normal", "unsupported", "unknown"}:
             raise _invalid("invalid-game-format", "game_format is unsupported")
-        _text(self.qualification_id, "qualification_id")
+        _opaque_id(self.qualification_id, "qualification_id")
         _digest(self.games_manifest_sha256, "games_manifest_sha256")
         _digest(self.source_archive_sha256, "source_archive_sha256")
         if not isinstance(self.parent_snapshot_path, str) or not self.parent_snapshot_path.startswith("snapshots/"):
@@ -206,9 +226,9 @@ class CaptureQualification:
     def __post_init__(self) -> None:
         object.__setattr__(self, "game_id", _decimal_game_id(self.game_id))
         _digest(self.plays_response_sha256, "plays_response_sha256")
-        _text(self.qualification_id, "qualification_id")
-        _text(self.policy_id, "policy_id")
-        _text(self.policy_version, "policy_version")
+        _opaque_id(self.qualification_id, "qualification_id")
+        _opaque_id(self.policy_id, "policy_id")
+        _opaque_id(self.policy_version, "policy_version")
         _digest(self.policy_sha256, "policy_sha256")
         if (
             self.policy_id,
@@ -223,7 +243,7 @@ class CaptureQualification:
                 "unsupported-qualification-policy",
                 "capture qualification does not name the frozen score-trajectory policy",
             )
-        _text(self.evidence_reference, "evidence_reference")
+        _opaque_id(self.evidence_reference, "evidence_reference")
         _digest(self.plays_manifest_sha256, "plays_manifest_sha256")
         _digest(self.source_archive_sha256, "source_archive_sha256")
         _digest(self.parent_snapshot_sha256, "parent_snapshot_sha256")
@@ -622,7 +642,7 @@ def _play_evidence(
     period_ranges: dict[int, list[int]] = {}
     reasons: set[QualificationReason] = set()
     inferences: set[QualificationInference] = set()
-    for sequence, (_key, row) in enumerate(keyed):
+    for sequence, (_order_key, row) in enumerate(keyed):
         period = _integer(row.get("period"), "period", minimum=1)
         if period < prior_period:
             raise _invalid("period-inversion", "candidate play order decreases period")
@@ -645,7 +665,7 @@ def _play_evidence(
             raise _invalid("invalid-clock", "play clock exceeds fifteen minutes")
         if period <= 4:
             if period == prior_period and prior_remaining is not None and remaining > prior_remaining:
-                raise _invalid("clock-inversion", "candidate play order increases the clock within a period")
+                reasons.add(QualificationReason.CLOCK_ORDER_INVERSION)
             elapsed = (period - 1) * 15 + (900 - remaining) / 60
             overtime = False
             period_ranges.setdefault(period, []).append(remaining)
@@ -665,6 +685,8 @@ def _play_evidence(
             return _PlayEvidence((), (QualificationReason.PLAY_FIELDS_MISSING,), (), ())
         if scores != prior_scores and not scoring:
             raise _invalid("after-play-contradiction", "score changes on a row not marked scoring")
+        if scores == prior_scores and scoring:
+            reasons.add(QualificationReason.SCORING_TRANSITION_MISSING)
         points.append(TimelinePoint(scores[0], scores[1], sequence, elapsed, overtime))
         point_periods.append(period)
         if period <= 4:

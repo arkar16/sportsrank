@@ -242,6 +242,13 @@ class IndependentNormalizationTests(unittest.TestCase):
         with self.assertRaises((QualificationError, InvalidEvidenceError)):
             _qualify(games=_json_bytes(game_rows), plays=_json_bytes(rows))
 
+    def test_scoring_true_without_a_score_change_cannot_qualify_full(self):
+        rows = json.loads(_plays_payload())
+        rows[2]["scoring"] = True
+        artifact = _qualify(plays=_json_bytes(rows))
+        self.assertNotEqual(artifact.status, "full")
+        self.assertIn("scoring-transition-missing", {reason.value for reason in artifact.reasons})
+
     def test_ambiguous_same_clock_order_and_duplicate_conflict_fail_closed(self):
         rows = json.loads(_plays_payload())
         rows[1]["playNumber"] = rows[2]["playNumber"]
@@ -267,6 +274,19 @@ class IndependentNormalizationTests(unittest.TestCase):
 
         with self.assertRaises((QualificationError, InvalidEvidenceError)):
             _qualify(games=_game_payload(home_score=20))
+
+    def test_cross_drive_period_boundary_14_49_to_15_00_remains_ordered(self):
+        rows = json.loads(_plays_payload())
+        rows[1]["clock"] = {"minutes": 14, "seconds": 49}
+        rows[2]["period"] = 2
+        rows[2]["clock"] = {"minutes": 15, "seconds": 0}
+        rows[2]["driveNumber"] = 2
+        artifact = _qualify(plays=_json_bytes(rows))
+        self.assertEqual(artifact.status, "full")
+        self.assertEqual(
+            [(point.elapsed_minute, point.home_score, point.away_score) for point in artifact.timeline[:4]],
+            [(0.0, 0, 0), (0.18333333333333332, 7, 0), (15.0, 7, 0), (15.0, 7, 0)],
+        )
 
     def test_sparse_quarter_start_can_carry_verified_previous_end(self):
         rows = json.loads(_plays_payload())
@@ -331,6 +351,47 @@ class IndependentNormalizationTests(unittest.TestCase):
         self.assertNotEqual(artifact.status, "full")
         self.assertTrue(artifact.reasons)
 
+    def test_partial_clock_inversion_reduces_but_preserves_verified_metadata(self):
+        rows = json.loads(_plays_payload())
+        rows[2]["clock"] = {"minutes": 11, "seconds": 0}
+        qualification = _qualification(
+            completeness="partial", regulation_minutes=None, overtime=None,
+            plays_sha256=hashlib.sha256(_json_bytes(rows)).hexdigest(),
+        )
+        artifact = _qualify(plays=_json_bytes(rows), qualification=qualification)
+        self.assertEqual(artifact.status, "reduced")
+        self.assertEqual((artifact.final.home_score, artifact.final.away_score), (21, 3))
+        self.assertEqual(artifact.final.quarter_scores, ((7, 0), (7, 3), (14, 3)))
+        self.assertFalse(artifact.final.overtime)
+        self.assertIn("clock-order-inversion", {reason.value for reason in artifact.reasons})
+
+    def test_clock_inversion_cannot_mask_identity_or_final_contradictions(self):
+        rows = json.loads(_plays_payload())
+        rows[2]["clock"] = {"minutes": 11, "seconds": 0}
+        payload = _json_bytes(rows)
+        qualification = _qualification(
+            completeness="partial", regulation_minutes=None, overtime=None,
+            plays_sha256=hashlib.sha256(payload).hexdigest(),
+        )
+
+        with self.assertRaises((QualificationError, InvalidEvidenceError)):
+            _qualify(
+                plays=payload,
+                qualification=qualification,
+                target=replace(_target(), qualification_id=CAPTURE_QUALIFICATION_ID),
+            )
+        with self.assertRaises((QualificationError, InvalidEvidenceError)):
+            _qualify(
+                games=_game_payload(home_score=20), plays=payload, qualification=qualification,
+            )
+
+        forged_receipt = replace(
+            _receipt(PLAYS_REQUEST, payload),
+            response=InputReference("synthetic-tampered", "0" * 64, len(payload)),
+        )
+        with self.assertRaises((QualificationError, InvalidEvidenceError)):
+            RetainedCapture(request=PLAYS_REQUEST, receipt=forged_receipt, raw_bytes=payload)
+
     def test_incomplete_unsupported_and_quarter_final_disagreement_do_not_become_normal(self):
         for target, reason in (
             (_target(completion="incomplete"), QualificationReason.GAME_INCOMPLETE),
@@ -356,7 +417,7 @@ class IndependentNormalizationTests(unittest.TestCase):
         rows[10]["defenseScore"] = 14
         rows[11]["offenseScore"] = 14
         rows[11]["defenseScore"] = 14
-        rows[11]["scoring"] = True
+        rows[11]["scoring"] = False
         rows.extend([
             _play(13, 5, 0, 0, 21, 14, scoring=True),
             _play(14, 5, 0, 0, 28, 14, scoring=True),
@@ -371,6 +432,10 @@ class IndependentNormalizationTests(unittest.TestCase):
         self.assertTrue(artifact.final.overtime)
         self.assertTrue(artifact.normalized.overtime)
         self.assertTrue(all(point.elapsed_minute is None for point in artifact.normalized.overtime))
+        self.assertEqual(
+            [(point.home_score, point.away_score) for point in artifact.normalized.overtime],
+            [(21, 14), (28, 14)],
+        )
         self.assertEqual(len(artifact.normalized.overtime), 2)
 
     def test_unknown_overtime_is_not_false_and_does_not_upgrade(self):
@@ -473,6 +538,21 @@ class IndependentNormalizationTests(unittest.TestCase):
                 games=_capture(GAMES_REQUEST, _game_payload()), plays=_capture(PLAYS_REQUEST, _plays_payload()),
             )
 
+        partial_rows = json.loads(_plays_payload())[1:]
+        partial_payload = _json_bytes(partial_rows)
+        partial_qualification = _qualification(
+            completeness="partial", regulation_minutes=None, overtime=None,
+            plays_sha256=hashlib.sha256(partial_payload).hexdigest(),
+        )
+        reduced = _qualify(plays=partial_payload, qualification=partial_qualification)
+        promoted = json.loads(reduced.to_bytes())
+        promoted["status"] = "full"
+        with self.assertRaises((QualificationError, InvalidEvidenceError)):
+            QualificationArtifact.from_bytes(
+                _json_bytes(promoted), target=_target(), qualification=partial_qualification,
+                games=_capture(GAMES_REQUEST, _game_payload()), plays=_capture(PLAYS_REQUEST, partial_payload),
+            )
+
     def test_source_identity_binds_target_completion_and_format_dispositions(self):
         base = _qualify()
         for target in (
@@ -485,6 +565,33 @@ class IndependentNormalizationTests(unittest.TestCase):
                 changed = _qualify(target=target)
                 self.assertNotEqual(changed.source_id, base.source_id)
                 self.assertIsNone(changed.final)
+
+    def test_unsafe_public_provenance_is_rejected_or_omitted_without_unbinding(self):
+        cases = (
+            ("private-inputs/raw-capture-2025.json", _target, _qualification),
+            ("target-qualification/private-review", lambda: replace(_target(), qualification_id="target-qualification/private-review"), _qualification),
+            ("capture-qualification/private-review", _target, lambda: replace(_qualification(), qualification_id="capture-qualification/private-review")),
+        )
+        base = _qualify()
+        for changed in (
+            _qualify(qualification=replace(_qualification(), evidence_reference="synthetic-review-alt")),
+            _qualify(target=replace(_target(), qualification_id="synthetic-target-alt")),
+            _qualify(qualification=replace(_qualification(), qualification_id="synthetic-capture-alt")),
+        ):
+            self.assertNotEqual(changed.source_id, base.source_id)
+        for unsafe_value, target_factory, qualification_factory in cases:
+            with self.subTest(unsafe_value=unsafe_value):
+                try:
+                    target = target_factory()
+                    qualification = qualification_factory()
+                    if unsafe_value.startswith("private-inputs/"):
+                        qualification = replace(qualification, evidence_reference=unsafe_value)
+                    changed = _qualify(target=target, qualification=qualification)
+                    public = changed.to_bytes()
+                except (QualificationError, ValueError):
+                    continue
+                self.assertNotIn(unsafe_value.encode(), public)
+                self.assertNotEqual(changed.source_id, base.source_id)
 
     def test_public_bytes_are_derived_and_exclude_raw_provider_text_and_private_paths(self):
         artifact = _qualify()

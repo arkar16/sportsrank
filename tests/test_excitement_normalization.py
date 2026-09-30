@@ -136,7 +136,7 @@ def _qualification(plays: RetainedCapture, **changes) -> CaptureQualification:
         "qualification_id": "capture-review-v1", "policy_id": SCORE_TRAJECTORY_POLICY_ID,
         "policy_version": SCORE_TRAJECTORY_POLICY_VERSION,
         "policy_sha256": SCORE_TRAJECTORY_POLICY_SHA256,
-        "evidence_reference": "SR35/evidence/123",
+        "evidence_reference": "sr35-evidence-123",
         "plays_manifest_sha256": DIGEST_C, "source_archive_sha256": DIGEST_C,
         "parent_snapshot_sha256": DIGEST_B, "score_semantics": "after_play",
         "capture_completeness": "complete", "regulation_minutes": 60, "overtime": False,
@@ -268,7 +268,7 @@ class ExcitementNormalizationTests(unittest.TestCase):
         with self.assertRaisesRegex(InvalidEvidenceError, "target participant"):
             _qualify(target=_target(home_team="Different"))
 
-    def test_ambiguous_order_score_decrease_and_clock_inversion_fail(self):
+    def test_ambiguous_order_and_score_decrease_fail(self):
         rows = _plays()
         first, second = rows[-1], rows[-2]
         ambiguous = [dict(row) for row in rows]
@@ -282,9 +282,71 @@ class ExcitementNormalizationTests(unittest.TestCase):
         with self.assertRaisesRegex(InvalidEvidenceError, "decreases a score"):
             _qualify(rows=decrease)
 
-        inversion = rows + [_play(9, 4, 60, 14, 7, play=2)]
-        with self.assertRaisesRegex(InvalidEvidenceError, "increases the clock"):
-            _qualify(rows=inversion)
+    def test_clock_inversion_is_typed_reduced_flow(self):
+        cases = []
+        cross_drive = [dict(row) for row in _plays()]
+        prior = next(row for row in cross_drive if row["driveNumber"] == 3)
+        current = next(row for row in cross_drive if row["driveNumber"] == 4)
+        prior["clock"] = {"minutes": 14, "seconds": 49}
+        current["clock"] = {"minutes": 15, "seconds": 0}
+        cases.append(cross_drive)
+        cases.append(_plays() + [_play(9, 4, 60, 14, 7, play=2)])
+
+        for rows in cases:
+            with self.subTest(rows=len(rows)):
+                artifact, *_ = _qualify(rows=rows)
+                self.assertEqual(artifact.status, "reduced")
+                self.assertIn(QualificationReason.CLOCK_ORDER_INVERSION, artifact.reasons)
+                self.assertEqual((artifact.final.home_score, artifact.final.away_score), (14, 7))
+                self.assertEqual(artifact.final.quarter_scores, ((0, 0), (7, 0), (7, 0)))
+                self.assertFalse(artifact.final.overtime)
+                self.assertEqual(artifact.timeline, ())
+
+        contradictory = [dict(row) for row in cross_drive]
+        contradictory[-1]["home"] = "Different"
+        with self.assertRaisesRegex(InvalidEvidenceError, "orientation differs"):
+            _qualify(rows=contradictory)
+        with self.assertRaisesRegex(InvalidEvidenceError, "do not reach the games final"):
+            _qualify(
+                rows=cross_drive,
+                game=_game(homePoints=15, homeLineScores=[0, 7, 0, 8]),
+            )
+
+    def test_scoring_flag_requires_an_observed_score_transition(self):
+        rows = [dict(row) for row in _plays()]
+        unchanged = next(
+            row
+            for row in rows
+            if row["period"] == 1 and row["clock"] == {"minutes": 0, "seconds": 0}
+        )
+        unchanged["scoring"] = True
+        artifact, *_ = _qualify(rows=rows)
+        self.assertEqual(artifact.status, "reduced")
+        self.assertIn(QualificationReason.SCORING_TRANSITION_MISSING, artifact.reasons)
+        self.assertEqual((artifact.final.home_score, artifact.final.away_score), (14, 7))
+
+        inverse = [dict(row) for row in _plays()]
+        changed = next(row for row in inverse if row["scoring"] is True)
+        changed["scoring"] = False
+        with self.assertRaisesRegex(InvalidEvidenceError, "not marked scoring"):
+            _qualify(rows=inverse)
+
+    def test_public_qualification_identifiers_are_opaque(self):
+        plays = _capture("/plays", _plays())
+        for value in (
+            "/Users/example/private-inputs/review.json",
+            "../review",
+            "review with spaces",
+            "file:review",
+            "x" * 129,
+        ):
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(InvalidEvidenceError, "opaque public identifier"):
+                    _qualification(plays, evidence_reference=value)
+        with self.assertRaisesRegex(InvalidEvidenceError, "opaque public identifier"):
+            _target(qualification_id="/tmp/target")
+        with self.assertRaisesRegex(InvalidEvidenceError, "opaque public identifier"):
+            _qualification(plays, qualification_id="capture/review")
 
     def test_missing_start_is_reduced_but_supported_period_end_is_derived(self):
         no_start = [row for row in _plays() if not (row["period"] == 1 and row["clock"]["minutes"] == 15)]

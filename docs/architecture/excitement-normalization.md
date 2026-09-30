@@ -31,6 +31,19 @@ clock and score interpretation, including whether a score applies after the
 event. An arbitrary identifier tie-break cannot resolve an ambiguous scoring
 sequence.
 
+A row marked as scoring must carry an observable one-team score transition.
+A scoring flag with unchanged cumulative scores is typed as unavailable flow
+evidence and cannot produce a full timeline; a score transition on a row not
+marked scoring remains contradictory. Valid consecutive scoring transitions,
+including untimed overtime transitions, remain ordered score evidence.
+
+A clock increase within a period is typed as unavailable flow evidence. It
+preserves independently verified final, quarter and overtime evidence in the
+reduced tier but cannot produce a full timeline. Qualification continues
+checking later rows, so the downgrade cannot mask an identity, orientation,
+score or final contradiction. This rule does not infer why the provider clock
+increased or attach special meaning to drive identifiers.
+
 Same-clock score transitions have no regulation duration, but their supported
 order remains relevant to lead changes and comebacks. A missing standalone
 15:00 row in a later quarter is not itself a missing interval: a verified
@@ -71,6 +84,12 @@ Synthetic fixtures verify these software rules. Real retained captures require
 separate qualification, and neither establishes empirical viewing-quality or
 estimated-score acceptance. Current coverage, partition decisions, verification
 and outstanding integration work belong to the linked delivery tasks.
+
+Target and capture qualification IDs and the evidence reference are public
+opaque identifiers: 1-128 ASCII letters, digits, dots, underscores or hyphens,
+starting with a letter or digit. Paths, URIs, whitespace and traversal syntax
+are rejected before artifact construction. Their literal values remain bound
+into source identity and wire recomputation.
 
 ## Observed-data policy boundary
 
