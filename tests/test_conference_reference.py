@@ -152,6 +152,64 @@ def _large_comparison_fixture() -> tuple[SeasonSnapshot, ConferenceSupplement, t
 
 
 class ConferenceReferenceTests(unittest.TestCase):
+    def test_pairing_evidence_cutoff_does_not_erase_retrospective_records(self) -> None:
+        snapshot = _snapshot()
+        supplement = _supplement(snapshot)
+        cutoff = datetime(2025, 9, 10, tzinfo=UTC)
+        later = replace(
+            supplement.evidence[0], evidence_id="later-source",
+            url="https://example.test/later.pdf", source_sha256="d" * 64,
+            known_at=datetime(2025, 10, 1, tzinfo=UTC),
+        )
+
+        def derive(source, viewed_cutoff=cutoff):
+            return derive_conference_reference(
+                snapshot, source, _rankings(), phase="week", target_week=0,
+                cutoff=viewed_cutoff, dataset_id="fixture-w0", model_version="v0.4.0",
+            )
+
+        baseline = derive(supplement)
+        for kind in ("membership", "game_designation"):
+            with self.subTest(kind=kind):
+                candidate = replace(supplement, evidence=supplement.evidence + (later,))
+                if kind == "membership":
+                    candidate = replace(candidate, members=tuple(
+                        replace(member, evidence_ids=("later-source",))
+                        if member.team == "Alpha" else member
+                        for member in candidate.members
+                    ))
+                else:
+                    candidate = replace(candidate, games=tuple(
+                        replace(game, evidence_ids=("later-source",))
+                        if game.provider_id == "g-red" else game
+                        for game in candidate.games
+                    ))
+                earlier = derive(candidate)
+                projection = next(p for p in earlier.projections if p.conference == "Red")
+                self.assertEqual(projection.status, "unavailable")
+                self.assertEqual(projection.reason, f"{kind}_evidence_unavailable")
+                self.assertEqual(projection.participants, ())
+                self.assertIsNone(projection.host_team)
+                self.assertEqual(earlier.standings, baseline.standings)
+                self.assertEqual(earlier.comparisons, baseline.comparisons)
+                visible = derive(candidate, later.known_at)
+                self.assertEqual(
+                    next(p for p in visible.projections if p.conference == "Red").status,
+                    "projected",
+                )
+
+        # Unselected future game evidence cannot contaminate the viewed checkpoint.
+        future_only = replace(
+            supplement, evidence=supplement.evidence + (later,),
+            games=tuple(
+                replace(game, evidence_ids=("later-source",))
+                if game.provider_id == "g-post" else game for game in supplement.games
+            ),
+        )
+        self.assertEqual(derive(future_only).projections, baseline.projections)
+        no_cutoff = derive(supplement, None)
+        self.assertTrue(all(p.reason == "missing_cutoff" for p in no_cutoff.projections))
+
     def test_w0_records_exclude_title_game_but_keep_overall_and_interconference_context(self) -> None:
         snapshot = _snapshot()
         reference = derive_conference_reference(

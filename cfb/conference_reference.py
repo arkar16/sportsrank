@@ -409,6 +409,7 @@ class ChampionshipProjection:
     host_team: str | None
     neutral_site: bool | None
     confirmation_id: str | None
+    reason: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "conference", _text(self.conference, "projection conference"))
@@ -437,6 +438,16 @@ class ChampionshipProjection:
             raise ConferenceReferenceError("projection neutral_site must be boolean or None")
         if status == "not_applicable" and self.site_state != "not_applicable":
             raise ConferenceReferenceError("not_applicable projection requires not_applicable site")
+        reasons = {
+            "missing_cutoff", "rule_evidence_unavailable",
+            "membership_evidence_unavailable", "game_designation_evidence_unavailable",
+            "no_qualifying_results", "unresolved_qualification", "unresolved_site",
+            "no_championship",
+        }
+        if self.reason is not None and self.reason not in reasons:
+            raise ConferenceReferenceError("unsupported projection reason")
+        if status in {"unavailable", "unresolved", "not_applicable"} and self.reason is None:
+            raise ConferenceReferenceError("unavailable projection requires an explicit reason")
 
     @property
     def pairing(self) -> tuple[str, str] | None:
@@ -453,6 +464,7 @@ class ChampionshipProjection:
             "host_team": self.host_team,
             "neutral_site": self.neutral_site,
             "confirmation_id": self.confirmation_id,
+            "reason": self.reason,
         }
 
 
@@ -898,6 +910,7 @@ def _projection(
     standings: ConferenceStandings,
     supplement: ValidatedConferenceSupplement,
     cutoff: datetime | None,
+    selected_games: Sequence[SourceGame],
 ) -> ChampionshipProjection:
     championship = rule.championship
     if cutoff is None:
@@ -911,6 +924,7 @@ def _projection(
             host_team=None,
             neutral_site=None,
             confirmation_id=None,
+            reason="missing_cutoff",
         )
     required_evidence_ids = set(rule.evidence_ids)
     required_evidence_ids.update(championship.evidence_ids)
@@ -932,6 +946,7 @@ def _projection(
             host_team=None,
             neutral_site=None,
             confirmation_id=None,
+            reason="rule_evidence_unavailable",
         )
     if championship.selection == "none":
         return ChampionshipProjection(
@@ -944,7 +959,37 @@ def _projection(
             host_team=None,
             neutral_site=None,
             confirmation_id=None,
+            reason="no_championship",
         )
+    # Descriptive records can be reconstructed from later evidence. A pregame
+    # pairing cannot use that evidence until it was known: both the population
+    # and every included/excluded game feeding its qualification record matter.
+    conference_members = {
+        member.team: member for member in supplement.supplement.members
+        if member.conference == conference
+    }
+    membership_ids = {
+        evidence_id for member in conference_members.values()
+        for evidence_id in member.evidence_ids
+    }
+    designation_index = {
+        item.provider_id: item for item in supplement.supplement.games
+    }
+    designation_ids = {
+        evidence_id for game in selected_games
+        if game.home_team in conference_members or game.away_team in conference_members
+        for evidence_id in designation_index[game.provider_id].evidence_ids
+    }
+    for ids, reason in (
+        (membership_ids, "membership_evidence_unavailable"),
+        (designation_ids, "game_designation_evidence_unavailable"),
+    ):
+        if not _evidence_available_at_cutoff(supplement, tuple(sorted(ids)), cutoff):
+            return ChampionshipProjection(
+                conference=conference, status="unavailable", participants=(),
+                contenders=(), selection_basis=None, site_state="unavailable",
+                host_team=None, neutral_site=None, confirmation_id=None, reason=reason,
+            )
     eligible = _eligible_teams(rule)
     rows = [row for row in standings.rows if eligible.get(row.school, False)]
     if any(row.conference_record.winning_percentage is None for row in rows) or not rows:
@@ -958,6 +1003,7 @@ def _projection(
             host_team=None,
             neutral_site=None,
             confirmation_id=None,
+            reason="no_qualifying_results",
         )
 
     selected: tuple[str, ...] | None = None
@@ -1065,6 +1111,7 @@ def _projection(
             host_team=None,
             neutral_site=None,
             confirmation_id=None,
+            reason="unresolved_qualification",
         )
 
     site = championship.site
@@ -1099,6 +1146,7 @@ def _projection(
         host_team=host_team,
         neutral_site=neutral,
         confirmation_id=confirmation_id,
+        reason="unresolved_site" if site_state == "unresolved" else None,
     )
 
 
@@ -1225,7 +1273,7 @@ def derive_conference_reference(
         )
 
     projections = tuple(
-        _projection(item.conference, item, next(row for row in standings if row.conference == item.conference), supplement, cutoff_value)
+        _projection(item.conference, item, next(row for row in standings if row.conference == item.conference), supplement, cutoff_value, selected_games)
         for item in sorted(rules.values(), key=lambda value: value.conference)
     )
     return ConferenceReference(

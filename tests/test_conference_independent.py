@@ -531,6 +531,95 @@ class IndependentConferenceTests(unittest.TestCase):
         with self.assertRaises(ConferenceReferenceError):
             _derive(snapshot, supplement, target_week=1)
 
+    def test_projection_cutoff_requires_membership_and_selected_game_evidence(self):
+        snapshot, supplement = _core_fixture()
+        cutoff = EARLY_CUTOFF
+        baseline = _derive(snapshot, supplement, cutoff=cutoff)
+        future_evidence = _evidence(
+            "future-cutoff", known_at=datetime(2025, 10, 1, tzinfo=UTC)
+        )
+        with_future = replace(
+            supplement, evidence=supplement.evidence + (future_evidence,)
+        )
+
+        future_membership = replace(
+            with_future,
+            members=tuple(
+                replace(member, evidence_ids=("future-cutoff",))
+                if member.team == "Red One" else member
+                for member in with_future.members
+            ),
+        )
+        membership_projection = next(
+            item for item in _derive(snapshot, future_membership, cutoff=cutoff).projections
+            if item.conference == "Red"
+        )
+        self.assertEqual(membership_projection.status, "unavailable")
+        self.assertEqual(membership_projection.reason, "membership_evidence_unavailable")
+        self.assertEqual(membership_projection.participants, ())
+        self.assertEqual(
+            next(item for item in baseline.projections if item.conference == "Blue"),
+            next(item for item in _derive(snapshot, future_membership, cutoff=cutoff).projections
+                 if item.conference == "Blue"),
+        )
+
+        # All selected games that touch the conference contribute identity
+        # evidence, including a non-league game and a title-game exclusion.
+        for provider_id in ("red-league", "red-blue", "red-title"):
+            with self.subTest(provider_id=provider_id):
+                future_designation = replace(
+                    with_future,
+                    games=tuple(
+                        replace(game, evidence_ids=("future-cutoff",))
+                        if game.provider_id == provider_id else game
+                        for game in with_future.games
+                    ),
+                )
+                projection = next(
+                    item for item in _derive(
+                        snapshot, future_designation, cutoff=cutoff
+                    ).projections
+                    if item.conference == "Red"
+                )
+                self.assertEqual(projection.status, "unavailable")
+                self.assertEqual(
+                    projection.reason, "game_designation_evidence_unavailable"
+                )
+                self.assertEqual(projection.participants, ())
+
+    def test_unselected_future_evidence_is_ignored_and_exact_cutoff_is_visible(self):
+        snapshot, supplement = _core_fixture()
+        baseline = _derive(snapshot, supplement, cutoff=EARLY_CUTOFF)
+        future_evidence = _evidence(
+            "future-unselected", known_at=datetime(2025, 10, 1, tzinfo=UTC)
+        )
+        future_only = replace(
+            supplement,
+            evidence=supplement.evidence + (future_evidence,),
+            games=tuple(
+                replace(game, evidence_ids=("future-unselected",))
+                if game.provider_id == "future-blue" else game
+                for game in supplement.games
+            ),
+        )
+        observed = _derive(snapshot, future_only, cutoff=EARLY_CUTOFF)
+        self.assertEqual(observed.standings, baseline.standings)
+        self.assertEqual(observed.projections, baseline.projections)
+
+        boundary_source = replace(
+            supplement.evidence[0],
+            known_at=EARLY_CUTOFF,
+            effective_from=EARLY_CUTOFF.date(),
+        )
+        boundary = replace(supplement, evidence=(boundary_source,))
+        red_projection = next(
+            item for item in _derive(snapshot, boundary, cutoff=EARLY_CUTOFF).projections
+            if item.conference == "Red"
+        )
+        self.assertEqual(red_projection.status, "projected")
+        self.assertIsNone(red_projection.reason)
+        self.assertEqual(red_projection.participants, ("Red One", "Red Two"))
+
     def test_forged_validated_wrapper_cannot_bypass_underlying_coverage_or_digest(self):
         snapshot, supplement = _core_fixture()
         validated = _validated(snapshot, supplement)
@@ -607,6 +696,12 @@ class IndependentConferenceTests(unittest.TestCase):
         )
         self.assertEqual(blue_projection.status, "unavailable")
         self.assertEqual(blue_projection.site_state, "unavailable")
+        self.assertEqual(blue_projection.reason, "rule_evidence_unavailable")
+
+        no_cutoff = _derive(snapshot, supplement, cutoff=None)
+        self.assertEqual(
+            {item.reason for item in no_cutoff.projections}, {"missing_cutoff"}
+        )
 
     def test_game_start_at_cutoff_cannot_support_that_checkpoint(self):
         snapshot, supplement = _core_fixture()
