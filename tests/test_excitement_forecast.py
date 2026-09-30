@@ -14,6 +14,7 @@ from cfb.excitement_forecast import (
     BEV_BINDING_KIND,
     BevArtifact,
     ExcitementForecastError,
+    ReconstructionInputQualification,
     bev_relative_path,
     bind_bev,
     load_issued_bev,
@@ -77,6 +78,38 @@ def reseal(value: dict) -> bytes:
     content.pop("artifact_id", None)
     value["artifact_id"] = "sha256:" + hashlib.sha256(canonical(content)).hexdigest()
     return canonical(value)
+
+
+def qualification(
+    item: ForecastCandidate,
+    *,
+    inputs_as_of: datetime,
+    source: EvidenceRef | None = None,
+    **overrides,
+) -> ReconstructionInputQualification:
+    provenance = item.provenance.to_dict()
+    anchor_digest = bind_bev(item)[1].forecast_anchor_digest
+    values = {
+        "inputs_as_of": inputs_as_of,
+        "source": source or EvidenceRef(
+            "synthetic-test", "qualified-checkpoint", item.provenance.source_snapshot_digest
+        ),
+        "forecast_anchor_digest": anchor_digest,
+        "rating_checkpoint": provenance["rating_checkpoint"],
+        "rating_cutoff": provenance["rating_cutoff"],
+        "rating_artifact_digest": provenance["rating_artifact_digest"],
+        "source_snapshot_digest": provenance["source_snapshot_digest"],
+        "model_version": provenance["model_version"],
+        "source_kind": provenance["source_kind"],
+        "code_revision": provenance["code_revision"],
+        "home_rating": provenance["home_rating"],
+        "away_rating": provenance["away_rating"],
+        "home_field_advantage": provenance["home_field_advantage"],
+        "home_rank": provenance.get("home_rank"),
+        "away_rank": provenance.get("away_rank"),
+    }
+    values.update(overrides)
+    return ReconstructionInputQualification(**values)
 
 
 def publication_fixture(root: Path, pairs: list[tuple[ForecastCandidate, BevArtifact]]):
@@ -180,17 +213,40 @@ class BevBindingTests(unittest.TestCase):
     def test_reconstruction_binds_exact_inputs_without_claiming_issuance_time(self) -> None:
         item = candidate("history")
         timing = GameTimingEvidence(item.game, evidence("start"), actual_started_at=instant(12))
+        qualified = qualification(item, inputs_as_of=instant(10))
         artifact = prepare_reconstructed_bev(
-            item, reconstructed_at=instant(20), inputs_as_of=instant(10),
-            reconstruction_source=evidence("checkpoint"), timing=timing,
+            item, reconstructed_at=instant(20), qualified_input=qualified, timing=timing,
         )
         self.assertEqual(artifact.forecast_state, "reconstructed")
         self.assertEqual(artifact.reconstruction.reconstructed_at, instant(20))
-        self.assertEqual(artifact.reconstruction.inputs_as_of, instant(10))
+        self.assertEqual(artifact.reconstruction.qualified_input.inputs_as_of, instant(10))
         with self.assertRaisesRegex(ExcitementForecastError, "inputs are not proven pregame"):
             prepare_reconstructed_bev(
-                item, reconstructed_at=instant(20), inputs_as_of=instant(13),
-                reconstruction_source=evidence("late"), timing=timing,
+                item, reconstructed_at=instant(20),
+                qualified_input=qualification(item, inputs_as_of=instant(13)), timing=timing,
+            )
+
+        for field, changed in (
+            ("rating_checkpoint", "WEEK_1"),
+            ("rating_cutoff", "through-week-1"),
+            ("source_snapshot_digest", "sha256:" + "b" * 64),
+        ):
+            kwargs = {field: changed}
+            if field == "source_snapshot_digest":
+                kwargs["source"] = EvidenceRef("synthetic-test", "wrong-source", changed)
+            with self.subTest(field=field), self.assertRaisesRegex(
+                ExcitementForecastError, "does not match forecast provenance"
+            ):
+                prepare_reconstructed_bev(
+                    item, reconstructed_at=instant(20),
+                    qualified_input=qualification(item, inputs_as_of=instant(10), **kwargs),
+                    timing=timing,
+                )
+
+        later = candidate("history", margin="1.5", predecessor=item.version_id)
+        with self.assertRaisesRegex(ExcitementForecastError, "different forecast anchor"):
+            prepare_reconstructed_bev(
+                later, reconstructed_at=instant(20), qualified_input=qualified, timing=timing,
             )
 
     def test_authenticated_multi_game_package_proves_exact_issued_bev_bytes(self) -> None:

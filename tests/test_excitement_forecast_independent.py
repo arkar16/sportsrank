@@ -212,6 +212,28 @@ class IndependentBEVLifecycleTests(unittest.TestCase):
 
 
 class IndependentBEVReconstructionTests(unittest.TestCase):
+    def _qualified_input(self, candidate, *, inputs_as_of=None, source=None, **overrides):
+        _, artifact = _binding_result(sut.bind_bev(candidate))
+        provenance = candidate.provenance.to_dict()
+        provenance.update(overrides)
+        return sut.ReconstructionInputQualification(
+            inputs_as_of=inputs_as_of or datetime(2026, 9, 1, 17, tzinfo=timezone.utc),
+            source=source or EvidenceRef("synthetic", "checkpoint", DIGEST),
+            forecast_anchor_digest=artifact.forecast_anchor_digest,
+            rating_checkpoint=provenance["rating_checkpoint"],
+            rating_cutoff=provenance["rating_cutoff"],
+            rating_artifact_digest=provenance["rating_artifact_digest"],
+            source_snapshot_digest=provenance["source_snapshot_digest"],
+            model_version=provenance["model_version"],
+            source_kind=provenance["source_kind"],
+            code_revision=provenance["code_revision"],
+            home_rating=provenance["home_rating"],
+            away_rating=provenance["away_rating"],
+            home_field_advantage=provenance["home_field_advantage"],
+            home_rank=provenance.get("home_rank"),
+            away_rank=provenance.get("away_rank"),
+        )
+
     def test_missing_publication_or_timing_cannot_upgrade_reconstruction(self):
         candidate = _candidate("reconstructed", margin="2")
         timing = GameTimingEvidence(
@@ -219,22 +241,62 @@ class IndependentBEVReconstructionTests(unittest.TestCase):
             EvidenceRef("synthetic", "kickoff", DIGEST),
             actual_started_at=datetime(2026, 9, 1, 18, tzinfo=timezone.utc),
         )
+        qualified = self._qualified_input(candidate, inputs_as_of=datetime(2026, 9, 1, 17, tzinfo=timezone.utc))
         artifact = sut.prepare_reconstructed_bev(
             candidate,
             reconstructed_at=datetime(2026, 9, 1, 20, tzinfo=timezone.utc),
-            inputs_as_of=datetime(2026, 9, 1, 17, tzinfo=timezone.utc),
-            reconstruction_source=EvidenceRef("synthetic", "snapshot", DIGEST),
+            qualified_input=qualified,
             timing=timing,
         )
         self.assertEqual(artifact.forecast_state, "reconstructed")
         self.assertIsNotNone(artifact.reconstruction)
         self.assertEqual(artifact.reconstruction.reconstructed_at.hour, 20)
+        self.assertEqual(artifact.reconstruction.qualified_input, qualified)
         with self.assertRaises(Exception):
             sut.prepare_reconstructed_bev(
                 candidate,
                 reconstructed_at=datetime(2026, 9, 1, 20, tzinfo=timezone.utc),
-                inputs_as_of=datetime(2026, 9, 1, 19, tzinfo=timezone.utc),
-                reconstruction_source=EvidenceRef("synthetic", "late", DIGEST),
+                qualified_input=replace(
+                    qualified,
+                    inputs_as_of=datetime(2026, 9, 1, 19, tzinfo=timezone.utc),
+                ),
+                timing=timing,
+            )
+
+    def test_reconstruction_rejects_qualification_provenance_mismatches(self):
+        candidate = _candidate("qualified-mismatch", margin="2")
+        timing = GameTimingEvidence(
+            candidate.game, EvidenceRef("synthetic", "kickoff", DIGEST),
+            actual_started_at=datetime(2026, 9, 1, 18, tzinfo=timezone.utc),
+        )
+        qualified = self._qualified_input(candidate)
+        variants = (
+            ("source_snapshot_digest", {"source_snapshot_digest": "sha256:" + "b" * 64}),
+            ("rating_checkpoint", {"rating_checkpoint": "WEEK_1"}),
+            ("rating_cutoff", {"rating_cutoff": "after-week-1"}),
+        )
+        for label, changes in variants:
+            with self.subTest(field=label), self.assertRaises(Exception):
+                sut.prepare_reconstructed_bev(
+                    candidate,
+                    reconstructed_at=datetime(2026, 9, 1, 20, tzinfo=timezone.utc),
+                    qualified_input=replace(qualified, **changes),
+                    timing=timing,
+                )
+
+    def test_qualification_for_older_inputs_cannot_be_reused_for_later_candidate(self):
+        older = _candidate("qualification-chain", margin="2")
+        qualified = self._qualified_input(older)
+        later = _candidate("qualification-chain", margin="1.5")
+        timing = GameTimingEvidence(
+            later.game, EvidenceRef("synthetic", "kickoff", DIGEST),
+            actual_started_at=datetime(2026, 9, 1, 18, tzinfo=timezone.utc),
+        )
+        with self.assertRaises(Exception):
+            sut.prepare_reconstructed_bev(
+                later,
+                reconstructed_at=datetime(2026, 9, 1, 20, tzinfo=timezone.utc),
+                qualified_input=qualified,
                 timing=timing,
             )
 

@@ -24,6 +24,7 @@ from .forecast_record import (
     EvidenceRef,
     ForecastCandidate,
     ForecastContractError,
+    ForecastProvenance,
     GameTimingEvidence,
     PublicationReceipt,
     VersionBinding,
@@ -138,52 +139,114 @@ def bev_relative_path(candidate: ForecastCandidate, artifact_id: str) -> str:
 
 
 @dataclass(frozen=True)
-class ReconstructionProvenance:
-    reconstructed_at: datetime
+class ReconstructionInputQualification:
+    """Externally qualified pregame inputs for one exact forecast anchor.
+
+    This value records a caller's authoritative qualification.  It does not
+    retrieve or authenticate the referenced source bytes; integration must
+    construct it only after the reviewed checkpoint/source boundary succeeds.
+    """
+
     inputs_as_of: datetime
     source: EvidenceRef
     forecast_anchor_digest: str
-    input_binding_digest: str = ""
+    rating_checkpoint: str
+    rating_cutoff: str
+    rating_artifact_digest: str
+    source_snapshot_digest: str
+    model_version: str
+    source_kind: str
+    code_revision: str
+    home_rating: str
+    away_rating: str
+    home_field_advantage: str
+    home_rank: int | None = None
+    away_rank: int | None = None
 
     def __post_init__(self) -> None:
-        _instant_text(self.reconstructed_at)
         _instant_text(self.inputs_as_of)
-        if self.reconstructed_at < self.inputs_as_of:
-            raise ExcitementForecastError("reconstruction cannot precede its input cutoff")
         if (not isinstance(self.forecast_anchor_digest, str)
                 or _SHA256.fullmatch(self.forecast_anchor_digest) is None):
             raise ExcitementForecastError("reconstruction forecast anchor digest is invalid")
-        expected = _digest(_canonical_json({
-            "forecast_anchor_digest": self.forecast_anchor_digest,
+        # Reuse the shared forecast contract for every rating/checkpoint field.
+        ForecastProvenance.from_dict(self._provenance_dict())
+        if self.source.digest != self.source_snapshot_digest:
+            raise ExcitementForecastError(
+                "reconstruction source evidence does not identify the source snapshot"
+            )
+
+    def _provenance_dict(self) -> dict[str, Any]:
+        value: dict[str, Any] = {
+            "rating_checkpoint": self.rating_checkpoint,
+            "rating_cutoff": self.rating_cutoff,
+            "rating_artifact_digest": self.rating_artifact_digest,
+            "source_snapshot_digest": self.source_snapshot_digest,
+            "model_version": self.model_version,
+            "source_kind": self.source_kind,
+            "code_revision": self.code_revision,
+            "home_rating": self.home_rating,
+            "away_rating": self.away_rating,
+            "home_field_advantage": self.home_field_advantage,
+        }
+        if self.home_rank is not None:
+            value["home_rank"] = self.home_rank
+        if self.away_rank is not None:
+            value["away_rank"] = self.away_rank
+        return value
+
+    @property
+    def provenance(self) -> ForecastProvenance:
+        return ForecastProvenance.from_dict(self._provenance_dict())
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
             "inputs_as_of": _instant_text(self.inputs_as_of),
             "source": self.source.to_dict(),
-        }))
-        if self.input_binding_digest and self.input_binding_digest != expected:
-            raise ExcitementForecastError("reconstruction input binding does not match its evidence")
-        object.__setattr__(self, "input_binding_digest", expected)
+            "forecast_anchor_digest": self.forecast_anchor_digest,
+            "forecast_provenance": self.provenance.to_dict(),
+        }
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> "ReconstructionInputQualification":
+        names = {"inputs_as_of", "source", "forecast_anchor_digest", "forecast_provenance"}
+        _fields(data, names, names, "reconstruction")
+        provenance = ForecastProvenance.from_dict(data["forecast_provenance"])
+        values = provenance.to_dict()
+        return cls(
+            _instant(data["inputs_as_of"]),
+            EvidenceRef.from_dict(data["source"]),
+            data["forecast_anchor_digest"],
+            values["rating_checkpoint"], values["rating_cutoff"],
+            values["rating_artifact_digest"], values["source_snapshot_digest"],
+            values["model_version"], values["source_kind"], values["code_revision"],
+            values["home_rating"], values["away_rating"], values["home_field_advantage"],
+            values.get("home_rank"), values.get("away_rank"),
+        )
+
+
+@dataclass(frozen=True)
+class ReconstructionProvenance:
+    reconstructed_at: datetime
+    qualified_input: ReconstructionInputQualification
+
+    def __post_init__(self) -> None:
+        _instant_text(self.reconstructed_at)
+        if self.reconstructed_at < self.qualified_input.inputs_as_of:
+            raise ExcitementForecastError("reconstruction cannot precede its qualified inputs")
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "reconstructed_at": _instant_text(self.reconstructed_at),
-            "inputs_as_of": _instant_text(self.inputs_as_of),
-            "source": self.source.to_dict(),
-            "forecast_anchor_digest": self.forecast_anchor_digest,
-            "input_binding_digest": self.input_binding_digest,
+            "qualified_input": self.qualified_input.to_dict(),
         }
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> "ReconstructionProvenance":
-        names = {
-            "reconstructed_at", "inputs_as_of", "source",
-            "forecast_anchor_digest", "input_binding_digest",
-        }
+        names = {"reconstructed_at", "qualified_input"}
         _fields(data, names, names, "reconstruction")
         return cls(
             _instant(data["reconstructed_at"]),
-            _instant(data["inputs_as_of"]),
-            EvidenceRef.from_dict(data["source"]),
-            data["forecast_anchor_digest"],
-            data["input_binding_digest"],
+            ReconstructionInputQualification.from_dict(data["qualified_input"]),
         )
 
 
@@ -224,7 +287,8 @@ class BevArtifact:
         if self.forecast_state not in ("candidate", "reconstructed"):
             raise ExcitementForecastError("unsupported BEV forecast state")
         if (self.reconstruction is not None
-                and self.reconstruction.forecast_anchor_digest != self.forecast_anchor_digest):
+                and self.reconstruction.qualified_input.forecast_anchor_digest
+                != self.forecast_anchor_digest):
             raise ExcitementForecastError("reconstruction evidence does not bind this forecast anchor")
         if self.status == "calculated":
             if self.value is None or self.components is None or self.qualification_reasons:
@@ -462,8 +526,7 @@ def prepare_reconstructed_bev(
     candidate: ForecastCandidate,
     *,
     reconstructed_at: datetime,
-    inputs_as_of: datetime,
-    reconstruction_source: EvidenceRef,
+    qualified_input: ReconstructionInputQualification,
     timing: GameTimingEvidence,
 ) -> BevArtifact:
     """Prepare an explicitly non-issued historical reconstruction."""
@@ -474,7 +537,12 @@ def prepare_reconstructed_bev(
     if timing.game != checked.game:
         raise ExcitementForecastError("reconstruction timing Game identity differs")
     _instant_text(reconstructed_at)
-    _instant_text(inputs_as_of)
+    expected_anchor = _anchor_digest(_anchor(checked))
+    if qualified_input.forecast_anchor_digest != expected_anchor:
+        raise ExcitementForecastError("reconstruction qualification belongs to a different forecast anchor")
+    if qualified_input.provenance.to_dict() != checked.provenance.to_dict():
+        raise ExcitementForecastError("reconstruction qualification does not match forecast provenance")
+    inputs_as_of = qualified_input.inputs_as_of
     if timing.actual_started_at is not None:
         qualified = inputs_as_of < timing.actual_started_at
     else:
@@ -484,10 +552,7 @@ def prepare_reconstructed_bev(
     return _new_artifact(
         checked,
         forecast_state="reconstructed",
-        reconstruction=ReconstructionProvenance(
-            reconstructed_at, inputs_as_of, reconstruction_source,
-            _anchor_digest(_anchor(checked)),
-        ),
+        reconstruction=ReconstructionProvenance(reconstructed_at, qualified_input),
     )
 
 
@@ -567,6 +632,7 @@ def load_issued_bev(
 
 __all__ = [
     "BEV_BINDING_KIND", "BEV_SCHEMA", "BevArtifact", "ExcitementForecastError",
-    "IssuedBev", "ReconstructionProvenance", "bev_relative_path", "bind_bev",
+    "IssuedBev", "ReconstructionInputQualification", "ReconstructionProvenance",
+    "bev_relative_path", "bind_bev",
     "load_issued_bev", "prepare_reconstructed_bev",
 ]

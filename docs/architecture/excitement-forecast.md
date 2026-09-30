@@ -43,6 +43,21 @@ reconstruction stays explicitly reconstructed and outside recorded forecast
 evaluation. Its input cutoff must be supported as pregame; the act of
 reconstructing history need not occur before the historical game.
 
+Reconstruction consumes an explicitly caller-qualified input value. It binds
+the exact rating checkpoint, cutoff label, rating artifact and source snapshot
+digests, model and forecast anchor, semantic input cutoff time, and source
+evidence reference. Every field must correspond to the candidate before the
+separate game-timing comparison can qualify that cutoff. An older qualification
+for different inputs cannot be reused merely because its timestamp is pregame.
+
+The external caller must qualify the retained source/checkpoint evidence.
+Neither the typed value nor its content hash independently proves source truth
+or when those inputs existed. This pure module does not fetch or interpret the
+referenced evidence bytes. Public reconstruction integration must use the
+reviewed source-byte/checkpoint loader and demonstrate that qualification
+boundary; a self-declared timestamp or hash is insufficient. This requirement
+is separate from the immutable-package authentication used for issued BEV.
+
 ## Missing evidence and public bytes
 
 Missing ranks make BEV unavailable rather than creating replacement ranks or a
