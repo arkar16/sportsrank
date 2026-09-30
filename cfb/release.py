@@ -323,30 +323,11 @@ def _forecast_page(
     links: Sequence[tuple[str, str]] = (),
 ) -> str:
     """Render only the new forecast reports with a usable narrow-screen table."""
-
-    navigation = "".join(
-        f'<a href="{html.escape(href, quote=True)}">{html.escape(label)}</a> | '
-        for label, href in links
-    )
-    return (
-        "<!doctype html>\n<html>\n<head>\n"
-        '<meta charset="utf-8">\n'
-        '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
-        "<style>.forecast-report{overflow-x:auto;max-width:100%}"
-        ".forecast-report table{border-collapse:collapse;white-space:nowrap}"
-        ".forecast-report th,.forecast-report td{padding:.3rem .45rem}"
-        ".forecast-report th:nth-child(-n+3),.forecast-report td:nth-child(-n+3){position:sticky;background:#fff;z-index:1}"
-        ".forecast-report th:nth-child(1),.forecast-report td:nth-child(1){left:0}"
-        ".forecast-report th:nth-child(2),.forecast-report td:nth-child(2){left:3.5rem}"
-        ".forecast-report th:nth-child(3),.forecast-report td:nth-child(3){left:13.5rem}</style>\n"
-        f"<title>{html.escape(title)}</title>\n"
-        "</head>\n<body>\n"
-        f"<h1>{html.escape(title)}</h1>\n"
-        f"<p>{navigation}</p>\n"
-        f"<p>Last updated: {html.escape(timestamp)}</p>\n"
-        f'<div class="forecast-report">{body}</div>\n'
-        "</body>\n</html>\n"
-    )
+    try:
+        from .forecast_html import render_forecast_page
+    except ImportError:  # Direct execution from the cfb directory.
+        from forecast_html import render_forecast_page
+    return render_forecast_page(title, timestamp, body, links)
 
 
 def _home_year_from_href(href: str) -> int | None:
@@ -2606,7 +2587,12 @@ def _validate_release(
         try:
             derived_retained: dict[str, str] = {}
             for run, run_snapshot in run_contexts:
-                if int(run.get("artifact_contract", 2)) >= CURRENT_ARTIFACT_CONTRACT:
+                if (
+                    int(run.get("artifact_contract", 2)) >= CURRENT_ARTIFACT_CONTRACT
+                    or run_snapshot.year != int(manifest["season"])
+                    or run_snapshot.classification.upper()
+                    != str(manifest["classification"]).upper()
+                ):
                     continue
                 for legacy_relative in _expected_artifacts(
                     run_snapshot,
@@ -2618,12 +2604,25 @@ def _validate_release(
                         legacy_relative,
                     ) is None:
                         continue
-                    legacy_base_path = base / legacy_relative
-                    if not legacy_base_path.is_file():
+                    legacy_candidate_path = site / legacy_relative
+                    if not legacy_candidate_path.is_file():
                         raise ForecastContractError(
-                            "legacy run graph is missing a retained forecast page in the Published Site"
+                            "legacy run graph is missing a retained forecast page"
                         )
-                    derived_retained[legacy_relative] = _sha256(legacy_base_path)
+                    legacy_base_path = base / legacy_relative
+                    if (
+                        legacy_base_path.is_file()
+                        and legacy_candidate_path.read_bytes()
+                        != legacy_base_path.read_bytes()
+                    ):
+                        raise ForecastContractError(
+                            "retained legacy forecast differs from the supplied Published Site"
+                        )
+                    derived_retained[legacy_relative] = _sha256(
+                        legacy_base_path
+                        if legacy_base_path.is_file()
+                        else legacy_candidate_path
+                    )
             manifest_retained = manifest.get("retained_legacy_forecast_digests", {})
             if manifest_retained != dict(sorted(derived_retained.items())):
                 raise ForecastContractError(
@@ -3034,6 +3033,9 @@ def _validate_release(
     # checked against the latest run's sealed snapshot only.
     latest_owner: dict[str, int] = {}
     latest_final_owner: dict[int, int] = {}
+    retained_legacy_paths = set(
+        (manifest.get("retained_legacy_forecast_digests", {}) or {}).keys()
+    )
     for index, (run, run_snapshot) in enumerate(run_contexts):
         if run.get("run_kind") in {"forecast-evidence-refresh", "forecast-correction"}:
             year_value = run_snapshot.year
@@ -3045,12 +3047,29 @@ def _validate_release(
             if run.get("run_kind") == "forecast-correction":
                 next_value = _next_scheduled_week(run_snapshot, target_value)
                 if next_value is not None:
-                    latest_owner[f"cfb/years/{year_value}/spread/{year_value}_W{next_value}_{cls_value}_spread.html"] = index
+                    correction_path = f"cfb/years/{year_value}/spread/{year_value}_W{next_value}_{cls_value}_spread.html"
+                    if correction_path not in retained_legacy_paths:
+                        latest_owner[correction_path] = index
+            continue
+        if run.get("run_kind") == "artifact-contract-upgrade":
+            year_value = run_snapshot.year
+            cls_value = run_snapshot.classification.upper()
+            target_value = int(run["target_week"])
+            latest_owner[f"cfb/years/{year_value}/{year_value}_CFB.html"] = index
+            latest_owner[f"cfb/years/{year_value}/spread/{year_value}_{cls_value}_forecast_results.html"] = index
+            for week_value in range(target_value + 1):
+                latest_owner[f"cfb/years/{year_value}/spread/{year_value}_W{week_value}_{cls_value}_spread_results.html"] = index
             continue
         try:
             for relative in _expected_artifacts(
                 run_snapshot, str(run["phase"]), int(run["target_week"])
             ):
+                if (
+                    relative in retained_legacy_paths
+                    and int(run.get("artifact_contract", 2))
+                    >= CURRENT_ARTIFACT_CONTRACT
+                ):
+                    continue
                 latest_owner[relative] = index
             if str(run["phase"]).lower() == "final":
                 latest_final_owner[run_snapshot.year] = index
@@ -3067,6 +3086,7 @@ def _validate_release(
             failures,
             owned_paths={path for path, owner in latest_owner.items() if owner == index},
             validate_history=latest_final_owner.get(run_snapshot.year) == index,
+            artifact_contract=int(run.get("artifact_contract", 2)),
         )
     # A corrected FINAL may legitimately replace the prior outcome row for its
     # own season.  Permit that replacement only after the latest FINAL archive
@@ -3610,8 +3630,28 @@ def _validate_forecast_report_structure(
         )
         if body_tags != ["h1", "p", "p", "div"] or body_text:
             raise ValueError("forecast report has undeclared visible body content")
-        if report_tags != ["table", "h2", "table", "h2", "table"] or report_text:
+        if report_tags != ["div", "h2", "div", "h2", "div"] or report_text:
             raise ValueError("forecast report has undeclared visible table content")
+        wrappers = report.find_all("div", recursive=False)
+        if len(wrappers) != 3:
+            raise ValueError("forecast report must contain exactly three table wrappers")
+        for index, wrapper in enumerate(wrappers):
+            if wrapper.get("class") != ["forecast-table-scroll"]:
+                raise ValueError("forecast report table wrapper has an undeclared class")
+            direct_tags = [
+                child for child in wrapper.children if getattr(child, "name", None)
+            ]
+            wrapper_text = "".join(
+                str(child).strip() for child in wrapper.children
+                if getattr(child, "name", None) is None and str(child).strip()
+            )
+            if len(direct_tags) != 1 or direct_tags[0].name != "table" or wrapper_text:
+                raise ValueError("forecast report wrapper must contain exactly one table")
+            classes = direct_tags[0].get("class", [])
+            if index == 0 and "forecast-games" not in classes:
+                raise ValueError("forecast game table is missing its identity-column layout")
+            if index > 0 and "forecast-games" in classes:
+                raise ValueError("forecast summary tables must not use sticky game columns")
     except (OSError, ValueError) as exc:
         _failure(failures, "forecast.report", str(exc), path)
 
@@ -3637,6 +3677,7 @@ def _validate_run_exact(
     failures: list[ValidationFailure],
     owned_paths: set[str] | None = None,
     validate_history: bool = True,
+    artifact_contract: int = 2,
 ) -> None:
     """Validate one cumulative run from snapshot + canonical calculation seams."""
 
@@ -3748,7 +3789,7 @@ def _validate_run_exact(
             prior_rows = rankings[target_week]
         else:
             prior_rows = rankings[week - 1]
-        natural_forecast = year >= 2026 and all(
+        natural_forecast = artifact_contract >= CURRENT_ARTIFACT_CONTRACT and year >= 2026 and all(
             game.provider_id is not None for game in snapshot.games
         )
         expected_spreads = spreads_for_week(

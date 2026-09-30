@@ -237,3 +237,6 @@ Unavailable values render as a dash with count zero. Domain JSON keeps exact
 decimal aggregates; the page rounds MAE/RMSE to three decimals and labels
 coverage and straight-up rates as percentages. Forecast-only pages add a mobile
 viewport and horizontally scrollable tables without changing legacy page bytes.
+`forecast_html.py` owns only that per-table scroll and sticky identity-column
+presentation; Release and the forecast record modules remain the independent
+oracles for graph, field, grading and numerical semantics.
