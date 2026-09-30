@@ -108,6 +108,27 @@ response SHA-256 and size, capture time, allowance ID, source archive digest,
 and parent snapshot path/digests. It never contains raw response data, an
 authorization header, or a filesystem path.
 
+The claim state has feature-owned durability witnesses alongside the SQLite
+ledger. For this pilot they are `.adr21-qualification-pilot-v1.genesis.json`,
+`.adr21-qualification-pilot-v1.ledger-ready.json`, and one
+`.adr21-qualification-pilot-v1.claim.<request_id>.witness` per request. The
+genesis marker is created exclusively and binds the manifest, source archive,
+cap, and a random ledger identity. The ledger is initialized and persisted
+before the ready marker is created. An established pilot with a missing,
+replaced, truncated, or unbound ledger fails closed; it is never treated as a
+fresh pilot. Each request witness is created exclusively and fsynced before
+the SQLite claim, so a crash between those boundaries leaves an orphaned
+witness and prevents that request from being retried. Existing claims also
+require their matching witness and a successful retained-object integrity
+check before replay.
+
+These files are private operational state, not recovery inputs. If an owner
+manually removes all of the genesis, ready, ledger, witness, and retained
+response state, the adapter cannot infer the lost history from the meter
+alone. Treat that as state loss requiring owner reconciliation and stop before
+starting a new acquisition; recreating the private directory is not a
+permission reset.
+
 ## Public Python interface
 
 Tests and offline callers can inject a fake transport with this interface:

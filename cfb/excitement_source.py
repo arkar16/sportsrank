@@ -33,6 +33,7 @@ import math
 import os
 from pathlib import Path
 import re
+import secrets
 import sqlite3
 import stat
 import tempfile
@@ -137,6 +138,34 @@ def _safe_json_read(path: Path, *, error_type: type[PilotError], label: str) -> 
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise error_type(f"{label} is unreadable") from exc
     return raw, value
+
+
+def _fsync_directory(path: Path) -> None:
+    """Persist an exclusive file's directory entry where supported."""
+
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+    try:
+        fd = os.open(path, flags)
+    except OSError:
+        raise PilotClaimError("pilot state directory cannot be persisted") from None
+    try:
+        os.fsync(fd)
+    except OSError:
+        raise PilotClaimError("pilot state directory cannot be persisted") from None
+    finally:
+        try:
+            os.close(fd)
+        except OSError:
+            raise PilotClaimError("pilot state directory cannot be persisted") from None
+
+
+def _write_all(fd: int, payload: bytes) -> None:
+    view = memoryview(payload)
+    while view:
+        written = os.write(fd, view)
+        if written <= 0:  # pragma: no cover - defensive OS failure guard
+            raise OSError("short write while persisting pilot state")
+        view = view[written:]
 
 
 @dataclass(frozen=True, slots=True)
@@ -649,9 +678,10 @@ class SupplementReceipt:
 
 
 class _ClaimLedger:
-    """SQLite claim ledger rooted in the owner-only LocalInputStore."""
+    """SQLite claim ledger with independently durable pilot state witnesses."""
 
-    _BINDING_FIELDS = {"pilot_id", "manifest_sha256", "source_archive_sha256", "max_attempts"}
+    _GENESIS_SCHEMA = 1
+    _WITNESS_SCHEMA = 1
 
     def __init__(self, store: LocalInputStore, manifest: PilotManifest) -> None:
         self.store = store
@@ -662,41 +692,16 @@ class _ClaimLedger:
             raise PilotClaimError("private claim store pilot identity is invalid") from None
         if not isinstance(store.root, Path) or not store.root.is_absolute():
             raise PilotClaimError("private claim store root is invalid")
+        self.genesis_path = store.root / f".{manifest.pilot_id}.genesis.json"
+        self.ready_path = store.root / f".{manifest.pilot_id}.ledger-ready.json"
         self.path = store.root / f".{manifest.pilot_id}.claims.sqlite3"
-        self._ensure_file()
-        self._initialize()
-
-    def _ensure_file(self) -> None:
-        # Validate the complete store boundary before creating or touching the
-        # ledger.  In particular, do not chmod a path under a replaced root or
-        # through an ancestor symlink.
-        self._assert_secure_path(require_ledger=False)
-        try:
-            existing = os.lstat(self.path)
-        except FileNotFoundError:
-            existing = None
-        except OSError as exc:
-            raise PilotClaimError("pilot claim ledger cannot be inspected") from exc
-        if existing is not None:
-            self._assert_secure_path()
-            return
-        try:
-            descriptor = os.open(
-                self.path,
-                os.O_CREAT
-                | os.O_EXCL
-                | os.O_RDWR
-                | getattr(os, "O_NOFOLLOW", 0),
-                0o600,
-            )
-        except FileExistsError:
-            self._assert_secure_path()
-            return
-        except OSError as exc:
-            raise PilotClaimError("pilot claim ledger cannot be created") from exc
-        else:
-            os.close(descriptor)
-        self._assert_secure_path()
+        self.ledger_id: str
+        self._genesis_raw: bytes
+        fresh = self._prepare_state()
+        self._ensure_file(allow_create=fresh)
+        self._initialize(fresh=fresh)
+        if fresh:
+            self._create_ready_marker()
 
     @staticmethod
     def _assert_owner_only(info: os.stat_result, *, label: str) -> None:
@@ -726,14 +731,10 @@ class _ClaimLedger:
             if stat.S_ISLNK(info.st_mode) and current not in _SYSTEM_PATH_ALIASES:
                 raise PilotClaimError(f"{label} contains a symlink")
 
-    def _assert_secure_path(self, *, require_ledger: bool = True) -> None:
-        """Recheck store ownership and symlink boundaries before every access."""
-
+    def _assert_store_root(self) -> None:
         root = self.store.root
         if not isinstance(root, Path) or not root.is_absolute() or root.parent == root:
             raise PilotClaimError("private claim store root is invalid")
-        if self.path.parent != root:
-            raise PilotClaimError("pilot claim ledger is outside the private store")
         self._assert_no_symlink_components(
             root, label="private claim store path", allow_missing_final=False
         )
@@ -744,30 +745,269 @@ class _ClaimLedger:
         if stat.S_ISLNK(root_info.st_mode) or not stat.S_ISDIR(root_info.st_mode):
             raise PilotClaimError("private claim store is not a directory")
         self._assert_owner_only(root_info, label="private claim store")
-        self._assert_no_symlink_components(
-            self.path,
-            label="pilot claim ledger path",
-            allow_missing_final=not require_ledger,
-        )
-        if not require_ledger:
-            return
-        try:
-            ledger_info = os.lstat(self.path)
-        except OSError as exc:
-            raise PilotClaimError("pilot claim ledger cannot be inspected") from exc
-        if stat.S_ISLNK(ledger_info.st_mode) or not stat.S_ISREG(ledger_info.st_mode):
-            raise PilotClaimError("pilot claim ledger is not a regular file")
-        self._assert_owner_only(ledger_info, label="pilot claim ledger")
 
-    def _connect(self) -> sqlite3.Connection:
-        self._assert_secure_path()
+    def _assert_private_file(
+        self, path: Path, *, label: str, require: bool = True
+    ) -> bool:
+        self._assert_store_root()
+        if path.parent != self.store.root:
+            raise PilotClaimError(f"{label} is outside the private store")
+        self._assert_no_symlink_components(
+            path,
+            label=f"{label} path",
+            allow_missing_final=not require,
+        )
+        try:
+            info = os.lstat(path)
+        except FileNotFoundError as exc:
+            if require:
+                raise PilotClaimError(f"{label} is missing") from exc
+            return False
+        except OSError as exc:
+            raise PilotClaimError(f"{label} cannot be inspected") from exc
+        if stat.S_ISLNK(info.st_mode) or not stat.S_ISREG(info.st_mode):
+            raise PilotClaimError(f"{label} is not a regular file")
+        self._assert_owner_only(info, label=label)
+        return True
+
+    def _assert_secure_path(
+        self, *, require_ledger: bool = True, require_ready: bool = True
+    ) -> None:
+        """Recheck all private marker/ledger ownership and symlink boundaries."""
+
+        self._assert_store_root()
+        self._assert_private_file(
+            self.genesis_path, label="pilot genesis marker", require=True
+        )
+        if require_ready:
+            self._assert_private_file(
+                self.ready_path, label="pilot ledger-ready marker", require=True
+            )
+        self._assert_private_file(
+            self.path, label="pilot claim ledger", require=require_ledger
+        )
+
+    @staticmethod
+    def _marker_payload(
+        *,
+        pilot_id: str,
+        manifest_sha256: str,
+        source_archive_sha256: str,
+        max_attempts: int,
+        ledger_id: str,
+    ) -> dict[str, object]:
+        return {
+            "schema_version": _ClaimLedger._GENESIS_SCHEMA,
+            "pilot_id": pilot_id,
+            "manifest_sha256": manifest_sha256,
+            "source_archive_sha256": source_archive_sha256,
+            "max_attempts": max_attempts,
+            "ledger_id": ledger_id,
+        }
+
+    def _create_exclusive_file(self, path: Path, payload: bytes, *, label: str) -> None:
+        """Create one owner-only immutable state file and persist its directory entry."""
+
+        self._assert_private_file(path, label=label, require=False)
+        descriptor: int | None = None
+        try:
+            descriptor = os.open(
+                path,
+                os.O_CREAT
+                | os.O_EXCL
+                | os.O_WRONLY
+                | getattr(os, "O_NOFOLLOW", 0),
+                0o600,
+            )
+            _write_all(descriptor, payload)
+            os.fsync(descriptor)
+        except FileExistsError as exc:
+            raise PilotClaimError(f"{label} already exists") from exc
+        except OSError as exc:
+            raise PilotClaimError(f"{label} cannot be created") from exc
+        finally:
+            if descriptor is not None:
+                os.close(descriptor)
+        _fsync_directory(self.store.root)
+        self._assert_private_file(path, label=label, require=True)
+
+    def _read_genesis(self) -> None:
+        raw, value = _safe_json_read(
+            self.genesis_path,
+            error_type=PilotClaimError,
+            label="pilot genesis marker",
+        )
+        expected = {
+            "schema_version",
+            "pilot_id",
+            "manifest_sha256",
+            "source_archive_sha256",
+            "max_attempts",
+            "ledger_id",
+        }
+        if not isinstance(value, Mapping) or set(value) != expected:
+            raise PilotClaimError("pilot genesis marker has an invalid schema")
+        ledger_id = value.get("ledger_id")
+        try:
+            _safe_id(value.get("pilot_id"), "pilot genesis pilot_id")
+            _digest(value.get("manifest_sha256"), "pilot genesis manifest SHA-256")
+            _digest(value.get("source_archive_sha256"), "pilot genesis source archive SHA-256")
+            _safe_id(ledger_id, "pilot genesis ledger_id")
+        except PilotError:
+            raise PilotClaimError("pilot genesis marker has invalid identity fields") from None
+        if (
+            value.get("schema_version") != self._GENESIS_SCHEMA
+            or value.get("pilot_id") != self.manifest.pilot_id
+            or value.get("manifest_sha256") != self.manifest.manifest_sha256
+            or value.get("source_archive_sha256") != self.manifest.source_archive_sha256
+            or value.get("max_attempts") != self.manifest.max_attempts
+        ):
+            raise PilotClaimError("pilot genesis marker is bound to a different reviewed pilot")
+        self.ledger_id = ledger_id  # type: ignore[assignment]
+        self._genesis_raw = raw
+
+    def _read_ready(self) -> None:
+        raw, value = _safe_json_read(
+            self.ready_path,
+            error_type=PilotClaimError,
+            label="pilot ledger-ready marker",
+        )
+        expected = {
+            "schema_version",
+            "pilot_id",
+            "manifest_sha256",
+            "ledger_id",
+            "genesis_sha256",
+        }
+        if not isinstance(value, Mapping) or set(value) != expected:
+            raise PilotClaimError("pilot ledger-ready marker has an invalid schema")
+        try:
+            _digest(value.get("genesis_sha256"), "pilot ready genesis SHA-256")
+            _safe_id(value.get("ledger_id"), "pilot ready ledger_id")
+        except PilotError:
+            raise PilotClaimError("pilot ledger-ready marker has invalid identity fields") from None
+        if (
+            value.get("schema_version") != self._GENESIS_SCHEMA
+            or value.get("pilot_id") != self.manifest.pilot_id
+            or value.get("manifest_sha256") != self.manifest.manifest_sha256
+            or value.get("ledger_id") != self.ledger_id
+            or value.get("genesis_sha256") != _sha256_bytes(self._genesis_raw)
+        ):
+            raise PilotClaimError("pilot ledger-ready marker is not bound to the genesis marker")
+
+    def _prepare_state(self) -> bool:
+        """Load established state or create the genesis marker for a fresh store."""
+
+        self._assert_store_root()
+        genesis_exists = self._assert_private_file(
+            self.genesis_path, label="pilot genesis marker", require=False
+        )
+        ledger_exists = self._assert_private_file(
+            self.path, label="pilot claim ledger", require=False
+        )
+        ready_exists = self._assert_private_file(
+            self.ready_path, label="pilot ledger-ready marker", require=False
+        )
+        if not genesis_exists:
+            if ledger_exists or ready_exists or any(
+                self._assert_private_file(
+                    self._witness_path(request),
+                    label="pilot claim witness",
+                    require=False,
+                )
+                for request in self.manifest.requests
+            ):
+                raise PilotClaimError("pilot claim state is missing its genesis marker")
+            self.ledger_id = secrets.token_hex(32)
+            try:
+                _safe_id(self.ledger_id, "pilot ledger_id")
+            except PilotError:
+                raise PilotClaimError("pilot ledger identity could not be created") from None
+            payload = _json_bytes(
+                self._marker_payload(
+                    pilot_id=self.manifest.pilot_id,
+                    manifest_sha256=self.manifest.manifest_sha256,
+                    source_archive_sha256=self.manifest.source_archive_sha256,
+                    max_attempts=self.manifest.max_attempts,
+                    ledger_id=self.ledger_id,
+                )
+            )
+            self._create_exclusive_file(
+                self.genesis_path, payload, label="pilot genesis marker"
+            )
+            self._genesis_raw = payload
+            return True
+
+        self._read_genesis()
+        if not ready_exists:
+            raise PilotClaimError("pilot claim ledger is not durably initialized")
+        self._read_ready()
+        if not ledger_exists:
+            raise PilotClaimError("pilot claim ledger is missing after initialization")
+        return False
+
+    def _ensure_file(self, *, allow_create: bool) -> None:
+        # Validate the complete store boundary before creating or touching the
+        # ledger.  In particular, do not chmod a path under a replaced root or
+        # through an ancestor symlink.
+        self._assert_secure_path(require_ledger=False, require_ready=False)
+        existing = self._assert_private_file(
+            self.path, label="pilot claim ledger", require=False
+        )
+        if existing:
+            if allow_create:
+                try:
+                    info = os.lstat(self.path)
+                except OSError as exc:
+                    raise PilotClaimError("pilot claim ledger cannot be inspected") from exc
+                if info.st_size != 0:
+                    raise PilotClaimError("new pilot claim ledger is not empty")
+            else:
+                return
+        elif not allow_create:
+            raise PilotClaimError("pilot claim ledger is missing after initialization")
+        try:
+            descriptor = os.open(
+                self.path,
+                os.O_CREAT
+                | os.O_EXCL
+                | os.O_RDWR
+                | getattr(os, "O_NOFOLLOW", 0),
+                0o600,
+            )
+        except FileExistsError as exc:
+            raise PilotClaimError("pilot claim ledger appeared during initialization") from exc
+        except OSError as exc:
+            raise PilotClaimError("pilot claim ledger cannot be created") from exc
+        else:
+            os.close(descriptor)
+        _fsync_directory(self.store.root)
+        self._assert_private_file(self.path, label="pilot claim ledger", require=True)
+
+    def _create_ready_marker(self) -> None:
+        payload = _json_bytes(
+            {
+                "schema_version": self._GENESIS_SCHEMA,
+                "pilot_id": self.manifest.pilot_id,
+                "manifest_sha256": self.manifest.manifest_sha256,
+                "ledger_id": self.ledger_id,
+                "genesis_sha256": _sha256_bytes(self._genesis_raw),
+            }
+        )
+        self._create_exclusive_file(
+            self.ready_path, payload, label="pilot ledger-ready marker"
+        )
+        self._read_ready()
+
+    def _connect(self, *, require_ready: bool = True) -> sqlite3.Connection:
+        self._assert_secure_path(require_ready=require_ready)
         connection: sqlite3.Connection | None = None
         try:
             connection = sqlite3.connect(self.path, timeout=30)
             connection.row_factory = sqlite3.Row
             # A replacement between the pre-open check and sqlite's open is
             # still rejected before any claim transaction can proceed.
-            self._assert_secure_path()
+            self._assert_secure_path(require_ready=require_ready)
             return connection
         except PilotClaimError:
             if connection is not None:
@@ -776,48 +1016,52 @@ class _ClaimLedger:
         except (OSError, sqlite3.Error, TypeError) as exc:
             raise PilotClaimError("pilot claim ledger cannot be opened") from exc
 
-    def _initialize(self) -> None:
+    def _initialize(self, *, fresh: bool) -> None:
         try:
-            with self._connect() as connection:
-                connection.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS pilot_binding (
-                        id INTEGER PRIMARY KEY CHECK (id = 1),
-                        pilot_id TEXT NOT NULL,
-                        manifest_sha256 TEXT NOT NULL,
-                        source_archive_sha256 TEXT NOT NULL,
-                        max_attempts INTEGER NOT NULL
+            with self._connect(require_ready=not fresh) as connection:
+                if fresh:
+                    connection.execute(
+                        """
+                        CREATE TABLE pilot_binding (
+                            id INTEGER PRIMARY KEY CHECK (id = 1),
+                            pilot_id TEXT NOT NULL,
+                            manifest_sha256 TEXT NOT NULL,
+                            source_archive_sha256 TEXT NOT NULL,
+                            max_attempts INTEGER NOT NULL,
+                            ledger_id TEXT NOT NULL
+                        )
+                        """
                     )
-                    """
-                )
-                connection.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS allowances (
-                        allowance_id TEXT PRIMARY KEY,
-                        document_sha256 TEXT NOT NULL,
-                        manifest_sha256 TEXT NOT NULL,
-                        max_attempts INTEGER NOT NULL
+                    connection.execute(
+                        """
+                        CREATE TABLE allowances (
+                            allowance_id TEXT PRIMARY KEY,
+                            document_sha256 TEXT NOT NULL,
+                            manifest_sha256 TEXT NOT NULL,
+                            max_attempts INTEGER NOT NULL
+                        )
+                        """
                     )
-                    """
-                )
-                connection.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS claims (
-                        request_id TEXT PRIMARY KEY,
-                        request_key TEXT NOT NULL UNIQUE,
-                        endpoint TEXT NOT NULL,
-                        params_json TEXT NOT NULL,
-                        allowance_id TEXT NOT NULL,
-                        allowance_document_sha256 TEXT NOT NULL,
-                        state TEXT NOT NULL,
-                        claimed_at TEXT NOT NULL,
-                        completed_at TEXT,
-                        receipt_json TEXT
+                    connection.execute(
+                        """
+                        CREATE TABLE claims (
+                            request_id TEXT PRIMARY KEY,
+                            request_key TEXT NOT NULL UNIQUE,
+                            endpoint TEXT NOT NULL,
+                            params_json TEXT NOT NULL,
+                            allowance_id TEXT NOT NULL,
+                            allowance_document_sha256 TEXT NOT NULL,
+                            state TEXT NOT NULL,
+                            claimed_at TEXT NOT NULL,
+                            completed_at TEXT,
+                            receipt_json TEXT
+                        )
+                        """
                     )
-                    """
-                )
+                else:
+                    self._require_schema(connection)
                 row = connection.execute(
-                    "SELECT pilot_id, manifest_sha256, source_archive_sha256, max_attempts "
+                    "SELECT pilot_id, manifest_sha256, source_archive_sha256, max_attempts, ledger_id "
                     "FROM pilot_binding WHERE id = 1"
                 ).fetchone()
                 expected = (
@@ -825,20 +1069,146 @@ class _ClaimLedger:
                     self.manifest.manifest_sha256,
                     self.manifest.source_archive_sha256,
                     self.manifest.max_attempts,
+                    self.ledger_id,
                 )
-                if row is None:
+                if row is None and fresh:
                     connection.execute(
                         "INSERT INTO pilot_binding "
-                        "(id, pilot_id, manifest_sha256, source_archive_sha256, max_attempts) "
-                        "VALUES (1, ?, ?, ?, ?)",
+                        "(id, pilot_id, manifest_sha256, source_archive_sha256, max_attempts, ledger_id) "
+                        "VALUES (1, ?, ?, ?, ?, ?)",
                         expected,
                     )
-                elif tuple(row) != expected:
+                elif row is None or tuple(row) != expected:
                     raise PilotClaimError("pilot claim ledger is bound to a different reviewed pilot")
         except PilotClaimError:
             raise
         except sqlite3.Error as exc:
             raise PilotClaimError("pilot claim ledger schema is invalid") from exc
+
+    @staticmethod
+    def _require_schema(connection: sqlite3.Connection) -> None:
+        required = {
+            "pilot_binding": {"id", "pilot_id", "manifest_sha256", "source_archive_sha256", "max_attempts", "ledger_id"},
+            "allowances": {"allowance_id", "document_sha256", "manifest_sha256", "max_attempts"},
+            "claims": {
+                "request_id", "request_key", "endpoint", "params_json", "allowance_id",
+                "allowance_document_sha256", "state", "claimed_at", "completed_at", "receipt_json",
+            },
+        }
+        for table, columns in required.items():
+            row = connection.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+                (table,),
+            ).fetchone()
+            if row is None:
+                raise PilotClaimError("pilot claim ledger schema is incomplete")
+            actual = {
+                column[1]
+                for column in connection.execute(f"PRAGMA table_info({table})")
+            }
+            if not columns <= actual:
+                raise PilotClaimError("pilot claim ledger schema is incomplete")
+
+    def _witness_path(self, request: PilotRequest) -> Path:
+        try:
+            _safe_id(request.request_id, "pilot request_id")
+        except PilotError:
+            raise PilotClaimError("pilot request identity is invalid") from None
+        return self.store.root / (
+            f".{self.manifest.pilot_id}.claim.{request.request_id}.witness"
+        )
+
+    def _witness_payload(
+        self, request: PilotRequest, allowance: PilotAllowance
+    ) -> dict[str, object]:
+        return {
+            "schema_version": self._WITNESS_SCHEMA,
+            "pilot_id": self.manifest.pilot_id,
+            "manifest_sha256": self.manifest.manifest_sha256,
+            "source_archive_sha256": self.manifest.source_archive_sha256,
+            "max_attempts": self.manifest.max_attempts,
+            "request_id": request.request_id,
+            "request_key": request.request_key,
+            "endpoint": request.endpoint,
+            "params": request.parameter_map,
+            "allowance_id": allowance.allowance_id,
+            "allowance_document_sha256": allowance.document_sha256,
+        }
+
+    def _read_witness(
+        self, request: PilotRequest, *, require: bool = False
+    ) -> Mapping[str, object] | None:
+        path = self._witness_path(request)
+        if not self._assert_private_file(path, label="pilot claim witness", require=require):
+            return None
+        _, value = _safe_json_read(
+            path,
+            error_type=PilotClaimError,
+            label="pilot claim witness",
+        )
+        expected = {
+            "schema_version",
+            "pilot_id",
+            "manifest_sha256",
+            "source_archive_sha256",
+            "max_attempts",
+            "request_id",
+            "request_key",
+            "endpoint",
+            "params",
+            "allowance_id",
+            "allowance_document_sha256",
+        }
+        if not isinstance(value, Mapping) or set(value) != expected:
+            raise PilotClaimError("pilot claim witness has an invalid schema")
+        params = value.get("params")
+        if not isinstance(params, Mapping):
+            raise PilotClaimError("pilot claim witness has invalid request parameters")
+        try:
+            _safe_id(value.get("pilot_id"), "pilot witness pilot_id")
+            _safe_id(value.get("request_id"), "pilot witness request_id")
+            _digest(value.get("manifest_sha256"), "pilot witness manifest SHA-256")
+            _digest(value.get("source_archive_sha256"), "pilot witness source archive SHA-256")
+            _digest(value.get("request_key"), "pilot witness request key")
+            _safe_id(value.get("allowance_id"), "pilot witness allowance_id")
+            _digest(
+                value.get("allowance_document_sha256"),
+                "pilot witness allowance document SHA-256",
+            )
+        except PilotError:
+            raise PilotClaimError("pilot claim witness has invalid identity fields") from None
+        expected_params = request.parameter_map
+        if (
+            value.get("schema_version") != self._WITNESS_SCHEMA
+            or value.get("pilot_id") != self.manifest.pilot_id
+            or value.get("manifest_sha256") != self.manifest.manifest_sha256
+            or value.get("source_archive_sha256") != self.manifest.source_archive_sha256
+            or value.get("max_attempts") != self.manifest.max_attempts
+            or value.get("request_id") != request.request_id
+            or value.get("request_key") != request.request_key
+            or value.get("endpoint") != request.endpoint
+            or dict(params) != expected_params
+        ):
+            raise PilotClaimError("pilot claim witness is bound to a different request")
+        return value
+
+    def _create_witness(self, request: PilotRequest, allowance: PilotAllowance) -> None:
+        payload = _json_bytes(self._witness_payload(request, allowance))
+        self._create_exclusive_file(
+            self._witness_path(request),
+            payload,
+            label="pilot claim witness",
+        )
+
+    @staticmethod
+    def _witness_matches_claim(
+        witness: Mapping[str, object], *, allowance_id: object, allowance_document_sha256: object
+    ) -> None:
+        if (
+            witness.get("allowance_id") != allowance_id
+            or witness.get("allowance_document_sha256") != allowance_document_sha256
+        ):
+            raise PilotClaimError("pilot claim witness does not match its ledger claim")
 
     def register_allowance(self, allowance: PilotAllowance) -> None:
         try:
@@ -877,22 +1247,39 @@ class _ClaimLedger:
             with self._connect() as connection:
                 connection.execute("BEGIN IMMEDIATE")
                 row = connection.execute(
-                    "SELECT request_key, endpoint, params_json, state FROM claims WHERE request_id = ?",
+                    "SELECT request_id, request_key, endpoint, params_json, allowance_id, "
+                    "allowance_document_sha256, state FROM claims WHERE request_id = ?",
                     (request.request_id,),
                 ).fetchone()
                 params_json = _json_bytes(request.parameter_map).decode("utf-8")
+                witness = self._read_witness(request)
                 if row is not None:
-                    if (row[0], row[1], row[2]) != (
+                    if (row[0], row[1], row[2], row[3]) != (
+                        request.request_id,
                         request.request_key,
                         request.endpoint,
                         params_json,
                     ):
                         raise PilotClaimError("request identity changed inside the claim ledger")
+                    if witness is None:
+                        raise PilotClaimError("pilot claim ledger row is missing its witness")
+                    self._witness_matches_claim(
+                        witness,
+                        allowance_id=row[4],
+                        allowance_document_sha256=row[5],
+                    )
                     connection.commit()
-                    return str(row[3])
+                    return str(row[6])
+                if witness is not None:
+                    raise PilotClaimError("pilot claim witness has no matching ledger row")
                 count = connection.execute("SELECT COUNT(*) FROM claims").fetchone()[0]
                 if count >= self.manifest.max_attempts:
                     raise PilotClaimError("pilot attempt cap is exhausted")
+                # The witness is the independent consumed-attempt boundary.
+                # If the process exits after this fsync and before SQLite's
+                # commit, the next run sees an orphan witness and stops
+                # instead of issuing the request again.
+                self._create_witness(request, allowance)
                 connection.execute(
                     "INSERT INTO claims "
                     "(request_id, request_key, endpoint, params_json, allowance_id, "
@@ -927,11 +1314,20 @@ class _ClaimLedger:
             with self._connect() as connection:
                 connection.execute("BEGIN IMMEDIATE")
                 row = connection.execute(
-                    "SELECT request_key, state FROM claims WHERE request_id = ?",
+                    "SELECT request_key, state, allowance_id, allowance_document_sha256 "
+                    "FROM claims WHERE request_id = ?",
                     (request.request_id,),
                 ).fetchone()
                 if row is None or row[0] != request.request_key:
                     raise PilotClaimError("pilot claim is missing or changed")
+                witness = self._read_witness(request, require=True)
+                if witness is None:  # pragma: no cover - require=True guard
+                    raise PilotClaimError("pilot claim witness is missing")
+                self._witness_matches_claim(
+                    witness,
+                    allowance_id=row[2],
+                    allowance_document_sha256=row[3],
+                )
                 if row[1] != "claimed":
                     if row[1] == state:
                         connection.commit()
@@ -952,18 +1348,30 @@ class _ClaimLedger:
         try:
             with self._connect() as connection:
                 rows = connection.execute(
-                    "SELECT request_id, allowance_id, state, receipt_json "
+                    "SELECT request_id, allowance_id, allowance_document_sha256, state, receipt_json "
                     "FROM claims WHERE state = 'succeeded' "
                     "ORDER BY rowid"
                 ).fetchall()
         except (IndexError, TypeError, ValueError, sqlite3.Error) as exc:
             raise PilotClaimError("pilot receipts cannot be read") from exc
         values: list[SupplementReceipt] = []
+        expected_requests = {request.request_id: request for request in self.manifest.requests}
         for row in rows:
-            if row[3] is None:
+            if row[4] is None:
                 raise PilotClaimError("pilot ledger contains a successful claim without a receipt")
+            request = expected_requests.get(row[0])
+            if request is None:
+                raise PilotClaimError("pilot ledger contains an unknown successful claim")
+            witness = self._read_witness(request, require=True)
+            if witness is None:  # pragma: no cover - require=True guard
+                raise PilotClaimError("pilot successful claim is missing its witness")
+            self._witness_matches_claim(
+                witness,
+                allowance_id=row[1],
+                allowance_document_sha256=row[2],
+            )
             try:
-                parsed = json.loads(row[3])
+                parsed = json.loads(row[4])
                 if not isinstance(parsed, Mapping):
                     raise ValueError
                 receipt = SupplementReceipt.from_public_receipt(parsed)
@@ -980,16 +1388,24 @@ class _ClaimLedger:
         try:
             with self._connect() as connection:
                 row = connection.execute(
-                    "SELECT request_id, allowance_id, state, receipt_json "
+                    "SELECT request_id, allowance_id, allowance_document_sha256, state, receipt_json "
                     "FROM claims WHERE request_id = ?",
                     (request.request_id,),
                 ).fetchone()
         except (IndexError, TypeError, ValueError, sqlite3.Error) as exc:
             raise PilotClaimError("pilot receipt cannot be read") from exc
-        if row is None or row[2] != "succeeded" or row[3] is None:
+        if row is None or row[3] != "succeeded" or row[4] is None:
             raise PilotClaimError("pilot successful claim has no retained receipt")
+        witness = self._read_witness(request, require=True)
+        if witness is None:  # pragma: no cover - require=True guard
+            raise PilotClaimError("pilot successful claim is missing its witness")
+        self._witness_matches_claim(
+            witness,
+            allowance_id=row[1],
+            allowance_document_sha256=row[2],
+        )
         try:
-            parsed = json.loads(row[3])
+            parsed = json.loads(row[4])
             if not isinstance(parsed, Mapping):
                 raise ValueError
             receipt = SupplementReceipt.from_public_receipt(parsed)

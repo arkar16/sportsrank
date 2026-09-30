@@ -15,8 +15,12 @@ import json
 import os
 from pathlib import Path
 import sqlite3
+import shutil
 import stat
+import subprocess
+import sys
 import tempfile
+import threading
 import time
 import unittest
 from urllib.error import HTTPError, URLError
@@ -40,12 +44,16 @@ from cfb.excitement_source import (
     PilotSourceBindingError,
     PilotTransportError,
     SourceBinding,
+    _ClaimLedger,
 )
 from cfb.private_inputs import InputReference, LocalInputStore
 from cfb.request_meter import RequestBudgets, RequestMeter
 
 
 NOW = datetime(2026, 9, 30, 12, tzinfo=timezone.utc)
+PROCESS_CLAIM_PROBE = Path(
+    "/Users/aryakarnik/.bb/thread-storage/thr_hxznbecprb/adr21/process_claim_probe.py"
+)
 
 
 class _BindingStore(LocalInputStore):
@@ -139,6 +147,10 @@ class SourcePilotTests(unittest.TestCase):
         }
         return SourceBinding(archive, snapshots)
 
+    def _replay_binding(self) -> _NoopBinding:
+        binding = self._binding()
+        return _NoopBinding(binding.source_archive, binding.snapshots)
+
     def _meter(self, *, historical: int = MAX_ATTEMPTS, absolute: int = MAX_ATTEMPTS) -> RequestMeter:
         return RequestMeter(
             self.root / "meter.sqlite3",
@@ -154,6 +166,30 @@ class SourcePilotTests(unittest.TestCase):
             transport=transport,
             clock=lambda: NOW,
         )
+
+    def _completed_run(self, suffix: str):
+        case_root = self.root / suffix
+        case_root.mkdir(mode=0o700)
+        store = _BindingStore(case_root / "private-store")
+        meter = RequestMeter(
+            case_root / "meter.sqlite3",
+            RequestBudgets(
+                scheduled=0,
+                historical=MAX_ATTEMPTS * 2,
+                absolute=MAX_ATTEMPTS * 2,
+            ),
+            clock=lambda: NOW,
+        )
+        allowance = self._allowance(suffix=suffix)
+        calls = []
+        result = self._adapter(
+            lambda request: calls.append(request.request_id) or request.request_id.encode(),
+            meter=meter,
+            store=store,
+        ).acquire(allowance, self._binding())
+        self.assertEqual(len(calls), MAX_ATTEMPTS)
+        self.assertEqual(len(result.receipts), MAX_ATTEMPTS)
+        return case_root, store, meter, allowance
 
     def test_manifest_matches_frozen_nine_request_allowlist(self):
         self.assertEqual(self.manifest.pilot_id, PILOT_ID)
@@ -319,6 +355,137 @@ class SourcePilotTests(unittest.TestCase):
                 transport=lambda request: calls.append(request) or b"unexpected retry",
             ).acquire(allowance, _NoopBinding(binding.source_archive, binding.snapshots))
         self.assertEqual(calls, [])
+
+    def test_missing_claim_ledger_after_success_fails_closed_before_transport(self):
+        _, store, meter, allowance = self._completed_run("missing-after-success")
+        ledger = store.root / f".{PILOT_ID}.claims.sqlite3"
+        ledger.unlink()
+        calls = []
+        with self.assertRaisesRegex(PilotClaimError, "ledger|claim"):
+            self._adapter(
+                lambda request: calls.append(request.request_id) or b"duplicate",
+                meter=meter,
+                store=_BindingStore(store.root),
+            ).acquire(allowance, self._replay_binding())
+        self.assertEqual(calls, [])
+
+    def test_empty_claim_ledger_after_success_fails_closed_before_transport(self):
+        _, store, meter, allowance = self._completed_run("empty-after-success")
+        ledger = store.root / f".{PILOT_ID}.claims.sqlite3"
+        ledger.write_bytes(b"")
+        calls = []
+        with self.assertRaisesRegex(PilotClaimError, "ledger|claim"):
+            self._adapter(
+                lambda request: calls.append(request.request_id) or b"duplicate",
+                meter=meter,
+                store=_BindingStore(store.root),
+            ).acquire(allowance, self._replay_binding())
+        self.assertEqual(calls, [])
+
+    def test_replaced_claim_ledger_identity_fails_closed_before_transport(self):
+        _, first_store, first_meter, first_allowance = self._completed_run("replaced-first")
+        _, second_store, _, _ = self._completed_run("replaced-second")
+        first_ledger = first_store.root / f".{PILOT_ID}.claims.sqlite3"
+        second_ledger = second_store.root / f".{PILOT_ID}.claims.sqlite3"
+        shutil.copy2(second_ledger, first_ledger)
+        calls = []
+        with self.assertRaisesRegex(PilotClaimError, "ledger|claim"):
+            self._adapter(
+                lambda request: calls.append(request.request_id) or b"duplicate",
+                meter=first_meter,
+                store=_BindingStore(first_store.root),
+            ).acquire(first_allowance, self._replay_binding())
+        self.assertEqual(calls, [])
+
+    def test_process_exit_then_missing_claim_ledger_fails_closed(self):
+        self.assertTrue(PROCESS_CLAIM_PROBE.is_file())
+        child_env = os.environ.copy()
+        child_env.pop("CFBD_API", None)
+        child_env.pop("CFBD_API_KEY", None)
+        child_env["PYTHONPATH"] = os.pathsep.join(
+            part
+            for part in (str(Path.cwd()), child_env.get("PYTHONPATH", ""))
+            if part
+        )
+        with tempfile.TemporaryDirectory() as root:
+            command = [sys.executable, str(PROCESS_CLAIM_PROBE), root, "crash"]
+            first = subprocess.run(
+                command,
+                cwd=Path.cwd(),
+                env=child_env,
+                capture_output=True,
+                text=True,
+                timeout=20,
+                check=False,
+            )
+            second = subprocess.run(
+                command,
+                cwd=Path.cwd(),
+                env=child_env,
+                capture_output=True,
+                text=True,
+                timeout=20,
+                check=False,
+            )
+            ledger = Path(root) / "store" / f".{PILOT_ID}.claims.sqlite3"
+            ledger.unlink()
+            third = subprocess.run(
+                command,
+                cwd=Path.cwd(),
+                env=child_env,
+                capture_output=True,
+                text=True,
+                timeout=20,
+                check=False,
+            )
+            calls = (Path(root) / "fake-calls").read_text(encoding="utf-8").splitlines()
+        self.assertEqual(first.returncode, 73, first.stderr)
+        self.assertEqual(second.returncode, 0, second.stderr)
+        self.assertEqual(third.returncode, 0, third.stderr)
+        self.assertEqual(len(calls), 1)
+
+    def test_concurrent_initialization_crash_leaves_restart_fail_closed(self):
+        store = self._store()
+        meter = self._meter()
+        allowance = self._allowance(suffix="concurrent-init-crash")
+        binding = self._binding()
+        init_started = threading.Event()
+        transport_calls = []
+
+        def crash_before_schema(_ledger, **_kwargs):
+            init_started.set()
+            raise KeyboardInterrupt("synthetic initialization interruption")
+
+        def run():
+            adapter = self._adapter(
+                lambda request: transport_calls.append(request) or b"unexpected",
+                meter=meter,
+                store=store,
+            )
+            try:
+                adapter.acquire(allowance, binding)
+            except BaseException as error:
+                return error
+            return None
+
+        with patch.object(_ClaimLedger, "_initialize", crash_before_schema):
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                futures = [pool.submit(run), pool.submit(run)]
+                errors = [future.result() for future in futures]
+        self.assertTrue(init_started.is_set())
+        self.assertTrue(
+            all(isinstance(error, (KeyboardInterrupt, PilotClaimError)) for error in errors)
+        )
+        self.assertTrue(any(isinstance(error, KeyboardInterrupt) for error in errors))
+        self.assertEqual(transport_calls, [])
+
+        with self.assertRaises(PilotClaimError):
+            self._adapter(
+                lambda request: transport_calls.append(request) or b"retry",
+                meter=meter,
+                store=store,
+            ).acquire(allowance, binding)
+        self.assertEqual(transport_calls, [])
 
     def test_retention_failure_does_not_expose_response_bytes(self):
         class _FailingStore(_BindingStore):
