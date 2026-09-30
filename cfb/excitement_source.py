@@ -73,6 +73,12 @@ SEASON_METADATA_MANIFEST_SHA256 = (
 )
 SEASON_METADATA_MAX_ATTEMPTS = 5
 SEASON_METADATA_CONFIG = Path("config/excitement-season-metadata-v1.json")
+GROUPED_PLAYS_PILOT_ID = "adr21-grouped-plays-v1"
+GROUPED_PLAYS_MANIFEST_SHA256 = (
+    "f93589b18c17a9a14882505c62f50a0617a2f228e75601c7cc1e9580ad7dca21"
+)
+GROUPED_PLAYS_MAX_ATTEMPTS = 38
+GROUPED_PLAYS_CONFIG = Path("config/excitement-grouped-plays-v1.json")
 API_BASE_URL = "https://api.collegefootballdata.com"
 # Keep the transport destination independent from the public compatibility
 # constant.  A caller can otherwise monkey-patch the latter before
@@ -92,6 +98,7 @@ class _PlanDescriptor:
     manifest_sha256: str
     max_attempts: int
     config_path: Path
+    grouped_plays: bool = False
 
 
 _PLAN_REGISTRY: Mapping[str, _PlanDescriptor] = MappingProxyType({
@@ -107,10 +114,26 @@ _PLAN_REGISTRY: Mapping[str, _PlanDescriptor] = MappingProxyType({
         max_attempts=SEASON_METADATA_MAX_ATTEMPTS,
         config_path=SEASON_METADATA_CONFIG,
     ),
+    GROUPED_PLAYS_PILOT_ID: _PlanDescriptor(
+        pilot_id=GROUPED_PLAYS_PILOT_ID,
+        manifest_sha256=GROUPED_PLAYS_MANIFEST_SHA256,
+        max_attempts=GROUPED_PLAYS_MAX_ATTEMPTS,
+        config_path=GROUPED_PLAYS_CONFIG,
+        grouped_plays=True,
+    ),
 })
 _PLAN_BY_MANIFEST_SHA256: Mapping[str, _PlanDescriptor] = MappingProxyType({
     descriptor.manifest_sha256: descriptor for descriptor in _PLAN_REGISTRY.values()
 })
+_SEASON_METADATA_REQUEST_IDS = frozenset(
+    {
+        "2024-games-regular",
+        "2024-games-postseason",
+        "2025-games-regular",
+        "2025-games-postseason",
+        "2026-games-regular",
+    }
+)
 
 
 class PilotError(RuntimeError):
@@ -214,6 +237,8 @@ class PilotRequest:
     parent_snapshot_checksum: str
     parent_snapshot_path: str
     parent_snapshot_sha256: str
+    metadata_request_id: str | None = None
+    target_game_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         _safe_id(self.request_id, "request_id")
@@ -221,6 +246,21 @@ class PilotRequest:
             raise PilotManifestError("pilot endpoint is not allowlisted")
         if self.expected_game_id is not None:
             _safe_id(self.expected_game_id, "expected_game_id")
+        grouped = self.metadata_request_id is not None
+        if grouped:
+            _safe_id(self.metadata_request_id, "metadata_request_id")
+            if self.endpoint != "/plays" or self.expected_game_id is not None:
+                raise PilotManifestError("grouped plays request identity is invalid")
+            if type(self.target_game_ids) is not tuple or not self.target_game_ids:
+                raise PilotManifestError("grouped plays target game IDs are invalid")
+            target_ids: set[str] = set()
+            for game_id in self.target_game_ids:
+                _safe_id(game_id, "target game ID")
+                if game_id in target_ids:
+                    raise PilotManifestError("grouped plays target game IDs are not unique")
+                target_ids.add(game_id)
+        elif self.target_game_ids:
+            raise PilotManifestError("grouped plays targets require metadata provenance")
         _digest(self.parent_snapshot_checksum, "parent snapshot checksum")
         _digest(self.parent_snapshot_sha256, "parent snapshot SHA-256")
         if (
@@ -238,7 +278,9 @@ class PilotRequest:
                 raise PilotManifestError("pilot request parameter values are invalid")
             names.add(name)
         expected = dict(self.params)
-        if self.endpoint == "/plays":
+        if grouped:
+            required = {"classification", "seasonType", "week", "year"}
+        elif self.endpoint == "/plays":
             required = {"classification", "seasonType", "team", "week", "year"}
         elif self.endpoint == "/games":
             required = (
@@ -254,14 +296,14 @@ class PilotRequest:
             raise PilotManifestError("pilot classification is not fbs")
         if expected.get("seasonType") not in {"regular", "postseason"}:
             raise PilotManifestError("pilot seasonType is not allowlisted")
-        if self.endpoint == "/plays":
+        if self.endpoint == "/plays" and not grouped:
             if expected.get("team") not in {"Georgia", "Ohio State"}:
                 raise PilotManifestError("pilot plays team is not allowlisted")
         elif self.expected_game_id is not None:
             field = "id" if self.endpoint == "/games" else "gameId"
             if expected.get(field) != int(self.expected_game_id):
                 raise PilotManifestError("pilot game identity is not bound to the request")
-        elif self.endpoint != "/games":
+        elif self.endpoint != "/games" and not grouped:
             raise PilotManifestError("pilot request is missing its reviewed game identity")
 
     @property
@@ -282,7 +324,7 @@ class PilotRequest:
         )
 
     def safe_dict(self) -> dict[str, object]:
-        return {
+        value: dict[str, object] = {
             "request_id": self.request_id,
             "endpoint": self.endpoint,
             "params": self.parameter_map,
@@ -292,6 +334,10 @@ class PilotRequest:
             "parent_snapshot_sha256": self.parent_snapshot_sha256,
             "request_key": self.request_key,
         }
+        if self.metadata_request_id is not None or self.target_game_ids:
+            value["metadata_request_id"] = self.metadata_request_id
+            value["target_game_ids"] = list(self.target_game_ids)
+        return value
 
 
 @dataclass(frozen=True, slots=True)
@@ -307,6 +353,8 @@ class PilotManifest:
     source_archive_sha256: str
     requests: tuple[PilotRequest, ...]
     manifest_sha256: str
+    metadata_manifest_sha256: str | None = None
+    metadata_sources: Mapping[str, InputReference] | None = None
 
     @classmethod
     def load(cls, path: str | Path = DEFAULT_CONFIG) -> "PilotManifest":
@@ -331,6 +379,8 @@ class PilotManifest:
             "schema_version",
             "source_archive_sha256",
         }
+        if descriptor.grouped_plays:
+            expected_top |= {"metadata_manifest_sha256", "metadata_sources"}
         if set(value) != expected_top:
             raise PilotManifestError("pilot manifest fields do not match the reviewed schema")
         if value.get("schema_version") != 1:
@@ -348,8 +398,25 @@ class PilotManifest:
         entries = value.get("requests")
         if not isinstance(entries, list) or len(entries) != descriptor.max_attempts:
             raise PilotManifestError("pilot request count is not approved")
-        requests = tuple(cls._request(entry) for entry in entries)
+        requests = tuple(cls._request(entry, descriptor=descriptor) for entry in entries)
         cls._validate_allowlist(requests, descriptor=descriptor)
+        metadata_manifest_sha256: str | None = None
+        metadata_sources: Mapping[str, InputReference] | None = None
+        if descriptor.grouped_plays:
+            try:
+                metadata_manifest_sha256 = _digest(
+                    value.get("metadata_manifest_sha256"),
+                    "grouped plays metadata manifest SHA-256",
+                )
+            except PilotError:
+                raise PilotManifestError(
+                    "grouped plays metadata manifest identity is invalid"
+                ) from None
+            if metadata_manifest_sha256 != SEASON_METADATA_MANIFEST_SHA256:
+                raise PilotManifestError(
+                    "grouped plays metadata manifest is not the reviewed identity"
+                )
+            metadata_sources = cls._metadata_sources(value.get("metadata_sources"))
         return cls(
             pilot_id=descriptor.pilot_id,
             purpose=REQUEST_PURPOSE,
@@ -360,10 +427,30 @@ class PilotManifest:
             source_archive_sha256=value["source_archive_sha256"],  # type: ignore[arg-type]
             requests=requests,
             manifest_sha256=digest,
+            metadata_manifest_sha256=metadata_manifest_sha256,
+            metadata_sources=metadata_sources,
         )
 
     @staticmethod
-    def _request(value: object) -> PilotRequest:
+    def _metadata_sources(value: object) -> Mapping[str, InputReference]:
+        if not isinstance(value, Mapping) or set(value) != _SEASON_METADATA_REQUEST_IDS:
+            raise PilotManifestError("grouped plays metadata source set is not approved")
+        sources: dict[str, InputReference] = {}
+        for metadata_request_id, reference_value in value.items():
+            if not isinstance(metadata_request_id, str):
+                raise PilotManifestError("grouped plays metadata source identity is invalid")
+            try:
+                sources[metadata_request_id] = InputReference.from_public_receipt(
+                    reference_value  # type: ignore[arg-type]
+                )
+            except Exception as exc:
+                raise PilotManifestError(
+                    "grouped plays metadata source receipt is invalid"
+                ) from None
+        return MappingProxyType(sources)
+
+    @staticmethod
+    def _request(value: object, *, descriptor: _PlanDescriptor) -> PilotRequest:
         if not isinstance(value, Mapping):
             raise PilotManifestError("pilot request must be an object")
         required = {
@@ -375,8 +462,12 @@ class PilotManifest:
             "parent_snapshot_sha256",
             "request_id",
         }
+        if descriptor.grouped_plays:
+            required |= {"metadata_request_id", "target_game_ids"}
         if set(value) != required or not isinstance(value.get("params"), Mapping):
             raise PilotManifestError("pilot request fields do not match the reviewed schema")
+        if descriptor.grouped_plays and not isinstance(value.get("target_game_ids"), list):
+            raise PilotManifestError("grouped plays target game IDs are invalid")
         params: list[tuple[str, str | int]] = []
         for name, parameter in value["params"].items():
             if not isinstance(name, str) or isinstance(parameter, bool) or not isinstance(parameter, (str, int)):
@@ -390,12 +481,64 @@ class PilotManifest:
             parent_snapshot_checksum=value["parent_snapshot_checksum"],  # type: ignore[arg-type]
             parent_snapshot_path=value["parent_snapshot_path"],  # type: ignore[arg-type]
             parent_snapshot_sha256=value["parent_snapshot_sha256"],  # type: ignore[arg-type]
+            metadata_request_id=value.get("metadata_request_id"),  # type: ignore[arg-type]
+            target_game_ids=tuple(value.get("target_game_ids", ())),  # type: ignore[arg-type]
         )
 
     @staticmethod
     def _validate_allowlist(
         requests: Sequence[PilotRequest], *, descriptor: _PlanDescriptor
     ) -> None:
+        if descriptor.grouped_plays:
+            expected_scopes = {
+                (year, season_type, week)
+                for year in (2024, 2025)
+                for season_type, weeks in (("regular", range(1, 17)), ("postseason", (1,)))
+                for week in weeks
+            }
+            expected_scopes |= {(2026, "regular", week) for week in range(1, 5)}
+            if len(requests) != descriptor.max_attempts:
+                raise PilotManifestError("grouped plays request count is not 38")
+            seen_scopes: set[tuple[int, str, int]] = set()
+            target_ids: set[str] = set()
+            for request in requests:
+                params = request.parameter_map
+                if (
+                    request.endpoint != "/plays"
+                    or request.expected_game_id is not None
+                    or request.metadata_request_id not in _SEASON_METADATA_REQUEST_IDS
+                    or set(params) != {"classification", "seasonType", "week", "year"}
+                    or params.get("classification") != "fbs"
+                    or not isinstance(params.get("week"), int)
+                    or isinstance(params.get("week"), bool)
+                ):
+                    raise PilotManifestError("grouped plays request is outside the reviewed scope")
+                year = request.year
+                season_type = params["seasonType"]
+                week = params["week"]
+                if not isinstance(season_type, str) or not isinstance(week, int):
+                    raise PilotManifestError("grouped plays request scope is invalid")
+                scope = (year, season_type, week)
+                expected_metadata_id = f"{year}-games-{season_type}"
+                expected_request_id = f"{year}-plays-{season_type}-week-{week}"
+                if (
+                    scope not in expected_scopes
+                    or scope in seen_scopes
+                    or request.metadata_request_id != expected_metadata_id
+                    or request.request_id != expected_request_id
+                    or not request.target_game_ids
+                ):
+                    raise PilotManifestError("grouped plays request is outside the reviewed scope")
+                seen_scopes.add(scope)
+                for game_id in request.target_game_ids:
+                    if not game_id.isdigit() or game_id in target_ids:
+                        raise PilotManifestError("grouped plays target membership is invalid")
+                    target_ids.add(game_id)
+            if seen_scopes != expected_scopes:
+                raise PilotManifestError("grouped plays week scope is incomplete")
+            if len({request.request_key for request in requests}) != descriptor.max_attempts:
+                raise PilotManifestError("pilot request keys are not unique")
+            return
         if descriptor.pilot_id == PILOT_ID:
             expected = (
                 ("2024-plays-401628439", "/plays", 2024, "Georgia", "401628439", "regular"),
@@ -480,6 +623,29 @@ class PilotManifest:
             or self.manifest_sha256 != descriptor.manifest_sha256
         ):
             raise PilotManifestError("pilot manifest digest binding is not approved")
+        if descriptor.grouped_plays:
+            try:
+                metadata_manifest_sha256 = _digest(
+                    self.metadata_manifest_sha256,
+                    "grouped plays metadata manifest SHA-256",
+                )
+            except PilotError:
+                raise PilotManifestError(
+                    "grouped plays metadata manifest identity is invalid"
+                ) from None
+            if metadata_manifest_sha256 != SEASON_METADATA_MANIFEST_SHA256:
+                raise PilotManifestError(
+                    "grouped plays metadata manifest is not the reviewed identity"
+                )
+            if not isinstance(self.metadata_sources, Mapping):
+                raise PilotManifestError("grouped plays metadata sources are missing")
+            if set(self.metadata_sources) != _SEASON_METADATA_REQUEST_IDS:
+                raise PilotManifestError("grouped plays metadata source set is not approved")
+            for reference in self.metadata_sources.values():
+                if not isinstance(reference, InputReference):
+                    raise PilotManifestError("grouped plays metadata source is invalid")
+        elif self.metadata_manifest_sha256 is not None or self.metadata_sources is not None:
+            raise PilotManifestError("metadata provenance is not allowed for this source plan")
         if type(self.requests) is not tuple or len(self.requests) != descriptor.max_attempts:
             raise PilotManifestError("pilot manifest request set is not approved")
         for request in self.requests:
@@ -494,9 +660,12 @@ class PilotManifest:
             except Exception as exc:  # pragma: no cover - defensive object guard
                 raise PilotManifestError("pilot manifest request is malformed") from exc
         self._validate_allowlist(self.requests, descriptor=descriptor)
+        canonical = type(self).load(descriptor.config_path)
+        if self.safe_dict() != canonical.safe_dict():
+            raise PilotManifestError("pilot manifest object does not match reviewed bytes")
 
     def safe_dict(self) -> dict[str, object]:
-        return {
+        value: dict[str, object] = {
             "pilot_id": self.pilot_id,
             "purpose": self.purpose,
             "manifest_sha256": self.manifest_sha256,
@@ -507,6 +676,13 @@ class PilotManifest:
             "retries": self.retries,
             "requests": [request.safe_dict() for request in self.requests],
         }
+        if self.metadata_manifest_sha256 is not None or self.metadata_sources is not None:
+            value["metadata_manifest_sha256"] = self.metadata_manifest_sha256
+            value["metadata_sources"] = {
+                key: reference.public_receipt()
+                for key, reference in sorted((self.metadata_sources or {}).items())
+            }
+        return value
 
 
 @dataclass(frozen=True, slots=True)
@@ -1642,6 +1818,7 @@ class PilotAdapter:
         if self.store is None:
             raise PilotSourceBindingError("live acquisition requires an owner-only LocalInputStore")
         source_binding.verify(self.store, self.manifest)
+        self._verify_metadata_sources()
         ledger = _ClaimLedger(self.store, self.manifest)
         ledger.register_allowance(allowance)
         self._verify_existing_receipts(ledger)
@@ -1691,6 +1868,21 @@ class PilotAdapter:
             receipts=ledger.receipts(),
             remaining_attempts=ledger.remaining(),
         )
+
+    def _verify_metadata_sources(self) -> None:
+        """Verify grouped-play metadata receipts before creating any claim."""
+
+        if self.store is None:  # pragma: no cover - guarded by acquire
+            raise PilotSourceBindingError("private store is unavailable")
+        if self.manifest.metadata_sources is None:
+            return
+        for metadata_request_id, reference in sorted(self.manifest.metadata_sources.items()):
+            try:
+                self.store.verify(reference)
+            except Exception:
+                raise PilotSourceBindingError(
+                    f"grouped plays metadata capture cannot be verified for {metadata_request_id}"
+                ) from None
 
     def _verify_existing_receipts(self, ledger: _ClaimLedger) -> None:
         """Recheck retained bytes before treating a prior claim as complete."""
@@ -1834,6 +2026,10 @@ if __name__ == "__main__":  # pragma: no cover
 __all__ = [
     "API_BASE_URL",
     "AcquisitionResult",
+    "GROUPED_PLAYS_CONFIG",
+    "GROUPED_PLAYS_MANIFEST_SHA256",
+    "GROUPED_PLAYS_MAX_ATTEMPTS",
+    "GROUPED_PLAYS_PILOT_ID",
     "HttpSupplementTransport",
     "MAX_ATTEMPTS",
     "PILOT_ID",
