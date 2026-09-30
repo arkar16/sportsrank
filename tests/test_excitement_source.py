@@ -51,9 +51,70 @@ from cfb.request_meter import RequestBudgets, RequestMeter
 
 
 NOW = datetime(2026, 9, 30, 12, tzinfo=timezone.utc)
-PROCESS_CLAIM_PROBE = Path(
-    "/Users/aryakarnik/.bb/thread-storage/thr_hxznbecprb/adr21/process_claim_probe.py"
+PROCESS_CLAIM_PROBE_SOURCE = r'''
+import os
+import sqlite3
+import sys
+from pathlib import Path
+
+from cfb.excitement_source import (
+    PILOT_ID,
+    PilotAdapter,
+    PilotAllowance,
+    PilotClaimError,
+    PilotManifest,
+    SourceBinding,
 )
+from cfb.private_inputs import InputReference, LocalInputStore
+from cfb.request_meter import RequestMeter
+
+
+class Binding(SourceBinding):
+    def verify(self, store, manifest):
+        return None
+
+
+root = Path(sys.argv[1])
+manifest = PilotManifest.load()
+binding = Binding(InputReference("source-archive", manifest.source_archive_sha256, 0), {})
+allowance = PilotAllowance(
+    "synthetic-process-probe",
+    manifest.manifest_sha256,
+    9,
+    "historical",
+    "0" * 64,
+)
+store = LocalInputStore(root / "store")
+meter = RequestMeter(root / "meter.sqlite3")
+
+
+def transport(request):
+    with sqlite3.connect(root / "meter.sqlite3") as connection:
+        audit = connection.execute(
+            "SELECT outcome, budget_impact FROM request_audit ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+    with sqlite3.connect(store.root / f".{PILOT_ID}.claims.sqlite3") as connection:
+        claim = connection.execute(
+            "SELECT state FROM claims WHERE request_id = ?", (request.request_id,)
+        ).fetchone()
+    assert audit == ("started", 1) and claim == ("claimed",), (audit, claim)
+    with open(root / "fake-calls", "a", encoding="utf-8") as calls:
+        calls.write(request.request_id + "\n")
+        calls.flush()
+        os.fsync(calls.fileno())
+    os._exit(73)
+
+
+try:
+    PilotAdapter(
+        meter,
+        store,
+        manifest=manifest,
+        transport=transport,
+    ).acquire(allowance, binding)
+except PilotClaimError:
+    raise SystemExit(0)
+'''
 
 
 class _BindingStore(LocalInputStore):
@@ -398,20 +459,20 @@ class SourcePilotTests(unittest.TestCase):
         self.assertEqual(calls, [])
 
     def test_process_exit_then_missing_claim_ledger_fails_closed(self):
-        self.assertTrue(PROCESS_CLAIM_PROBE.is_file())
+        project_root = Path(__file__).resolve().parents[1]
         child_env = os.environ.copy()
         child_env.pop("CFBD_API", None)
         child_env.pop("CFBD_API_KEY", None)
         child_env["PYTHONPATH"] = os.pathsep.join(
             part
-            for part in (str(Path.cwd()), child_env.get("PYTHONPATH", ""))
+            for part in (str(project_root), child_env.get("PYTHONPATH", ""))
             if part
         )
         with tempfile.TemporaryDirectory() as root:
-            command = [sys.executable, str(PROCESS_CLAIM_PROBE), root, "crash"]
+            command = [sys.executable, "-c", PROCESS_CLAIM_PROBE_SOURCE, root]
             first = subprocess.run(
                 command,
-                cwd=Path.cwd(),
+                cwd=project_root,
                 env=child_env,
                 capture_output=True,
                 text=True,
@@ -420,7 +481,7 @@ class SourcePilotTests(unittest.TestCase):
             )
             second = subprocess.run(
                 command,
-                cwd=Path.cwd(),
+                cwd=project_root,
                 env=child_env,
                 capture_output=True,
                 text=True,
@@ -431,7 +492,7 @@ class SourcePilotTests(unittest.TestCase):
             ledger.unlink()
             third = subprocess.run(
                 command,
-                cwd=Path.cwd(),
+                cwd=project_root,
                 env=child_env,
                 capture_output=True,
                 text=True,
