@@ -15,6 +15,7 @@ from cfb.conference_inputs import (
     parse_conference_supplement,
 )
 from cfb.conference_sources import _supplement_payload
+from cfb.conference_sources import snapshot_content_checksum
 from tests.test_conference_sources import _snapshot, _supplement
 
 
@@ -111,6 +112,55 @@ class ConferenceInputTests(unittest.TestCase):
         changed_nested["supplement"]["games"][0]["counts_for_standings"] = False
         with self.assertRaises(ConferenceInputError):
             parse_conference_supplement(changed_nested, snapshot)
+
+    def test_phase_fields_round_trip_and_are_required_at_the_wire_boundary(self) -> None:
+        original = _snapshot()
+        games = tuple(
+            replace(game, phase=None, phase_source=None)
+            if game.provider_id == "g-cross"
+            else game
+            for game in original.games
+        )
+        provisional = replace(original, games=games, checksum="0" * 64)
+        snapshot = replace(provisional, checksum=snapshot_content_checksum(provisional))
+        supplement = replace(_supplement(original), snapshot_checksum=snapshot.checksum)
+        phase_game = next(
+            item for item in supplement.games if item.provider_id == "g-cross"
+        )
+        phase_game = replace(
+            phase_game,
+            phase="postseason",
+            phase_evidence_ids=("fixture-source",),
+        )
+        supplement = replace(
+            supplement,
+            games=tuple(
+                phase_game if item.provider_id == "g-cross" else item
+                for item in supplement.games
+            ),
+        )
+        document = {
+            "supplement": _supplement_payload(supplement),
+            "checksum": supplement.checksum,
+        }
+        parsed = parse_conference_supplement(document, snapshot)
+        parsed_game = next(
+            item
+            for item in parsed.supplement.games
+            if item.provider_id == "g-cross"
+        )
+        self.assertEqual(parsed_game.phase, "postseason")
+        self.assertEqual(parsed_game.phase_evidence_ids, ("fixture-source",))
+
+        missing = deepcopy(document)
+        del missing["supplement"]["games"][0]["phase"]
+        with self.assertRaises(ConferenceInputError):
+            parse_conference_supplement(missing, snapshot)
+
+        changed = deepcopy(document)
+        changed["supplement"]["games"][0]["phase_evidence_ids"] = ["unknown"]
+        with self.assertRaises(ConferenceInputError):
+            parse_conference_supplement(changed, snapshot)
 
     def test_temporal_precision_and_bound_contradictions_fail_closed(self) -> None:
         snapshot = _snapshot()

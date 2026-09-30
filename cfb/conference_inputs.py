@@ -236,6 +236,8 @@ _GAME_FIELDS = {
     "title_game",
     "conference",
     "evidence_ids",
+    "phase",
+    "phase_evidence_ids",
 }
 
 
@@ -253,6 +255,10 @@ def _game(value: Any, index: int) -> ConferenceGameDesignation:
         title_game=_boolean(item["title_game"], f"{field}.title_game"),
         conference=_string(item["conference"], f"{field}.conference", nullable=True),
         evidence_ids=_ids(item["evidence_ids"], f"{field}.evidence_ids"),
+        phase=_string(item["phase"], f"{field}.phase"),
+        phase_evidence_ids=_ids(
+            item["phase_evidence_ids"], f"{field}.phase_evidence_ids"
+        ),
     )
 
 

@@ -550,6 +550,8 @@ class ConferenceGameDesignation:
     title_game: bool
     conference: str | None
     evidence_ids: tuple[str, ...]
+    phase: str | None = "unknown"
+    phase_evidence_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "provider_id", _identity(self.provider_id, "provider_id"))
@@ -574,6 +576,24 @@ class ConferenceGameDesignation:
             raise ConferenceSourceError("title games cannot count for qualification standings")
         if self.counts_for_standings and not self.conference_game:
             raise ConferenceSourceError("nonconference games cannot count for standings")
+        phase = "unknown" if self.phase is None else _text(self.phase, "game phase").lower()
+        if phase not in {"regular", "postseason", "unknown"}:
+            raise ConferenceSourceError("game phase is unsupported")
+        object.__setattr__(self, "phase", phase)
+        phase_evidence_ids = (
+            ()
+            if not self.phase_evidence_ids
+            else _tuple_ids(self.phase_evidence_ids, "game phase_evidence_ids")
+        )
+        if phase == "unknown" and phase_evidence_ids:
+            raise ConferenceSourceError(
+                "unknown game phase cannot carry phase evidence"
+            )
+        if phase != "unknown" and not phase_evidence_ids:
+            raise ConferenceSourceError(
+                "known game phase requires phase evidence"
+            )
+        object.__setattr__(self, "phase_evidence_ids", phase_evidence_ids)
         object.__setattr__(self, "evidence_ids", _tuple_ids(self.evidence_ids, "game evidence_ids"))
 
 
@@ -963,6 +983,8 @@ def _supplement_payload(supplement: ConferenceSupplement) -> dict[str, Any]:
                 "title_game": item.title_game,
                 "conference": item.conference,
                 "evidence_ids": list(item.evidence_ids),
+                "phase": item.phase,
+                "phase_evidence_ids": list(item.phase_evidence_ids),
             }
             for item in supplement.games
         ],
@@ -1042,6 +1064,30 @@ def _snapshot_game_index(snapshot: "SeasonSnapshot") -> dict[str, Any]:
             raise ConferenceSourceError(f"snapshot contains duplicate provider_id {provider_id!r}")
         games[provider_id] = game
     return games
+
+
+def _snapshot_game_phase(source_game: Any) -> str | None:
+    """Return a positively known phase carried by the immutable snapshot.
+
+    ``phase`` is the normalized schema-4 field.  ``provider_season_type`` is
+    retained as a second provider assertion for older snapshot adapters.  An
+    absent or explicitly unknown value is not promoted to regular season.
+    """
+
+    known: set[str] = set()
+    for field in ("phase", "provider_season_type"):
+        value = getattr(source_game, field, None)
+        value = getattr(value, "value", value)
+        if not isinstance(value, str):
+            continue
+        normalized = value.strip().lower()
+        if normalized in {"regular", "postseason"}:
+            known.add(normalized)
+        elif normalized in {"", "unknown", "none"}:
+            continue
+    if len(known) > 1:
+        raise ConferenceSourceError("snapshot game phase fields conflict")
+    return next(iter(known), None)
 
 
 def snapshot_content_checksum(snapshot: "SeasonSnapshot") -> str:
@@ -1250,6 +1296,17 @@ def validate_conference_supplement(
             if home_member.conference != item.conference or away_member.conference != item.conference:
                 raise ConferenceSourceError("conference designation disagrees with membership")
         _require_evidence(item.evidence_ids, evidence, f"game {item.provider_id}")
+        snapshot_phase = _snapshot_game_phase(source_game)
+        if snapshot_phase is not None:
+            if item.phase != "unknown" and item.phase != snapshot_phase:
+                raise ConferenceSourceError(
+                    f"designation phase disagrees with snapshot for {item.provider_id!r}"
+                )
+        _require_evidence(
+            item.phase_evidence_ids,
+            evidence,
+            f"game phase {item.provider_id}",
+        )
         designations[item.provider_id] = item
     if set(designations) != set(game_index):
         missing = sorted(set(game_index) - set(designations))

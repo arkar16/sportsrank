@@ -576,13 +576,19 @@ def _record_map() -> defaultdict[str, _MutableRecord]:
 
 
 def _game_phase(game: SourceGame, designation: ConferenceGameDesignation) -> str:
+    designated = getattr(designation, "phase", "unknown")
+    if designated in {"regular", "postseason"}:
+        return designated
     raw = getattr(game, "phase", None)
     if isinstance(raw, str) and raw.strip().lower() in {"regular", "postseason"}:
         return raw.strip().lower()
-    # A source-qualified title marker is sufficient to keep title games out of
-    # qualification records even in retained snapshots whose phase is null.
-    if designation.title_game:
-        return "postseason"
+    provider_phase = getattr(game, "provider_season_type", None)
+    provider_phase = getattr(provider_phase, "value", provider_phase)
+    if isinstance(provider_phase, str) and provider_phase.strip().lower() in {
+        "regular",
+        "postseason",
+    }:
+        return provider_phase.strip().lower()
     # ADR0014 retains unknown chronology. Count the completed result in its
     # own scope and combined totals without inventing a regular-season phase.
     if raw is None or (isinstance(raw, str) and raw.strip().lower() in {"", "unknown"}):
@@ -1005,6 +1011,10 @@ def _projection(
         if game.home_team in conference_members or game.away_team in conference_members
         for evidence_id in designation_index[game.provider_id].evidence_ids
     }
+    # Phase evidence is intentionally not added here: it classifies
+    # retrospective interconference scopes only.  Title and standings flags
+    # independently determine qualification, so a later phase publication
+    # must not suppress an otherwise eligible historical projection.
     for ids, reason in (
         (membership_ids, "membership_evidence_unavailable"),
         (designation_ids, "game_designation_evidence_unavailable"),
