@@ -3064,6 +3064,17 @@ def _validate_release(
             for relative in _expected_artifacts(
                 run_snapshot, str(run["phase"]), int(run["target_week"])
             ):
+                preseason_relative = (
+                    f"cfb/years/{run_snapshot.year}/rankings/"
+                    f"{run_snapshot.year}_PRESEASON_"
+                    f"{run_snapshot.classification.upper()}_cors.html"
+                )
+                if (
+                    relative == preseason_relative
+                    and relative in latest_owner
+                    and str(run["phase"]).lower() == "week"
+                ):
+                    continue
                 if (
                     relative in retained_legacy_paths
                     and int(run.get("artifact_contract", 2))
@@ -3071,6 +3082,17 @@ def _validate_release(
                 ):
                     continue
                 latest_owner[relative] = index
+            if (
+                int(run.get("artifact_contract", 2))
+                >= CURRENT_ARTIFACT_CONTRACT
+                and run.get("forecast_contract") == "forecast-ledger/v1"
+            ):
+                year_value = run_snapshot.year
+                cls_value = run_snapshot.classification.upper()
+                latest_owner[
+                    f"cfb/years/{year_value}/spread/"
+                    f"{year_value}_{cls_value}_forecast_results.html"
+                ] = index
             if str(run["phase"]).lower() == "final":
                 latest_final_owner[run_snapshot.year] = index
         except (KeyError, TypeError, ValueError):
@@ -3306,24 +3328,6 @@ def _validate_release(
             if owner_index is not None:
                 owner_run, owner_snapshot = run_contexts[owner_index]
                 page_timestamp = str(owner_run.get("last_updated", ""))
-                # Numbered overlays preserve a previously rendered PRESEASON
-                # page when it already exists.  Its visible timestamp belongs
-                # to the preceding same-season checkpoint, while its rows are
-                # still checked against the current snapshot below.
-                preseason_relative = (
-                    f"cfb/years/{owner_snapshot.year}/rankings/"
-                    f"{owner_snapshot.year}_PRESEASON_{owner_snapshot.classification.upper()}_cors.html"
-                )
-                if (
-                    relative == preseason_relative
-                    and str(owner_run.get("phase", "")).lower() == "week"
-                ):
-                    for previous_run, previous_snapshot in reversed(run_contexts[:owner_index]):
-                        if previous_snapshot.year == owner_snapshot.year:
-                            previous_timestamp = previous_run.get("last_updated")
-                            if isinstance(previous_timestamp, str):
-                                page_timestamp = previous_timestamp
-                                break
             if timestamp_match is not None and html.unescape(timestamp_match.group(1)).strip() != page_timestamp:
                 _failure(failures, "html.timestamp", "visible Last updated does not match release metadata", path)
             for anchor in document.find_all("a", href=True):

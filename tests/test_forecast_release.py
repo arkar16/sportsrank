@@ -12,7 +12,8 @@ import unittest
 
 from cfb.forecast_publication import VerifiedForecastPublication
 from cfb.forecast_record import (
-    EvidenceRef, FinalScore, ForecastCandidate, ForecastProvenance, GameIdentity,
+    EvidenceRef, FinalScore, ForecastCandidate, ForecastContractError,
+    ForecastProvenance, GameIdentity,
     GameTimingEvidence, PublicationReceipt, ScoreRevision,
 )
 from cfb.forecast_release import (
@@ -182,6 +183,22 @@ class ForecastArtifactTests(unittest.TestCase):
             (identity(),), "v0.4.0", "revision", Decimal("2"),
         )
         validate_forecast_sources({"candidates": [original.to_dict()]}, (source_checkpoint,))
+        validate_forecast_sources(
+            {"candidates": [original.to_dict()]},
+            (source_checkpoint, source_checkpoint),
+        )
+        conflicting_checkpoint = replace(
+            source_checkpoint,
+            rating_rows=(
+                {**rows[0], "cors": float(rows[0]["cors"]) + 1},
+                *rows[1:],
+            ),
+        )
+        with self.assertRaisesRegex(ForecastContractError, "header is ambiguous"):
+            validate_forecast_sources(
+                {"candidates": [original.to_dict()]},
+                (source_checkpoint, conflicting_checkpoint),
+            )
         forged = ForecastCandidate.create(
             game=original.game, home_margin=original.home_margin, precision=original.precision,
             provenance=replace(original.provenance, home_rank=2),
@@ -224,6 +241,126 @@ class ForecastReleaseIntegrationTests(unittest.TestCase):
             self.assertIn("CORS line coverage", page)
             self.assertNotIn("ats_result", page)
             report = validate_release(release, published_site=base)
+            self.assertTrue(report.valid, [str(item) for item in report.failures])
+
+    def test_same_checkpoint_explicit_corrections_preserve_revision_headers(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            base = root / "published"
+            self.prepare_base(base)
+            prior = PreviousFinal({"Home": 20.24, "Away": 20.0}, {})
+            probe = build_release(
+                snapshot(), root / "probe", release_id="probe", target_week=0,
+                phase="week", previous_final=prior,
+                timestamp="2026-09-01T20:00:00+00:00",
+                code_revision="same-revision", published_site=base,
+            )
+            probe_ledger = json.loads(
+                (probe.site / "cfb/years/2026/forecasts/ledger.json").read_text()
+            )
+            active = next(
+                ForecastCandidate.from_dict(value)
+                for value in probe_ledger["candidates"]
+                if value["game"]["week"] == 1
+            )
+            capability = publication(active)
+            timing = GameTimingEvidence(
+                active.game, source("actual-start"), actual_started_at=at(12)
+            )
+            issued = build_release(
+                snapshot(), root / "issued", release_id="issued", target_week=0,
+                phase="week", previous_final=prior,
+                timestamp="2026-09-01T20:00:00+00:00",
+                code_revision="same-revision", published_site=base,
+                forecast_publications=(capability,), timing_evidence=(timing,),
+            )
+            for correction_revision in ("same-revision", "corrected-revision"):
+                with self.subTest(code_revision=correction_revision):
+                    corrected = build_release(
+                        snapshot(), root / f"corrected-{correction_revision}",
+                        release_id=f"corrected-{correction_revision}",
+                        target_week=0, phase="week", previous_final=prior,
+                        timestamp="2026-09-01T21:00:00+00:00",
+                        code_revision=correction_revision,
+                        published_site=issued.site,
+                        forecast_publications=(capability,),
+                        timing_evidence=(timing,),
+                        forecast_replacements={
+                            active.version_id: "explicit correction"
+                        },
+                    )
+                    corrected_manifest = json.loads(
+                        corrected.manifest_path.read_text()
+                    )
+                    corrected_ledger = json.loads(
+                        (
+                            corrected.site
+                            / "cfb/years/2026/forecasts/ledger.json"
+                        ).read_text()
+                    )
+                    corrected_candidates = tuple(
+                        ForecastCandidate.from_dict(value)
+                        for value in corrected_ledger["candidates"]
+                    )
+                    child = next(
+                        value for value in corrected_candidates
+                        if value.predecessor_version_id == active.version_id
+                    )
+                    self.assertEqual(
+                        child.provenance.code_revision, correction_revision
+                    )
+                    self.assertEqual(
+                        corrected_manifest["runs"][-1]["code_revision"],
+                        correction_revision,
+                    )
+                    report = validate_release(
+                        corrected,
+                        published_site=issued.site,
+                        forecast_publications=(capability,),
+                        timing_evidence=(timing,),
+                    )
+                    self.assertTrue(
+                        report.valid, [str(item) for item in report.failures]
+                    )
+
+    def test_final_run_owns_rewritten_preseason_timestamp(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            base = root / "published"
+            self.prepare_base(base)
+            prior = PreviousFinal({"Home": 20.24, "Away": 20.0}, {})
+            numbered = build_release(
+                snapshot(), root / "numbered", release_id="numbered",
+                target_week=0, phase="week", previous_final=prior,
+                timestamp="2026-09-01T20:00:00+00:00", published_site=base,
+            )
+            teams = (SourceTeam("Home", "X"), SourceTeam("Away", "X"))
+            games = (
+                SourceGame(0, "Home", "fbs", 22, "Away", "fbs", 20, False, provider_id="g-final", completed=True),
+                SourceGame(1, "Away", "fbs", 17, "Home", "fbs", 14, False, provider_id="g-next", completed=True),
+            )
+            state = {
+                "schema_version": 2, "sport": "cfb", "classification": "FBS",
+                "year": 2026, "teams_fetched_at": None, "games_fetched_at": None,
+                "complete_through_week": 1, "calendar_provenance": None,
+                "correction_registry_provenance": None, "migration_provenance": None,
+            }
+            final_snapshot = SeasonSnapshot(
+                "cfb", "FBS", 2026, teams, games, MappingProxyType(state),
+                _checksum(state, teams, games),
+            )
+            final = build_release(
+                final_snapshot, root / "final", release_id="final",
+                target_week=1, phase="final", previous_final=prior,
+                timestamp="2026-09-02T20:00:00+00:00",
+                published_site=numbered.site,
+            )
+            preseason = (
+                final.site
+                / "cfb/years/2026/rankings/2026_PRESEASON_FBS_cors.html"
+            ).read_text()
+            self.assertIn("Last updated: 2026-09-02T20:00:00+00:00", preseason)
+            report = validate_release(final, published_site=base)
             self.assertTrue(report.valid, [str(item) for item in report.failures])
 
     def test_manifest_downgrade_cannot_remove_forecast_contract(self):
