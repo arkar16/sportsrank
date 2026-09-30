@@ -34,9 +34,27 @@ with `classification=fbs`, the stated `year`, and the stated `seasonType`;
 the first four bind to the retained 2024 or 2025 season snapshot and the last
 binds to the retained 2026 snapshot. These requests are season metadata and
 therefore have no expected game ID. The plan registry accepts only this exact
-five-request byte identity and the original nine-request identity. It does
-not admit dynamic manifests or later grouped `/plays` requests; those require
-a separately reviewed plan derived from verified returned metadata.
+five-request byte identity and the original nine-request identity. It does not
+admit dynamic manifests or unreviewed grouped `/plays` requests.
+
+The adapter also recognizes the separately frozen grouped-plays plan in
+`config/excitement-grouped-plays-v1.json`, SHA-256
+`f93589b18c17a9a14882505c62f50a0617a2f228e75601c7cc1e9580ad7dca21`, plan ID
+`adr21-grouped-plays-v1`, and cap 38. The config records 2024 regular weeks
+1–16 plus postseason week 1, 2025 regular weeks 1–16 plus postseason week 1,
+and 2026 regular weeks 1–4. It contains 752, 46, 762, 46, and 158 target game
+IDs for those five year/phase groups, respectively, for 1,764 targets in the
+frozen plan. Every request is a `/plays` filter with `classification=fbs`,
+`year`, `week`, and `seasonType`; it has no team or line filter and uses
+`expected_game_id: null`. Each request carries its metadata request ID and
+the exact target-game membership from the retained metadata capture.
+
+The grouped plan also carries five path-free metadata `InputReference`
+receipts, keyed by the five season-metadata request IDs and bound to the
+metadata plan SHA. Acquisition verifies those retained objects through
+`LocalInputStore` before creating the grouped claim ledger or making a
+metered request. The registry accepts only this exact 38-request identity;
+future weeks or grouped keys require another reviewed plan and hash.
 
 ## Offline plan
 
@@ -69,6 +87,17 @@ env -u CFBD_API -u CFBD_API_KEY \
 Its output reports the five exact `/games` filters and
 `remaining_attempts: 5`. As with the original plan, that is the initial
 ceiling rather than a ledger read.
+
+The grouped-plays plan has its own nonmutating dry run:
+
+```sh
+env -u CFBD_API -u CFBD_API_KEY \
+  UV_CACHE_DIR=/tmp/adr21-uv-cache \
+  uv run --locked python -m cfb.excitement_source dry-run \
+  --pilot-config config/excitement-grouped-plays-v1.json
+```
+
+Its output reports the 38 exact `/plays` filters and `remaining_attempts: 38`.
 
 ## Live command and plan-bound allowance
 
@@ -107,6 +136,21 @@ The two plan identities use separate claim ledgers, genesis markers, ready
 markers, and request witnesses. The season-metadata allowance cannot reopen or
 reset the exhausted nine-request ledger, and the original allowance cannot
 authorize the metadata plan.
+
+The grouped-plays plan likewise requires a distinct plan-bound allowance:
+
+```json
+{
+  "allowance_id": "owner-issued-grouped-plays-id",
+  "pilot_manifest_sha256": "f93589b18c17a9a14882505c62f50a0617a2f228e75601c7cc1e9580ad7dca21",
+  "max_attempts": 38,
+  "purpose": "historical"
+}
+```
+
+Its allowance cannot reopen either earlier plan or reset their claim caps. The
+shared `RequestMeter` still accounts for all three plan namespaces under the
+same audited budget.
 
 The source binding is a safe receipt file, not a source path. It supplies one
 `InputReference` for the pinned source archive and one for each parent snapshot:
@@ -153,6 +197,12 @@ five-attempt allowance. Its plan-specific ledger files remain separate, while
 the shared `RequestMeter` still accounts for both plans under the same audited
 budget.
 
+The grouped-plays plan uses that same command and boundary with
+`--pilot-config config/excitement-grouped-plays-v1.json` and its 38-attempt
+allowance. It verifies all five retained metadata references before creating
+its plan-specific durable state and preserves every response as exact private
+bytes.
+
 The private claim ledger is derived from the pilot ID under the supplied
 owner-only store. Response objects are retained under content-addressed names
 with mode `0600`. A safe `SupplementReceipt` contains request filters,
@@ -163,7 +213,8 @@ authorization header, or a filesystem path.
 The claim state has feature-owned durability witnesses alongside the SQLite
 ledger. The filenames use the exact plan ID: for example,
 `.adr21-qualification-pilot-v1.genesis.json` and
-`.adr21-season-metadata-v1.genesis.json`, with matching
+`.adr21-season-metadata-v1.genesis.json` and
+`.adr21-grouped-plays-v1.genesis.json`, with matching
 `.ledger-ready.json` files and one `.claim.<request_id>.witness` per request.
 The genesis marker is created exclusively and binds the manifest, source
 archive, cap, and a random ledger identity. The ledger is initialized and
