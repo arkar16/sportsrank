@@ -27,6 +27,8 @@ import sys
 import tempfile
 from typing import Any, Mapping, Sequence, TYPE_CHECKING
 
+from bs4 import BeautifulSoup
+
 if TYPE_CHECKING:
     from .forecast_publication import VerifiedForecastPublication
     from .forecast_record import GameTimingEvidence
@@ -34,14 +36,14 @@ if TYPE_CHECKING:
 try:
     from .baseline import VerifiedBaseline, import_baseline
     from .publication_records import BaselineRecord, ProviderIdentity, ProviderTarget
-    from .release import Release, validate_release
+    from .release import Release, validate_release, validated_progression_used_coverage
     from .recovery_inputs import RecoveryInputBundle, RecoveryInputError
     from .public_safety import assert_public_bytes, has_source_payload as _deep_has_source_payload
     from .forecast_release import CURRENT_ARTIFACT_CONTRACT as CURRENT_RELEASE_CONTRACT
 except ImportError:  # pragma: no cover - direct execution compatibility
     from baseline import VerifiedBaseline, import_baseline
     from publication_records import BaselineRecord, ProviderIdentity, ProviderTarget
-    from release import Release, validate_release
+    from release import Release, validate_release, validated_progression_used_coverage
     from recovery_inputs import RecoveryInputBundle, RecoveryInputError
     from public_safety import assert_public_bytes, has_source_payload as _deep_has_source_payload
     from forecast_release import CURRENT_ARTIFACT_CONTRACT as CURRENT_RELEASE_CONTRACT
@@ -50,7 +52,7 @@ except ImportError:  # pragma: no cover - direct execution compatibility
 SCHEMA_VERSION = 2
 # Supported historical semantics are independent of the current preparation
 # expectation. A later contract must extend this set without reinterpreting 3.
-PUBLIC_RELEASE_CONTRACTS = frozenset({3})
+PUBLIC_RELEASE_CONTRACTS = frozenset({3, 4})
 RECORD_TYPE = "local_validation_receipt"
 PUBLIC_MANIFEST_TYPE = "public_site_manifest"
 PUBLIC_RELEASE_TYPE = "public_site_release"
@@ -117,6 +119,80 @@ def _digest(value: Any, label: str) -> str:
     if not isinstance(value, str) or _SHA256.fullmatch(value) is None:
         raise PublicSiteError(f"{label} must be a lowercase SHA-256 digest")
     return value
+
+
+def _validate_used_coverage(value: Any) -> Mapping[str, Any]:
+    if not isinstance(value, Mapping) or value.get("schema") != "ranking-progression/used-coverage/v1":
+        raise PublicSiteError("receipt used coverage is invalid")
+    status = value.get("status")
+    if status == "none":
+        if set(value) != {"schema", "status"}:
+            raise PublicSiteError("empty used coverage has unexpected fields")
+        return dict(value)
+    required = {
+        "schema", "status", "season", "sport", "classification", "source",
+        "artifact_snapshot_checksum", "source_snapshot_checksum",
+        "snapshot_archive_path", "phase", "target_week", "dataset_id",
+        "model_version", "carryover_identity", "prior_final",
+        "ranking_values_sha256", "artifacts", "season_navigation",
+        "public_provenance_paths",
+    }
+    if status != "required" or set(value) != required:
+        raise PublicSiteError("required used coverage fields are invalid")
+    if value["season"] != 2025 or value["sport"] != "cfb" or value["classification"] != "FBS":
+        raise PublicSiteError("required used coverage identity is invalid")
+    artifact_snapshot = _digest(
+        value["artifact_snapshot_checksum"], "used coverage artifact snapshot"
+    )
+    _digest(value["source_snapshot_checksum"], "used coverage source snapshot")
+    source = value["source"]
+    if not isinstance(source, Mapping) or source.get("source_snapshot") != artifact_snapshot:
+        raise PublicSiteError("used coverage origin is invalid")
+    source_fields = {
+        "kind", "index", "season", "phase", "target_week", "source_snapshot",
+        "derived_model_version",
+    }
+    if source.get("kind") == "retained-run":
+        source_fields.add("run_sha256")
+        _digest(source.get("run_sha256"), "used coverage origin run")
+    elif source.get("kind") != "current-run":
+        raise PublicSiteError("used coverage origin kind is invalid")
+    if set(source) != source_fields or source.get("season") != 2025:
+        raise PublicSiteError("used coverage origin fields are invalid")
+    if isinstance(source.get("index"), bool) or not isinstance(source.get("index"), int) or source["index"] < 0:
+        raise PublicSiteError("used coverage origin index is invalid")
+    if value["phase"] not in {"preseason", "week", "final"} or value["phase"] != source.get("phase"):
+        raise PublicSiteError("used coverage phase is invalid")
+    if isinstance(value["target_week"], bool) or not isinstance(value["target_week"], int) or value["target_week"] != source.get("target_week"):
+        raise PublicSiteError("used coverage target week is invalid")
+    if value["model_version"] != source.get("derived_model_version"):
+        raise PublicSiteError("used coverage model identity is invalid")
+    if value["dataset_id"] != f"snapshot:{artifact_snapshot}":
+        raise PublicSiteError("used coverage dataset identity is invalid")
+    _digest(value["ranking_values_sha256"], "used coverage ranking values")
+    prior = value["prior_final"]
+    if not isinstance(prior, Mapping) or set(prior) != {"path", "sha256", "values_sha256"}:
+        raise PublicSiteError("used coverage prior FINAL identity is invalid")
+    _safe_relative(prior["path"], "used coverage prior FINAL path")
+    _digest(prior["sha256"], "used coverage prior FINAL bytes")
+    _digest(prior["values_sha256"], "used coverage prior FINAL values")
+    archive = _safe_relative(value["snapshot_archive_path"], "used coverage snapshot path")
+    match = _SNAPSHOT_ARCHIVE_PATH.fullmatch(archive)
+    if match is None or int(match.group("year")) != 2025 or match.group("checksum") != artifact_snapshot:
+        raise PublicSiteError("used coverage snapshot archive identity is invalid")
+    artifacts = value["artifacts"]
+    if artifacts != [
+        "cfb/years/2025/history/2025_FBS_progression.html",
+        "cfb/years/2025/history/2025_FBS_progression.json",
+    ]:
+        raise PublicSiteError("used coverage progression paths are invalid")
+    if value["season_navigation"] != "cfb/years/2025/2025_CFB.html":
+        raise PublicSiteError("used coverage season navigation is invalid")
+    if value["public_provenance_paths"] != [archive]:
+        raise PublicSiteError("used coverage provenance paths are invalid")
+    if not isinstance(value["carryover_identity"], str) or not value["carryover_identity"].startswith("prior-final:"):
+        raise PublicSiteError("used coverage carryover identity is invalid")
+    return dict(value)
 
 
 def _source_schema_version(value: Any, label: str, *, default: int = 3) -> int:
@@ -275,17 +351,29 @@ def _package_validation_hash(
     configuration_sha256: str,
     expected_baseline_sha256: str,
     retained_inputs_sha256: str,
+    local_validation_receipt_sha256: str | None = None,
+    used_coverage_sha256: str | None = None,
 ) -> str:
+    current = local_validation_receipt_sha256 is not None or used_coverage_sha256 is not None
+    if current and (local_validation_receipt_sha256 is None or used_coverage_sha256 is None):
+        raise PublicSiteError("package validation requires both receipt identities")
     return _sha256_bytes(
         _canonical_bytes(
             {
-                "schema_version": 1,
+                "schema_version": 2 if current else 1,
                 "record_type": "package_validation",
                 "outcome": "valid",
                 "inventory_sha256": inventory_sha256,
                 "configuration_sha256": configuration_sha256,
                 "expected_baseline_sha256": expected_baseline_sha256,
                 "retained_inputs_sha256": retained_inputs_sha256,
+                **(
+                    {
+                        "local_validation_receipt_sha256": local_validation_receipt_sha256,
+                        "used_coverage_sha256": used_coverage_sha256,
+                    }
+                    if current else {}
+                ),
             }
         )
     )
@@ -903,6 +991,73 @@ class PublicOutputReport:
         return self
 
 
+def _validate_public_progression_feature(
+    root: Path,
+    coverage: Mapping[str, Any] | None = None,
+) -> None:
+    artifacts = (
+        coverage["artifacts"]
+        if coverage is not None
+        else [
+            "cfb/years/2025/history/2025_FBS_progression.html",
+            "cfb/years/2025/history/2025_FBS_progression.json",
+        ]
+    )
+    progression_html, progression_json = (root / path for path in artifacts)
+    season_page = root / (
+        coverage["season_navigation"]
+        if coverage is not None
+        else "cfb/years/2025/2025_CFB.html"
+    )
+    if not progression_html.is_file() or not progression_json.is_file():
+        raise PublicSiteValidationError(
+            "contract 4 with 2025 FBS public coverage requires progression artifacts"
+        )
+    if not season_page.is_file():
+        raise PublicSiteValidationError(
+            "contract 4 with 2025 FBS public coverage requires season navigation"
+        )
+    season_document = BeautifulSoup(
+        season_page.read_text(encoding="utf-8"), "html.parser"
+    )
+    progression_links = [
+        anchor
+        for anchor in season_document.find_all("a", href=True)
+        if str(anchor["href"]) == "history/2025_FBS_progression.html"
+        and anchor.get_text(strip=True) == "Ranking progression"
+    ]
+    if len(progression_links) != 1:
+        raise PublicSiteValidationError(
+            "contract 4 with 2025 FBS public coverage requires progression navigation"
+        )
+    if coverage is not None:
+        manifest = _json_file(root / "manifest.json", "public manifest")
+        bindings = {
+            item["path"]: item for item in manifest.get("snapshot_provenance", ())
+        }
+        for relative in coverage["public_provenance_paths"]:
+            binding = bindings.get(relative)
+            if not isinstance(binding, Mapping):
+                raise PublicSiteValidationError(
+                    "used progression coverage requires its public provenance"
+                )
+            provenance = _json_file(root / relative, "public progression provenance")
+            identity = provenance.get("identity")
+            if (
+                not isinstance(identity, Mapping)
+                or identity.get("season") != coverage["season"]
+                or identity.get("sport") != coverage["sport"]
+                or identity.get("classification") != coverage["classification"]
+                or provenance.get("snapshot_checksum")
+                != coverage["artifact_snapshot_checksum"]
+                or provenance.get("source_snapshot_checksum")
+                != coverage["source_snapshot_checksum"]
+            ):
+                raise PublicSiteValidationError(
+                    "public progression provenance differs from validated coverage"
+                )
+
+
 def validate_public_output(site: str | Path, *, expected_receipt: "LocalValidationReceipt | None" = None) -> PublicOutputReport:
     """Validate a public export without consuming private source payloads."""
 
@@ -963,6 +1118,47 @@ def validate_public_output(site: str | Path, *, expected_receipt: "LocalValidati
             path = root / binding["path"]
             if _sha256_file(path) != binding["provenance_sha256"]:
                 raise PublicSiteValidationError("public manifest snapshot binding does not match file bytes")
+        has_2025_fbs_source = bool(
+            manifest.get("artifact_contract") == 4
+            and (root / "cfb/years/2025/2025_CFB.html").is_file()
+        )
+        if manifest.get("artifact_contract") == 4:
+            for binding in snapshot_bindings:
+                provenance = _json_file(
+                    root / binding["path"], "public snapshot provenance"
+                )
+                identity = provenance.get("identity")
+                if (
+                    isinstance(identity, Mapping)
+                    and identity.get("season") == 2025
+                    and str(identity.get("sport", "")).lower() == "cfb"
+                    and str(identity.get("classification", "")).upper() == "FBS"
+                ):
+                    has_2025_fbs_source = True
+                    break
+        if expected_receipt is not None:
+            coverage = expected_receipt.used_coverage
+            if manifest.get("artifact_contract") == 4 and coverage is None:
+                raise PublicSiteValidationError(
+                    "current receipt lacks a used coverage descriptor"
+                )
+            if coverage is not None and manifest.get("artifact_contract") != 4:
+                raise PublicSiteValidationError(
+                    "legacy public output cannot claim current used coverage"
+                )
+            if coverage is not None and coverage["status"] == "required":
+                _validate_public_progression_feature(root, coverage)
+            elif coverage is not None:
+                forbidden = (
+                    root / "cfb/years/2025/history/2025_FBS_progression.html",
+                    root / "cfb/years/2025/history/2025_FBS_progression.json",
+                )
+                if any(path.exists() for path in forbidden):
+                    raise PublicSiteValidationError(
+                        "public progression artifacts exceed validated coverage"
+                    )
+        elif has_2025_fbs_source:
+            _validate_public_progression_feature(root)
         if expected_receipt is not None and actual_inventory != expected_receipt.public_site_inventory:
             raise PublicSiteValidationError("public site inventory does not match receipt")
         return PublicOutputReport(True, (), actual_inventory)
@@ -988,6 +1184,7 @@ def _receipt_value(
     baseline: Mapping[str, Any],
     independent_validation: Mapping[str, Any],
     transform: Mapping[str, Any],
+    used_coverage: Mapping[str, Any],
 ) -> dict[str, Any]:
     return {
         "schema_version": SCHEMA_VERSION,
@@ -1001,6 +1198,7 @@ def _receipt_value(
         "baseline": dict(baseline),
         "independent_validation": dict(independent_validation),
         "transform": dict(transform),
+        "used_coverage": dict(used_coverage),
     }
 
 
@@ -1017,11 +1215,12 @@ class LocalValidationReceipt:
     baseline: Mapping[str, Any]
     independent_validation: Mapping[str, Any]
     transform: Mapping[str, Any]
+    used_coverage: Mapping[str, Any] | None = None
     schema_version: int = SCHEMA_VERSION
     record_type: str = RECORD_TYPE
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        result = {
             "schema_version": self.schema_version,
             "record_type": self.record_type,
             "public_site_inventory": [dict(item) for item in self.public_site_inventory],
@@ -1034,6 +1233,9 @@ class LocalValidationReceipt:
             "independent_validation": dict(self.independent_validation),
             "transform": dict(self.transform),
         }
+        if self.used_coverage is not None:
+            result["used_coverage"] = dict(self.used_coverage)
+        return result
 
     def to_bytes(self) -> bytes:
         return _canonical_bytes(self.to_dict())
@@ -1041,6 +1243,19 @@ class LocalValidationReceipt:
     @property
     def digest(self) -> str:
         return _sha256_bytes(self.to_bytes())
+
+    @property
+    def used_coverage_sha256(self) -> str | None:
+        if self.used_coverage is None:
+            return None
+        return _sha256_bytes(
+            _canonical_bytes(
+                {
+                    "schema": "local-validation-used-coverage/v1",
+                    "used_coverage": dict(self.used_coverage),
+                }
+            )
+        )
 
     # Publication preparation consumes these names as a small compatibility
     # facade.  They are derived from the canonical fields above; none is an
@@ -1086,6 +1301,10 @@ class LocalValidationReceipt:
             configuration_sha256=self.configuration_sha256,
             expected_baseline_sha256=baseline_sha,
             retained_inputs_sha256=retained_sha,
+            local_validation_receipt_sha256=(
+                self.digest if self.used_coverage is not None else None
+            ),
+            used_coverage_sha256=self.used_coverage_sha256,
         )
 
     @property
@@ -1110,12 +1329,22 @@ class LocalValidationReceipt:
 
     @classmethod
     def from_dict(cls, value: Mapping[str, Any]) -> "LocalValidationReceipt":
-        if not isinstance(value, Mapping) or set(value) != {
+        if not isinstance(value, Mapping):
+            raise PublicSiteError("local validation receipt fields do not match its schema")
+        base_fields = {
             "schema_version", "record_type", "public_site_inventory",
             "public_site_inventory_sha256", "firebase_json_sha256", "source_fingerprint",
             "trusted_input_manifest_sha256", "private_evidence", "baseline",
             "independent_validation", "transform",
-        }:
+        }
+        independent = value.get("independent_validation")
+        is_current4 = (
+            value.get("schema_version") == 2
+            and isinstance(independent, Mapping)
+            and independent.get("artifact_contract") == 4
+        )
+        expected_fields = base_fields | ({"used_coverage"} if is_current4 else set())
+        if set(value) != expected_fields:
             raise PublicSiteError("local validation receipt fields do not match its schema")
         if type(value.get("schema_version")) is not int or value.get("schema_version") not in (1, 2) or value.get("record_type") != RECORD_TYPE:
             raise PublicSiteError("local validation receipt schema is unsupported")
@@ -1138,6 +1367,10 @@ class LocalValidationReceipt:
             dict(value["baseline"]),
             dict(value["independent_validation"]),
             dict(value["transform"]),
+            used_coverage=(
+                dict(value["used_coverage"])
+                if is_current4 else None
+            ),
             schema_version=value["schema_version"],
         )
 
@@ -1259,6 +1492,14 @@ def _validate_receipt_nested(value: Mapping[str, Any]) -> None:
     for path in checked:
         _safe_relative(path, "receipt checked artifact path")
 
+    if (
+        value.get("schema_version") == 2
+        and independent.get("artifact_contract") == 4
+    ):
+        _validate_used_coverage(value.get("used_coverage"))
+    elif "used_coverage" in value:
+        raise PublicSiteError("legacy receipt cannot carry current used coverage")
+
     transform = value.get("transform")
     if set(transform) != {
         "format", "public_manifest_path", "public_release_path", "snapshot_paths",
@@ -1369,6 +1610,12 @@ def validate_and_export(
     if not report.ok:
         detail = "; ".join(str(failure) for failure in report.failures[:8])
         raise LocalValidationError(detail or "private release validation failed")
+    try:
+        used_coverage = validated_progression_used_coverage(private_candidate, report)
+    except (OSError, TypeError, ValueError) as exc:
+        raise LocalValidationError(
+            "validated progression coverage could not be projected"
+        ) from exc
 
     # Local validation may be a long calculation.  Refuse to attest a result
     # if the executable/configuration fingerprint, trust pins, retained input
@@ -1489,8 +1736,12 @@ def validate_and_export(
             baseline=receipt_baseline,
             independent_validation=independent,
             transform=transform,
+            used_coverage=used_coverage,
         )
         receipt = _receipt_from_value(receipt_value)
+        validate_public_output(
+            temporary_directory, expected_receipt=receipt
+        ).raise_for_failure()
         _write_new(receipt_output, receipt.to_bytes(), "local validation receipt")
         if output_path.exists() and any(output_path.iterdir()):
             raise PublicSiteError("public output directory became non-empty during export")

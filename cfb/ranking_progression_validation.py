@@ -6,6 +6,7 @@ It does not import the progression derivation or rendering implementation.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -14,6 +15,9 @@ from bs4 import BeautifulSoup
 
 from .season_snapshot import SeasonSnapshot
 from .season_source import is_explicit_non_played
+
+
+_PROGRESSION_STYLE_SHA256 = "664bd7c16d15cc10aea236ad41e703ecb347ec16e004c59bb65ca6e0d2f6574d"
 
 
 def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -118,6 +122,18 @@ derivation state, not permission for Release to omit calculated history.
         # executable markup must not pass merely because its initial DOM agrees.
         if document.find(["script", "iframe", "object", "embed", "base"]):
             failures.append("progression HTML contains executable or embedded content")
+        if document.find("template") or document.find(attrs={"inert": True}):
+            failures.append("progression HTML contains inert or template content")
+        if document.find("link", rel=lambda value: value and "stylesheet" in value):
+            failures.append("progression HTML contains an external stylesheet")
+        styles = document.find_all("style")
+        if (
+            len(styles) != 1
+            or styles[0].string is None
+            or hashlib.sha256(styles[0].string.encode("utf-8")).hexdigest()
+            != _PROGRESSION_STYLE_SHA256
+        ):
+            failures.append("progression HTML stylesheet differs from the accepted static layout")
         for node in document.find_all(True):
             for attribute, value in node.attrs.items():
                 if attribute.lower().startswith("on") or attribute.lower() == "srcdoc":
@@ -138,6 +154,21 @@ derivation state, not permission for Release to omit calculated history.
         if len(tables) != 1:
             raise ValueError("exactly one progression table is required")
         table = tables[0]
+        core_nodes = [*headings, *document.find_all("nav"), table]
+        for core in core_nodes:
+            for node in (core, *core.find_all(True), *core.parents):
+                if getattr(node, "attrs", None) is None:
+                    continue
+                if (
+                    node.has_attr("hidden")
+                    or node.has_attr("inert")
+                    or str(node.get("aria-hidden", "")).lower() == "true"
+                    or node.has_attr("style")
+                    or node.name == "template"
+                    or (node.name == "details" and not node.has_attr("open"))
+                ):
+                    failures.append("progression HTML hides core static content")
+                    break
         headers = [cell.get_text(strip=True) for cell in table.select("thead th")]
         expected_headers = ["Team", "Conference"]
         for key in keys:
@@ -158,12 +189,17 @@ derivation state, not permission for Release to omit calculated history.
                 )
             if [cell.get_text(strip=True) for cell in cells] != expected_cells:
                 failures.append(f"progression HTML values differ for {expected_row['team']}")
-        expected_links = {
-            f"../{year}_CFB.html", f"{year}_{classification}_progression.json",
-            *(f"../rankings/{year}_{key}_{classification}_cors.html" for key in values),
-        }
-        if not expected_links <= {str(anchor.get("href")) for anchor in document.find_all("a")}:
-            failures.append("progression HTML permanent navigation is incomplete")
+        expected_links = [
+            ("Season", f"../{year}_CFB.html"),
+            ("Progression data", f"{year}_{classification}_progression.json"),
+            *((f"{key} ranking", f"../rankings/{year}_{key}_{classification}_cors.html") for key in keys if key in values),
+        ]
+        actual_links = [
+            (anchor.get_text(strip=True), str(anchor.get("href")))
+            for anchor in document.select("nav a")
+        ]
+        if actual_links != expected_links:
+            failures.append("progression HTML permanent navigation differs")
         expected_provenance = (
             f"Season {year} · Dataset {dataset_id} · Model {model_version} · "
             f"Source snapshot {snapshot.checksum}"

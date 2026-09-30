@@ -171,7 +171,7 @@ def _legacy_snapshot() -> SeasonSnapshot:
         "schema_version": 2,
         "sport": "cfb",
         "classification": "FBS",
-        "year": 2025,
+        "year": 2026,
         "teams_fetched_at": None,
         "games_fetched_at": None,
         "complete_through_week": 0,
@@ -180,7 +180,7 @@ def _legacy_snapshot() -> SeasonSnapshot:
         "migration_provenance": None,
     }
     return SeasonSnapshot(
-        "cfb", "FBS", 2025, teams, games, MappingProxyType(state),
+        "cfb", "FBS", 2026, teams, games, MappingProxyType(state),
         _checksum(state, teams, games),
     )
 
@@ -1283,7 +1283,7 @@ class ForecastLifecycleIndependentTests(unittest.TestCase):
             )
             self.assertEqual(
                 json.loads(upgrade.manifest_path.read_text(encoding="utf-8"))["manifest_version"],
-                3,
+                4,
             )
             for relative, original in legacy_bytes.items():
                 self.assertEqual((upgrade.site / relative).read_bytes(), original)
@@ -1389,7 +1389,7 @@ class ForecastLifecycleIndependentTests(unittest.TestCase):
                 _legacy_snapshot(), root / "legacy", release_id="legacy",
                 target_week=0, phase="week",
                 previous_final=PreviousFinal({"Home": 10.0, "Away": 20.0}, {}),
-                timestamp="2025-09-01T20:00:00+00:00", published_site=base,
+                timestamp="2026-09-01T20:00:00+00:00", published_site=base,
             )
             manifest = json.loads(release.manifest_path.read_text())
             manifest["manifest_version"] = 2

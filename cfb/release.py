@@ -78,11 +78,14 @@ try:
     )
     from .forecast_release import (
         build_forecast_artifacts, canonical_json as forecast_json, game_identity,
-        CURRENT_ARTIFACT_CONTRACT, ForecastSourceCheckpoint,
+        CURRENT_ARTIFACT_CONTRACT, FORECAST_ARTIFACT_CONTRACT,
+        ForecastSourceCheckpoint,
         validate_evaluation_semantics, validate_forecast_capabilities,
         validate_forecast_sources, validate_public_forecast_json,
         select_displayed_forecast,
     )
+    from .ranking_progression import build_progression_outputs
+    from .ranking_progression_validation import validate_progression_artifacts
 except ImportError:  # Direct execution from the cfb directory.
     from baseline import VerifiedBaseline
     from carryover_registry import reconcile_previous_final
@@ -120,7 +123,9 @@ except ImportError:  # Direct execution from the cfb directory.
         postseason_calendar_provenance,
     )
     from forecast_record import FinalScore, ForecastCandidate, ForecastContractError, ForecastDisposition, ForecastProvenance, GameIdentity, GameTimingEvidence, PublicationReceipt, VersionBinding, aggregate_grades, select_graded_forecast
-    from forecast_release import CURRENT_ARTIFACT_CONTRACT, ForecastSourceCheckpoint, build_forecast_artifacts, canonical_json as forecast_json, game_identity, select_displayed_forecast, validate_evaluation_semantics, validate_forecast_capabilities, validate_forecast_sources, validate_public_forecast_json
+    from forecast_release import CURRENT_ARTIFACT_CONTRACT, FORECAST_ARTIFACT_CONTRACT, ForecastSourceCheckpoint, build_forecast_artifacts, canonical_json as forecast_json, game_identity, select_displayed_forecast, validate_evaluation_semantics, validate_forecast_capabilities, validate_forecast_sources, validate_public_forecast_json
+    from ranking_progression import build_progression_outputs
+    from ranking_progression_validation import validate_progression_artifacts
 
 if TYPE_CHECKING:
     try:
@@ -606,6 +611,7 @@ class ValidationReport:
     legacy_failures: list[ValidationFailure] = field(default_factory=list)
     checked_artifacts: list[str] = field(default_factory=list)
     site: Path | None = None
+    validated_tree_sha256: str | None = None
 
     @property
     def ok(self) -> bool:
@@ -963,6 +969,124 @@ def _prior_final_from_tree(snapshot: SeasonSnapshot, tree: Path) -> PreviousFina
     return _prior_final_with_evidence(snapshot, tree)[0]
 
 
+def _progression_paths() -> tuple[str, str, str]:
+    stem = "cfb/years/2025/history/2025_FBS_progression"
+    return f"{stem}.html", f"{stem}.json", "cfb/years/2025/2025_CFB.html"
+
+
+def _archived_run_snapshot(run: Mapping[str, Any], tree: Path) -> SeasonSnapshot:
+    relative = run.get("snapshot_archive_path")
+    if not isinstance(relative, str) or Path(relative).is_absolute() or ".." in Path(relative).parts:
+        raise ValueError("progression source run has an unsafe snapshot archive path")
+    snapshot = _snapshot_from_payload(json.loads((tree / relative).read_text(encoding="utf-8")))
+    if (
+        snapshot.year != int(run.get("season", -1))
+        or snapshot.classification.upper() != str(run.get("classification", "")).upper()
+        or snapshot.checksum != run.get("source_snapshot")
+        or relative != _snapshot_archive_relative(snapshot)
+        or _canonical_snapshot_checksum(snapshot) != snapshot.checksum
+    ):
+        raise ValueError("progression source run does not bind its canonical archived snapshot")
+    return snapshot
+
+
+def _progression_source(
+    current_snapshot: SeasonSnapshot,
+    phase: str,
+    target_week: int,
+    inherited_runs: Sequence[Mapping[str, Any]],
+    tree: Path,
+    coverage_tree: Path | None = None,
+) -> tuple[SeasonSnapshot, str, int, dict[str, Any]] | None:
+    """Select the independently evidenced 2025 checkpoint without reversing runs."""
+
+    if current_snapshot.year == 2025 and current_snapshot.classification.upper() == "FBS":
+        identity = {
+            "kind": "current-run",
+            "index": len(inherited_runs),
+            "season": 2025,
+            "phase": phase,
+            "target_week": target_week,
+            "source_snapshot": current_snapshot.checksum,
+            "derived_model_version": MODEL_VERSION,
+        }
+        return current_snapshot, phase, target_week, identity
+    if current_snapshot.year < 2025:
+        return None
+    for index in range(len(inherited_runs) - 1, -1, -1):
+        run = inherited_runs[index]
+        if (
+            int(run.get("season", -1)) != 2025
+            or str(run.get("classification", "")).upper() != "FBS"
+            or run.get("run_kind") in {"forecast-evidence-refresh", "forecast-correction", "artifact-contract-upgrade"}
+        ):
+            continue
+        snapshot = _archived_run_snapshot(run, tree)
+        source_phase, source_target = _phase_target(
+            snapshot, str(run.get("phase", "")).lower(), int(run.get("target_week", -999))
+        )
+        identity = {
+            "kind": "retained-run",
+            "index": index,
+            "run_sha256": hashlib.sha256(forecast_json(run)).hexdigest(),
+            "season": 2025,
+            "phase": source_phase,
+            "target_week": source_target,
+            "source_snapshot": snapshot.checksum,
+            # Legacy Release runs predate an explicit model field. Contract 4
+            # binds the model used for the fresh derivation without rewriting
+            # the retained run dictionary.
+            "derived_model_version": MODEL_VERSION,
+        }
+        return snapshot, source_phase, source_target, identity
+    coverage_roots = (tree,) if coverage_tree is None else (tree, coverage_tree)
+    if any(
+        archives.is_dir() and any(archives.glob("*.json"))
+        for archives in (
+            root / "cfb" / "years" / "2025" / "data" / "snapshots"
+            for root in coverage_roots
+        )
+    ):
+        raise ValueError("retained 2025 source coverage has no bound progression origin run")
+    return None
+
+
+def _progression_inputs(
+    snapshot: SeasonSnapshot, phase: str, target_week: int, tree: Path
+) -> tuple[list[dict[str, Any]], dict[int, list[dict[str, Any]]], str, dict[str, Any]]:
+    prior = _prior_final_from_tree(snapshot, tree)
+    prior_path = (
+        tree / "cfb" / "years" / str(snapshot.year - 1) / "rankings"
+        / f"{snapshot.year - 1}_FINAL_{snapshot.classification.upper()}_cors.html"
+    )
+    prior_digest = _sha256(prior_path)
+    preseason = preseason_ranking(snapshot, prior, model_version=MODEL_VERSION)
+    rankings: dict[int, list[dict[str, Any]]] = {}
+    if phase != "preseason":
+        rankings = season_rankings(snapshot, target_week, prior, model_version=MODEL_VERSION)
+        if phase == "final":
+            rankings[target_week] = final_ranking(snapshot, prior, model_version=MODEL_VERSION)
+    values = {
+        "PRESEASON": preseason,
+        **{f"W{week}": rows for week, rows in sorted(rankings.items())},
+    }
+    if phase == "final":
+        values["FINAL"] = rankings[target_week]
+    prior_values = {
+        "cors": dict(sorted(prior.cors.items())),
+        "wins_vs_expected": dict(sorted(prior.wins_vs_expected.items())),
+    }
+    evidence = {
+        "path": prior_path.relative_to(tree).as_posix(),
+        "sha256": prior_digest,
+        "values_sha256": hashlib.sha256(forecast_json(prior_values)).hexdigest(),
+    }
+    return preseason, rankings, f"prior-final:{prior_digest}", {
+        "prior_final": evidence,
+        "ranking_values_sha256": hashlib.sha256(forecast_json(values)).hexdigest(),
+    }
+
+
 def grade_ats(
     *,
     home_team: str,
@@ -1092,7 +1216,7 @@ class ReleaseBuilder:
                 inherited_manifest = json.loads(inherited_manifest_path.read_text(encoding="utf-8"))
             except (OSError, json.JSONDecodeError) as exc:
                 raise ValueError("Published Site has an unreadable Release manifest") from exc
-            if inherited_manifest.get("manifest_version") in {2, 3}:
+            if inherited_manifest.get("manifest_version") in {2, 3, 4}:
                 inherited_runs = [dict(run) for run in inherited_manifest.get("runs", [])]
                 inherited_owned = {
                     str(path).replace(os.sep, "/")
@@ -1849,6 +1973,73 @@ class ReleaseBuilder:
             ),
         )
 
+        progression_feature: dict[str, Any] | None = None
+        progression_source = _progression_source(
+            snapshot, phase, target_week, inherited_runs, self.site
+        )
+        if progression_source is not None:
+            progression_snapshot, progression_phase, progression_target, origin = progression_source
+            progression_preseason, progression_rankings, carryover_identity, derivation = (
+                _progression_inputs(
+                    progression_snapshot,
+                    progression_phase,
+                    progression_target,
+                    self.site,
+                )
+            )
+            final_rows = (
+                progression_rankings[progression_target]
+                if progression_phase == "final" else None
+            )
+            _, progression_html, progression_json_value = build_progression_outputs(
+                progression_snapshot,
+                progression_rankings,
+                progression_preseason,
+                final_rows=final_rows,
+                phase=progression_phase,
+                target_week=progression_target,
+                dataset_id=f"snapshot:{progression_snapshot.checksum}",
+                model_version=MODEL_VERSION,
+                source_snapshot=progression_snapshot.checksum,
+                carryover_identity=carryover_identity,
+                timestamp=self.timestamp,
+            )
+            progression_html_path, progression_json_path, progression_season_path = _progression_paths()
+            write(progression_html_path, progression_html, force=True)
+            write(progression_json_path, progression_json_value, force=True)
+            season_path = self.site / progression_season_path
+            season_html = season_path.read_text(encoding="utf-8")
+            progression_href = "history/2025_FBS_progression.html"
+            if progression_href not in season_html:
+                season_html, substitutions = re.subn(
+                    r"</p>",
+                    f'<a href="{progression_href}">Ranking progression</a> | </p>',
+                    season_html,
+                    count=1,
+                )
+                if substitutions != 1:
+                    raise ValueError("2025 season page has no navigation paragraph")
+            season_html, timestamp_substitutions = LAST_UPDATED_RE.subn(
+                f"Last updated: {self.timestamp}", season_html, count=1
+            )
+            if timestamp_substitutions != 1:
+                raise ValueError("2025 season page has no Last updated timestamp")
+            write(progression_season_path, season_html, force=True)
+            progression_feature = {
+                "schema": "ranking-progression/v1",
+                "artifacts": [progression_html_path, progression_json_path],
+                "season_navigation": progression_season_path,
+                "source": origin,
+                "snapshot_archive_path": _snapshot_archive_relative(progression_snapshot),
+                "source_snapshot": progression_snapshot.checksum,
+                "phase": progression_phase,
+                "target_week": progression_target,
+                "dataset_id": f"snapshot:{progression_snapshot.checksum}",
+                "model_version": MODEL_VERSION,
+                "carryover_identity": carryover_identity,
+                **derivation,
+            }
+
         history_rows = []
         if season_complete:
             champion = rankings[target_week][0] if rankings[target_week] else {}
@@ -2037,6 +2228,8 @@ class ReleaseBuilder:
             ),
         }
         metadata.update(forecast_contract_paths)
+        if progression_feature is not None:
+            metadata["progression_feature"] = progression_feature
         if baseline_provenance is not None:
             metadata["baseline_provenance"] = baseline_provenance
         if source_input_provenance is not None:
@@ -2078,6 +2271,8 @@ class ReleaseBuilder:
                 sorted(retained_legacy_forecast_digests.items())
             )
         run_evidence.update(forecast_contract_paths)
+        if progression_feature is not None:
+            run_evidence["progression_feature"] = progression_feature
         if baseline_provenance is not None:
             run_evidence["baseline_provenance"] = baseline_provenance
         if source_input_provenance is not None:
@@ -2295,11 +2490,11 @@ def _validate_release(
         _failure(failures, "runs.missing", f"manifest v{expected_manifest_version} requires non-empty cumulative run evidence", manifest_path)
         raw_runs = []
     forecast_ledger: Mapping[str, Any] | None = None
-    if expected_manifest_version == CURRENT_ARTIFACT_CONTRACT:
-        if manifest.get("artifact_contract") != 3:
-            _failure(failures, "artifact.contract", "forecast Release requires artifact contract 3", manifest_path)
-        if raw_runs and raw_runs[-1].get("artifact_contract") != 3:
-            _failure(failures, "artifact.contract", "latest run requires artifact contract 3", manifest_path)
+    if expected_manifest_version >= FORECAST_ARTIFACT_CONTRACT:
+        if manifest.get("artifact_contract") != expected_manifest_version:
+            _failure(failures, "artifact.contract", f"Release requires artifact contract {expected_manifest_version}", manifest_path)
+        if raw_runs and raw_runs[-1].get("artifact_contract") != expected_manifest_version:
+            _failure(failures, "artifact.contract", f"latest run requires artifact contract {expected_manifest_version}", manifest_path)
         base_manifest_path = base / "manifest.json"
         if base_manifest_path.is_file():
             try:
@@ -2588,7 +2783,7 @@ def _validate_release(
             derived_retained: dict[str, str] = {}
             for run, run_snapshot in run_contexts:
                 if (
-                    int(run.get("artifact_contract", 2)) >= CURRENT_ARTIFACT_CONTRACT
+                    int(run.get("artifact_contract", 2)) >= FORECAST_ARTIFACT_CONTRACT
                     or run_snapshot.year != int(manifest["season"])
                     or run_snapshot.classification.upper()
                     != str(manifest["classification"]).upper()
@@ -2628,15 +2823,22 @@ def _validate_release(
                 raise ForecastContractError(
                     "retained legacy forecast bindings differ from the pre-contract3 run graph"
                 )
-            upgrade_runs = [
-                run for run, _ in run_contexts
+            forecast_upgrade_runs = [
+                run
+                for index, (run, _) in enumerate(run_contexts)
                 if run.get("run_kind") == "artifact-contract-upgrade"
+                and int(run.get("artifact_contract", 0)) >= FORECAST_ARTIFACT_CONTRACT
+                and (
+                    index == 0
+                    or int(run_contexts[index - 1][0].get("artifact_contract", 2))
+                    < FORECAST_ARTIFACT_CONTRACT
+                )
             ]
-            if len(upgrade_runs) > 1:
+            if len(forecast_upgrade_runs) > 1:
                 raise ForecastContractError("forecast contract may be upgraded only once")
             if derived_retained and (
-                not upgrade_runs
-                or upgrade_runs[0].get("retained_legacy_forecast_digests")
+                not forecast_upgrade_runs
+                or forecast_upgrade_runs[0].get("retained_legacy_forecast_digests")
                 != dict(sorted(derived_retained.items()))
             ):
                 raise ForecastContractError(
@@ -2645,7 +2847,7 @@ def _validate_release(
             checkpoints: list[ForecastSourceCheckpoint] = []
             for run, run_snapshot in run_contexts:
                 if (
-                    int(run.get("artifact_contract", 0)) != CURRENT_ARTIFACT_CONTRACT
+                    int(run.get("artifact_contract", 0)) < FORECAST_ARTIFACT_CONTRACT
                     or run.get("run_kind") == "forecast-evidence-refresh"
                 ):
                     continue
@@ -2700,7 +2902,7 @@ def _validate_release(
                     datetime.fromisoformat(str(run["last_updated"]).replace("Z", "+00:00")),
                 )
                 for run, run_snapshot in run_contexts
-                if int(run.get("artifact_contract", 0)) == CURRENT_ARTIFACT_CONTRACT
+                if int(run.get("artifact_contract", 0)) >= FORECAST_ARTIFACT_CONTRACT
             )
             validate_evaluation_semantics(
                 forecast_ledger,
@@ -2990,6 +3192,79 @@ def _validate_release(
         expected_schools = set(schools)
     else:
         expected_schools = set()
+
+    progression_paths = _progression_paths()
+    if snapshot is not None and expected_manifest_version == CURRENT_ARTIFACT_CONTRACT:
+        try:
+            progression_source = _progression_source(
+                snapshot,
+                str(manifest.get("phase", "")),
+                int(manifest.get("target_week", -999)),
+                raw_runs[:-1] if raw_runs else (),
+                site,
+                base,
+            )
+            trusted_2025_coverage = bool(
+                source_inputs is not None
+                and any(
+                    identity.season == 2025
+                    and identity.sport.lower() == "cfb"
+                    and identity.classification.upper() == "FBS"
+                    for identity in source_inputs.identities
+                )
+            )
+            if progression_source is None and snapshot.year >= 2025 and trusted_2025_coverage:
+                raise ValueError("trusted 2025 source input has no bound progression origin run")
+            if progression_source is not None:
+                source_snapshot, source_phase, source_target, origin = progression_source
+                preseason, source_rankings, carryover_identity, derivation = _progression_inputs(
+                    source_snapshot, source_phase, source_target, site
+                )
+                expected_feature = {
+                    "schema": "ranking-progression/v1",
+                    "artifacts": [progression_paths[0], progression_paths[1]],
+                    "season_navigation": progression_paths[2],
+                    "source": origin,
+                    "snapshot_archive_path": _snapshot_archive_relative(source_snapshot),
+                    "source_snapshot": source_snapshot.checksum,
+                    "phase": source_phase,
+                    "target_week": source_target,
+                    "dataset_id": f"snapshot:{source_snapshot.checksum}",
+                    "model_version": MODEL_VERSION,
+                    "carryover_identity": carryover_identity,
+                    **derivation,
+                }
+                if manifest.get("progression_feature") != expected_feature:
+                    raise ValueError("progression feature evidence disagrees with retained source derivation")
+                if not raw_runs or raw_runs[-1].get("progression_feature") != expected_feature:
+                    raise ValueError("latest current run does not bind progression feature evidence")
+                progression_failures = validate_progression_artifacts(
+                    site,
+                    source_snapshot,
+                    phase=source_phase,
+                    target_week=source_target,
+                    preseason=preseason,
+                    rankings=source_rankings,
+                    model_version=MODEL_VERSION,
+                    dataset_id=f"snapshot:{source_snapshot.checksum}",
+                    carryover_identity=carryover_identity,
+                )
+                if progression_failures:
+                    raise ValueError("; ".join(progression_failures))
+                season_document = BeautifulSoup(
+                    (site / progression_paths[2]).read_text(encoding="utf-8"),
+                    "html.parser",
+                )
+                hrefs = [str(anchor.get("href", "")) for anchor in season_document.find_all("a", href=True)]
+                if hrefs.count("history/2025_FBS_progression.html") != 1:
+                    raise ValueError("2025 season navigation must link progression exactly once")
+                cumulative_expected.update(progression_paths)
+            elif manifest.get("progression_feature") is not None or (
+                raw_runs and raw_runs[-1].get("progression_feature") is not None
+            ):
+                raise ValueError("progression feature evidence exists without independently derived 2025 source coverage")
+        except (KeyError, OSError, TypeError, ValueError) as exc:
+            _failure(failures, "progression.contract", str(exc), manifest_path)
     owned = {str(value).replace(os.sep, "/") for value in manifest.get("owned_artifacts", [])}
     checksums = manifest.get("artifact_checksums", {})
     if not isinstance(checksums, dict):
@@ -3078,13 +3353,13 @@ def _validate_release(
                 if (
                     relative in retained_legacy_paths
                     and int(run.get("artifact_contract", 2))
-                    >= CURRENT_ARTIFACT_CONTRACT
+                    >= FORECAST_ARTIFACT_CONTRACT
                 ):
                     continue
                 latest_owner[relative] = index
             if (
                 int(run.get("artifact_contract", 2))
-                >= CURRENT_ARTIFACT_CONTRACT
+                >= FORECAST_ARTIFACT_CONTRACT
                 and run.get("forecast_contract") == "forecast-ledger/v1"
             ):
                 year_value = run_snapshot.year
@@ -3097,6 +3372,9 @@ def _validate_release(
                 latest_final_owner[run_snapshot.year] = index
         except (KeyError, TypeError, ValueError):
             continue
+    if run_contexts and manifest.get("progression_feature") is not None:
+        for relative in _progression_paths():
+            latest_owner[relative] = len(run_contexts) - 1
     for index, (run, run_snapshot) in enumerate(run_contexts):
         if run.get("run_kind") in {"forecast-evidence-refresh", "forecast-correction"}:
             continue
@@ -3185,7 +3463,7 @@ def _validate_release(
     else:
         try:
             release_metadata = json.loads(release_path.read_text(encoding="utf-8"))
-            for key in ("release_id", "release_root_name", "sport", "classification", "season", "phase", "target_week", "source_snapshot", "base_tree_sha256", "immediate_base_tree_sha256", "runs", "owned_artifacts", "required_artifacts", "forecast_display_mode", "retained_legacy_forecast_digests"):
+            for key in ("release_id", "release_root_name", "sport", "classification", "season", "phase", "target_week", "source_snapshot", "base_tree_sha256", "immediate_base_tree_sha256", "runs", "owned_artifacts", "required_artifacts", "forecast_display_mode", "retained_legacy_forecast_digests", "progression_feature"):
                 if release_metadata.get(key) != manifest.get(key):
                     _failure(failures, "metadata.reconcile", f"release.json {key} disagrees with manifest", release_path)
         except (OSError, json.JSONDecodeError) as exc:
@@ -3396,6 +3674,8 @@ def _validate_release(
     _scan_legacy(site, expected_owned, legacy_failures)
     _validate_history_against_base(site, base, failures, replaceable_history_keys)
     report.valid = not failures
+    if report.valid:
+        report.validated_tree_sha256 = _tree_digest(site)
     return report
 
 
@@ -3448,6 +3728,91 @@ def validate_release(
             failures=[failure],
             site=site,
         )
+
+
+def validated_progression_used_coverage(
+    candidate: str | Path | Release,
+    report: ValidationReport,
+) -> Mapping[str, Any]:
+    """Project validated private progression evidence into a safe receipt value."""
+
+    site = _site_for(candidate).resolve()
+    if (
+        not report.ok
+        or report.site is None
+        or report.site.resolve() != site
+        or report.validated_tree_sha256 is None
+        or report.validated_tree_sha256 != _tree_digest(site)
+    ):
+        raise ValueError("progression coverage requires validation of the same candidate")
+    manifest = json.loads((site / "manifest.json").read_text(encoding="utf-8"))
+    if manifest.get("artifact_contract") != CURRENT_ARTIFACT_CONTRACT:
+        raise ValueError("progression coverage requires the current artifact contract")
+    feature = manifest.get("progression_feature")
+    if feature is None:
+        return {
+            "schema": "ranking-progression/used-coverage/v1",
+            "status": "none",
+        }
+    if not isinstance(feature, Mapping) or feature.get("schema") != "ranking-progression/v1":
+        raise ValueError("validated progression feature is unavailable")
+    source = feature.get("source")
+    runs = manifest.get("runs")
+    if not isinstance(source, Mapping) or not isinstance(runs, list):
+        raise ValueError("validated progression origin is unavailable")
+    source_index = source.get("index")
+    if isinstance(source_index, bool) or not isinstance(source_index, int):
+        raise ValueError("validated progression origin index is invalid")
+    if source.get("kind") == "current-run":
+        owner = runs[-1] if runs and source_index == len(runs) - 1 else None
+    else:
+        owner = runs[source_index] if 0 <= source_index < len(runs) else None
+    if not isinstance(owner, Mapping):
+        raise ValueError("validated progression owner run is unavailable")
+    snapshot_archive_path = feature.get("snapshot_archive_path")
+    if not isinstance(snapshot_archive_path, str):
+        raise ValueError("validated progression snapshot path is unavailable")
+    snapshot_value = json.loads(
+        (site / snapshot_archive_path).read_text(encoding="utf-8")
+    )
+    metadata = snapshot_value.get("metadata")
+    migration = (
+        metadata.get("migration_provenance")
+        if isinstance(metadata, Mapping) else None
+    )
+    source_snapshot_checksum = (
+        migration.get("source_snapshot_checksum")
+        if isinstance(migration, Mapping)
+        else snapshot_value.get("checksum")
+    )
+    source_provenance = owner.get("source_input_provenance")
+    if (
+        isinstance(source_provenance, Mapping)
+        and source_provenance.get("source_snapshot_checksum")
+        != source_snapshot_checksum
+    ):
+        raise ValueError("validated progression source checksums disagree")
+    return {
+        "schema": "ranking-progression/used-coverage/v1",
+        "status": "required",
+        "season": 2025,
+        "sport": "cfb",
+        "classification": "FBS",
+        "source": dict(source),
+        "artifact_snapshot_checksum": feature.get("source_snapshot"),
+        "source_snapshot_checksum": source_snapshot_checksum,
+        "snapshot_archive_path": snapshot_archive_path,
+        "phase": feature.get("phase"),
+        "target_week": feature.get("target_week"),
+        "dataset_id": feature.get("dataset_id"),
+        "model_version": feature.get("model_version"),
+        "carryover_identity": feature.get("carryover_identity"),
+        "prior_final": feature.get("prior_final"),
+        "ranking_values_sha256": feature.get("ranking_values_sha256"),
+        "artifacts": list(feature.get("artifacts", ())),
+        "season_navigation": feature.get("season_navigation"),
+        "public_provenance_paths": [snapshot_archive_path],
+    }
 
 
 def _validate_history_against_base(
@@ -3793,7 +4158,7 @@ def _validate_run_exact(
             prior_rows = rankings[target_week]
         else:
             prior_rows = rankings[week - 1]
-        natural_forecast = artifact_contract >= CURRENT_ARTIFACT_CONTRACT and year >= 2026 and all(
+        natural_forecast = artifact_contract >= FORECAST_ARTIFACT_CONTRACT and year >= 2026 and all(
             game.provider_id is not None for game in snapshot.games
         )
         expected_spreads = spreads_for_week(

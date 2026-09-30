@@ -397,7 +397,7 @@ def _snapshot_identity(snapshot: SeasonSnapshot) -> tuple[str, str, int, str]:
     try:
         expected_checksum = (
             _legacy_snapshot_checksum(season, classification, snapshot.teams, snapshot.games)
-            if schema_version < 3
+            if schema_version == 1
             else _snapshot_checksum(state, snapshot.teams, snapshot.games)
         )
     except (TypeError, ValueError, KeyError) as exc:
@@ -683,7 +683,7 @@ def build_progression(
             raise ProgressionContractError(
                 "target_week must be a non-negative integer"
             ) from exc
-        if target_week < 0:
+        if target_week < 0 and requested_phase != "preseason":
             raise ProgressionContractError("target_week must be a non-negative integer")
         if target_week > complete_through:
             raise ProgressionContractError(

@@ -249,18 +249,47 @@ def _write_validation_artifacts(root: Path) -> tuple[SeasonSnapshot, dict[str, o
             cell = row["checkpoints"][key]
             cells.extend((f"<td>{cell['points']}</td>", f"<td>{cell['rank']}</td>"))
         body_html.append("<tr>" + "".join(cells) + "</tr>")
-    hrefs = [
-        f"../{year}_CFB.html",
-        f"{year}_{classification}_progression.json",
-        *(f"../rankings/{year}_{key}_{classification}_cors.html" for key in keys),
+    nav_items = [
+        ("Season", f"../{year}_CFB.html"),
+        ("Progression data", f"{year}_{classification}_progression.json"),
+        *(
+            (f"{key} ranking", f"../rankings/{year}_{key}_{classification}_cors.html")
+            for key in keys
+        ),
     ]
-    nav = "".join(f'<a href="{href}">{href}</a>' for href in hrefs)
+    nav = "\n".join(f'<a href="{href}">{label}</a>' for label, href in nav_items)
+    accepted_style = (
+        "body{font-family:system-ui,sans-serif;margin:1rem;color:#17212b}"
+        "h1{font-size:clamp(1.4rem,4vw,2rem)}"
+        "nav{display:flex;flex-wrap:wrap;gap:.5rem 1rem}"
+        "nav a{padding:.25rem 0}"
+        "details{margin:1rem 0}summary{cursor:pointer}"
+        ".provenance{overflow-wrap:anywhere}"
+        ".table-scroll{max-width:100%;max-height:70vh;overflow:auto;"
+        "border:1px solid #bbb;isolation:isolate}"
+        ".table-scroll:focus-visible{outline:3px solid #2463a3;outline-offset:2px}"
+        "table{border-collapse:separate;border-spacing:0;"
+        "font-variant-numeric:tabular-nums}"
+        "th,td{border-right:1px solid #bbb;border-bottom:1px solid #bbb;"
+        "padding:.5rem;text-align:right;background:#fff}"
+        "thead th{position:sticky;top:0;z-index:2;background:#edf2f7;min-width:5rem}"
+        "tbody th{position:sticky;left:0;z-index:1;background:#f5f7fa}"
+        "th:first-child{min-width:8rem;max-width:11rem;overflow-wrap:anywhere}"
+        "thead th:first-child{left:0;z-index:3}"
+        "th:first-child,td:first-child,td:nth-child(2){text-align:left}"
+        ".unavailable{color:#666;font-style:italic}"
+    )
     html_path.write_text(
-        "<!doctype html><html><head><title>2025 CORS ranking progression — FBS</title></head><body>"
+        "<!doctype html>\n<html lang=\"en\">\n<head>\n"
+        "<meta charset=\"utf-8\">\n"
+        "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
+        "<title>2025 CORS ranking progression — FBS</title>\n"
+        f"<style>{accepted_style}</style>\n</head>\n<body>"
         "<h1>2025 CORS ranking progression — FBS</h1>"
         f"<nav>{nav}</nav><p class=\"provenance\">Season {year} · Dataset {DATASET} · "
         f"Model {MODEL_VERSION} · Source snapshot {snapshot.checksum}</p>"
-        f"<table><thead><tr>{header_html}</tr></thead><tbody>{''.join(body_html)}</tbody></table>"
+        "<div class=\"table-scroll\"><table><thead><tr>"
+        f"{header_html}</tr></thead><tbody>{''.join(body_html)}</tbody></table></div>"
         "</body></html>",
         encoding="utf-8",
     )

@@ -134,3 +134,51 @@ against the expanded bundle instead of tolerating mismatched historical bundle
 hashes. This preserves strict provenance and old public archive URLs while
 allowing current results. The same local validation and public receipt boundary
 applies; no additional public raw-data retention or fetch allowance is implied.
+
+## Receipt-tree binding and validated used coverage — 2026-09-30
+
+The current artifact-contract-4 receipt records the private source coverage that
+was actually used to validate and derive the candidate. An available source-input
+bundle is not evidence that every source in the bundle was used. The exporter
+derives the canonical versioned `used_coverage` value only after trusted private
+release validation succeeds, using the validated progression origin and run
+identity rather than inferring coverage from the newest run.
+
+For current or retained-2025 output, `used_coverage` identifies season, sport,
+classification, the source run and origin, the source snapshot and checksum, and
+the required progression, season-navigation and public-provenance paths. It must
+also preserve the ownership of refreshes and corrections. A genuine pre-2025
+release may use a versioned `used_coverage` descriptor whose `status` is `none`
+when no 2025 progression coverage was used; this is a descriptor, not JSON null.
+The presence of future-2025 inputs in the available bundle does not change that
+status. The limited `none` case cannot authorize current or retained-2025 output.
+
+Contract-4 receipts add top-level `used_coverage` and carry its canonical
+identity wherever package or validation evidence binds the receipt. Literal
+contract-2 and contract-3 release manifests, run dictionaries, public bytes and
+legacy receipt shapes remain readable and byte-preserving. A legacy receipt can
+be inspected or re-sealed under its historical rules, but it cannot authorize a
+current contract-4 preparation; the exporter must generate a new current receipt
+from the real validated export.
+
+Offline export, verification and direct preparation establish draft
+self-consistency only. They do not authenticate an alternate fully re-sealed
+receipt, coverage value or package. Final hosted preparation takes its authority
+from the actual `GITHUB_SHA`. The existing `_candidate_commit` resolver must use
+that runtime value, and `_verify_candidate_tree` must authenticate the
+corresponding Git tree.
+Caller-supplied receipt bytes must equal the receipt blob at the fixed path
+`config/sr7-local-validation-receipt.json` in `candidate_commit`; callers cannot
+select another receipt path. The final binding must carry both the authenticated
+receipt identity and the authenticated `used_coverage` identity; a missing,
+replacement or mismatched receipt or coverage value fails closed. A draft receipt
+or draft coverage value is never a final fallback. Package records, validated
+records, rehydration and merged-candidate rebinds preserve those same identities.
+
+When source coverage or the validated candidate changes, regenerate the receipt
+through the real export and review the resulting safe site and receipt together.
+Do not add the receipt digest to the trusted input manifest. The receipt is
+excluded from the runtime source fingerprint and trusted configuration identity
+so receipt generation does not create a circular hash.
+These bindings establish verification evidence only. They grant no merge,
+production-approval or publication authority, which remains with the owner.
