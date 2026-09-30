@@ -972,6 +972,28 @@ class ForecastLifecycleIndependentTests(unittest.TestCase):
             self.assertIn("position:sticky", season_page)
             self.assertIn("<th>Week</th><th>Home</th><th>Away</th>", season_page)
 
+            # Every generated table gets its own horizontal-scroll region.  The
+            # identity/sticky class belongs only to the game table; headings
+            # remain outside the regions so they cannot scroll over the table.
+            document = BeautifulSoup(season_page, "html.parser")
+            report_root = document.select_one("div.forecast-report")
+            self.assertIsNotNone(report_root)
+            regions = report_root.select("div.forecast-table-scroll")
+            self.assertEqual(
+                [region.get("aria-label") for region in regions],
+                ["Games", "Summary", "Omissions"],
+            )
+            self.assertEqual(len(regions), 3)
+            self.assertTrue(all(len(region.find_all("table", recursive=False)) == 1 for region in regions))
+            game_tables = report_root.select("table.forecast-games")
+            self.assertEqual(len(game_tables), 1)
+            self.assertIs(game_tables[0].parent, regions[0])
+            self.assertFalse(any(region.select("table.forecast-games") for region in regions[1:]))
+            for table in report_root.find_all("table"):
+                self.assertIn("forecast-table-scroll", table.parent.get("class", []))
+            for heading in report_root.find_all("h2"):
+                self.assertNotIn("forecast-table-scroll", heading.parent.get("class", []))
+
     def test_resealed_semantic_row_tampering_fails_for_identity_disposition_duplicate_and_omission(self):
         candidate = _issued_candidate()
         with tempfile.TemporaryDirectory() as temporary:
