@@ -68,6 +68,18 @@ def load_verified_forecasts(recorded: RecordedPublicationAttempt, *, archive: An
             raise PublicationExecutionError(f"forecast {label} immutable evidence is invalid")
     assert recorded.provider_evidence is not None and recorded.verification_evidence is not None
     intent = recorded.attempt.intent
+    for evidence, record_name, source_name in (
+        (recorded.provider_evidence, "provider-result.json", "provider-result-source.json"),
+        (recorded.verification_evidence, "verification.json", "verification-source.json"),
+    ):
+        record_ref, source_ref = evidence.record_reference, evidence.source_reference
+        if (record_ref.asset_name != record_name or source_ref.asset_name != source_name
+                or record_ref.release_id != source_ref.release_id
+                or record_ref.tag != source_ref.tag
+                or record_ref.asset_id == source_ref.asset_id
+                or record_ref.target_commit != recorded.attempt.package.candidate_commit
+                or source_ref.target_commit != recorded.attempt.package.candidate_commit):
+            raise PublicationExecutionError("forecast evidence archive roles or bindings differ")
     result = ProviderResultRecord.from_dict(result.to_dict(), intent=intent)
     verification = VerificationRecord.from_dict(verification.to_dict(), intent=intent, provider_result=result)
     if (result.outcome != "accepted" or verification.outcome != "verified"

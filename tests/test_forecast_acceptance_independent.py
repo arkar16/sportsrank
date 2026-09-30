@@ -32,6 +32,7 @@ from cfb.forecast_record import (
 from cfb.forecast_publication import VerifiedForecastPublication
 from cfb.publication import PublicationExecutionError
 from cfb.ranking_engine import RankingContractError, natural_matchup
+from cfb.forecast_release import validate_evaluation_semantics
 
 
 UTC = timezone.utc
@@ -359,6 +360,32 @@ class ForecastLifecycleAcceptanceTests(unittest.TestCase):
         encoded["forecast"]["home_margin"] = "9.99"
         with self.assertRaises(ForecastContractError):
             ForecastCandidate.from_dict(encoded)
+
+    def test_independent_validation_binds_evaluation_row_identity_to_its_grade(self):
+        candidate = _candidate("row-identity", "2.24", 2)
+        final_score = _score(candidate, 21, 14)
+        grade = grade_forecast(candidate, final_score)
+        aggregate = aggregate_grades((grade,)).to_dict()
+        receipt = _receipt(candidate)
+        timing = _timing(candidate)
+        ledger = {
+            "candidates": [candidate.to_dict()],
+            "score_history": [final_score.to_dict()],
+            "receipts": [receipt.to_dict()],
+            "timing_evidence": [timing.to_dict()],
+        }
+        evaluation = {
+            "games": [{
+                "game": candidate.game.to_dict(),
+                "disposition": "evaluated",
+                "grade": grade.to_dict(),
+            }],
+            "season_summary": aggregate,
+            "weekly": {"0": aggregate},
+        }
+        evaluation["games"][0]["game"]["home"]["name"] = "Tampered Home"
+        with self.assertRaises(ForecastContractError):
+            validate_evaluation_semantics(ledger, evaluation)
 
     def test_invalid_score_correction_order_and_duplicate_game_are_rejected(self):
         candidate = _candidate("invalid", "2.24", 2)

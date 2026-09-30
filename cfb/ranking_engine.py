@@ -1204,6 +1204,7 @@ def spreads_for_week(
             raise RankingContractError(f"rankings contain duplicate school {school!r}")
         rating[school] = _rating_decimal(row.get("cors"), f"rankings[{school!r}].cors")
     valid_teams = set(rating)
+    snapshot_teams = {team.school for team in snapshot.teams}
     rows: list[dict[str, Any]] = []
     for game in sorted(
         (
@@ -1223,6 +1224,16 @@ def spreads_for_week(
             continue
         missing = {game.home_team, game.away_team} - valid_teams
         if missing:
+            # Placeholder participants are not rated teams and cannot produce
+            # a forecast. A missing rating for a known FBS team remains an
+            # explicit contract failure rather than becoming zero.
+            placeholder = any(
+                name.strip().upper() == "TBD"
+                or name.strip().lower().startswith("winner ")
+                for name in missing
+            )
+            if placeholder or missing - snapshot_teams:
+                continue
             raise RankingContractError(
                 f"missing rating for FBS matchup team(s): {sorted(missing)!r}"
             )

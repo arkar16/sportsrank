@@ -157,3 +157,83 @@ The record contains sanitized identities, numerical inputs, version pins and
 evidence references. It contains no raw provider response, credentials or actor
 metadata. Candidate fixtures and authentic retained-data validation remain
 separate from production website artifacts until reviewed publication.
+
+## Release operation
+
+New builds use artifact contract 3. Its manifest and latest run name the exact
+`forecast-ledger/v1` and `forecast-evaluation/v1` paths. Validation expects
+contract 3 independently of the candidate's claims, so deleting the forecast
+artifacts and resealing a downgraded manifest cannot turn a new Release into a
+legacy one. Exact inherited run entries must equal the supplied base manifest's
+run prefix. Explicit `expected_manifest_version=2` is reserved for offline
+inspection of old archives; new builds never emit it.
+
+Contract 3 is frozen to the ADR-0019 forecast graph. A future feature must add a
+new artifact contract branch and advance `CURRENT_ARTIFACT_CONTRACT`; it must not
+add requirements to the literal contract-3 validation branch. The independent
+current-contract defaults live on `validate_release`, `ReleaseValidator`,
+`promote_release`, `validate_release_chain`, and their aliases. Contract 2 is
+accepted only when a caller explicitly requests legacy inspection.
+
+A same-source contract-2 to contract-3 transition is recorded as an
+`artifact-contract-upgrade`. It preserves every inherited spread forecast page
+byte-for-byte, including an already published active-week half-point page, and
+marks those pages as `retained-legacy-pages` in Release metadata. New canonical
+natural-margin candidates are preparation-only at that transition. The season
+page states that boundary and links the newly generated authenticated forecast
+results; weekly and season result pages replace the old ATS presentation. The
+upgrade run seals the exact retained path/digest map. Later runs carry that map
+unchanged and keep those historical pages byte-for-byte; newly scheduled weeks
+render ledger-selected natural forecasts. A
+later same-checkpoint contract-3 run is allowed only as a
+`forecast-evidence-refresh` or explicit `forecast-correction`. It preserves the
+earlier run bytes and source checkpoint; an evidence refresh rewrites only the
+ledger, evaluation, forecast result pages and Release metadata. Ordinary
+same-checkpoint duplicates without that forecast contract remain invalid.
+
+The Release builder accepts only `VerifiedForecastPublication` capabilities
+reconstructed through the immutable publication archive, plus separate
+`GameTimingEvidence` values. A path-only validation of a ledger with issued
+receipts must also receive those capabilities and timing facts; inherited JSON
+is not authority. A typical offline call is:
+
+```python
+release = build_release(
+    snapshot,
+    output_root,
+    published_site=published_site,
+    forecast_publications=verified_publications,
+    timing_evidence=game_timing,
+)
+validate_release(
+    release,
+    published_site=published_site,
+    forecast_publications=verified_publications,
+    timing_evidence=game_timing,
+).raise_for_failure()
+```
+
+`forecast_replacements` maps an existing terminal candidate version id to a
+nonempty correction reason. The builder emits the new child from the same exact
+source checkpoint; unknown predecessors and forked correction histories fail.
+Provider Game timing stays a separate `GameTimingEvidence` input and is never
+inferred from a schedule date or a later publication observation.
+
+The ledger preserves candidates, receipts, publication provenance, timing facts
+and score-revision chains. Individual candidate files use canonical JSON with no
+trailing newline at
+`cfb/years/<season>/forecasts/<version-hex>.json`; this is the byte contract
+checked by the immutable publication bridge. `evaluation.json` records every
+Game disposition and the exact weekly and season denominators. The existing
+weekly spread-result URL becomes the issued-forecast result table for 2026, with
+Graded Forecast, Predicted Winner, CORS line coverage and margin error. A season
+summary lives at `<season>_FBS_forecast_results.html`. Legacy archives retain
+their historical half-point spread forecast bytes; the contract upgrade replaces
+result URLs with the truthful evidence-qualified evaluator.
+
+The report shows the graded home-handicap sign, both final scores, actual home
+margin, correction time, metric denominators and explicit omission counts.
+Unavailable values render as a dash with count zero. Domain JSON keeps exact
+decimal aggregates; the page rounds MAE/RMSE to three decimals and labels
+coverage and straight-up rates as percentages. Forecast-only pages add a mobile
+viewport and horizontally scrollable tables without changing legacy page bytes.
