@@ -7,9 +7,10 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from cfb.github_archive import ArchiveSpec
-from cfb.firebase import FakeFirebasePublicationBackend
+from cfb.firebase import FakeFirebasePublicationBackend, FirebasePublicationAdapter, FirebaseDeploymentReceipt
 from cfb.forecast_publication import VerifiedForecastPublication, load_verified_forecasts
 from cfb.publication import (
     PreparedPackage, RecordedPublicationAttempt, ReconciliationTags,
@@ -78,6 +79,44 @@ def recorded(run):
 
 
 class ForecastPublicationTests(unittest.TestCase):
+    def test_legacy_source_bytes_and_original_public_by_survive_later_reconciliation(self):
+        deploy = FirebasePublicationAdapter.deploy
+
+        def legacy_deploy(adapter, artifact, *, attempt_id):
+            receipt = deploy(adapter, artifact, attempt_id=attempt_id)
+            source = dict(receipt.source)
+            for name in ("provider_published_at", "artifact_sha256", "attempt_id"):
+                source.pop(name)
+            source["schema_version"] = 1
+            return FirebaseDeploymentReceipt(receipt.identity, source)
+
+        with tempfile.TemporaryDirectory() as directory:
+            fx = forecast_fixture(Path(directory), [candidate(game(), "2.24")])
+            first_observation = datetime(2026, 9, 15, tzinfo=timezone.utc)
+            with patch.object(FirebasePublicationAdapter, "deploy", legacy_deploy):
+                co, _, run = publish(fx, clock=lambda: first_observation)
+            source_bytes = run.provider_evidence.retrieved_source.read_bytes()
+            record_bytes = run.provider_evidence.retrieved_record.read_bytes()
+            issued = load_verified_forecasts(recorded(run), archive=fx.archive,
+                                             repository="owner/repository", destination=fx.root / "old-import")
+            self.assertIsNone(issued.receipts[0].provider_published_at)
+            self.assertEqual(issued.receipts[0].verified_public_by, first_observation)
+            co.clock = lambda: datetime(2026, 9, 20, tzinfo=timezone.utc)
+            rec = co.reconcile(recorded(run), baseline=fx.baseline,
+                               tags=ReconciliationTags("legacy-rec", "legacy-result", "legacy-verify"),
+                               retrieval_directory=fx.root / "legacy-reconcile")
+            restored = RecordedPublicationAttempt(run.attempt, rec.provider_result, rec.provider_evidence,
+                                                  rec.verification, rec.verification_evidence)
+            loaded = load_verified_forecasts(restored, archive=fx.archive,
+                                             repository="owner/repository", destination=fx.root / "old-reimport")
+            self.assertIsNone(loaded.receipts[0].provider_published_at)
+            self.assertEqual(loaded.receipts[0].verified_public_by, first_observation)
+            for ref, expected in ((run.provider_evidence.source_reference, source_bytes),
+                                  (run.provider_evidence.record_reference, record_bytes)):
+                actual = fx.archive.retrieve_and_verify(ref, fx.root / f"unchanged-{ref.asset_name}")
+                self.assertEqual(actual.read_bytes(), expected)
+                self.assertEqual(hashlib.sha256(expected).hexdigest(), ref.sha256)
+
     def test_authentic_provider_time_and_exact_candidate_survive_reconciliation(self):
         with tempfile.TemporaryDirectory() as directory:
             fx = forecast_fixture(Path(directory), [candidate(game(), "2.24")])
