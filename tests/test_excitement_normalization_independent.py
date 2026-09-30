@@ -365,6 +365,45 @@ class IndependentNormalizationTests(unittest.TestCase):
         self.assertFalse(artifact.final.overtime)
         self.assertIn("clock-order-inversion", {reason.value for reason in artifact.reasons})
 
+    def test_partial_after_play_score_above_final_is_invalid_for_either_team(self):
+        baseline = json.loads(_plays_payload())[:5]
+        below_final = _json_bytes(baseline)
+        partial = _qualification(
+            completeness="partial", regulation_minutes=None, overtime=None,
+            plays_sha256=hashlib.sha256(below_final).hexdigest(),
+        )
+        reduced = _qualify(plays=below_final, qualification=partial)
+        self.assertEqual(reduced.status, "reduced")
+        self.assertEqual((reduced.final.home_score, reduced.final.away_score), (21, 3))
+
+        for orientation in ("home", "away"):
+            rows = json.loads(_plays_payload())[:5]
+            event = rows[-1]
+            if orientation == "home":
+                event["offenseScore"] = 22
+                event["defenseScore"] = 3
+            else:
+                event["offense"] = "Rival"
+                event["defense"] = "Ohio State"
+                event["offenseScore"] = 4
+                event["defenseScore"] = 7
+            payload = _json_bytes(rows)
+            qualification = _qualification(
+                completeness="partial", regulation_minutes=None, overtime=None,
+                plays_sha256=hashlib.sha256(payload).hexdigest(),
+            )
+            with self.subTest(orientation=orientation):
+                with self.assertRaises((QualificationError, InvalidEvidenceError)):
+                    _qualify(plays=payload, qualification=qualification)
+
+        unknown = _qualification(
+            score_semantics="unknown", completeness="partial", regulation_minutes=None, overtime=None,
+            plays_sha256=hashlib.sha256(below_final).hexdigest(),
+        )
+        unknown_artifact = _qualify(plays=below_final, qualification=unknown)
+        self.assertEqual(unknown_artifact.status, "reduced")
+        self.assertIn(QualificationReason.AFTER_PLAY_UNKNOWN, unknown_artifact.reasons)
+
     def test_clock_inversion_cannot_mask_identity_or_final_contradictions(self):
         rows = json.loads(_plays_payload())
         rows[2]["clock"] = {"minutes": 11, "seconds": 0}

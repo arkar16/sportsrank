@@ -673,6 +673,11 @@ def _play_evidence(
             elapsed = None
             overtime = True
         scores = _play_score(row, target)
+        if scores[0] > game.home_score or scores[1] > game.away_score:
+            raise _invalid(
+                "observed-score-exceeds-final",
+                "an after-play cumulative score exceeds the games final",
+            )
         if scores[0] < prior_scores[0] or scores[1] < prior_scores[1]:
             raise _invalid("score-decrease", "candidate play order decreases a score")
         if scores[0] > prior_scores[0] and scores[1] > prior_scores[1]:

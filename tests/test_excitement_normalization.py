@@ -201,6 +201,26 @@ class ExcitementNormalizationTests(unittest.TestCase):
         with self.assertRaisesRegex(InvalidEvidenceError, "do not begin 0-0"):
             _qualify(rows=complete_without_start)
 
+    def test_partial_after_play_observation_cannot_exceed_verified_final(self):
+        cases = (
+            [_play(3, 2, 600, 15, 0, scoring=True)],
+            [
+                _play(3, 2, 600, 14, 0, scoring=True),
+                _play(4, 2, 500, 14, 8, scoring=True),
+            ],
+        )
+        for rows in cases:
+            with self.subTest(rows=rows):
+                with self.assertRaisesRegex(InvalidEvidenceError, "exceeds the games final"):
+                    _qualify(
+                        rows=rows,
+                        qualification_changes={
+                            "capture_completeness": "partial",
+                            "regulation_minutes": None,
+                            "overtime": None,
+                        },
+                    )
+
     def test_unknown_score_semantics_do_not_apply_after_play_rules(self):
         rows = [dict(row) for row in _plays()]
         rows[1]["scoring"] = False

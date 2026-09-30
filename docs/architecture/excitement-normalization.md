@@ -36,6 +36,11 @@ A scoring flag with unchanged cumulative scores is typed as unavailable flow
 evidence and cannot produce a full timeline; a score transition on a row not
 marked scoring remains contradictory. Valid consecutive scoring transitions,
 including untimed overtime transitions, remain ordered score evidence.
+Under reviewed after-play semantics, every observed cumulative home and away
+score is bounded by the independently verified final. Exceeding either final is
+contradictory even for a partial capture without an observed period endpoint.
+A partial stream may still end below the final and remain reduced. Unknown score
+timing semantics do not acquire an after-play bound by implication.
 
 A clock increase within a period is typed as unavailable flow evidence. It
 preserves independently verified final, quarter and overtime evidence in the
