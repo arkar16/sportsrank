@@ -62,6 +62,17 @@ the forecast actually published before kickoff. The pregame-input boundary in
 applicable; reconstructing from a pregame checkpoint alone does not prove
 publication before kickoff.
 
+On 2026-09-30 the owner confirmed that the retained weekly spread pages in the
+existing Published Site were published before kickoff and calculated from the
+preceding week's data. For this bounded contract upgrade, those exact retained
+page bytes, stable Game identity and source orientation, original decimal
+precision, and a pinned owner attestation qualify the retained values for
+grading even when later automated publication-audit metadata is absent. The
+attestation records the page and the owner's confirmation; it does not invent a
+provider event or timestamp. Future forecasts still require the normal
+verifiable automated publication evidence, and unconfirmed historical values
+remain unverified or missing.
+
 On 2026-09-29 the owner clarified the intended cadence: CORS runs weekly,
 ideally on Sunday after the preceding week's games finish, producing the next
 week's schedule and forecasts. Evaluation must preserve those issued forecasts
@@ -147,7 +158,9 @@ Carry into the initial implementation contract:
   rating/model/source provenance and the artifact and publication evidence that
   establish it was issued before the Game. A build timestamp alone is not
   publication evidence. Report unverified cases under the accepted
-  missing-forecast policy; do not manufacture historical publication claims.
+  missing-forecast policy; for the owner-confirmed retained-page migration,
+  record bounded owner-attested provenance instead of manufacturing a provider
+  publication claim.
 - Demonstrate that weekly progression, ordinary rebuilds, explicit pregame
   replacements and postgame score corrections preserve the accepted rules.
   Retain PRESEASON as the rating basis for Week 0 under ADR-0010 and the existing

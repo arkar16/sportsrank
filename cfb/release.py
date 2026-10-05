@@ -73,13 +73,14 @@ try:
     from .forecast_record import (
         FinalScore, ForecastCandidate, ForecastContractError, ForecastDisposition,
         ForecastProvenance, GameIdentity,
-        GameTimingEvidence, PublicationReceipt, VersionBinding, aggregate_grades,
+        GameTimingEvidence, OwnerAttestation, PublicationReceipt, VersionBinding,
+        aggregate_grades,
         select_graded_forecast,
     )
     from .forecast_release import (
         build_forecast_artifacts, canonical_json as forecast_json, game_identity,
         CURRENT_ARTIFACT_CONTRACT, FORECAST_ARTIFACT_CONTRACT,
-        ForecastSourceCheckpoint,
+        ForecastSourceCheckpoint, load_retained_spread_forecasts,
         validate_evaluation_semantics, validate_forecast_capabilities,
         validate_forecast_sources, validate_public_forecast_json,
         select_displayed_forecast,
@@ -122,8 +123,8 @@ except ImportError:  # Direct execution from the cfb directory.
         canonical_week,
         postseason_calendar_provenance,
     )
-    from forecast_record import FinalScore, ForecastCandidate, ForecastContractError, ForecastDisposition, ForecastProvenance, GameIdentity, GameTimingEvidence, PublicationReceipt, VersionBinding, aggregate_grades, select_graded_forecast
-    from forecast_release import CURRENT_ARTIFACT_CONTRACT, FORECAST_ARTIFACT_CONTRACT, ForecastSourceCheckpoint, build_forecast_artifacts, canonical_json as forecast_json, game_identity, select_displayed_forecast, validate_evaluation_semantics, validate_forecast_capabilities, validate_forecast_sources, validate_public_forecast_json
+    from forecast_record import FinalScore, ForecastCandidate, ForecastContractError, ForecastDisposition, ForecastProvenance, GameIdentity, GameTimingEvidence, OwnerAttestation, PublicationReceipt, VersionBinding, aggregate_grades, select_graded_forecast
+    from forecast_release import CURRENT_ARTIFACT_CONTRACT, FORECAST_ARTIFACT_CONTRACT, ForecastSourceCheckpoint, build_forecast_artifacts, canonical_json as forecast_json, game_identity, load_retained_spread_forecasts, select_displayed_forecast, validate_evaluation_semantics, validate_forecast_capabilities, validate_forecast_sources, validate_public_forecast_json
     from ranking_progression import build_progression_outputs
     from ranking_progression_validation import validate_progression_artifacts
 
@@ -1653,7 +1654,31 @@ class ReleaseBuilder:
                         [("Season", f"../{year}_CFB.html")],
                     ),
                 )
+        retained_forecast_candidates: tuple[ForecastCandidate, ...] = ()
+        retained_owner_attestations: tuple[OwnerAttestation, ...] = ()
+        if forecast_enabled and contract_upgrade and retained_legacy_forecast_digests:
+            retained_pages = tuple(
+                (relative, self.published_site / relative)
+                for relative in sorted(retained_legacy_forecast_digests)
+            )
+            retained_forecast_candidates, retained_owner_attestations = load_retained_spread_forecasts(
+                snapshot,
+                retained_pages,
+                model_version=self.model_version,
+                home_field_advantage=Decimal(str(self.hfa)),
+            )
+            retained_games = {item.game.key for item in retained_forecast_candidates}
+            # The natural candidates rendered for the active next week are
+            # preparation-only during a contract upgrade.  The retained
+            # pages are the immutable issued source for every covered Game,
+            # including an active week that was already published.
+            generated_forecasts = [
+                item for item in generated_forecasts
+                if item.game.key not in retained_games
+            ]
+            generated_forecasts.extend(retained_forecast_candidates)
         forecast_contract_paths: dict[str, str] = {}
+        forecast_report_weeks: tuple[int, ...] = ()
         if forecast_enabled:
             forecast_root = Path("cfb") / "years" / str(year) / "forecasts"
             inherited_ledger = self.published_site / forecast_root / "ledger.json"
@@ -1664,6 +1689,7 @@ class ReleaseBuilder:
                 forecast_publications=self.forecast_publications,
                 timing_evidence=self.timing_evidence,
                 observed_at=self.timestamp,
+                owner_attestations=retained_owner_attestations,
             )
             ledger_relative = (forecast_root / "ledger.json").as_posix()
             evaluation_relative = (forecast_root / "evaluation.json").as_posix()
@@ -1681,6 +1707,10 @@ class ReleaseBuilder:
 
             ledger_candidates = tuple(ForecastCandidate.from_dict(item) for item in ledger["candidates"])
             ledger_receipts = tuple(PublicationReceipt.from_dict(item) for item in ledger["receipts"])
+            ledger_owner_attestations = tuple(
+                OwnerAttestation.from_dict(value)
+                for value in ledger.get("owner_attestations", [])
+            )
             ledger_timings = {
                 item.game.key: item
                 for item in (GameTimingEvidence.from_dict(value) for value in ledger["timing_evidence"])
@@ -1691,7 +1721,8 @@ class ReleaseBuilder:
 
             def displayed_candidate(rows: Sequence[ForecastCandidate]) -> ForecastCandidate:
                 return select_displayed_forecast(
-                    rows, ledger_receipts, ledger_timings.get(rows[0].game.key)
+                    rows, ledger_receipts, ledger_timings.get(rows[0].game.key),
+                    ledger_owner_attestations,
                 )
 
             display_rows_by_week: dict[int, list[dict[str, Any]]] = {}
@@ -1849,6 +1880,48 @@ class ReleaseBuilder:
                         [("Season", f"../{year}_CFB.html")],
                     ),
                 )
+            # A contract upgrade can encounter a retained publication for a
+            # game in the next active week that already has a final score in
+            # the same snapshot.  Keep that graded result discoverable in a
+            # weekly report while leaving future, merely scheduled forecasts
+            # out of the results graph.
+            forecast_report_weeks = tuple(
+                sorted(
+                    {
+                        *range(target_week + 1),
+                        *(
+                            int(item["game"]["week"])
+                            for item in evaluation["games"]
+                            if item.get("disposition") == "evaluated"
+                            and int(item["game"]["week"]) > target_week
+                        ),
+                    }
+                )
+            )
+            for week in forecast_report_weeks:
+                if week <= target_week:
+                    continue
+                rows = [
+                    evaluation_row(item)
+                    for item in evaluation["games"]
+                    if item["game"].get("week") == week
+                ]
+                summary = evaluation["weekly"].get(str(week), aggregate_grades([]).to_dict())
+                week_items = [
+                    item for item in evaluation["games"]
+                    if item["game"].get("week") == week
+                ]
+                write(
+                    str(base / "spread" / f"{year}_W{week}_{classification}_spread_results.html"),
+                    _forecast_page(
+                        f"CORS {self.model_version} - {year} W{week} Forecast Results - {classification} CFB",
+                        self.timestamp,
+                        _row_table(rows, result_fields)
+                        + "<h2>Weekly summary</h2>" + _row_table([summary_row(summary)], summary_fields)
+                        + "<h2>Weekly omissions</h2>" + _row_table([omission_row(week_items)], omission_columns),
+                        [("Season", f"../{year}_CFB.html")],
+                    ),
+                )
             season_rows = [evaluation_row(item) for item in evaluation["games"]]
             write(
                 str(base / "spread" / f"{year}_{classification}_forecast_results.html"),
@@ -1947,6 +2020,14 @@ class ReleaseBuilder:
                     (
                         (f"W{week} spread", f"spread/{year}_W{week}_{classification}_spread.html"),
                         (f"W{week} spread results", f"spread/{year}_W{week}_{classification}_spread_results.html"),
+                    )
+                )
+        for week in forecast_report_weeks:
+            if week > target_week:
+                links.append(
+                    (
+                        f"W{week} spread results",
+                        f"spread/{year}_W{week}_{classification}_spread_results.html",
                     )
                 )
         if phase == "week" and next_week is not None:
@@ -2490,6 +2571,7 @@ def _validate_release(
         _failure(failures, "runs.missing", f"manifest v{expected_manifest_version} requires non-empty cumulative run evidence", manifest_path)
         raw_runs = []
     forecast_ledger: Mapping[str, Any] | None = None
+    report_weeks: set[int] = set()
     if expected_manifest_version >= FORECAST_ARTIFACT_CONTRACT:
         if manifest.get("artifact_contract") != expected_manifest_version:
             _failure(failures, "artifact.contract", f"Release requires artifact contract {expected_manifest_version}", manifest_path)
@@ -2533,6 +2615,17 @@ def _validate_release(
                     f"cfb/years/{season_value}/forecasts/{ForecastCandidate.from_dict(item).version_id.removeprefix('sha256:')}.json"
                     for item in ledger["candidates"]
                 )
+                future_report_weeks = {
+                    int(item["game"]["week"])
+                    for item in evaluation.get("games", [])
+                    if item.get("disposition") == "evaluated"
+                    and int(item["game"]["week"]) > int(manifest.get("target_week", -1))
+                }
+                required.update(
+                    f"cfb/years/{season_value}/spread/{season_value}_W{week}_"
+                    f"{str(manifest.get('classification', '')).upper()}_spread_results.html"
+                    for week in future_report_weeks
+                )
                 cumulative_expected.update(required)
                 cumulative_expected.add(f"cfb/years/{season_value}/spread/{season_value}_{str(manifest.get('classification', '')).upper()}_forecast_results.html")
                 validate_forecast_capabilities(ledger, forecast_publications)
@@ -2553,6 +2646,10 @@ def _validate_release(
                     item = ForecastCandidate.from_dict(value)
                     candidates_by_game.setdefault(item.game.key, []).append(item)
                 receipt_values = tuple(PublicationReceipt.from_dict(value) for value in ledger["receipts"])
+                owner_attestation_values = tuple(
+                    OwnerAttestation.from_dict(value)
+                    for value in ledger.get("owner_attestations", [])
+                )
                 timing_values = {
                     item.game.key: item
                     for item in (GameTimingEvidence.from_dict(value) for value in ledger["timing_evidence"])
@@ -2560,7 +2657,8 @@ def _validate_release(
                 display_by_week: dict[int, list[dict[str, Any]]] = {}
                 for rows in candidates_by_game.values():
                     item = select_displayed_forecast(
-                        rows, receipt_values, timing_values.get(rows[0].game.key)
+                        rows, receipt_values, timing_values.get(rows[0].game.key),
+                        owner_attestation_values,
                     )
                     margin = item.home_margin
                     display_value = format(abs(margin), "f").rstrip("0").rstrip(".") or "0"
@@ -2655,14 +2753,14 @@ def _validate_release(
                     winner = home_name if selection == "home" else away_name if selection == "away" else "Pick'em" if selection == "pickem" else unavailable
                     return {
                         "Week": identity["week"], "Home": home_name, "Away": away_name,
-                        "Graded Forecast (home handicap)": str(-Decimal(grade["predicted_home_margin"])) if grade else unavailable,
+                        "Graded Forecast (home handicap)": float(-Decimal(grade["predicted_home_margin"])) if grade else unavailable,
                         "Predicted Winner": winner,
                         "Home score": score.current.home_points if score else unavailable,
                         "Away score": score.current.away_points if score else unavailable,
                         "Actual home margin": score.current.home_points - score.current.away_points if score else unavailable,
                         "Straight-up": straight_labels.get(grade["straight_up"], grade["straight_up"]) if grade else unavailable,
                         "CORS line coverage": coverage_labels.get(grade["coverage"], grade["coverage"]) if grade else unavailable,
-                        "Margin error": grade["absolute_error"] if grade else unavailable,
+                        "Margin error": float(Decimal(grade["absolute_error"])) if grade else unavailable,
                         "Score corrected": grade["score_corrected_at"] if grade and grade["score_corrected_at"] else unavailable,
                         "Disposition": disposition_labels[value["disposition"]],
                     }
@@ -2709,7 +2807,11 @@ def _validate_release(
                 _validate_exact_table(season_report, 0, [expected_result_row(item) for item in season_items], result_fields, failures, "forecast.report")
                 _validate_exact_table(season_report, 1, [expected_summary(evaluation["season_summary"])], summary_fields, failures, "forecast.report")
                 _validate_exact_table(season_report, 2, [expected_omissions(season_items)], omission_columns, failures, "forecast.report")
-                for week_value in range(int(manifest.get("target_week", -1)) + 1):
+                report_weeks = {
+                    *range(int(manifest.get("target_week", -1)) + 1),
+                    *future_report_weeks,
+                }
+                for week_value in sorted(report_weeks):
                     week_items = [item for item in season_items if item["game"]["week"] == week_value]
                     week_report = site / f"cfb/years/{season_value}/spread/{season_value}_W{week_value}_{str(manifest.get('classification', '')).upper()}_spread_results.html"
                     week_summary = evaluation["weekly"].get(str(week_value), aggregate_grades([]).to_dict())
@@ -2887,11 +2989,57 @@ def _validate_release(
                     code_revision=str(run["code_revision"]),
                     home_field_advantage=Decimal(str(run["home_field_advantage"])),
                 ))
-            validate_forecast_sources(forecast_ledger, checkpoints)
             season_value = int(manifest["season"])
             current_snapshot = next(
                 item for run, item in reversed(run_contexts)
                 if item.year == season_value
+            )
+            retained_candidates: tuple[ForecastCandidate, ...] = ()
+            retained_attestations: tuple[OwnerAttestation, ...] = ()
+            if derived_retained:
+                # Reparse only pages independently derived and hash-bound above.
+                # Neither ledger values nor its recomputable owner attestations
+                # are authority for the numerical forecast or Game identity.
+                source_run = forecast_upgrade_runs[0]
+                source_snapshot = next(
+                    item for run, item in run_contexts if run == source_run
+                )
+                # The explicit legacy fixture boundary had no provider IDs
+                # and therefore could not import issued candidates. Later
+                # IDs must not retroactively change that historical boundary.
+                if any(game.provider_id is not None for game in source_snapshot.games):
+                    retained_candidates, retained_attestations = load_retained_spread_forecasts(
+                        source_snapshot,
+                        tuple((relative, site / relative) for relative in sorted(derived_retained)),
+                        model_version=str(source_run["model_version"]),
+                        home_field_advantage=Decimal(str(source_run["home_field_advantage"])),
+                    )
+            validate_forecast_sources(
+                forecast_ledger, checkpoints,
+                retained_source_candidates=retained_candidates,
+                retained_source_attestations=retained_attestations,
+            )
+            # Preparation-only candidates replaced during upgrade keep their
+            # historical URLs on every later rebuild. Derive their ownership
+            # from canonical, source-validated records, not a filename glob.
+            ledger_ids = {item["version_id"] for item in forecast_ledger["candidates"]}
+            archived_candidates = []
+            forecast_directory = site / f"cfb/years/{season_value}/forecasts"
+            for candidate_path in forecast_directory.glob("*.json"):
+                if re.fullmatch(r"[0-9a-f]{64}\.json", candidate_path.name) is None:
+                    continue
+                record = ForecastCandidate.from_dict(json.loads(candidate_path.read_bytes()))
+                if record.version_id in ledger_ids:
+                    continue
+                if (
+                    candidate_path.stem != record.version_id.removeprefix("sha256:")
+                    or candidate_path.read_bytes() != forecast_json(record.to_dict())
+                ):
+                    raise ForecastContractError("archived preparation candidate is not canonical")
+                archived_candidates.append(record.to_dict())
+                cumulative_expected.add(candidate_path.relative_to(site).as_posix())
+            validate_forecast_sources(
+                {"candidates": archived_candidates, "owner_attestations": []}, checkpoints,
             )
             evaluation_value = json.loads(
                 (site / str(manifest["forecast_evaluation_path"])).read_bytes()
@@ -3334,6 +3482,22 @@ def _validate_release(
             latest_owner[f"cfb/years/{year_value}/spread/{year_value}_{cls_value}_forecast_results.html"] = index
             for week_value in range(target_value + 1):
                 latest_owner[f"cfb/years/{year_value}/spread/{year_value}_W{week_value}_{cls_value}_spread_results.html"] = index
+            # A retained forecast can already be graded for the next active
+            # week in the upgrade snapshot; its weekly report belongs to this
+            # upgrade run even though the checkpoint target remains earlier.
+            future_report_prefix = f"cfb/years/{year_value}/spread/{year_value}_W"
+            future_report_suffix = f"_{cls_value}_spread_results.html"
+            for relative in cumulative_expected:
+                if (
+                    relative.startswith(future_report_prefix)
+                    and relative.endswith(future_report_suffix)
+                ):
+                    try:
+                        report_week = int(relative[len(future_report_prefix):].split("_", 1)[0])
+                    except (TypeError, ValueError):
+                        continue
+                    if report_week > target_value:
+                        latest_owner[relative] = index
             continue
         try:
             for relative in _expected_artifacts(
@@ -3374,6 +3538,13 @@ def _validate_release(
             continue
     if run_contexts and manifest.get("progression_feature") is not None:
         for relative in _progression_paths():
+            latest_owner[relative] = len(run_contexts) - 1
+    if run_contexts and forecast_ledger is not None:
+        for week in report_weeks:
+            relative = (
+                f"cfb/years/{manifest['season']}/spread/{manifest['season']}_W{week}_"
+                f"{str(manifest['classification']).upper()}_spread_results.html"
+            )
             latest_owner[relative] = len(run_contexts) - 1
     for index, (run, run_snapshot) in enumerate(run_contexts):
         if run.get("run_kind") in {"forecast-evidence-refresh", "forecast-correction"}:
