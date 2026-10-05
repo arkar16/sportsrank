@@ -132,8 +132,8 @@ class PublishedSpreadResultsTests(unittest.TestCase):
                         attestation_id="",
                     )
                     forged = {
-                        "candidates": [altered.to_dict()],
-                        "owner_attestations": [resealed.to_dict()],
+                        "candidates": [(altered if item == original else item).to_dict() for item in candidates],
+                        "owner_attestations": [(resealed if item == original_attestation else item).to_dict() for item in attestations],
                     }
                     with self.assertRaisesRegex(ForecastContractError, "reconstructed retained source"):
                         validate_forecast_sources(forged, (), **expected)
@@ -146,8 +146,8 @@ class PublishedSpreadResultsTests(unittest.TestCase):
             )
             with self.assertRaises(ForecastContractError):
                 validate_forecast_sources({
-                    "candidates": [positive.to_dict()],
-                    "owner_attestations": [altered_reference.to_dict()],
+                    "candidates": ledger["candidates"],
+                    "owner_attestations": [(altered_reference if item == original_attestation else item).to_dict() for item in attestations],
                 }, (), **expected)
 
     def test_retained_candidate_requires_reconstructed_source_evidence(self) -> None:

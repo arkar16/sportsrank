@@ -63,6 +63,33 @@ class RetainedForecastSourceBoundaryTests(unittest.TestCase):
             ledger = json.loads((valid.site / ledger_path).read_bytes())
             self.assertGreater(len(ledger["owner_attestations"]), 0)
 
+            rebuilt = build_release(
+                snapshot, root / "rebuilt", release_id="rebuilt",
+                target_week=0, phase="week", previous_final=previous,
+                timestamp="2026-09-03T20:00:00+00:00", published_site=valid.site,
+            )
+            for baseline in (valid.site, base):
+                rebuilt_report = validate_release(rebuilt, published_site=baseline)
+                self.assertTrue(rebuilt_report.valid, [str(item) for item in rebuilt_report.failures])
+            self.assertEqual((valid.site / ledger_path).read_bytes(), (rebuilt.site / ledger_path).read_bytes())
+
+            for drop_all in (False, True):
+                with self.subTest(drop_all=drop_all):
+                    def omit_import(*args, **kwargs):
+                        candidates, attestations = load_retained_spread_forecasts(*args, **kwargs)
+                        remaining = () if drop_all else candidates[1:]
+                        keep = {item.version_id for item in remaining}
+                        return remaining, tuple(item for item in attestations if item.candidate_version_id in keep)
+
+                    with patch("cfb.release.load_retained_spread_forecasts", side_effect=omit_import):
+                        omitted = build(f"omitted-{drop_all}")
+                    omitted_report = validate_release(omitted, published_site=legacy.site)
+                    self.assertFalse(omitted_report.valid)
+                    self.assertTrue(any(
+                        item.code == "forecast.contract" and "reconstructed retained source" in item.message
+                        for item in omitted_report.failures
+                    ), [str(item) for item in omitted_report.failures])
+
             def corrupt_import(*args, **kwargs):
                 candidates, attestations = load_retained_spread_forecasts(*args, **kwargs)
                 original = next(item for item in candidates if item.game.week == 1)

@@ -2631,16 +2631,6 @@ def _validate_release(
                     f"{str(manifest.get('classification', '')).upper()}_spread_results.html"
                     for week in future_report_weeks
                 )
-                if raw_runs and raw_runs[-1].get("run_kind") == "artifact-contract-upgrade":
-                    # Contract-3 preparation candidates remain byte-for-byte
-                    # addressable in the cloned Published Site even when the
-                    # upgrade replaces their ledger roots with retained-page
-                    # candidates.  Keep those inherited files in the owned
-                    # overlay graph; they are not used for grading.
-                    forecast_directory = site / f"cfb/years/{season_value}/forecasts"
-                    for candidate_path in forecast_directory.glob("*.json"):
-                        if re.fullmatch(r"[0-9a-f]{64}\.json", candidate_path.name):
-                            required.add(candidate_path.relative_to(site).as_posix())
                 cumulative_expected.update(required)
                 cumulative_expected.add(f"cfb/years/{season_value}/spread/{season_value}_{str(manifest.get('classification', '')).upper()}_forecast_results.html")
                 validate_forecast_capabilities(ledger, forecast_publications)
@@ -3005,26 +2995,56 @@ def _validate_release(
                     home_field_advantage=Decimal(str(run["home_field_advantage"])),
                 ))
             season_value = int(manifest["season"])
-            current_run, current_snapshot = next(
-                (run, item) for run, item in reversed(run_contexts)
+            current_snapshot = next(
+                item for run, item in reversed(run_contexts)
                 if item.year == season_value
             )
             retained_candidates: tuple[ForecastCandidate, ...] = ()
             retained_attestations: tuple[OwnerAttestation, ...] = ()
-            if forecast_ledger.get("owner_attestations"):
+            if derived_retained:
                 # Reparse only pages independently derived and hash-bound above.
                 # Neither ledger values nor its recomputable owner attestations
                 # are authority for the numerical forecast or Game identity.
-                retained_candidates, retained_attestations = load_retained_spread_forecasts(
-                    current_snapshot,
-                    tuple((relative, site / relative) for relative in sorted(derived_retained)),
-                    model_version=str(current_run["model_version"]),
-                    home_field_advantage=Decimal(str(current_run["home_field_advantage"])),
+                source_run = forecast_upgrade_runs[0]
+                source_snapshot = next(
+                    item for run, item in run_contexts if run == source_run
                 )
+                # The explicit legacy fixture boundary had no provider IDs
+                # and therefore could not import issued candidates. Later
+                # IDs must not retroactively change that historical boundary.
+                if any(game.provider_id is not None for game in source_snapshot.games):
+                    retained_candidates, retained_attestations = load_retained_spread_forecasts(
+                        source_snapshot,
+                        tuple((relative, site / relative) for relative in sorted(derived_retained)),
+                        model_version=str(source_run["model_version"]),
+                        home_field_advantage=Decimal(str(source_run["home_field_advantage"])),
+                    )
             validate_forecast_sources(
                 forecast_ledger, checkpoints,
                 retained_source_candidates=retained_candidates,
                 retained_source_attestations=retained_attestations,
+            )
+            # Preparation-only candidates replaced during upgrade keep their
+            # historical URLs on every later rebuild. Derive their ownership
+            # from canonical, source-validated records, not a filename glob.
+            ledger_ids = {item["version_id"] for item in forecast_ledger["candidates"]}
+            archived_candidates = []
+            forecast_directory = site / f"cfb/years/{season_value}/forecasts"
+            for candidate_path in forecast_directory.glob("*.json"):
+                if re.fullmatch(r"[0-9a-f]{64}\.json", candidate_path.name) is None:
+                    continue
+                record = ForecastCandidate.from_dict(json.loads(candidate_path.read_bytes()))
+                if record.version_id in ledger_ids:
+                    continue
+                if (
+                    candidate_path.stem != record.version_id.removeprefix("sha256:")
+                    or candidate_path.read_bytes() != forecast_json(record.to_dict())
+                ):
+                    raise ForecastContractError("archived preparation candidate is not canonical")
+                archived_candidates.append(record.to_dict())
+                cumulative_expected.add(candidate_path.relative_to(site).as_posix())
+            validate_forecast_sources(
+                {"candidates": archived_candidates, "owner_attestations": []}, checkpoints,
             )
             evaluation_value = json.loads(
                 (site / str(manifest["forecast_evaluation_path"])).read_bytes()

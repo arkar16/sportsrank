@@ -373,6 +373,14 @@ def validate_forecast_sources(
         item.candidate_version_id: item for item in retained_source_attestations
     }
     attestations_by_id = {item.candidate_version_id: item for item in owner_attestations}
+    retained_ids = {
+        item.version_id for item in candidates
+        if item.provenance.source_kind == "retained-published-spread"
+    }
+    if retained_ids != set(retained_by_id):
+        raise ForecastContractError(
+            "forecast candidate set disagrees with reconstructed retained source"
+        )
     for candidate in candidates:
         provenance = candidate.provenance
         if provenance.source_kind == "retained-published-spread":
