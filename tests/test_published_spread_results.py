@@ -1,5 +1,6 @@
 """Regression coverage for grading retained, owner-confirmed spread pages."""
 
+from dataclasses import replace
 from decimal import Decimal
 import json
 from pathlib import Path
@@ -20,6 +21,7 @@ from cfb.forecast_release import (
     load_retained_spread_forecasts,
     validate_evaluation_semantics,
     validate_public_forecast_json,
+    validate_forecast_sources,
 )
 from cfb.season_snapshot import SeasonSnapshot, _checksum
 from cfb.season_source import SourceGame, SourceTeam
@@ -90,6 +92,79 @@ def _rows() -> tuple[list[tuple[str, ...]], list[tuple[str, ...]]]:
 
 
 class PublishedSpreadResultsTests(unittest.TestCase):
+    def test_resealed_candidates_must_match_retained_values_and_identity(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            page = _write_page(root, 0, _rows()[0])
+            candidates, attestations = load_retained_spread_forecasts(
+                _snapshot(), ((page.relative_to(root).as_posix(), page),),
+                model_version="v0.4.0", home_field_advantage=Decimal("2"),
+            )
+            expected = dict(
+                retained_source_candidates=candidates,
+                retained_source_attestations=attestations,
+            )
+            ledger = {
+                "candidates": [item.to_dict() for item in candidates],
+                "owner_attestations": [item.to_dict() for item in attestations],
+            }
+            validate_forecast_sources(ledger, (), **expected)
+            positive = next(item for item in candidates if item.game.provider_id == "g-positive")
+            zero = next(item for item in candidates if item.game.provider_id == "g-zero")
+            mutations = {
+                "margin": replace(positive, home_margin=Decimal("102.50"), home_handicap=Decimal("-102.50"), version_id=""),
+                "precision": replace(positive, precision=3, version_id=""),
+                "selected side": replace(zero, selection=ForecastSelection.PICKEM, version_id=""),
+                "rating": replace(positive, provenance=replace(positive.provenance, home_rating=Decimal("999")), version_id=""),
+                "provider id": replace(positive, game=replace(positive.game, provider_id="forged-game"), version_id=""),
+                "orientation": replace(positive, game=replace(positive.game, home_team=positive.game.away_team, away_team=positive.game.home_team), version_id=""),
+                "venue": replace(positive, game=replace(positive.game, neutral_site=True), version_id=""),
+                "provenance": replace(positive, provenance=replace(positive.provenance, code_revision="forged"), version_id=""),
+            }
+            for label, altered in mutations.items():
+                with self.subTest(label=label):
+                    original = zero if label == "selected side" else positive
+                    original_attestation = next(item for item in attestations if item.candidate_version_id == original.version_id)
+                    resealed = replace(
+                        original_attestation,
+                        candidate_version_id=altered.version_id,
+                        candidate_artifact_digest=altered.artifact_digest,
+                        attestation_id="",
+                    )
+                    forged = {
+                        "candidates": [altered.to_dict()],
+                        "owner_attestations": [resealed.to_dict()],
+                    }
+                    with self.assertRaisesRegex(ForecastContractError, "reconstructed retained source"):
+                        validate_forecast_sources(forged, (), **expected)
+
+            original_attestation = next(item for item in attestations if item.candidate_version_id == positive.version_id)
+            altered_reference = replace(
+                original_attestation,
+                source=replace(original_attestation.source, reference="cfb/years/2026/spread/2026_W9_FBS_spread.html"),
+                attestation_id="",
+            )
+            with self.assertRaises(ForecastContractError):
+                validate_forecast_sources({
+                    "candidates": [positive.to_dict()],
+                    "owner_attestations": [altered_reference.to_dict()],
+                }, (), **expected)
+
+    def test_retained_candidate_requires_reconstructed_source_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            page = _write_page(root, 0, _rows()[0])
+            candidates, attestations = load_retained_spread_forecasts(
+                _snapshot(), ((page.relative_to(root).as_posix(), page),),
+                model_version="v0.4.0", home_field_advantage=Decimal("2"),
+            )
+            ledger = {
+                "candidates": [item.to_dict() for item in candidates],
+                "owner_attestations": [item.to_dict() for item in attestations],
+            }
+            with self.assertRaisesRegex(ForecastContractError, "retained source"):
+                validate_forecast_sources(ledger, ())
+
     def test_retained_values_grade_without_timing_and_rebuild_stably(self) -> None:
         snapshot = _snapshot()
         with tempfile.TemporaryDirectory() as temporary:

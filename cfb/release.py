@@ -3004,11 +3004,27 @@ def _validate_release(
                     code_revision=str(run["code_revision"]),
                     home_field_advantage=Decimal(str(run["home_field_advantage"])),
                 ))
-            validate_forecast_sources(forecast_ledger, checkpoints)
             season_value = int(manifest["season"])
-            current_snapshot = next(
-                item for run, item in reversed(run_contexts)
+            current_run, current_snapshot = next(
+                (run, item) for run, item in reversed(run_contexts)
                 if item.year == season_value
+            )
+            retained_candidates: tuple[ForecastCandidate, ...] = ()
+            retained_attestations: tuple[OwnerAttestation, ...] = ()
+            if forecast_ledger.get("owner_attestations"):
+                # Reparse only pages independently derived and hash-bound above.
+                # Neither ledger values nor its recomputable owner attestations
+                # are authority for the numerical forecast or Game identity.
+                retained_candidates, retained_attestations = load_retained_spread_forecasts(
+                    current_snapshot,
+                    tuple((relative, site / relative) for relative in sorted(derived_retained)),
+                    model_version=str(current_run["model_version"]),
+                    home_field_advantage=Decimal(str(current_run["home_field_advantage"])),
+                )
+            validate_forecast_sources(
+                forecast_ledger, checkpoints,
+                retained_source_candidates=retained_candidates,
+                retained_source_attestations=retained_attestations,
             )
             evaluation_value = json.loads(
                 (site / str(manifest["forecast_evaluation_path"])).read_bytes()

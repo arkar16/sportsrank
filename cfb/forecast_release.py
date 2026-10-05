@@ -344,6 +344,9 @@ def select_displayed_forecast(
 def validate_forecast_sources(
     ledger: Mapping[str, Any],
     checkpoints: Sequence[ForecastSourceCheckpoint],
+    *,
+    retained_source_candidates: Sequence[ForecastCandidate] = (),
+    retained_source_attestations: Sequence[OwnerAttestation] = (),
 ) -> None:
     """Bind candidate provenance to an archived snapshot and ranking calculation."""
 
@@ -362,12 +365,25 @@ def validate_forecast_sources(
     }
     _validate_candidate_graph(candidates)
     _validate_owner_attestations(candidates, owner_attestations)
+    # These expectations must be reconstructed from the independently bound
+    # retained HTML and trusted snapshot, never copied from the ledger under
+    # validation.  Content hashes alone do not authenticate a forecast value.
+    retained_by_id = {item.version_id: item for item in retained_source_candidates}
+    source_attestations = {
+        item.candidate_version_id: item for item in retained_source_attestations
+    }
+    attestations_by_id = {item.candidate_version_id: item for item in owner_attestations}
     for candidate in candidates:
         provenance = candidate.provenance
         if provenance.source_kind == "retained-published-spread":
-            # The Release validator separately binds each page reference to
-            # the retained legacy bytes.  There is no Season Snapshot rating
-            # checkpoint to reconstruct for these historical rows.
+            if (
+                retained_by_id.get(candidate.version_id) != candidate
+                or source_attestations.get(candidate.version_id)
+                != attestations_by_id[candidate.version_id]
+            ):
+                raise ForecastContractError(
+                    "forecast candidate disagrees with reconstructed retained source"
+                )
             continue
         matching_sources = [
             source for source in sources_by_digest.get(provenance.source_snapshot_digest, [])
