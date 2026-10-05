@@ -88,7 +88,7 @@ class CommittedRecoveryTrustTests(unittest.TestCase):
             )
             with patch.dict(os.environ, {"GITHUB_SHA": "a" * 40}), patch(
                 "cfb.publication_cli._verify_candidate_tree"
-            ), patch(
+            ) as tree_check, patch(
                 "cfb.publication_cli.verify_local_receipt", return_value=receipt
             ), patch(
                 "cfb.publication_cli.import_sanitized_baseline",
@@ -100,9 +100,14 @@ class CommittedRecoveryTrustTests(unittest.TestCase):
                 "cfb.publication_cli.prepare_reviewed_package",
                 side_effect=ReachedPackaging,
             ) as package:
+                tree_check.return_value.__enter__.return_value.read_file.return_value = (
+                    receipt_path.read_bytes()
+                )
                 with self.assertRaises(ReachedPackaging):
                     prepare_reviewed_operation(args)
-                self.assertEqual(package.call_args.kwargs["expected_predecessor"], receipt.expected_predecessor)
+                self.assertIs(
+                    package.call_args.kwargs["local_validation_receipt"], receipt
+                )
 
     def test_trusted_manifest_accepts_native_schema_four_path_and_rejects_mismatch(self):
         repository = Path(__file__).resolve().parents[1]

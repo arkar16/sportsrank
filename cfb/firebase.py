@@ -1076,6 +1076,15 @@ class FirebasePublicationAdapter:
             raise FirebaseReleaseReceiptUncertain(
                 "Firebase release receipt is incomplete"
             )
+        # Keep the provider's authenticated release time, not the runner's
+        # observation clock.  Legacy records remain unchanged on disk.
+        from .publication_timing import publication_instant
+        try:
+            publication_instant(released["releaseTime"])
+        except ValueError as exc:
+            raise FirebaseReleaseReceiptUncertain(
+                "Firebase release time is invalid"
+            ) from exc
         try:
             observed = self.backend.observe(self.target)
         except FirebasePublicationError as exc:
@@ -1089,8 +1098,11 @@ class FirebasePublicationAdapter:
         return FirebaseDeploymentReceipt(
             identity,
             {
-                "schema_version": 1,
+                "schema_version": 2,
                 "record_type": "firebase_deployment_observation",
+                "provider_published_at": released["releaseTime"],
+                "artifact_sha256": artifact.package.bundle_sha256,
+                "attempt_id": attempt_id,
                 "outcome": "accepted",
                 "release": identity.release,
                 "version": identity.version,

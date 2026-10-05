@@ -36,6 +36,7 @@ line arguments or persisted summaries.
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
 from dataclasses import dataclass
 import hashlib
 import json
@@ -46,7 +47,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from typing import Any, Mapping, Sequence
+from typing import Any, Iterator, Mapping, Sequence
 
 from .baseline import (
     BaselineValidationError,
@@ -74,6 +75,7 @@ from .publication import (
     PreparedPackage,
     PublicationCoordinator,
     PublicationExecutionError,
+    PublicationPreparationError,
     PublicationTags,
     ReconciliationTags,
     SealedAttempt,
@@ -502,19 +504,22 @@ def _context_sibling(context: Path, name: str) -> Path:
     return path
 
 
-def _verify_candidate_tree(path: Path, candidate_commit: str) -> None:
-    """Require current-tree-only evidence for the exact candidate commit."""
+@contextmanager
+def _verify_candidate_tree(
+    path: Path, candidate_commit: str
+) -> Iterator[GitCommitTreeReader]:
+    """Yield the exact reader proven by current-tree evidence for the commit."""
 
     with tempfile.TemporaryDirectory(prefix="sportsrank-tree-check-") as directory:
         try:
-            materialize_candidate_tree_archive(
-                path, candidate_commit=candidate_commit,
-                destination=Path(directory) / "candidate.git",
+            reader = _materialize_candidate_reader(
+                path, candidate_commit, Path(directory)
             )
-        except CandidateTreeError as exc:
+        except (CandidateTreeError, PublicationPreparationError, PublicationCLIError) as exc:
             raise PublicationCLIError(
                 "candidate current-tree evidence is invalid"
             ) from exc
+        yield reader
 
 
 def _load_digest_pins(path: Path) -> Mapping[str, str]:
@@ -766,7 +771,8 @@ def _load_context(
     )
     if _sha256_file(candidate_tree_archive) != candidate_tree_sha256:
         raise PublicationCLIError("candidate current-tree evidence does not match its digest")
-    _verify_candidate_tree(candidate_tree_archive, candidate)
+    with _verify_candidate_tree(candidate_tree_archive, candidate):
+        pass
     return PreparationContext(
         context_path,
         package,
@@ -905,7 +911,8 @@ def prepare_operation(args: argparse.Namespace) -> Path:
     )
     if _sha256_file(candidate_tree_archive) != candidate_tree_sha256:
         raise PublicationCLIError("candidate current-tree evidence does not match its digest")
-    _verify_candidate_tree(candidate_tree_archive, candidate_commit)
+    verified_tree = _verify_candidate_tree(candidate_tree_archive, candidate_commit)
+    verified_reader = verified_tree.__enter__()
     source_archive = (
         Path(args.source_input_archive).resolve()
         if args.source_input_archive is not None else None
@@ -967,10 +974,8 @@ def prepare_operation(args: argparse.Namespace) -> Path:
             retained_inputs_sha256=retained_sha,
             output=package_archive,
         )
-        reader = GitCommitTreeReader(candidate_root)
-        reader.require_commit(candidate_commit)
         package = bind_merged_candidate(
-            prepared, candidate_commit=candidate_commit, reader=reader
+            prepared, candidate_commit=candidate_commit, reader=verified_reader
         )
         if baseline.record.digest != trusted.baseline_record_sha256:
             raise PublicationCLIError(
@@ -1037,6 +1042,7 @@ def prepare_operation(args: argparse.Namespace) -> Path:
     finally:
         if "baseline" in locals() and isinstance(baseline, VerifiedBaseline):
             baseline.close()
+        verified_tree.__exit__(*sys.exc_info())
     return output / "publication-context.json"
 
 
@@ -1059,9 +1065,18 @@ def prepare_reviewed_operation(args: argparse.Namespace) -> Path:
         raise PublicationCLIError(
             "candidate current-tree evidence does not match its digest"
         )
-    _verify_candidate_tree(candidate_tree_archive, candidate_commit)
+    verified_tree = _verify_candidate_tree(candidate_tree_archive, candidate_commit)
+    reader = verified_tree.__enter__()
     site = candidate_root / "website"
     try:
+        supplied_receipt_bytes = Path(args.local_validation_receipt).resolve().read_bytes()
+        committed_receipt_bytes = reader.read_file(
+            candidate_commit, "config/sr7-local-validation-receipt.json"
+        )
+        if supplied_receipt_bytes != committed_receipt_bytes:
+            raise PublicationCLIError(
+                "supplied local-validation receipt differs from candidate commit"
+            )
         receipt = verify_local_receipt(
             args.local_validation_receipt,
             site,
@@ -1115,15 +1130,9 @@ def prepare_reviewed_operation(args: argparse.Namespace) -> Path:
             prepared = prepare_reviewed_package(
                 site,
                 firebase_json=firebase_json,
-                inventory_sha256=receipt.inventory_sha256,
-                configuration_sha256=receipt.configuration_sha256,
-                expected_baseline_sha256=expected_baseline,
-                expected_predecessor=predecessor,
-                retained_inputs_sha256=retained_inputs,
-                validation_sha256=receipt.validation_sha256,
+                local_validation_receipt=receipt,
                 output=output / "package.tar.gz",
             )
-            reader = GitCommitTreeReader(candidate_root)
             package = bind_merged_candidate(
                 prepared, candidate_commit=candidate_commit, reader=reader
             )
@@ -1162,6 +1171,8 @@ def prepare_reviewed_operation(args: argparse.Namespace) -> Path:
         )
     except (BaselineValidationError, PublicSiteError, RecordValidationError, OSError, ValueError) as exc:
         raise PublicationCLIError("reviewed preparation failed closed") from exc
+    finally:
+        verified_tree.__exit__(*sys.exc_info())
     return output / "publication-context.json"
 
 
@@ -1190,9 +1201,6 @@ def _rehydrate_package(context: PreparationContext) -> _RehydratedPackage:
     try:
         if _sha256_file(context.candidate_tree_archive) != context.candidate_tree_sha256:
             raise PublicationCLIError("candidate current-tree evidence changed after context validation")
-        _verify_candidate_tree(
-            context.candidate_tree_archive, context.package.candidate_commit
-        )
         reader = _materialize_candidate_reader(
             context.candidate_tree_archive,
             context.package.candidate_commit,

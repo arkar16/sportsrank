@@ -78,6 +78,22 @@ The owner selected this computer for private retention and approved the local
 validation/hosted packaging trust contract in ADR-0018. Safe public baseline
 references are separately pinned; they never substitute for private raw inputs.
 
+For artifact contract 4, local validation records a canonical top-level
+`used_coverage` value in the receipt only after trusted `validate_release`
+succeeds. Record the source coverage actually used by the validated progression
+origin and run, including its season, sport, classification, source snapshot and
+checksum, required progression and season-navigation paths, and public
+provenance paths. Preserve refresh and correction ownership; do not substitute a
+latest-run inference. Current or retained-2025 output requires that coverage.
+Use a versioned `used_coverage` descriptor with `status: none` only for a
+genuine pre-2025 build that did not use 2025 progression coverage; this is a
+descriptor, not JSON null, even when future-2025 inputs happen to be available.
+
+The contract-4 receipt is a migration boundary. Preserve literal contract-2 and
+contract-3 manifests, run dictionaries, public bytes and legacy receipt parsing.
+Those receipts may support historical inspection, but a current preparation
+requires a newly generated contract-4 receipt and its coverage identity.
+
 Before extracting runtime code, installing dependencies or using credentials,
 the trusted workflow bootstrap verifies authenticated GitHub run provenance,
 package and package-record attestation, the actual candidate commit/tree and
@@ -104,6 +120,34 @@ schema conversion alone is not sanitization. Audit current packages and Git
 history as well as new uploads. Existing exposure requires an explicit
 remediation decision before claiming this boundary is satisfied.
 
+### Draft checks and final candidate binding
+
+Offline export, receipt verification and direct preparation are draft
+self-consistency checks. Keep their outputs private and label them as draft
+evidence. They do not authenticate a caller-supplied replacement receipt,
+replacement coverage or fully re-sealed package, and a draft result cannot be
+used as a final fallback.
+
+Final hosted preparation uses the actual runtime `GITHUB_SHA` as the candidate
+authority. Resolve the candidate commit from that value, verify the supplied
+candidate-tree archive against the commit and its root tree, and require the
+caller-supplied receipt bytes to equal the receipt blob at the fixed path
+`config/sr7-local-validation-receipt.json` in the authenticated `candidate_commit`;
+callers cannot select another receipt path. The final package evidence must bind
+the receipt identity and the canonical `used_coverage` identity to that same tree. Missing,
+replacement or mismatched receipt or coverage evidence fails closed; caller
+arguments cannot replace the authenticated candidate identity or expected tree.
+Package records, validation records, rehydration and merged-candidate rebinds
+must preserve those identities.
+
+If the validated coverage, source fingerprint or safe public output changes,
+rerun the real exporter and review the regenerated receipt with the generated
+site. Never hand-edit a receipt. Do not add its digest to the trusted input
+manifest. Exclude the receipt from the source fingerprint and trusted
+configuration identity so the regenerated receipt does not hash itself. These
+checks provide evidence for owner review and do not authorize merge, production
+approval or publication.
+
 ### Private-input proof gate
 
 Keep the exact source-input, original-prepared and raw-baseline archives in
@@ -118,8 +162,9 @@ Reconstruct and independently validate the recovery in private staging using
 the retained source inputs. Run the public exporter only on that accepted
 candidate. The export preserves reader pages while replacing source snapshot
 payloads with strict provenance, and emits a safe receipt binding inventory,
-hosting configuration, validator/runtime/workflow source, trusted input hashes
-and baseline. Review and commit the safe website and receipt together.
+hosting configuration, validator/runtime/workflow source, trusted input hashes,
+baseline and the actual `used_coverage` identity. Review and commit the safe
+website and receipt together.
 
 Hosted `prepare` requires only the reviewed safe tree, receipt, hash pins and
 the verified public baseline derivative. It never retrieves raw source data.
@@ -150,8 +195,9 @@ owner decision; completing the new path does not erase historical exposure.
    retired, and immutable release protection enabled. Recheck dated setup
    evidence instead of assuming YAML establishes account protection.
 4. Finish SR-16 acceptance, including strict release/link/HTML preservation,
-   exact-head review and real immutable archive retrieval proof. Obtain owner
-   merge, then prepare and validate the actual merged candidate.
+   exact-head review, authenticated receipt/used-coverage tree binding and real
+   immutable archive retrieval proof. Obtain owner merge, then prepare and
+   validate the actual merged candidate.
 
 ## Seal, approve and execute
 

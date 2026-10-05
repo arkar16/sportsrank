@@ -18,7 +18,11 @@ import subprocess
 import tarfile
 import tempfile
 import threading
-from typing import Any, Callable, Mapping, Protocol
+from typing import Any, Callable, Mapping, Protocol, Sequence, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .forecast_publication import VerifiedForecastPublication
+    from .forecast_record import GameTimingEvidence
 
 from .baseline import BaselineValidationError, VerifiedBaseline
 from .candidate_tree import CandidateTreeError, materialize_candidate_tree_archive
@@ -57,6 +61,7 @@ from .publication_records import (
 )
 from .recovery_inputs import RecoveryInputBundle
 from .release import Release, ReleaseValidationError, validate_release
+from .forecast_release import CURRENT_ARTIFACT_CONTRACT
 
 
 class PublicationPreparationError(ValueError):
@@ -101,17 +106,31 @@ def _validation_evidence(
     configuration_sha256: str,
     expected_baseline_sha256: str,
     retained_inputs_sha256: str,
+    local_validation_receipt_sha256: str | None = None,
+    used_coverage_sha256: str | None = None,
 ) -> bytes:
     """Return the reconstructible record emitted by the fresh package gate."""
 
+    current = local_validation_receipt_sha256 is not None or used_coverage_sha256 is not None
+    if current and (local_validation_receipt_sha256 is None or used_coverage_sha256 is None):
+        raise PublicationPreparationError(
+            "package validation requires both receipt identities"
+        )
     return canonical_json({
-        "schema_version": 1,
+        "schema_version": 2 if current else 1,
         "record_type": "package_validation",
         "outcome": "valid",
         "inventory_sha256": inventory_sha256,
         "configuration_sha256": configuration_sha256,
         "expected_baseline_sha256": expected_baseline_sha256,
         "retained_inputs_sha256": retained_inputs_sha256,
+        **(
+            {
+                "local_validation_receipt_sha256": local_validation_receipt_sha256,
+                "used_coverage_sha256": used_coverage_sha256,
+            }
+            if current else {}
+        ),
     })
 
 
@@ -150,12 +169,16 @@ class PreparedPackage:
     validation_sha256: str
     site: Path
     firebase_json: Path
+    local_validation_receipt_sha256: str | None
+    used_coverage_sha256: str | None
 
     def __init__(
         self, archive: Path, bundle_sha256: str, inventory_sha256: str,
         configuration_sha256: str, expected_baseline_sha256: str,
         expected_predecessor: ProviderIdentity, retained_inputs_sha256: str,
         validation_sha256: str, site: Path, firebase_json: Path, *,
+        local_validation_receipt_sha256: str | None = None,
+        used_coverage_sha256: str | None = None,
         _token: object | None = None,
     ) -> None:
         if _token is not _PREPARED_PACKAGE_TOKEN:
@@ -165,8 +188,8 @@ class PreparedPackage:
                 object.__setattr__(self, name, value)
 
     @classmethod
-    def _create(cls, *values: object) -> "PreparedPackage":
-        return cls(*values, _token=_PREPARED_PACKAGE_TOKEN)  # type: ignore[arg-type]
+    def _create(cls, *values: object, **identities: object) -> "PreparedPackage":
+        return cls(*values, **identities, _token=_PREPARED_PACKAGE_TOKEN)  # type: ignore[arg-type]
 
     def assert_current(self) -> None:
         if not self.archive.is_file() or _sha256_file(self.archive) != self.bundle_sha256:
@@ -185,6 +208,8 @@ def prepare_review_package(
     source_inputs: RecoveryInputBundle,
     retained_inputs_sha256: str,
     output: str | Path,
+    forecast_publications: Sequence[VerifiedForecastPublication] = (),
+    timing_evidence: Sequence[GameTimingEvidence] = (),
 ) -> PreparedPackage:
     """Revalidate and package staged bytes without asserting Git eligibility."""
 
@@ -192,7 +217,10 @@ def prepare_review_package(
     source_inputs.assert_current()
     if source_inputs.bundle_sha256 != retained_inputs_sha256:
         raise PublicationPreparationError("retained input archive does not match the supplied provenance")
-    report = validate_release(candidate, published_site=baseline, source_inputs=source_inputs)
+    report = validate_release(candidate, published_site=baseline, source_inputs=source_inputs,
+                              forecast_publications=forecast_publications,
+                              timing_evidence=timing_evidence,
+                              expected_manifest_version=CURRENT_ARTIFACT_CONTRACT)
     if not report.ok:
         raise ReleaseValidationError("publication candidate failed independent release validation", report)
     site = _site(candidate).resolve()
@@ -227,12 +255,7 @@ def prepare_reviewed_package(
     candidate: str | Path | Release,
     *,
     firebase_json: str | Path,
-    inventory_sha256: str,
-    configuration_sha256: str,
-    expected_baseline_sha256: str,
-    expected_predecessor: ProviderIdentity,
-    retained_inputs_sha256: str,
-    validation_sha256: str,
+    local_validation_receipt: object,
     output: str | Path,
 ) -> PreparedPackage:
     """Package bytes already covered by a reviewed local-validation receipt.
@@ -244,6 +267,30 @@ def prepare_reviewed_package(
     """
 
     site = _site(candidate).resolve()
+    from .public_site import (
+        CURRENT_RELEASE_CONTRACT,
+        LocalValidationReceipt,
+        validate_public_output,
+    )
+    if not isinstance(local_validation_receipt, LocalValidationReceipt):
+        raise PublicationPreparationError(
+            "reviewed preparation requires a parsed local-validation receipt"
+        )
+    receipt = local_validation_receipt
+    coverage_sha = receipt.used_coverage_sha256
+    if coverage_sha is None:
+        raise PublicationPreparationError(
+            "current reviewed preparation requires used coverage"
+        )
+    manifest = _json_object(site / "manifest.json", "public manifest")
+    if manifest.get("schema_version") != 2 or manifest.get("artifact_contract") != CURRENT_RELEASE_CONTRACT:
+        raise PublicationPreparationError("current preparation requires the current public artifact contract")
+    try:
+        validate_public_output(site, expected_receipt=receipt).raise_for_failure()
+    except ValueError as exc:
+        raise PublicationPreparationError(
+            "candidate website differs from validated receipt coverage"
+        ) from exc
     config_path = Path(firebase_json).resolve()
     try:
         config = json.loads(config_path.read_text(encoding="utf-8"))
@@ -259,21 +306,34 @@ def prepare_reviewed_package(
         )
     actual_inventory = _inventory_digest(_inventory(site))
     actual_configuration = _sha256_file(config_path)
-    if actual_inventory != inventory_sha256:
+    if actual_inventory != receipt.inventory_sha256:
         raise PublicationPreparationError(
             "candidate website differs from the local-validation receipt"
         )
-    if actual_configuration != configuration_sha256:
+    if actual_configuration != receipt.configuration_sha256:
         raise PublicationPreparationError(
             "serving configuration differs from the local-validation receipt"
         )
+    expected_baseline_sha256 = receipt.expected_baseline_sha256
+    expected_predecessor = receipt.expected_predecessor
+    retained_inputs_sha256 = receipt.retained_inputs_sha256
+    if (
+        expected_baseline_sha256 is None
+        or expected_predecessor is None
+        or retained_inputs_sha256 is None
+    ):
+        raise PublicationPreparationError(
+            "local-validation receipt lacks reviewed package identities"
+        )
     expected_validation = _sha256_bytes(_validation_evidence(
-        inventory_sha256=inventory_sha256,
+        inventory_sha256=receipt.inventory_sha256,
         configuration_sha256=actual_configuration,
         expected_baseline_sha256=expected_baseline_sha256,
         retained_inputs_sha256=retained_inputs_sha256,
+        local_validation_receipt_sha256=receipt.digest,
+        used_coverage_sha256=coverage_sha,
     ))
-    if expected_validation != validation_sha256:
+    if expected_validation != receipt.validation_sha256:
         raise PublicationPreparationError(
             "local-validation receipt does not bind the package validation"
         )
@@ -282,7 +342,9 @@ def prepare_reviewed_package(
     prepared = PreparedPackage._create(
         output_path, bundle_sha, actual_inventory, actual_configuration,
         expected_baseline_sha256, expected_predecessor, retained_inputs_sha256,
-        validation_sha256, site, config_path,
+        expected_validation, site, config_path,
+        local_validation_receipt_sha256=receipt.digest,
+        used_coverage_sha256=coverage_sha,
     )
     prepared.assert_current()
     return prepared
@@ -349,6 +411,9 @@ class FakeCommitTreeReader:
             raise PublicationPreparationError("candidate commit is missing a packaged path") from exc
 
 
+_LOCAL_VALIDATION_RECEIPT_PATH = "config/sr7-local-validation-receipt.json"
+
+
 def bind_merged_candidate(
     prepared: PreparedPackage,
     *,
@@ -359,6 +424,62 @@ def bind_merged_candidate(
 
     prepared.assert_current()
     reader.require_commit(candidate_commit)
+    manifest_path = prepared.site / "manifest.json"
+    manifest = (
+        _json_object(manifest_path, "public manifest")
+        if manifest_path.is_file() else {}
+    )
+    current4 = manifest.get("artifact_contract") == CURRENT_ARTIFACT_CONTRACT
+    if current4:
+        if (
+            prepared.local_validation_receipt_sha256 is None
+            or prepared.used_coverage_sha256 is None
+        ):
+            raise PublicationPreparationError(
+                "current candidate binding requires authenticated receipt identities"
+            )
+        try:
+            from .public_site import LocalValidationReceipt, validate_public_output
+            receipt_bytes = reader.read_file(
+                candidate_commit, _LOCAL_VALIDATION_RECEIPT_PATH
+            )
+            receipt = LocalValidationReceipt.from_bytes(receipt_bytes)
+        except Exception as exc:
+            if isinstance(exc, PublicationPreparationError):
+                raise
+            raise PublicationPreparationError(
+                "candidate commit lacks its canonical local-validation receipt"
+            ) from exc
+        if (
+            _sha256_bytes(receipt_bytes)
+            != prepared.local_validation_receipt_sha256
+            or receipt.used_coverage_sha256 != prepared.used_coverage_sha256
+        ):
+            raise PublicationPreparationError(
+                "candidate receipt identities differ from reviewed coverage"
+            )
+        try:
+            validate_public_output(
+                prepared.site, expected_receipt=receipt
+            ).raise_for_failure()
+        except ValueError as exc:
+            raise PublicationPreparationError(
+                "candidate website differs from committed receipt coverage"
+            ) from exc
+        expected_validation = _sha256_bytes(
+            _validation_evidence(
+                inventory_sha256=prepared.inventory_sha256,
+                configuration_sha256=prepared.configuration_sha256,
+                expected_baseline_sha256=prepared.expected_baseline_sha256,
+                retained_inputs_sha256=prepared.retained_inputs_sha256,
+                local_validation_receipt_sha256=prepared.local_validation_receipt_sha256,
+                used_coverage_sha256=prepared.used_coverage_sha256,
+            )
+        )
+        if expected_validation != prepared.validation_sha256:
+            raise PublicationPreparationError(
+                "candidate receipt is not bound by package validation evidence"
+            )
     expected = _inventory(prepared.site)
     committed_paths = reader.list_files(candidate_commit, "website")
     if committed_paths != tuple(path for path, _digest, _size in expected):
@@ -464,6 +585,47 @@ def rehydrate_prepared_package(
             output.write_bytes(value)
         firebase_json = destination / "firebase.json"
         firebase_json.write_bytes(artifact.firebase_json)
+        manifest_path = site / "manifest.json"
+        manifest = (
+            _json_object(manifest_path, "public manifest")
+            if manifest_path.is_file() else {}
+        )
+        receipt_sha: str | None = None
+        coverage_sha: str | None = None
+        if manifest.get("artifact_contract") == CURRENT_ARTIFACT_CONTRACT:
+            try:
+                from .public_site import LocalValidationReceipt
+                candidate_reader.require_commit(package.candidate_commit)
+                receipt_bytes = candidate_reader.read_file(
+                    package.candidate_commit, _LOCAL_VALIDATION_RECEIPT_PATH
+                )
+                receipt = LocalValidationReceipt.from_bytes(receipt_bytes)
+            except Exception as exc:
+                if isinstance(exc, PublicationPreparationError):
+                    raise
+                raise PublicationPreparationError(
+                    "authenticated current package lacks its committed receipt"
+                ) from exc
+            receipt_sha = _sha256_bytes(receipt_bytes)
+            coverage_sha = receipt.used_coverage_sha256
+            if coverage_sha is None:
+                raise PublicationPreparationError(
+                    "authenticated current package lacks used coverage"
+                )
+            expected_validation = _sha256_bytes(
+                _validation_evidence(
+                    inventory_sha256=package.inventory_sha256,
+                    configuration_sha256=package.configuration_sha256,
+                    expected_baseline_sha256=package.expected_baseline_sha256,
+                    retained_inputs_sha256=package.retained_inputs_sha256,
+                    local_validation_receipt_sha256=receipt_sha,
+                    used_coverage_sha256=coverage_sha,
+                )
+            )
+            if expected_validation != package.validation_sha256:
+                raise PublicationPreparationError(
+                    "authenticated package record does not bind its committed receipt"
+                )
         prepared = PreparedPackage._create(
             archive_path,
             package.bundle_sha256,
@@ -475,6 +637,8 @@ def rehydrate_prepared_package(
             package.validation_sha256,
             site,
             firebase_json,
+            local_validation_receipt_sha256=receipt_sha,
+            used_coverage_sha256=coverage_sha,
         )
         prepared.assert_current()
         rebound = bind_merged_candidate(
@@ -1621,27 +1785,14 @@ def _verify_prior_publication(
         raise PublicationExecutionError(
             "retrieved predecessor records differ from their immutable references"
         )
-    _exact_source(provider_source, {
-        "schema_version": 1,
-        "record_type": "firebase_reconciled_provider_result",
-        "outcome": "accepted",
-        "release": result.observed_release,
-        "version": result.observed_version,
-        "artifact_sha256": prior.intent.artifact_reference.sha256,
-        "content_correspondence": "verified",
-        "prior_result_evidence": provider_source.get("prior_result_evidence"),
-        "prior_verification_evidence": provider_source.get(
-            "prior_verification_evidence"
-        ),
-    }, "provider result")
-    if provider_source["prior_result_evidence"] not in {
-        "archive_consistent_untrusted", "missing_or_invalid"
-    } or provider_source["prior_verification_evidence"] not in {
-        "archive_consistent_untrusted", "missing_or_invalid"
-    }:
-        raise PublicationExecutionError(
-            "provider result source has an invalid prior-evidence status"
+    from .publication_timing import original_publication_facts
+    try:
+        original_publication_facts(
+            provider_source, result, prior.intent, archive=archive,
+            repository=repository, destination=destination / "original-publication",
         )
+    except (ValueError, ArchiveError) as exc:
+        raise PublicationExecutionError("original publication evidence is invalid") from exc
     _exact_source(verification_source, {
         "schema_version": 1,
         "record_type": "firebase_verification_observation",
@@ -1929,6 +2080,8 @@ class PublicationCoordinator:
                 next_operations=("reconcile",),
             )
         provider_source = dict(receipt.source)
+        if provider_source.get("schema_version") == 2:
+            provider_source["attempt_id"] = attempt.intent.attempt_id
         result = ProviderResultRecord.create(
             intent=attempt.intent,
             outcome="accepted",
@@ -2316,6 +2469,17 @@ class PublicationCoordinator:
                 else "missing_or_invalid"
             ),
         }
+        # Append exact references to the original authenticated observation.
+        # Never change its bytes or replace its timestamp with this run's clock.
+        if prior_claims_observed and recorded.provider_evidence is not None:
+            provider_source["schema_version"] = 2
+            prior_verification = recorded.verification_evidence if verification_evidence_valid else None
+            provider_source["original_evidence"] = {
+                "provider_result": recorded.provider_evidence.record_reference.to_dict(),
+                "provider_source": recorded.provider_evidence.source_reference.to_dict(),
+                "verification": prior_verification.record_reference.to_dict() if prior_verification else None,
+                "verification_source": prior_verification.source_reference.to_dict() if prior_verification else None,
+            }
         provider_result = ProviderResultRecord.create(
             intent=recorded.attempt.intent,
             outcome=result_outcome,

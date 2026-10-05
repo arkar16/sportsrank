@@ -226,9 +226,63 @@ the emulator only; use the gated workflow for publication.
 The older `cfb/main.py` script and batch file are retained for historical
 compatibility; new recovery work should use the staged interface above.
 
-## Future spread evaluation
+## Preserved 2026 forecasts
 
-[ADR-0019](../docs/adr/0019-evaluate-predictions-against-market-lines.md) records
-the accepted forecast-preservation and evaluation design, owned by task SR-26.
-Market-line selection and timing remain deferred. The current runtime's spread
-grading is unchanged; the accepted design is not yet an implemented evaluator.
+[ADR-0019](../docs/adr/0019-evaluate-predictions-against-market-lines.md) defines
+this boundary; SR-26 owns delivery acceptance. Market lines remain deferred.
+
+The cached `build` command writes natural two-decimal CORS forecasts with a
+Predicted Winner, immutable candidate JSON, a retained ledger, and weekly/season
+evaluation on the existing spread-result pages. An unpublished candidate is
+not an issued prediction. Missing publication or actual-start evidence produces
+an explicit omission, never a reconstructed historical win/loss record.
+Missing or invalid rating inputs fail the build rather than becoming a zero
+forecast. The current builder stops before publication instead of emitting
+per-game invalid-rating omissions.
+
+`build`, `validate`, `promote`, and `cfb.public_site export` accept:
+
+- `--forecast-history FILE`: a `forecast-history-locators/v1` JSON object with a
+  `publications` array. Each entry contains exact ArchiveReference objects named
+  `intent`, `package`, `package_record`, `validation`, `provider_result`,
+  `provider_source`, `verification`, and `verification_source`, taken from the
+  retained publication attempt and its sealed evidence. Every invocation
+  revalidates immutable GitHub archive bytes and bindings; this performs archive
+  reads, never CFBD calls or Firebase observations/writes. Supply the complete
+  issued history represented by the inherited ledger, not only the newest entry.
+  A preserved `forecast-ledger/v1` file can also be supplied directly: its
+  publication locators are revalidated and the remaining references are resolved
+  from each immutable intent. Durable current-tree attempts additionally require
+  authenticated GitHub preparation-provenance access. Historical Git-bundle
+  intents require reviewed offline evidence migration and fail explicitly here;
+  their original records remain readable and unchanged.
+- `--forecast-timing FILE --forecast-timing-sha256 HASH`: a separately reviewed
+  `reviewed-forecast-timing/v1` object with `evidence` (GameTimingEvidence objects)
+  and `sources` (evidence digest to relative retained source filename). The hash
+  comes from the review record, independently of the candidate. Source documents
+  must remain alongside the supplement and match the declared digests. Review
+  must establish an actual start or an authoritative not-started observation;
+  scheduled kickoff, a local build time, or a checksum alone proves neither.
+
+Only `build` also accepts `--forecast-corrections FILE`, a JSON object mapping
+an exact predecessor forecast version digest to a nonempty correction reason.
+This requests a retained child candidate; qualification still requires its own
+verified pregame publication. Ordinary rebuilds preserve earlier issued values.
+Score corrections create a separate timestamped revision and regrade the saved
+forecast. Keep staging output outside `website/` until reviewed.
+
+A same-checkpoint upgrade from legacy artifact contract 2 preserves existing
+forecast HTML and PRESEASON pages byte-for-byte. New evaluation replaces the old
+ATS result tables and reports only qualified issued forecasts. Natural candidate
+JSON created from that stale checkpoint is preparation output: the retained
+legacy forecast page does not display it, and it establishes no historical
+issuance. The next ordinary eligible checkpoint displays its new natural
+forecast with the matching immutable candidate.
+
+Current Release preparation requires artifact contract 3 independently of the
+candidate's own version marker. New public manifests and local receipts use
+schema 2 to carry that expectation. Legacy schema-1 public evidence and receipt
+bytes remain parseable for inspection; they cannot authorize current
+preparation. Regenerate receipts through complete private validation/export,
+never by changing their hashes. ADR-0020 will use a later artifact contract;
+contract 3 does not retroactively acquire progression requirements.
