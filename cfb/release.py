@@ -1892,8 +1892,7 @@ class ReleaseBuilder:
                         *(
                             int(item["game"]["week"])
                             for item in evaluation["games"]
-                            if contract_upgrade
-                            and item.get("disposition") == "evaluated"
+                            if item.get("disposition") == "evaluated"
                             and int(item["game"]["week"]) > target_week
                         ),
                     }
@@ -2572,6 +2571,7 @@ def _validate_release(
         _failure(failures, "runs.missing", f"manifest v{expected_manifest_version} requires non-empty cumulative run evidence", manifest_path)
         raw_runs = []
     forecast_ledger: Mapping[str, Any] | None = None
+    report_weeks: set[int] = set()
     if expected_manifest_version >= FORECAST_ARTIFACT_CONTRACT:
         if manifest.get("artifact_contract") != expected_manifest_version:
             _failure(failures, "artifact.contract", f"Release requires artifact contract {expected_manifest_version}", manifest_path)
@@ -2615,15 +2615,10 @@ def _validate_release(
                     f"cfb/years/{season_value}/forecasts/{ForecastCandidate.from_dict(item).version_id.removeprefix('sha256:')}.json"
                     for item in ledger["candidates"]
                 )
-                latest_is_upgrade = bool(
-                    raw_runs
-                    and raw_runs[-1].get("run_kind") == "artifact-contract-upgrade"
-                )
                 future_report_weeks = {
                     int(item["game"]["week"])
                     for item in evaluation.get("games", [])
-                    if latest_is_upgrade
-                    and item.get("disposition") == "evaluated"
+                    if item.get("disposition") == "evaluated"
                     and int(item["game"]["week"]) > int(manifest.get("target_week", -1))
                 }
                 required.update(
@@ -3543,6 +3538,13 @@ def _validate_release(
             continue
     if run_contexts and manifest.get("progression_feature") is not None:
         for relative in _progression_paths():
+            latest_owner[relative] = len(run_contexts) - 1
+    if run_contexts and forecast_ledger is not None:
+        for week in report_weeks:
+            relative = (
+                f"cfb/years/{manifest['season']}/spread/{manifest['season']}_W{week}_"
+                f"{str(manifest['classification']).upper()}_spread_results.html"
+            )
             latest_owner[relative] = len(run_contexts) - 1
     for index, (run, run_snapshot) in enumerate(run_contexts):
         if run.get("run_kind") in {"forecast-evidence-refresh", "forecast-correction"}:

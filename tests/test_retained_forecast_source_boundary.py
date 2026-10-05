@@ -20,7 +20,7 @@ from tests.test_forecast_lifecycle_independent import (
 
 class RetainedForecastSourceBoundaryTests(unittest.TestCase):
     def test_release_rejects_resealed_margin_with_unchanged_source_pages(self):
-        snapshot = _synthetic_upgrade_snapshot(provider_ids=True, week_one_completed=False)
+        snapshot = _synthetic_upgrade_snapshot(provider_ids=True, week_one_completed=True)
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             base = root / "base"
@@ -31,7 +31,7 @@ class RetainedForecastSourceBoundaryTests(unittest.TestCase):
                 timestamp="2026-09-01T20:00:00+00:00", published_site=base,
             )
             legacy_display = build_release(
-                _synthetic_upgrade_snapshot(provider_ids=False, week_one_completed=False),
+                _synthetic_upgrade_snapshot(provider_ids=False, week_one_completed=True),
                 root / "legacy-display", release_id="legacy-display",
                 target_week=0, phase="week", previous_final=previous,
                 timestamp="2026-09-01T20:00:00+00:00", published_site=base,
@@ -62,6 +62,8 @@ class RetainedForecastSourceBoundaryTests(unittest.TestCase):
             ledger_path = "cfb/years/2026/forecasts/ledger.json"
             ledger = json.loads((valid.site / ledger_path).read_bytes())
             self.assertGreater(len(ledger["owner_attestations"]), 0)
+            future_report = "cfb/years/2026/spread/2026_W1_FBS_spread_results.html"
+            self.assertTrue((valid.site / future_report).is_file())
 
             rebuilt = build_release(
                 snapshot, root / "rebuilt", release_id="rebuilt",
@@ -72,6 +74,7 @@ class RetainedForecastSourceBoundaryTests(unittest.TestCase):
                 rebuilt_report = validate_release(rebuilt, published_site=baseline)
                 self.assertTrue(rebuilt_report.valid, [str(item) for item in rebuilt_report.failures])
             self.assertEqual((valid.site / ledger_path).read_bytes(), (rebuilt.site / ledger_path).read_bytes())
+            self.assertTrue((rebuilt.site / future_report).is_file())
 
             for drop_all in (False, True):
                 with self.subTest(drop_all=drop_all):
