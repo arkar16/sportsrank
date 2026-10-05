@@ -7,7 +7,9 @@ import unittest
 from unittest.mock import patch
 
 from cfb.public_site import (LocalValidationReceipt, PublicSiteError,
-                            _public_manifest_bytes, validate_and_export, verify_local_receipt)
+                            _inventory, _inventory_hash, _public_manifest_bytes,
+                            validate_and_export, validate_public_output,
+                            verify_local_receipt)
 from tests.test_public_site import _fixture, _canonical, REPOSITORY
 from cfb.publication import PublicationPreparationError, prepare_reviewed_package
 
@@ -21,17 +23,47 @@ class ForecastReceiptContractTests(unittest.TestCase):
             receipt = validate_and_export(candidate, baseline, sources, firebase, site, receipt_path,
                                           source_root=sources.root, trusted_input_manifest=trust, code_root=REPOSITORY)
             self.assertEqual(receipt.schema_version, 2)
-            self.assertEqual(receipt.independent_validation["artifact_contract"], 3)
+            self.assertEqual(receipt.independent_validation["artifact_contract"], 4)
             self.assertEqual(verify_local_receipt(receipt_path, site, firebase, REPOSITORY, trust).digest, receipt.digest)
-            with patch("cfb.public_site.CURRENT_RELEASE_CONTRACT", 4):
+            with patch("cfb.public_site.CURRENT_RELEASE_CONTRACT", 5):
                 self.assertEqual(LocalValidationReceipt.from_bytes(receipt.to_bytes()).to_bytes(), receipt.to_bytes())
                 with self.assertRaisesRegex(PublicSiteError, "current Release contract"):
                     verify_local_receipt(receipt_path, site, firebase, REPOSITORY, trust)
+            frozen = receipt.to_dict()
+            frozen["independent_validation"]["artifact_contract"] = 3
+            del frozen["used_coverage"]
+            frozen_bytes = _canonical(frozen)
+            self.assertEqual(LocalValidationReceipt.from_bytes(frozen_bytes).to_bytes(), frozen_bytes)
+
+            # A literal contract-3 public tree remains readable with its exact
+            # legacy receipt shape; current4 alone requires used coverage.
+            manifest = json.loads((site / "manifest.json").read_bytes())
+            manifest["artifact_contract"] = 3
+            manifest_bytes = _public_manifest_bytes(manifest)
+            (site / "manifest.json").write_bytes(manifest_bytes)
+            release = json.loads((site / "release.json").read_bytes())
+            release["manifest_sha256"] = hashlib.sha256(manifest_bytes).hexdigest()
+            without_release = tuple(
+                item for item in _inventory(site, "legacy public site")
+                if item["path"] != "release.json"
+            )
+            release["public_site_inventory_sha256"] = _inventory_hash(without_release)
+            (site / "release.json").write_bytes(_canonical(release))
+            legacy_inventory = _inventory(site, "legacy public site")
+            frozen["public_site_inventory"] = list(legacy_inventory)
+            frozen["public_site_inventory_sha256"] = _inventory_hash(legacy_inventory)
+            legacy_receipt = LocalValidationReceipt.from_bytes(_canonical(frozen))
+            self.assertTrue(
+                validate_public_output(
+                    site, expected_receipt=legacy_receipt
+                ).ok
+            )
             # Literal legacy shape: parsing/resealing preserves every original
             # byte and digest. A current-code preparation has a separate gate.
             old = receipt.to_dict()
             old["schema_version"] = 1
             del old["independent_validation"]["artifact_contract"]
+            del old["used_coverage"]
             old_bytes = _canonical(old)
             restored = LocalValidationReceipt.from_bytes(old_bytes)
             self.assertEqual(restored.to_bytes(), old_bytes)
@@ -48,7 +80,9 @@ class ForecastReceiptContractTests(unittest.TestCase):
             validate_and_export(candidate, baseline, sources, firebase, site, root / "receipt.json",
                                 source_root=sources.root, trusted_input_manifest=trust, code_root=REPOSITORY)
             current = json.loads((site / "manifest.json").read_bytes())
-            self.assertEqual(current["artifact_contract"], 3)
+            self.assertEqual(current["artifact_contract"], 4)
+            frozen = dict(current, artifact_contract=3)
+            self.assertEqual(_public_manifest_bytes(frozen), _canonical(frozen))
             missing = dict(current)
             del missing["artifact_contract"]
             with self.assertRaises(PublicSiteError):
@@ -79,11 +113,6 @@ class ForecastReceiptContractTests(unittest.TestCase):
             (site / "release.json").write_bytes(_canonical(release))
             with self.assertRaisesRegex(PublicationPreparationError, "current public artifact contract"):
                 prepare_reviewed_package(site, firebase_json=firebase,
-                    inventory_sha256=receipt.inventory_sha256,
-                    configuration_sha256=receipt.configuration_sha256,
-                    expected_baseline_sha256="a" * 64,
-                    expected_predecessor=receipt.expected_predecessor,
-                    retained_inputs_sha256="b" * 64,
-                    validation_sha256=receipt.validation_sha256,
+                    local_validation_receipt=receipt,
                     output=root / "must-not-exist.tar.gz")
             self.assertFalse((root / "must-not-exist.tar.gz").exists())

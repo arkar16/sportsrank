@@ -216,7 +216,7 @@ class ForecastReleaseIntegrationTests(unittest.TestCase):
         path.parent.mkdir(parents=True)
         path.write_text("<table><thead><tr><th>school</th><th>cors</th><th>wins_vs_expected</th></tr></thead><tbody><tr><td>Home</td><td>20.24</td><td>0</td></tr><tr><td>Away</td><td>20</td><td>0</td></tr></tbody></table>")
 
-    def test_2026_release_emits_contract_three_natural_candidate_and_honest_omission(self):
+    def test_2026_release_emits_contract_four_with_frozen_natural_forecast_semantics(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             base = root / "published"
@@ -228,7 +228,7 @@ class ForecastReleaseIntegrationTests(unittest.TestCase):
                 code_revision="revision", published_site=base,
             )
             manifest = json.loads(release.manifest_path.read_text())
-            self.assertEqual((manifest["manifest_version"], manifest["artifact_contract"]), (3, 3))
+            self.assertEqual((manifest["manifest_version"], manifest["artifact_contract"]), (4, 4))
             ledger = json.loads((release.site / manifest["forecast_ledger_path"]).read_text())
             self.assertEqual(len(ledger["candidates"]), 1)
             forecast = ledger["candidates"][0]["forecast"]

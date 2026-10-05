@@ -27,7 +27,10 @@ if TYPE_CHECKING:
 
 LEDGER_SCHEMA = "forecast-ledger/v1"
 EVALUATION_SCHEMA = "forecast-evaluation/v1"
-CURRENT_ARTIFACT_CONTRACT = 3
+# Contract 3 introduced the natural forecast ledger.  Keep that historical
+# boundary frozen when later artifact contracts add unrelated site features.
+FORECAST_ARTIFACT_CONTRACT = 3
+CURRENT_ARTIFACT_CONTRACT = 4
 
 
 @dataclass(frozen=True)
@@ -597,7 +600,7 @@ def validate_public_forecast_json(value: Any) -> bool:
 
 
 __all__ = [
-    "CURRENT_ARTIFACT_CONTRACT", "EVALUATION_SCHEMA", "ForecastSourceCheckpoint", "LEDGER_SCHEMA", "build_forecast_artifacts",
+    "CURRENT_ARTIFACT_CONTRACT", "FORECAST_ARTIFACT_CONTRACT", "EVALUATION_SCHEMA", "ForecastSourceCheckpoint", "LEDGER_SCHEMA", "build_forecast_artifacts",
     "canonical_json", "game_identity", "select_displayed_forecast", "validate_forecast_capabilities",
     "validate_evaluation_semantics", "validate_forecast_sources", "validate_public_forecast_json",
 ]
