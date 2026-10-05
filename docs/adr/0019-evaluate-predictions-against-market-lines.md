@@ -14,8 +14,8 @@ measure so that future changes can be compared on both. ESPN was an example,
 not a required source; use bookmaker lines available through the API. These
 decisions settle the purpose, metric priority and source flexibility. Subsequent
 choices below settle forecast precision and margin-error metrics. The October 1
-clarification below settles use of the returned API line; provider selection
-and comparison implementation remain open.
+clarification below settles use of the returned API line; the October 5
+decision selects providers by Season. Comparison implementation remains open.
 
 On 2026-10-01 the owner accepted the market line returned by the API without
 requiring quote timestamps or closing-line evidence: "whatever the api gives,
@@ -24,10 +24,23 @@ be retained as additional data but do not replace it. Retain the actual provider
 Game identity, response and retrieval provenance for reproducibility. Missing
 or non-finite spreads remain unavailable rather than becoming zero. This
 supersedes the market-line timing requirements below; preservation of issued
-CORS forecasts remains unchanged. The [historical provider survey](../evidence/2026-10-01-market-provider-coverage.md)
-recommends Bovada for current comparisons, with `teamrankings` for older
-comparisons if needed. This recommendation does not yet select a provider or
-authorize comparison implementation.
+CORS forecasts remains unchanged.
+
+On 2026-10-05 the owner selected `teamrankings` for Seasons 2013–2020 and
+`Bovada` from Season 2021 onward, with no per-Game provider substitution.
+The [historical provider survey](../evidence/2026-10-01-market-provider-coverage.md)
+supports this split: Bovada's coverage becomes near-complete in 2021, while
+teamrankings covers the older period more consistently. Retain the selected
+provider's actual identity on each comparison. If its returned `spread` is
+missing or non-finite, the comparison is unavailable even when another
+provider supplies a line. No provider is selected before 2013. This prioritizes
+a reproducible benchmark over maximizing the sample through provider mixing.
+
+This decision selects the forecast-evaluation benchmark only. It does not
+select or relax the excitement market policy in ADR-0021, authorize a
+historical forecast reconstruction, or expand the initial 2026 graded record.
+The provider decision permits preparation of the separate comparison delivery
+contract; it does not authorize implementation, new API calls, merge or release.
 
 The owner also confirmed on 2026-09-28 that improving accuracy over current CORS
 comes first; outperforming the market is a later goal, not a prerequisite for
@@ -176,14 +189,14 @@ Carry into the initial implementation contract:
   coverage grading and counted separately from a confirmed exact-zero Pick'em;
   do not reconstruct an unrecorded winner and present it as an issued pick.
 
-Resolve for the later bookmaker-comparison delivery:
+Carry into the later bookmaker-comparison contract:
 
-- Select the provider and any explicit historical fallback policy from the
-  measured API coverage. Use the returned `spread`, retaining provider identity
+- Apply the October 5 Season-based provider policy without per-Game fallback.
+  Use the returned `spread`, retaining provider identity
   and response/retrieval provenance. No quote timestamp, opening-line selection,
   or closing-line certification is required. Keep missing spreads unavailable;
   do not silently mix providers or infer a zero from null.
-- Define how the model's predicted margin becomes a pick against that market
+- Resolve how the model's predicted margin becomes a pick against that market
   line, then grade the actual result. Specify home/away signs, neutral sites,
   pushes, missing lines and canceled games.
 - Compare CORS and market errors on the same eligible games using the preserved

@@ -12,8 +12,10 @@ in 2013–2022 (98.707%), versus 97.037% for `consensus`. Both collapse in 2023
 and are absent in 2024–2025. Bovada starts in 2019 but covers only 41.09% that
 year and 94.01% in 2020; near-complete coverage starts in 2021. A reasonable
 historical extension is `teamrankings` through 2020, Bovada from 2021, with the
-actual source visible per game. Provider selection and fallback remain owner
-choices; no comparison code was implemented.
+actual source visible per game. The owner selected that Season split without
+per-game substitution on October 5; [ADR-0019](../adr/0019-evaluate-predictions-against-market-lines.md)
+owns the decision and its scope. The measurements below remain the October 1
+survey; no comparison code was implemented.
 
 ## Coverage by season
 
