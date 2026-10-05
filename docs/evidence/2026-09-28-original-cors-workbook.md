@@ -10,6 +10,16 @@ decisions belong in
 design is being explored in the
 [game-excitement plan](../plans/2026-game-excitement.md).
 
+The retained public reference has SHA256
+`24c991a1584ec224356baa09b43de7574a869d81e51e2fbf31ab28fd1c6239b6`.
+Current-tree publication evidence permits only these exact workbook bytes at
+the linked repository path; it does not permit other Office files or archives,
+changed workbook contents, or workbook inclusion in website exports. Read-only
+container inspection on October 5 found 32 XML/relationship/directory entries,
+valid XML and no macros, external-link parts, or unsafe member paths. This
+qualification preserves an existing public design reference, not a private CFBD
+source exception or a change to the forecast acceptance oracle.
+
 ## Features to consider in future planning
 
 | Feature | Workbook evidence | Interpretation |

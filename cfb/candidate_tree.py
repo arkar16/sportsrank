@@ -28,6 +28,13 @@ class CandidateTreeError(ValueError):
 
 
 _SHA = re.compile(r"[0-9a-f]{40}\Z")
+# Existing public design reference; this exception is only for Git-tree
+# transport, not website exports or arbitrary Office/ZIP files. See the
+# original-workbook evidence note for its review and immutable identity.
+_REVIEWED_WORKBOOK = "docs/inbox/CORS CFB 2020_21.xlsx"
+_REVIEWED_WORKBOOK_SHA256 = "24c991a1584ec224356baa09b43de7574a869d81e51e2fbf31ab28fd1c6239b6"
+
+
 def _run(repository: Path, *arguments: str, input_bytes: bytes | None = None) -> bytes:
     try:
         return subprocess.run(
@@ -129,6 +136,10 @@ def _assert_public_safe(
         kind, value = objects[item["object"]]
         if kind != "blob":
             raise CandidateTreeError("candidate file object is not a blob")
+        if path == _REVIEWED_WORKBOOK:
+            if hashlib.sha256(value).hexdigest() != _REVIEWED_WORKBOOK_SHA256:
+                raise CandidateTreeError("public design workbook differs from reviewed bytes")
+            continue
         try:
             assert_public_bytes(path, value)
         except ValueError as exc:
