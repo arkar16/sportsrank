@@ -468,6 +468,39 @@ class SealedPublicationRecoveryTests(unittest.TestCase):
                 )
             self.assertEqual(result.state, "verified")
             writes_after_first_execution = backend.write_count
+            # Forecast history imports use the durable preparation verifier,
+            # including its attestation, without observing or writing Firebase.
+            from cfb.forecast_inputs import HISTORY_SCHEMA, load_history
+            from tests.test_forecast_inputs import locators
+            history = root / "forecast-history.json"
+            history.write_bytes(canonical_json({
+                "schema_version": HISTORY_SCHEMA,
+                "publications": [locators(result)],
+            }))
+            before_commands = len(transport.commands)
+            with transport:
+                imported = load_history(history, archive=archive,
+                                        repository=REPOSITORY,
+                                        provenance_reader=provenance)
+            self.assertEqual(len(imported), 1)
+            self.assertEqual(imported[0].candidates, ())
+            self.assertGreater(len(transport.commands), before_commands)
+            self.assertEqual(backend.write_count, writes_after_first_execution)
+            history.write_bytes(canonical_json({
+                "schema_version": HISTORY_SCHEMA,
+                "publications": [imported[0].to_provenance()],
+            }))
+            with transport:
+                restored_history = load_history(history, archive=archive,
+                                                repository=REPOSITORY,
+                                                provenance_reader=provenance)
+            self.assertEqual(restored_history[0].to_provenance(), imported[0].to_provenance())
+            transport.returncode = 1
+            from cfb.publication_authorization import PreparationProvenanceError
+            with transport, self.assertRaises(PreparationProvenanceError):
+                load_history(history, archive=archive, repository=REPOSITORY,
+                             provenance_reader=provenance)
+            transport.returncode = 0
             with transport, self.assertRaisesRegex(Exception, "exactly once"):
                 executor.execute_sealed_attempt(
                     reference, purpose="normal", runtime=execute_runtime,

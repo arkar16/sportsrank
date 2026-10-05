@@ -379,7 +379,18 @@ class PublicationExecutionTests(unittest.TestCase):
             )
             prior = cross_run.as_prior()
             source_bytes = prior.provider_result_source_reference
-            original_source = reconciled.provider_evidence.retrieved_source.read_bytes()
+            original_source = cross_run.provider_evidence.retrieved_source.read_bytes()
+            # Each reconciliation now points back to the preceding immutable
+            # source. Restore this exact asset, not a different generation.
+            self.assertEqual(sha(original_source), source_bytes.sha256)
+            prior_source = reconciled.provider_evidence.retrieved_source.read_bytes()
+            self.assertEqual(
+                sha(prior_source), reconciled.provider_evidence.source_reference.sha256
+            )
+            self.assertEqual(
+                json.loads(original_source)["original_evidence"]["provider_source"],
+                reconciled.provider_evidence.source_reference.to_dict(),
+            )
             first.archive.corrupt(source_bytes, b"fabricated provider source")
             writes_before = backend.write_count
             with self.assertRaisesRegex(

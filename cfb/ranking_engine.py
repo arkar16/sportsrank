@@ -10,6 +10,7 @@ Python values so callers can render or validate without I/O.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
 from enum import Enum
 import math
 from pathlib import Path
@@ -48,6 +49,58 @@ GENESIS_YEAR = 1897
 
 class RankingContractError(ValueError):
     """Raised when a ranking request cannot satisfy the lifecycle contract."""
+
+
+@dataclass(frozen=True)
+class NaturalMatchup:
+    """A matchup expressed in both scoring-margin and handicap orientations."""
+
+    home_rating: Decimal
+    away_rating: Decimal
+    home_margin: Decimal
+    home_handicap: Decimal
+    predicted_winner: str
+    precision: int = 2
+
+
+def _rating_decimal(value: Any, field: str) -> Decimal:
+    if isinstance(value, bool):
+        raise RankingContractError(f"{field} must be a finite rating with at most two decimals")
+    try:
+        result = Decimal(str(value))
+    except (InvalidOperation, ValueError) as exc:
+        raise RankingContractError(f"{field} must be a finite rating with at most two decimals") from exc
+    try:
+        valid = result.is_finite() and result.quantize(Decimal("0.01")) == result
+    except InvalidOperation:
+        valid = False
+    if not valid:
+        raise RankingContractError(f"{field} must be a finite rating with at most two decimals")
+    return result
+
+
+def natural_matchup(
+    home_rating: Any,
+    away_rating: Any,
+    *,
+    neutral_site: bool,
+    hfa: Any = HFA,
+) -> NaturalMatchup:
+    """Calculate the unrounded CORS matchup margin from two-decimal ratings.
+
+    Positive ``home_margin`` predicts the home team to score more points.  The
+    public home handicap uses the established opposite sign convention.
+    """
+
+    if not isinstance(neutral_site, bool):
+        raise RankingContractError("neutral_site must be boolean")
+    home = _rating_decimal(home_rating, "home_rating")
+    away = _rating_decimal(away_rating, "away_rating")
+    advantage = _rating_decimal(hfa, "hfa")
+    margin = home - away + (Decimal(0) if neutral_site else advantage)
+    margin = margin.quantize(Decimal("0.01"))
+    winner = "pickem" if margin == 0 else ("home" if margin > 0 else "away")
+    return NaturalMatchup(home, away, margin, -margin, winner)
 
 
 class RankingPhase(str, Enum):
@@ -1133,6 +1186,7 @@ def spreads_for_week(
     rankings: Sequence[Mapping[str, Any]],
     *,
     hfa: float = HFA,
+    legacy_half_point: bool = False,
 ) -> list[dict[str, Any]]:
     """Produce finite spreads for valid FBS-vs-FBS games in one week.
 
@@ -1141,8 +1195,16 @@ def spreads_for_week(
     spread; they do not affect records or CORS.
     """
 
-    rating = {str(row["school"]): _number(row.get("cors")) for row in rankings}
+    rating: dict[str, Decimal] = {}
+    for index, row in enumerate(rankings):
+        school = row.get("school")
+        if not isinstance(school, str) or not school.strip():
+            raise RankingContractError(f"ranking row {index} has no valid school")
+        if school in rating:
+            raise RankingContractError(f"rankings contain duplicate school {school!r}")
+        rating[school] = _rating_decimal(row.get("cors"), f"rankings[{school!r}].cors")
     valid_teams = set(rating)
+    snapshot_teams = {team.school for team in snapshot.teams}
     rows: list[dict[str, Any]] = []
     for game in sorted(
         (
@@ -1155,26 +1217,61 @@ def spreads_for_week(
             int(value.week),
         ),
     ):
-        if game.home_team not in valid_teams or game.away_team not in valid_teams:
+        if (
+            str(game.home_classification).lower() != "fbs"
+            or str(game.away_classification).lower() != "fbs"
+        ):
             continue
-        value = (rating[game.home_team] - rating[game.away_team])
-        if not game.neutral_site:
-            value += float(hfa)
-        value = round(value * 2) / 2
+        missing = {game.home_team, game.away_team} - valid_teams
+        if missing:
+            # Placeholder participants are not rated teams and cannot produce
+            # a forecast. A missing rating for a known FBS team remains an
+            # explicit contract failure rather than becoming zero.
+            placeholder = any(
+                name.strip().upper() == "TBD"
+                or name.strip().lower().startswith("winner ")
+                for name in missing
+            )
+            if placeholder or missing - snapshot_teams:
+                continue
+            raise RankingContractError(
+                f"missing rating for FBS matchup team(s): {sorted(missing)!r}"
+            )
+        matchup = natural_matchup(
+            rating[game.home_team], rating[game.away_team],
+            neutral_site=bool(game.neutral_site), hfa=hfa,
+        )
+        natural_value = matchup.home_margin
+        if legacy_half_point:
+            # Reproduce the original float evaluation order as well as its
+            # half-point rounding when checking immutable historical rows.
+            legacy_value = float(rating[game.home_team]) - float(rating[game.away_team])
+            if not game.neutral_site:
+                legacy_value += float(hfa)
+            value = Decimal(str(round(legacy_value * 2) / 2))
+        else:
+            value = natural_value
         # Keep the legacy presentation while exposing a numeric field for
         # machine validation.
         sign = "-" if value > 0 else "+"
-        display = f"{game.home_team} {sign}{abs(value):g}"
+        display_value = format(abs(value), "f")
+        if "." in display_value:
+            display_value = display_value.rstrip("0").rstrip(".")
+        display = f"{game.home_team} {sign}{display_value}"
         rows.append(
             {
                 "week": int(game.week),
                 "home_team": game.home_team,
                 "away_team": game.away_team,
                 "neutral_site": bool(game.neutral_site),
-                "home_cors": rating[game.home_team],
-                "away_cors": rating[game.away_team],
+                "home_cors": float(rating[game.home_team]),
+                "away_cors": float(rating[game.away_team]),
                 "spread_value": float(value),
                 "spread": display,
+                "home_margin": format(natural_value, "f"),
+                "home_handicap": format(matchup.home_handicap, "f"),
+                "predicted_winner": matchup.predicted_winner,
+                "precision": matchup.precision,
             }
         )
     return rows
@@ -1280,6 +1377,7 @@ __all__ = [
     "GENESIS_YEAR",
     "TIE_BREAK",
     "RankingContractError",
+    "NaturalMatchup",
     "RankingPhase",
     "PreviousFinal",
     "validate_previous_final",
@@ -1310,6 +1408,7 @@ __all__ = [
     "ranking_phase",
     "season_rankings",
     "spreads_for_week",
+    "natural_matchup",
     "load_previous_final",
     "load_previous_final_rows",
     "load_previous_final_model",

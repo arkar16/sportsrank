@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from collections import Counter
+import hashlib
+from types import SimpleNamespace
 import threading
 import time
 import unittest
@@ -42,7 +44,10 @@ def _artifact(count: int) -> FirebaseDeployArtifact:
     payloads = {_digest(index): f"payload-{index}".encode() for index in range(count)}
     hashes = {f"/file-{index}.html": digest for index, digest in enumerate(payloads)}
     files = {path.removeprefix("/"): payloads[digest] for path, digest in hashes.items()}
-    return FirebaseDeployArtifact(object(), files, b"{}", {}, hashes, payloads)  # type: ignore[arg-type]
+    # This upload-only fixture has no tar archive; retain a deterministic
+    # synthetic package identity so the receipt can bind the exercised bytes.
+    package = SimpleNamespace(bundle_sha256=hashlib.sha256(b"".join(payloads.values())).hexdigest())
+    return FirebaseDeployArtifact(package, files, b"{}", {}, hashes, payloads)  # type: ignore[arg-type]
 
 
 class RecordingParallelBackend:
@@ -190,9 +195,10 @@ class FirebaseParallelUploadTests(unittest.TestCase):
         backend = RecordingParallelBackend(set(artifact.provider_payloads))
 
         with patch("cfb.firebase._MAX_PARALLEL_UPLOADS", 4):
-            FirebasePublicationAdapter(TARGET, backend).deploy(
+            receipt = FirebasePublicationAdapter(TARGET, backend).deploy(
                 artifact, attempt_id="parallel-success"
             )
+        self.assertEqual(receipt.source["artifact_sha256"], artifact.package.bundle_sha256)
 
         self.assertGreater(backend.max_active, 1)
         self.assertLessEqual(backend.max_active, 4)
