@@ -156,6 +156,8 @@ jobs:
       - name: Verify the reviewed local receipt and package its exact public bytes
         shell: bash
         env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
           CFBD_API: ""
           CFBD_API_KEY: ""
         run: |
@@ -641,6 +643,10 @@ jobs:
         if: inputs.operation != 'seal-only' && (inputs.preparation_run_id == '' || inputs.preparation_artifact_name == '' || steps.preparation_transport.outputs.available != 'true')
         working-directory: ${{ runner.temp }}/execution
         env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          SEALED_REFERENCE: ${{ runner.temp }}/sealed-attempt-reference.json
+          BASELINE_RETRIEVAL: ${{ runner.temp }}/baseline-retrieval
           PACKAGE_ARCHIVE: ${{ runner.temp }}/durable/package.tar.gz
           PACKAGE_RECORD: ${{ runner.temp }}/durable/validated-package.json
           PACKAGE_MANIFEST: ${{ runner.temp }}/durable/candidate-manifest.json
@@ -658,18 +664,40 @@ jobs:
 
           package = ValidatedPackageRecord.from_dict(json.loads(Path(os.environ["PACKAGE_RECORD"]).read_bytes()))
           manifest = json.loads(Path(os.environ["PACKAGE_MANIFEST"]).read_bytes())
-          provenance = manifest.get("baseline_provenance")
-          if not isinstance(provenance, dict) or not isinstance(provenance.get("record"), dict):
-              raise SystemExit("sealed package has no baseline provenance record")
-          baseline = BaselineRecord.from_dict(provenance["record"])
-          if provenance.get("record_digest") != baseline.digest:
-              raise SystemExit("sealed baseline provenance digest is inconsistent")
+          if manifest.get("record_type") == "public_site_manifest":
+              from cfb.publication import retrieve_sealed_attempt, GitCommitTreeReader
+              from cfb.publication_records import SealedAttemptReference
+              from cfb.public_site import LocalValidationReceipt
+              from cfb.github_archive import GitHubReleaseArchive
+              from cfb.publication_authorization import GitHubPreparationProvenanceReader
+              destination = Path(os.environ["BASELINE_RETRIEVAL"])
+              reference = SealedAttemptReference.from_bytes(Path(os.environ["SEALED_REFERENCE"]).read_bytes())
+              recorded = retrieve_sealed_attempt(
+                  reference, archive=GitHubReleaseArchive(), repository="arkar16/sportsrank",
+                  provenance_reader=GitHubPreparationProvenanceReader.from_github_token(),
+                  retrieval_directory=destination,
+              )
+              if recorded.attempt.package != package:
+                  raise SystemExit("authenticated sealed package differs")
+              receipt = LocalValidationReceipt.from_bytes(GitCommitTreeReader(destination / "candidate.git").read_file(
+                  package.candidate_commit, "config/sr7-local-validation-receipt.json"
+              ))
+              baseline = receipt.baseline_record
+              if baseline is None:
+                  raise SystemExit("authenticated receipt lacks baseline")
+          else:
+              provenance = manifest.get("baseline_provenance")
+              if not isinstance(provenance, dict) or not isinstance(provenance.get("record"), dict):
+                  raise SystemExit("legacy sealed package has no baseline provenance record")
+              baseline = BaselineRecord.from_dict(provenance["record"])
+              if provenance.get("record_digest") != baseline.digest:
+                  raise SystemExit("legacy sealed baseline provenance digest is inconsistent")
           if baseline.digest != package.expected_baseline_sha256:
               raise SystemExit("sealed baseline provenance does not match package")
           if baseline.target != ProviderTarget("sportsrank-837af", "sportsrank-837af", "live"):
               raise SystemExit("sealed baseline target is invalid")
           trusted = json.loads(Path(os.environ["TRUSTED_INPUT_MANIFEST"]).read_bytes())
-          if trusted["baseline"]["record_sha256"] != baseline.digest:
+          if trusted["baseline"]["record_sha256"] != getattr(baseline, "historical", baseline).digest:
               raise SystemExit("sealed baseline does not match committed input pin")
           Path(os.environ["BASELINE_OUTPUT"]).write_bytes(canonical_json(baseline.to_dict()))
           PY
@@ -851,6 +879,10 @@ jobs:
         if: (inputs.operation == 'seal-only' || inputs.operation == 'execute') && inputs.prior_reference != '' && (inputs.prior_preparation_run_id == '' || inputs.prior_preparation_artifact_name == '' || steps.prior_preparation.outputs.available != 'true')
         working-directory: ${{ runner.temp }}/execution
         env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          SEALED_REFERENCE: ${{ runner.temp }}/prior-sealed-attempt-reference.json
+          BASELINE_RETRIEVAL: ${{ runner.temp }}/prior-baseline-retrieval
           PRIOR_PACKAGE_ARCHIVE: ${{ runner.temp }}/prior-durable/package.tar.gz
           PRIOR_PACKAGE_RECORD: ${{ runner.temp }}/prior-durable/validated-package.json
           PRIOR_PACKAGE_MANIFEST: ${{ runner.temp }}/prior-durable/candidate-manifest.json
@@ -866,12 +898,34 @@ jobs:
 
           package = ValidatedPackageRecord.from_dict(json.loads(Path(os.environ["PRIOR_PACKAGE_RECORD"]).read_bytes()))
           manifest = json.loads(Path(os.environ["PRIOR_PACKAGE_MANIFEST"]).read_bytes())
-          provenance = manifest.get("baseline_provenance")
-          if not isinstance(provenance, dict) or not isinstance(provenance.get("record"), dict):
-              raise SystemExit("sealed predecessor package has no baseline provenance record")
-          baseline = BaselineRecord.from_dict(provenance["record"])
-          if provenance.get("record_digest") != baseline.digest:
-              raise SystemExit("sealed predecessor baseline provenance digest is inconsistent")
+          if manifest.get("record_type") == "public_site_manifest":
+              from cfb.publication import retrieve_sealed_attempt, GitCommitTreeReader
+              from cfb.publication_records import SealedAttemptReference
+              from cfb.public_site import LocalValidationReceipt
+              from cfb.github_archive import GitHubReleaseArchive
+              from cfb.publication_authorization import GitHubPreparationProvenanceReader
+              destination = Path(os.environ["BASELINE_RETRIEVAL"])
+              reference = SealedAttemptReference.from_bytes(Path(os.environ["SEALED_REFERENCE"]).read_bytes())
+              recorded = retrieve_sealed_attempt(
+                  reference, archive=GitHubReleaseArchive(), repository="arkar16/sportsrank",
+                  provenance_reader=GitHubPreparationProvenanceReader.from_github_token(),
+                  retrieval_directory=destination,
+              )
+              if recorded.attempt.package != package:
+                  raise SystemExit("authenticated sealed package differs")
+              receipt = LocalValidationReceipt.from_bytes(GitCommitTreeReader(destination / "candidate.git").read_file(
+                  package.candidate_commit, "config/sr7-local-validation-receipt.json"
+              ))
+              baseline = receipt.baseline_record
+              if baseline is None:
+                  raise SystemExit("authenticated receipt lacks baseline")
+          else:
+              provenance = manifest.get("baseline_provenance")
+              if not isinstance(provenance, dict) or not isinstance(provenance.get("record"), dict):
+                  raise SystemExit("legacy sealed package has no baseline provenance record")
+              baseline = BaselineRecord.from_dict(provenance["record"])
+              if provenance.get("record_digest") != baseline.digest:
+                  raise SystemExit("legacy sealed baseline provenance digest is inconsistent")
           if baseline.digest != package.expected_baseline_sha256:
               raise SystemExit("sealed predecessor baseline provenance does not match package")
           if baseline.target != ProviderTarget("sportsrank-837af", "sportsrank-837af", "live"):

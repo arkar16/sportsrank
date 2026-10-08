@@ -2,9 +2,12 @@
 
 The owner’s active outcome is the October 7 CORS publication: completed 2026
 Week 5 rankings/results and the Week 6 slate, with existing forecasts preserved.
-The delivery on `delivery/cors-weekly-20261007` owns acceptance, production-run
-references and residual risks in its PR. Read that task evidence before asserting
-that this prepared work is live.
+The weekly output is merged in [#26](https://github.com/arkar16/sportsrank/pull/26).
+The approved successor-baseline repair and remaining publication acceptance live
+in [#27](https://github.com/arkar16/sportsrank/issues/27). Its PR owns implementation
+checks and residual risks. Parent review, actual-merge hosted preparation and
+separate owner-approved seal/execute remain required; the merged weekly output
+must not be described as live before full public verification.
 
 ## Merged prerequisites and parked work
 

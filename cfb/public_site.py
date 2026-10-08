@@ -49,6 +49,9 @@ except ImportError:  # pragma: no cover - direct execution compatibility
     from forecast_release import CURRENT_ARTIFACT_CONTRACT as CURRENT_RELEASE_CONTRACT
 
 
+from .successor import SuccessorBaselineRecord, VerifiedSuccessorBaseline, assert_successor_overlay
+
+
 SCHEMA_VERSION = 2
 # Supported historical semantics are independent of the current preparation
 # expectation. A later contract must extend this set without reinterpreting 3.
@@ -1270,11 +1273,17 @@ class LocalValidationReceipt:
 
     @property
     def expected_baseline_sha256(self) -> str | None:
+        successor = self.baseline.get("successor")
+        if successor is not None:
+            return SuccessorBaselineRecord.from_dict(successor).digest
         value = self.baseline.get("record_sha256")
         return value if isinstance(value, str) else None
 
     @property
     def expected_predecessor(self) -> ProviderIdentity | None:
+        successor = self.baseline.get("successor")
+        if successor is not None:
+            return SuccessorBaselineRecord.from_dict(successor).observed
         value = self.baseline.get("identity")
         record = self.baseline.get("record")
         if not isinstance(value, Mapping) or not isinstance(record, Mapping):
@@ -1308,7 +1317,10 @@ class LocalValidationReceipt:
         )
 
     @property
-    def baseline_record(self) -> BaselineRecord | None:
+    def baseline_record(self) -> BaselineRecord | SuccessorBaselineRecord | None:
+        successor = self.baseline.get("successor")
+        if successor is not None:
+            return SuccessorBaselineRecord.from_dict(successor)
         value = self.baseline.get("record")
         if not isinstance(value, Mapping):
             return None
@@ -1452,7 +1464,7 @@ def _validate_receipt_nested(value: Mapping[str, Any]) -> None:
     if set(baseline) != {
         "kind", "record_sha256", "archive_sha256", "application_tree_sha256",
         "record", "identity", "public_archive_sha256", "sanitizer_record_sha256",
-    }:
+    } | ({"successor"} if "successor" in baseline else set()):
         raise PublicSiteError("receipt baseline fields do not match its schema")
     if baseline["kind"] not in {"verified", "path"}:
         raise PublicSiteError("receipt baseline kind is invalid")
@@ -1475,6 +1487,13 @@ def _validate_receipt_nested(value: Mapping[str, Any]) -> None:
             raise PublicSiteError("receipt baseline identity does not match its record")
     elif baseline["record"] is not None or baseline["identity"] is not None:
         raise PublicSiteError("path-backed receipt baseline cannot claim a record")
+
+    if "successor" in baseline:
+        if value.get("schema_version") != 2 or value.get("independent_validation", {}).get("artifact_contract") != 4:
+            raise PublicSiteError("successor requires a current source-validation receipt")
+        successor = SuccessorBaselineRecord.from_dict(baseline["successor"])
+        if baseline["kind"] != "verified" or successor.historical.to_dict() != baseline["record"]:
+            raise PublicSiteError("successor historical preservation authority differs")
 
     independent = value.get("independent_validation")
     validation_fields = {"validator", "success", "failure_count", "checked_artifacts"}
@@ -1547,6 +1566,7 @@ def validate_and_export(
     code_root: str | Path | None = None,
     forecast_publications: Sequence[VerifiedForecastPublication] = (),
     timing_evidence: Sequence[GameTimingEvidence] = (),
+    successor: VerifiedSuccessorBaseline | None = None,
 ) -> LocalValidationReceipt:
     """Validate a private candidate, then create a provenance-only site."""
 
@@ -1556,6 +1576,9 @@ def validate_and_export(
         trusted_input_manifest = source_inputs.manifest_path
     private_site, private_manifest = _candidate_site(private_candidate)
     baseline_site, baseline_info = _baseline_info(baseline)
+    if successor is not None:
+        if not isinstance(successor, VerifiedSuccessorBaseline) or successor.record.historical.to_dict() != baseline_info.get("record"):
+            raise PublicSiteError("successor requires the same verified historical preservation baseline")
     source_dir, trust_sha, pins, source_manifest_sha, _trust_raw = _ensure_trusted_source_bundle(
         source_inputs, source_root, trusted_input_manifest
     )
@@ -1698,6 +1721,15 @@ def validate_and_export(
         output_report = validate_public_output(temporary_directory)
         output_report.raise_for_failure()
         inventory = output_report.inventory
+        if successor is not None:
+            # report.checked_artifacts is independently derived, not the
+            # candidate manifest's asserted ownership. Public provenance and
+            # export metadata are the only additional export-owned paths.
+            owned = set(report.checked_artifacts) | {"manifest.json", "release.json"} | {item["path"] for item in snapshot_provenance_bindings}
+            try:
+                assert_successor_overlay(successor, temporary_directory, owned)
+            except ValueError as exc:
+                raise LocalValidationError(str(exc)) from exc
         private_evidence = {
             "candidate_release_id": release_id,
             "candidate_tree_sha256": private_tree_sha,
@@ -1715,6 +1747,8 @@ def validate_and_export(
             "checked_artifacts": sorted(report.checked_artifacts),
         }
         receipt_baseline = dict(baseline_info)
+        if successor is not None:
+            receipt_baseline["successor"] = successor.record.to_dict()
         if trusted_evidence["baseline_public_archive_sha256"] is not None:
             receipt_baseline["public_archive_sha256"] = trusted_evidence["baseline_public_archive_sha256"]
         if trusted_evidence["baseline_sanitizer_record_sha256"] is not None:
@@ -1944,6 +1978,7 @@ def build_parser() -> argparse.ArgumentParser:
     export.add_argument("--baseline-archive", type=Path, required=True)
     export.add_argument("--baseline-sha256", "--baseline-archive-sha256", dest="baseline_sha256", required=True)
     export.add_argument("--baseline-target")
+    export.add_argument("--successor-baseline", type=Path, help="authenticated prior package/audit record, separate from historical capture")
     export.add_argument("--source-input-root", dest="source_root", type=Path, required=True)
     export.add_argument("--source-archive", "--source-input-archive", dest="source_archive", type=Path)
     export.add_argument("--source-archive-sha256", "--source-input-sha256", dest="source_archive_sha256")
@@ -1971,6 +2006,18 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "export":
             from .forecast_inputs import load_forecast_inputs
             forecasts = load_forecast_inputs(args)
+            successor = None
+            if args.successor_baseline is not None:
+                from .successor import authenticate_successor
+                from .github_archive import GitHubReleaseArchive
+                from .publication_authorization import GitHubPreparationProvenanceReader
+                with tempfile.TemporaryDirectory(prefix="sportsrank-successor-") as directory:
+                    successor = authenticate_successor(
+                        SuccessorBaselineRecord.from_dict(_json_file(args.successor_baseline, "successor baseline")),
+                        archive=GitHubReleaseArchive(), repository="arkar16/sportsrank",
+                        provenance_reader=GitHubPreparationProvenanceReader.from_github_token(),
+                        destination=Path(directory),
+                    )
             source_inputs = _load_cli_source_inputs(args)
             baseline = import_baseline(
                 args.baseline_archive,
@@ -1988,6 +2035,7 @@ def main(argv: list[str] | None = None) -> int:
                     source_root=args.source_root,
                     trusted_input_manifest=args.trusted_input_manifest,
                     code_root=args.code_root,
+                    successor=successor,
                     forecast_publications=forecasts.publications,
                     timing_evidence=forecasts.timing,
                 )

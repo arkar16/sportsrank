@@ -122,6 +122,38 @@ remediation decision before claiming this boundary is satisfied.
 
 ### Draft checks and final candidate binding
 
+For a weekly successor, first derive the separate predecessor record with the
+read-only `publication_cli successor-baseline` command. Supply the unchanged
+historical `baseline.json`, exact current prior `SealedAttemptReference`, and
+the prior audit's six immutable record/source reference selectors through
+`--audit-evidence`. That run JSON is only a selector carrier: its claimed state,
+identity and record bodies confer no authority. The command retrieves and
+authenticates the original hosted preparation, candidate tree, full package and
+complete coordinator verification. It makes no Firebase calls and writes a new
+`verified_successor_baseline` record, never a capture.
+
+Pass that record as `public_site export --successor-baseline` alongside the
+original historical baseline archive and retained private source inputs. This
+reauthenticates the evidence, runs the real private validator, independently
+preserves historical bytes and checks prior package paths/unowned bytes before
+exporting and issuing a new receipt. Review the safe output and receipt together.
+The historical private archive/sanitizer pins remain unchanged. Hosted
+preparation retrieves only safe existing evidence under the existing GitHub read
+boundary; it does not observe Firebase or use a deployment credential.
+
+Before sealing and executing, supply the same original prior sealed reference
+and the baseline record that accompanied **that prior attempt**, not the new
+successor record. The existing `prior_reference` plus
+`prior_preparation_run_id`/`prior_preparation_artifact_name` workflow interfaces
+freshly reconcile it. The current candidate's transported `baseline.json` now
+contains the distinct successor record; its nested `historical` remains the
+preservation capture. Fresh reconciliation must equal the pinned predecessor
+and prior package. A stale identity or failed verification blocks dispatch.
+After the owner merges, prepare the actual merged SHA, obtain fresh approval to
+seal a new attempt, retain its exact reference, then obtain a separate fresh
+approval to execute. The failed/consumed old attempt is never replayed. Keep #27
+open until the weekly output is live and completely verified.
+
 Offline export, receipt verification and direct preparation are draft
 self-consistency checks. Keep their outputs private and label them as draft
 evidence. They do not authenticate a caller-supplied replacement receipt,
