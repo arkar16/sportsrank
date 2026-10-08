@@ -134,6 +134,39 @@ def _validation_evidence(
     })
 
 
+def _require_package_validation(path: Path, package: ValidatedPackageRecord) -> None:
+    """Check canonical validation bytes against the authenticated package digest.
+
+    Current records carry receipt identities; legacy records retain their exact
+    schema-1 bytes. The package's digest binds every field in either shape.
+    Current receipt origin is independently checked during package rehydration.
+    """
+
+    raw = _json_object(path, "package validation")
+    receipt = raw.get("local_validation_receipt_sha256")
+    coverage = raw.get("used_coverage_sha256")
+    if any(
+        value is not None and (
+            not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{64}", value)
+        )
+        for value in (receipt, coverage)
+    ):
+        raise PublicationExecutionError("retrieved validation receipt identities are invalid")
+    try:
+        expected = _validation_evidence(
+            inventory_sha256=package.inventory_sha256,
+            configuration_sha256=package.configuration_sha256,
+            expected_baseline_sha256=package.expected_baseline_sha256,
+            retained_inputs_sha256=package.retained_inputs_sha256,
+            local_validation_receipt_sha256=receipt,
+            used_coverage_sha256=coverage,
+        )
+    except PublicationPreparationError as exc:
+        raise PublicationExecutionError("retrieved validation receipt identities are incomplete") from exc
+    if path.read_bytes() != expected or _sha256_bytes(expected) != package.validation_sha256:
+        raise PublicationExecutionError("retrieved validation evidence differs from the package")
+
+
 def _deterministic_package(site: Path, firebase_json: Path, output: Path) -> str:
     output.parent.mkdir(parents=True, exist_ok=True)
     entries = [(firebase_json, "firebase.json")]
@@ -819,7 +852,11 @@ def seal_attempt_evidence(
             configuration_sha256=prepared.configuration_sha256,
             expected_baseline_sha256=prepared.expected_baseline_sha256,
             retained_inputs_sha256=prepared.retained_inputs_sha256,
+            local_validation_receipt_sha256=prepared.local_validation_receipt_sha256,
+            used_coverage_sha256=prepared.used_coverage_sha256,
         ))
+        if _sha256_file(validation_path) != package.validation_sha256:
+            raise PublicationPreparationError("validation evidence differs from the validated package")
         package_assets = {
             prepared.archive.name: prepared.archive,
             package_record_path.name: package_record_path,
@@ -1362,16 +1399,7 @@ def retrieve_sealed_attempt(
         raise PublicationExecutionError(
             "sealed intent does not bind the package candidate and predecessor"
         )
-    expected_validation = _validation_evidence(
-        inventory_sha256=package.inventory_sha256,
-        configuration_sha256=package.configuration_sha256,
-        expected_baseline_sha256=package.expected_baseline_sha256,
-        retained_inputs_sha256=package.retained_inputs_sha256,
-    )
-    if validation_path.read_bytes() != expected_validation:
-        raise PublicationExecutionError(
-            "retrieved validation evidence differs from the package"
-        )
+    _require_package_validation(validation_path, package)
     bundle_reader = _candidate_tree_reader(
         bundle_path,
         candidate_commit=package.candidate_commit,
@@ -1464,15 +1492,7 @@ def _retrieve_recorded_attempt(
         raise PublicationExecutionError(
             "retrieved attempt records differ from the supplied identities"
         )
-    if validation_path.read_bytes() != _validation_evidence(
-        inventory_sha256=package.inventory_sha256,
-        configuration_sha256=package.configuration_sha256,
-        expected_baseline_sha256=package.expected_baseline_sha256,
-        retained_inputs_sha256=package.retained_inputs_sha256,
-    ):
-        raise PublicationExecutionError(
-            "retrieved validation evidence differs from the package"
-        )
+    _require_package_validation(validation_path, package)
     return FirebaseDeployArtifact.from_archive(package_path, package)
 
 

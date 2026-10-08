@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import hashlib
+from dataclasses import replace
 from pathlib import Path
 import shutil
 import subprocess
@@ -15,9 +16,21 @@ from cfb.candidate_tree import create_candidate_tree_archive
 from cfb.publication import (
     GitCommitTreeReader,
     PublicationPreparationError,
+    PublicationExecutionError,
+    RecordedPublicationAttempt,
+    _retrieve_recorded_attempt,
     bind_merged_candidate,
     prepare_reviewed_package,
+    retrieve_sealed_attempt,
+    seal_attempt_evidence,
 )
+from cfb.github_archive import ArchiveSpec, FakeImmutableArchive
+from cfb.publication_authorization import (
+    GitHubPreparationProvenanceReader,
+    preparation_manifest_bytes,
+)
+from cfb.publication_records import RecordValidationError, SealedAttemptReference, canonical_json
+from tests.test_publication_rehydration import ProvenanceTransport
 from cfb.publication_cli import (
     PublicationCLIError,
     _candidate_commit,
@@ -75,6 +88,7 @@ class PublicationTreeBindingIndependentTests(unittest.TestCase):
         config = repository / "config"
         config.mkdir()
         shutil.copyfile(receipt_path, config / "sr7-local-validation-receipt.json")
+        shutil.copyfile(self.trust, config / "sr7-recovery-inputs.json")
         return repository
 
     def _commit(self, repository: Path, message: str) -> str:
@@ -105,6 +119,134 @@ class PublicationTreeBindingIndependentTests(unittest.TestCase):
             ),
             self.receipt.to_bytes(),
         )
+
+    def _seal_current_package(self):
+        prepared = self._prepare(
+            self.repository / "website", self.repository / "firebase.json", self.receipt
+        )
+        reader = GitCommitTreeReader(self.repository)
+        package = bind_merged_candidate(
+            prepared, candidate_commit=self.commit, reader=reader
+        )
+        origin = {
+            "schema_version": 1, "record_type": "publication_preparation_origin",
+            "repository": "arkar16/sportsrank",
+            "workflow_path": ".github/workflows/firebase-hosting-publish.yml",
+            "event": "workflow_dispatch", "ref": "refs/heads/main",
+            "head_sha": self.commit, "run_id": "101", "run_attempt": "1",
+        }
+        origin_path = self.root / "preparation-origin.json"
+        origin_path.write_bytes(canonical_json(origin))
+        manifest = self.root / "publication-preparation-manifest.json"
+        manifest.write_bytes(preparation_manifest_bytes(
+            **{key: value for key, value in origin.items() if key not in ("schema_version", "record_type")},
+            package_archive_sha256=package.bundle_sha256,
+            package_record_sha256=package.digest,
+        ))
+        provenance = GitHubPreparationProvenanceReader.from_github_token({"GITHUB_TOKEN": "fixture"})
+        transport = ProvenanceTransport(manifest, {
+            "id": 101, "run_attempt": 1, "path": origin["workflow_path"],
+            "event": "workflow_dispatch", "head_branch": "main", "head_sha": self.commit,
+            "status": "completed", "conclusion": "success",
+        })
+        archive = FakeImmutableArchive()
+        with transport:
+            sealed = seal_attempt_evidence(
+                package,
+                prepared=prepared,
+                commit_reader=reader,
+                archive=archive,
+                repository="arkar16/sportsrank",
+                package_tag="current-package",
+                intent_tag="current-intent",
+                attempt_id="current",
+                purpose="normal",
+                evidence_references={},
+                protected_context={
+                    "repository": "arkar16/sportsrank",
+                    "workflow_ref": "arkar16/sportsrank/.github/workflows/firebase-hosting-publish.yml@refs/heads/main",
+                    "workflow_sha": self.commit, "run_id": "102", "run_attempt": "1",
+                    "environment": "production", "event": "workflow_dispatch",
+                    "ref": "refs/heads/main", "head_sha": self.commit,
+                    "approval_state": "approved", "approver_login": "arkar16",
+                    "approver_id": "18407890",
+                },
+                retrieval_directory=self.root / "sealed",
+                preparation_manifest=manifest, preparation_origin=origin_path,
+                candidate_tree=self.tree_archive, provenance_reader=provenance,
+            )
+        return sealed, archive, provenance, transport
+
+    def test_sealing_current_package_preserves_both_receipt_identities(self):
+        sealed, archive, provenance, transport = self._seal_current_package()
+        validation = json.loads(sealed.retrieved_validation.read_bytes())
+        self.assertEqual(validation["schema_version"], 2)
+        self.assertEqual(validation["local_validation_receipt_sha256"], self.receipt.digest)
+        self.assertEqual(validation["used_coverage_sha256"], self.receipt.used_coverage_sha256)
+        self.assertEqual(
+            hashlib.sha256(sealed.retrieved_validation.read_bytes()).hexdigest(),
+            sealed.package.validation_sha256,
+        )
+        with transport:
+            recovered = retrieve_sealed_attempt(
+                SealedAttemptReference(sealed.intent_reference),
+                archive=archive, repository="arkar16/sportsrank",
+                provenance_reader=provenance,
+                retrieval_directory=self.root / "recovered",
+            )
+        self.assertEqual(recovered.attempt.package, sealed.package)
+        self.assertEqual(recovered.attempt.retrieved_validation.read_bytes(), sealed.retrieved_validation.read_bytes())
+        artifact = _retrieve_recorded_attempt(
+            recovered, archive=archive, repository="arkar16/sportsrank",
+            destination=self.root / "recorded",
+        )
+        self.assertEqual(artifact.package, sealed.package)
+        self.assertEqual(artifact.files["index.html"], (self.site / "index.html").read_bytes())
+
+    def test_recovery_rejects_resealed_missing_or_replaced_receipt_hashes(self):
+        sealed, archive, provenance, transport = self._seal_current_package()
+        original = json.loads(sealed.retrieved_validation.read_bytes())
+        for field in ("local_validation_receipt_sha256", "used_coverage_sha256"):
+            for replacement in (None, "0" * 64):
+                name = f"{field}-{replacement is None}"
+                with self.subTest(field=field, replacement=replacement):
+                    value = dict(original)
+                    if replacement is None:
+                        value.pop(field)
+                    else:
+                        value[field] = replacement
+                    path = self.root / "tampered" / "package-validation.json"
+                    path.parent.mkdir(exist_ok=True)
+                    path.write_bytes(canonical_json(value))
+                    reference = archive.seal_or_reconcile(ArchiveSpec(
+                        "arkar16/sportsrank", name, self.commit,
+                        {path.name: path}, "tampered validation",
+                    ))[path.name]
+                    intent = replace(sealed.intent, validation_reference=reference)
+                    intent_path = self.root / "tampered" / "attempt-intent.json"
+                    intent_path.write_bytes(canonical_json(intent.to_dict()))
+                    intent_reference = archive.seal_or_reconcile(ArchiveSpec(
+                        "arkar16/sportsrank", f"{name}-intent", self.commit,
+                        {intent_path.name: intent_path}, "tampered intent",
+                    ))[intent_path.name]
+                    # Every archive hash is valid. The unchanged authenticated
+                    # package must still reject a changed receipt identity.
+                    with transport, self.assertRaises((PublicationExecutionError, RecordValidationError)):
+                        retrieve_sealed_attempt(
+                            SealedAttemptReference(intent_reference),
+                            archive=archive, repository="arkar16/sportsrank",
+                            provenance_reader=provenance,
+                            retrieval_directory=self.root / f"recovered-{name}",
+                        )
+                    with self.assertRaises((PublicationExecutionError, RecordValidationError)):
+                        _retrieve_recorded_attempt(
+                            RecordedPublicationAttempt(replace(
+                                sealed, validation_reference=reference,
+                                intent=intent, intent_reference=intent_reference,
+                            )),
+                            archive=archive, repository="arkar16/sportsrank",
+                            destination=self.root / f"recorded-{name}",
+                        )
 
     def test_final_binding_rejects_missing_or_replaced_committed_receipt(self):
         prepared = self._prepare(self.repository / "website", self.repository / "firebase.json", self.receipt)
