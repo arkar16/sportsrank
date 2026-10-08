@@ -4,10 +4,14 @@ The owner’s active outcome is the October 7 CORS publication: completed 2026
 Week 5 rankings/results and the Week 6 slate, with existing forecasts preserved.
 The weekly output is merged in [#26](https://github.com/arkar16/sportsrank/pull/26).
 The approved successor-baseline repair and remaining publication acceptance live
-in [#27](https://github.com/arkar16/sportsrank/issues/27). Its PR owns implementation
-checks and residual risks. Parent review, actual-merge hosted preparation and
-separate owner-approved seal/execute remain required; the merged weekly output
-must not be described as live before full public verification.
+in [#27](https://github.com/arkar16/sportsrank/issues/27). The baseline repair is
+merged in [#30](https://github.com/arkar16/sportsrank/pull/30); hosted preparation
+passed, but the approved seal failed before deployment. The validation-evidence
+repair is tracked in [#31](https://github.com/arkar16/sportsrank/issues/31).
+Its PR owns implementation checks and recovery instructions. Owner merge,
+actual-merge preparation and fresh separate seal/execute approvals remain
+required; the merged weekly output must not be described as live before full
+public verification.
 
 ## Merged prerequisites and parked work
 
