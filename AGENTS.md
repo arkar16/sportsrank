@@ -30,10 +30,9 @@ Build CFB/FBS CORS rankings and a permanent static statistical-reference site.
 
 Use ask-matt skills for design and delivery. Resolve consequential choices in
 ADRs, then define scope, acceptance, dependencies, and ownership in a spec/ticket.
-An Astra orchestrator may use configured Codex roles for substantial independent
-work: `investigator`, `default_executor`, `senior_executor`, and `tester`.
-Project-local `.codex/agents/` files own model, reasoning, and role behavior.
-They override same-named global roles for SportsRank; settings are not copied here.
+For delegated work, read the selected role from `~/.codex/agents/` and follow
+the shared dispatch policy in `~/.codex/AGENTS.md`. Keep project constraints in
+the task brief; user-level Codex files own role behavior and model settings.
 Run the offline checks in `README.md` for code/build changes; add focused
 regressions for changed contracts. Keep acceptance independent of renderer
 assumptions.
