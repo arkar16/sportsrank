@@ -29,3 +29,21 @@ execution/documentation mechanism; existing product decisions, acceptance
 criteria, source budgets, and publication approvals are not relaxed.
 
 Supersedes [ADR-0004](0004-retain-operational-and-decision-memory.md).
+
+## Shared role amendment — 2026-10-08
+
+The owner requested a single source of Codex roles across projects. Repository
+copies had retained older model settings after the shared roles changed. This
+supersedes the project-local role ownership above: `~/.codex/agents/` owns worker
+behavior, models, and reasoning; `~/.codex/AGENTS.md` owns shared dispatch policy.
+`AGENTS.md` and project-memory guidance point to these sources, and the local
+worker copies are removed. Explicit task-level user overrides remain authoritative;
+the main agent uses the session's selected model.
+
+This trades self-contained worker configuration in a clone for one maintained
+user-level definition. Delegation requires those role files on the executing
+machine; missing configuration must be reported rather than recreated from old
+project pins. Sharing role definitions does not restore Codex Workflow routes or
+change project constraints, acceptance, or merge/publication authority.
+[Delivery task #28](https://github.com/arkar16/sportsrank/issues/28) owns validation
+and merge status.

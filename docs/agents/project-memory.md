@@ -28,7 +28,7 @@ Each ticket names its canonical spec, relevant ADRs, scope, owned files or
 boundaries, acceptance evidence, and unresolved decisions. A small task may
 stay in the design conversation without producing tickets.
 
-Start a fresh Astra orchestration thread when the build contract is ready.
+Start a fresh orchestration thread when the build contract is ready.
 Supply the ticket/spec rather than the complete design transcript. The agent
 reads relevant primary documents and follows the delegation policy in
 `AGENTS.md`. BB manages execution; the linked task remains the portable scope
@@ -54,9 +54,9 @@ Avoid loading archives or creating workers merely to maintain the process.
 
 ## Migration boundary
 
-ADR-0015 replaces SportsRank's Codex Workflow requirement. SportsRank and
-International Cricket Sim now have independent project-local roles and no
-managed workflow entry points or local workflow state. The shared global
-installation remains installed separately; neither migrated repo depends on it.
-SportsRank's `.codex/agents/` files own its worker behavior/model/reasoning and
-override same-named global roles. They carry no workflow ownership markers.
+ADR-0015 replaces SportsRank's Codex Workflow requirement. The repository has
+no managed workflow entry points or local workflow state. Its 2026-10-08
+amendment moves worker definitions to the user's shared `~/.codex/agents/`;
+read `~/.codex/AGENTS.md` for dispatch policy. This shares Codex roles without
+restoring workflow routes or lifecycle requirements. Task briefs supply the
+project-specific constraints and acceptance criteria.
