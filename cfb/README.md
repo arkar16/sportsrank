@@ -191,6 +191,17 @@ historical initial baseline may omit predecessor evidence. CLI-only
 `reconcile-external` requires a complete fresh live capture and sanitized
 retained evidence; archived history alone cannot establish live origin.
 
+The read-only `successor-baseline` CLI derives a distinct verified predecessor
+record from an exact prior sealed reference and existing immutable full audit
+evidence. It authenticates the prior hosted preparation and complete package;
+it makes no Firebase calls. Supply `--historical-baseline`, `--prior-reference`,
+`--audit-evidence`, `--retrieval-directory` and a new `--output` path. Pass its
+record to `public_site export --successor-baseline` while retaining the original
+capture archive for independent historical preservation validation. The real
+exporter binds both authorities in the reviewed receipt. Hosted preparation
+reauthenticates those immutable references; seal and execute still require fresh
+live reconciliation and separate owner approvals.
+
 Use `uv run --locked python -m cfb.publication_cli --help` and each operation's
 `--help` for the canonical grammar. The [publication runbook](../docs/operations/2026-season-recovery-morning.md)
 owns exact transport and recovery instructions. Its authenticated bootstrap

@@ -24,6 +24,11 @@ JavaScript progressively enhances the published content.
   carries the reviewed package through separate sealing and execution dispatches;
   ADR-0016's live predecessor and separate deployment/verification states are
   implemented. Current operational acceptance belongs to the linked task records.
+- `cfb/successor.py` authenticates existing immutable sealed package/audit evidence
+  into a distinct successor baseline without reading Firebase. Local export keeps
+  the historical capture as independent preservation authority and binds both in
+  the reviewed receipt. Fresh protected reconciliation and execution remain in
+  the publication coordinator.
 
 Use [CFB CLI documentation](../../cfb/README.md) for commands and
 [ADRs](../adr/README.md) for the reasoning and domain contracts. Current approval

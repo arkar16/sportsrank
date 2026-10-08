@@ -38,3 +38,29 @@ accepted treatment of Firebase initialization resources;
 [ADR-0018](0018-retain-publication-evidence-in-github-releases.md) selects the
 permanent archive and receipt mechanism. Neither establishes implementation or
 production approval.
+
+## Evidence-backed successors — 2026-10-08
+
+For an ordinary successor, retain the original provider capture as historical
+URL/byte preservation authority. Derive a distinct `verified_successor_baseline`
+from the authenticated prior sealed publication package and complete immutable
+coordinator reconciliation/verification. Bind its exact sealed reference,
+candidate commit, artifact inventory, serving configuration, observed live
+release/version and immutable audit references. This is package/audit provenance,
+not a new Firebase capture; do not change the historical `BaselineRecord` or
+invent capture observations.
+
+Local export validates historical preservation independently, then checks that
+every prior public path remains and that bytes outside independently validated
+run ownership remain unchanged. The reviewed receipt binds both authorities.
+Hosted preparation reauthenticates the successor evidence and exact candidate
+receipt. Before sealing and execution, freshly reconcile the same prior sealed
+attempt; it must still verify the package and equal the receipt's predecessor.
+Execution still rejects stale live identity after acquiring its single-use claim.
+An archived audit alone does not establish current live state or allow replay.
+
+The owner approved this narrow repair in
+[#27](https://github.com/arkar16/sportsrank/issues/27). New capture transports,
+credential paths, retention policies, CORS changes, merges and production
+dispatches are outside the implementation authority. ADR-0018 and the recovery
+contract record the corresponding receipt and operational requirements.

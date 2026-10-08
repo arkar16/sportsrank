@@ -982,6 +982,7 @@ class PriorVerifiedPublication:
     verification_source_reference: ArchiveReference
     reconciliation_reference: ArchiveReference
     reconciliation_source_reference: ArchiveReference
+    intent_reference: ArchiveReference
 
     def __init__(self, *values: object, _token: object | None = None) -> None:
         if _token is not _PREDECESSOR_TOKEN:
@@ -1554,6 +1555,21 @@ def _verify_prior_publication(
         raise PublicationExecutionError(
             "baseline record does not match the validated package"
         )
+    from .successor import SuccessorBaselineRecord, require_full_verification
+    if isinstance(baseline, SuccessorBaselineRecord):
+        if allow_unknown_historical_baseline or not isinstance(prior, PriorVerifiedPublication):
+            raise PublicationExecutionError("successor requires sealed verified predecessor evidence")
+        require_full_verification(baseline, prior.verification)
+        if (
+            prior.intent_reference != baseline.prior_reference.intent_reference
+            or prior.intent.digest != baseline.prior_reference.intent_reference.sha256
+            or prior.intent.package_sha256 != baseline.prior_package.digest
+            or prior.intent.artifact_reference.sha256 != baseline.prior_package.bundle_sha256
+            or baseline.observed != package.expected_predecessor
+            or prior.verification.inventory_sha256 != baseline.prior_package.inventory_sha256
+            or prior.verification.configuration_sha256 != baseline.prior_package.configuration_sha256
+        ):
+            raise PublicationExecutionError("successor baseline differs from freshly verified prior package/reference")
     if prior is None and allow_unknown_historical_baseline:
         if (
             require_prior
@@ -1671,6 +1687,21 @@ def _verify_prior_publication(
             "fresh_capture_correspondence": "verified",
         }, "external predecessor")
         return
+    _verify_coordinator_predecessor(
+        prior, package.expected_predecessor, archive=archive,
+        repository=repository, destination=destination,
+    )
+
+
+def _verify_coordinator_predecessor(
+    prior: PriorVerifiedPublication,
+    expected_predecessor: ProviderIdentity,
+    *,
+    archive: ImmutableArchive,
+    repository: str,
+    destination: Path,
+) -> None:
+    """Authenticate full sealed coordinator evidence for one exact identity."""
     if not isinstance(prior, PriorVerifiedPublication):
         raise PublicationExecutionError(
             "predecessor requires coordinator-reconstructed evidence"
@@ -1693,14 +1724,14 @@ def _verify_prior_publication(
         or verification.redaction_method != "allowlisted-findings-v1"
         or prior.reconciliation.redaction_method
         != "allowlisted-reconciliation-v1"
-        or result.observed_target != package.expected_predecessor.target
-        or result.observed_release != package.expected_predecessor.release
-        or result.observed_version != package.expected_predecessor.version
-        or verification.observed_release != package.expected_predecessor.release
-        or verification.observed_version != package.expected_predecessor.version
+        or result.observed_target != expected_predecessor.target
+        or result.observed_release != expected_predecessor.release
+        or result.observed_version != expected_predecessor.version
+        or verification.observed_release != expected_predecessor.release
+        or verification.observed_version != expected_predecessor.version
         or prior.reconciliation.disposition != "candidate_verified"
         or prior.reconciliation.observed_target
-        != package.expected_predecessor.target
+        != expected_predecessor.target
         or prior.reconciliation.provider_result_sha256 != result.digest
         or prior.reconciliation.verification_sha256 != verification.digest
         or prior.reconciliation.observed_release != result.observed_release
@@ -2590,6 +2621,7 @@ class PublicationCoordinator:
                 verification_evidence.source_reference,
                 reconciliation_evidence.record_reference,
                 reconciliation_evidence.source_reference,
+                recorded.attempt.intent_reference,
             )
         return ReconciliationRun(
             state, recorded.attempt.intent, observed, reconciliation,

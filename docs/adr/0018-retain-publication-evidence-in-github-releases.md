@@ -182,3 +182,24 @@ excluded from the runtime source fingerprint and trusted configuration identity
 so receipt generation does not create a circular hash.
 These bindings establish verification evidence only. They grant no merge,
 production-approval or publication authority, which remains with the owner.
+
+## Successor baseline provenance — 2026-10-08
+
+Under the owner-approved #27 repair and ADR-0016, a local receipt may additionally
+carry a `verified_successor_baseline`. Keep its historical capture record and
+safe derivative pins unchanged. The successor record identifies the prior sealed
+reference, authenticated package, observed release/version, and all six distinct
+immutable provider-result, verification and reconciliation record/source assets.
+Derive identities from retrieved records, never from the local run manifest's
+state or a green workflow. Authenticate original hosted preparation, its exact
+current Git tree, package bytes, full inventory/configuration verification,
+managed resources and all public smoke findings before issuing the successor.
+
+The exporter must rerun genuine private source validation and preservation checks
+before binding this record. Hosted preparation reauthenticates the existing
+immutable evidence using its existing GitHub read boundary. No Firebase read,
+capture transport, deployment credential or additional raw-data retention is
+needed for this derivation. Fresh protected reconciliation and separate seal and
+execute approvals remain required; the pinned archived audit cannot substitute
+for those live checks. Legacy capture records and sealed references keep their
+original interpretation.

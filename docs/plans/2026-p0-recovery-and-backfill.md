@@ -414,6 +414,24 @@ the safe reviewed receipt, site and authenticated baseline derivative.
   success or state upload. After an interrupted consumed attempt, any new write
   requires a new sealed intent and fresh owner approval. Concrete operational
   adapters may make live calls; ordinary tests remain offline.
+- For the owner-approved [#27 repair](https://github.com/arkar16/sportsrank/issues/27),
+  ordinary weekly export binds a distinct evidence-backed successor baseline
+  derived from the authenticated prior sealed package and complete immutable
+  coordinator verification. Preserve the original capture as independent
+  historical URL/byte authority. The exporter revalidates private source inputs,
+  every prior public path and unchanged bytes outside independently derived run
+  ownership, and binds both authorities in its genuine reviewed receipt.
+  Hosted preparation authenticates that exact committed receipt and retrieves
+  the successor's existing immutable package/audit evidence. Seal and execute
+  freshly reconcile the same sealed prior reference and reject differing
+  identity, package, partial verification and stale live state. Never relabel a
+  capture, edit a receipt by hand, reuse the initial-baseline exception or replay
+  a consumed claim. Existing credentials/retention, separate human approvals
+  and CORS/weekly reader bytes remain unchanged. Implementation ownership is the
+  sole #27 worker; parent owns independent review, integration and dispatch.
+  Acceptance includes a real two-generation regression, evidence/tampering and
+  replay rejection, regenerated local receipt, full offline/CI checks and an
+  atomic PR. The issue remains open until publication is live and verified.
 - Use one manually dispatched workflow on `main` with the `production`
   environment. The guard requires the fixed repository, `workflow_dispatch`,
   `refs/heads/main`, and run attempt `1`. The protected job uses `actions: read`
