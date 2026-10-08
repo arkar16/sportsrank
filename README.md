@@ -36,7 +36,7 @@ Python 3.12 and the locked dependencies are required:
 ```sh
 env -u CFBD_API -u CFBD_API_KEY uv sync --locked
 env -u CFBD_API -u CFBD_API_KEY uv run --locked python -m unittest discover -s tests -v
-env -u CFBD_API -u CFBD_API_KEY uv run --locked python -m compileall -q cfb tools tests
+env -u CFBD_API -u CFBD_API_KEY uv run --locked python -m compileall -q cfb tools scripts tests
 env -u CFBD_API -u CFBD_API_KEY npm ci
 env -u CFBD_API -u CFBD_API_KEY npm run build
 ```
@@ -50,6 +50,42 @@ settings. The adapter does not fall back to `CFBD_API_KEY` or load a dotenv file
 The value must never enter source,
 command arguments, tracked environment files, generated artifacts, logs,
 issues, or chat.
+
+## CORS backforecast performance
+
+Run model-performance tracking from existing local rankings and final results:
+
+```sh
+uv run --locked python -m scripts.backforecast 2026
+open .sportsrank/backforecasts/2026/report.html
+```
+
+The default range covers all locally available result weeks and grades games
+with final scores. Week 0 uses PRESEASON ratings; every later week uses the
+preceding week's CORS ratings.
+The command uses the current CORS matchup and grading functions and reports
+straight-up results, CORS line coverage (including pushes), MAE and RMSE. It
+writes `games.csv`, `weekly.csv`, `report.json` and `report.html` below the output
+directory. FBS-versus-FBS games with final scores are evaluated; omitted
+classifications and missing scores are counted in the weekly CSV/JSON.
+
+For Week 5 alone or a historical season:
+
+```sh
+uv run --locked python -m scripts.backforecast 2026 --from-week 5 --through-week 5
+uv run --locked python -m scripts.backforecast 2025
+uv run --locked python -m scripts.backforecast 2024 --output .sportsrank/backforecasts/2024
+```
+
+Inputs come from `website/` by default (`--website` selects another local site).
+Missing preceding rankings or invalid data produce an error. This is a local
+performance report using retained checkpoint ratings; no ratings are recomputed,
+CFBD calls made, site files changed or publication performed. Issued-forecast
+tracking remains independent.
+
+This command fits a manually run T3 project script named **Backforecast performance**.
+Use `uv run --locked python -m scripts.backforecast 2026` as its command; leave
+automatic worktree/settle execution disabled.
 
 ## Postseason calendar repair
 
