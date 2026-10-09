@@ -34,6 +34,14 @@ Use [CFB CLI documentation](../../cfb/README.md) for commands and
 [ADRs](../adr/README.md) for the reasoning and domain contracts. Current approval
 and continuation state belongs in [current work](../work/current.md).
 
+`cfb/historical_rebuild.py` is a separate offline archive adapter and reconstruction
+runner under ADR-0024. It combines retained regular scores/membership with a
+supplied historical games CSV into Season Snapshots, calls the existing ranking
+engine, and writes an isolated retrospective review site. It does not fetch,
+promote, create publication receipts, or weaken production carryover/Release
+validation. Corrected-history performance is an explicit optional policy;
+ordinary saved-forecast reporting is unchanged.
+
 ## Compatibility and deferred architecture
 
 The modern source/ranking boundary coexists with legacy pandas/static-HTML

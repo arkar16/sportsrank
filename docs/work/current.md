@@ -8,6 +8,14 @@ review. The owner clarified that recreational performance does not require
 historical-source qualification or proof of pregame publication. Preserve the
 CORS model and existing forecast records; see ADR-0019's October 9 clarification.
 
+Historical completeness is separate: [#35](https://github.com/arkar16/sportsrank/issues/35)
+owns missing postseason restoration and reconstruction through later-season
+carryover, based on #34's reporting layer. The owner approved archived historical
+team lists and the bounded entrant baseline in [ADR-0024](../adr/0024-reconstruct-history-with-archived-membership.md).
+Prepare corrections offline in an isolated review tree; original forecasts and
+production release authority remain intact. Saved-record grading alone does
+not establish that every historical game is present.
+
 The Week 5 rankings/results and Week 6 slate were deployed October 8 and passed
 [full immutable verification](https://github.com/arkar16/sportsrank/releases/tag/run-37822116361-verification).
 The owner accepted [#27](https://github.com/arkar16/sportsrank/issues/27) on

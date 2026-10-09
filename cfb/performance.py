@@ -110,7 +110,8 @@ def seasons(website: Path) -> list[int]:
 
 
 def evaluate_season(website: Path, season: int, *, from_week: int | None = None,
-                    through_week: int | None = None) -> tuple[dict, list[ForecastGrade]]:
+                    through_week: int | None = None,
+                    reconstruct_all: bool = False) -> tuple[dict, list[ForecastGrade]]:
     root = website / "cfb/years" / str(season)
     available = {int(p.stem.split("_W", 1)[1].split("_", 1)[0]): p
                  for p in (root / "data/results/weekly_results").glob(f"{season}_W*_FBS_results.html")}
@@ -125,7 +126,9 @@ def evaluate_season(website: Path, season: int, *, from_week: int | None = None,
         result_path = available[week]
         result_rows, result_sha = _read(result_path)
         spread_path = root / "spread" / f"{season}_W{week}_FBS_spread.html"
-        prediction_rows, spread_sha = _read(spread_path) if spread_path.exists() else ([], None)
+        prediction_rows, spread_sha = (_read(spread_path)
+                                      if spread_path.exists() and not reconstruct_all
+                                      else ([], None))
         prediction_map = {}
         for row in prediction_rows:
             key = _identity(row, week)
@@ -180,9 +183,15 @@ def evaluate_season(website: Path, season: int, *, from_week: int | None = None,
                     games.append(game)
                     continue
                 home_rating, away_rating = ratings[home], ratings[away]
+                if reconstruct_all:
+                    # Current engine checkpoints use two-decimal ratings. An
+                    # explicitly partial reconstruction may retain older inputs.
+                    home_rating = _number(home_rating).quantize(Decimal("0.01"))
+                    away_rating = _number(away_rating).quantize(Decimal("0.01"))
                 # Existing CORS arithmetic; no changes to rating precision or model.
                 matchup = natural_matchup(home_rating, away_rating, neutral_site=neutral)
-                margin, source, forecast_sha = matchup.home_margin, "Reconstructed", rating_sha
+                margin, source, forecast_sha = (matchup.home_margin,
+                    "Reconstructed history" if reconstruct_all else "Reconstructed", rating_sha)
                 counts["reconstructed_predictions"] += 1
                 game["rating_checkpoint"] = checkpoint
             identity = GameIdentity("site-performance:" + _digest(json.dumps([season, week, *key]).encode()),
@@ -208,7 +217,8 @@ def evaluate_season(website: Path, season: int, *, from_week: int | None = None,
                 sources.append({"path": path.relative_to(website).as_posix(), "sha256": digest})
     return {"schema_version": SCHEMA, "season": season, "from_week": first, "through_week": last,
             "summary": {**_summary(all_grades), **{k: sum(w[k] for w in weekly) for k in COUNTS}},
-            "weekly": weekly, "games": games, "sources": sources}, all_grades
+            "weekly": weekly, "games": games, "sources": sources,
+            **({"prediction_policy": "reconstructed_history"} if reconstruct_all else {})}, all_grades
 
 
 def backforecast(website: Path, season: int, *, from_week: int | None = None, through_week: int | None = None) -> dict:
@@ -268,7 +278,13 @@ WEEK_COLUMNS = ("week", "game_count", "straight_up_wins", "straight_up_losses", 
 def report_files(report: dict, *, site_links: bool = False) -> dict[str, bytes]:
     year, summary = report["season"], report["summary"]
     navigation = '<a href="../index.html">All seasons</a> · <a href="../../cfb.html">CORS home</a>' if site_links else "CORS model performance"
-    body = '<p>Saved CORS spreads compared with final FBS-versus-FBS scores. Original spread rounding is preserved. Missing predictions are reconstructed from preceding ratings where available.</p>' + _metrics(summary)
+    reconstructed = report.get("prediction_policy") == "reconstructed_history"
+    description = ('Retrospective CORS predictions from the corrected preceding-checkpoint ratings, '
+                   'compared with final FBS-versus-FBS scores. These are reconstructed model results, '
+                   'not the original issued forecasts.' if reconstructed else
+                   'Saved CORS spreads compared with final FBS-versus-FBS scores. Original spread rounding '
+                   'is preserved. Missing predictions are reconstructed from preceding ratings where available.')
+    body = f'<p>{description}</p>' + _metrics(summary)
     body += f'<p>{summary["saved_predictions"]:,} saved predictions · {summary["reconstructed_predictions"]:,} reconstructed · {summary["missing_predictions"]:,} unavailable · {summary["missing_scores"]:,} pending scores · {summary["non_fbs_games"]:,} non-FBS games excluded.</p>'
     body += '<p>CORS line coverage measures whether the selected favorite covered the CORS spread. Pushes are reported separately; zero lines have no winner selection. MAE/RMSE use every evaluated margin, including ties and zero lines. Lower margin error is better.</p>'
     body += '<p><a href="games.csv">Game CSV</a> · <a href="weekly.csv">Weekly CSV</a> · <a href="report.json">Report JSON</a></p><h2>Weekly performance</h2>' + _table(report["weekly"], WEEK_COLUMNS)
@@ -281,16 +297,23 @@ def report_files(report: dict, *, site_links: bool = False) -> dict[str, bytes]:
             "weekly.csv": _csv(report["weekly"], WEEK_COLUMNS).encode()}
 
 
-def build_performance_files(website: Path) -> dict[str, bytes]:
+def build_performance_files(website: Path, *, reconstruct_all: bool = False) -> dict[str, bytes]:
     output, summaries, grades = {}, [], []
     for year in seasons(website):
-        report, evaluated = evaluate_season(website, year)
+        report, evaluated = evaluate_season(website, year, reconstruct_all=reconstruct_all)
         grades.extend(evaluated)
         summaries.append({"season": year, **report["summary"]})
         for name, raw in report_files(report, site_links=True).items():
             output[f"{PREFIX}/{year}/{name}"] = raw
     totals = {**_summary(grades), **{k: sum(s[k] for s in summaries) for k in COUNTS}}
-    body = '<p>Explore model performance across every season in the archive. Saved predictions keep their original values; reconstructed gaps are counted separately. This uses the existing site data without rerunning historical rankings.</p>'+_metrics(totals)
+    description = ('Retrospective model performance after historical postseason and carryover reconstruction. '
+                   'Every evaluated prediction uses preceding-checkpoint ratings. Original saved spread files '
+                   'and issued forecasts are retained separately; these results do not claim pregame publication.'
+                   if reconstruct_all else
+                   'Explore model performance across every season in the archive. Saved predictions keep their '
+                   'original values; reconstructed gaps are counted separately. This uses the existing site '
+                   'data without rerunning historical rankings.')
+    body = f'<p>{description}</p>'+_metrics(totals)
     body += f'<p>{len(summaries)} seasons · {totals["saved_predictions"]:,} saved predictions · {totals["reconstructed_predictions"]:,} reconstructed · {totals["missing_predictions"]:,} unavailable.</p><p><a href="seasons.csv">Download season summaries</a></p>'
     body += _table(list(reversed(summaries)), ("season", *WEEK_COLUMNS[1:]), season_links=True)
     output[f"{PREFIX}/index.html"] = _page("CORS model performance", body, '<a href="../cfb.html">CORS home</a>')
@@ -312,8 +335,8 @@ def write_performance(website: Path) -> tuple[str, ...]:
     return tuple(sorted(files))
 
 
-def validate_performance(website: Path) -> tuple[str, ...]:
-    expected = build_performance_files(website)
+def validate_performance(website: Path, *, reconstruct_all: bool = False) -> tuple[str, ...]:
+    expected = build_performance_files(website, reconstruct_all=reconstruct_all)
     if NAVIGATION in expected and (website / NAVIGATION).read_bytes().count(NAV_LINK) != 1:
         raise ValueError("CORS home must link performance exactly once")
     actual_paths = {p.relative_to(website).as_posix() for p in (website / PREFIX).rglob("*") if p.is_file()}
