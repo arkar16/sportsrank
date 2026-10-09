@@ -54,14 +54,16 @@ class BackforecastTests(unittest.TestCase):
         with patch("socket.socket", side_effect=AssertionError("network forbidden")), \
                 patch("urllib.request.urlopen", side_effect=AssertionError("network forbidden")):
             report = backforecast(self.site, 2026)
-        self.assertEqual([row["rating_checkpoint"] for row in report["games"]],
+        evaluated = [row for row in report["games"] if row["status"] == "Evaluated"]
+        self.assertEqual([row["rating_checkpoint"] for row in evaluated],
                          ["PRESEASON", "PRESEASON", "W0", "W0"])
-        self.assertEqual([Decimal(row["home_handicap"]) for row in report["games"]],
+        self.assertEqual([Decimal(row["home_handicap"]) for row in evaluated],
                          [Decimal(-4), Decimal(0), Decimal(3), Decimal("-0.02")])
-        self.assertEqual(report["games"][2]["predicted_winner"], "B")
-        self.assertEqual(report["games"][2]["cors_line_coverage"], "push")
-        self.assertEqual(report["games"][3]["straight_up"], "correct")
-        self.assertEqual(report["games"][3]["cors_line_coverage"], "cover")
+        self.assertEqual(evaluated[2]["predicted_winner"], "B")
+        self.assertEqual(evaluated[2]["cors_line_coverage"], "push")
+        self.assertEqual(evaluated[3]["straight_up"], "correct")
+        self.assertEqual(evaluated[3]["cors_line_coverage"], "cover")
+        self.assertEqual(report["games"][2]["status"], "Pending score")
         first, second = report["weekly"]
         self.assertEqual(Decimal(first["mae"]), Decimal(4))
         self.assertEqual(Decimal(first["rmse"]), Decimal(5))
@@ -90,17 +92,17 @@ class BackforecastTests(unittest.TestCase):
     def test_missing_preceding_rankings_never_fall_back_to_later_rankings(self):
         self.rankings("W5", [("A", 100), ("B", 0)])
         self.results(5, [self.game(5)])
-        with self.assertRaises(FileNotFoundError):
-            backforecast(self.site, 2026, from_week=5, through_week=5)
+        report = backforecast(self.site, 2026, from_week=5, through_week=5)
+        self.assertEqual(report['summary']['missing_predictions'], 1)
+        self.assertEqual(report['summary']['game_count'], 0)
 
     def test_duplicate_games_missing_ratings_and_invalid_inputs_fail(self):
         self.rankings("PRESEASON", [("A", 20), ("B", 18)])
         cases = (
-            ([self.game(), self.game()], "duplicate game"),
-            ([self.game(home="Unrated")], "missing PRESEASON rating"),
+            ([self.game(), self.game()], "duplicate result"),
             ([self.game(home_score="12.5")], "nonnegative integer"),
             ([{**self.game(), "neutral_site": "maybe"}], "neutral_site"),
-            ([{**self.game(), "week": 2}], "wrong week"),
+            ([{**self.game(), "week": 2}], "row week disagrees"),
         )
         for rows, message in cases:
             with self.subTest(message=message):
@@ -109,7 +111,7 @@ class BackforecastTests(unittest.TestCase):
                     backforecast(self.site, 2026)
         self.rankings("PRESEASON", [("A", 20), ("A", 21), ("B", 18)])
         self.results(0, [self.game()])
-        with self.assertRaisesRegex(ValueError, "duplicate school"):
+        with self.assertRaisesRegex(ValueError, "duplicate rating"):
             backforecast(self.site, 2026)
 
     def test_report_output_preserves_input_bytes_and_rejects_site_destination(self):
@@ -122,7 +124,7 @@ class BackforecastTests(unittest.TestCase):
         self.assertEqual({path.name for path in output.iterdir()},
                          {"report.html", "report.json", "games.csv", "weekly.csv"})
         self.assertIn("CORS line coverage", (output / "report.html").read_text())
-        with self.assertRaisesRegex(ValueError, "outside the website"):
+        with self.assertRaisesRegex(ValueError, "validated public export"):
             write_report(report, self.site / "reports", self.site)
         self.assertFalse((self.site / "reports").exists())
 

@@ -51,41 +51,41 @@ The value must never enter source,
 command arguments, tracked environment files, generated artifacts, logs,
 issues, or chat.
 
-## CORS backforecast performance
+## CORS model performance
 
-Run model-performance tracking from existing local rankings and final results:
+Evaluate every archived season using the predictions and final scores already
+on the website:
 
 ```sh
-uv run --locked python -m scripts.backforecast 2026
+uv run --locked python -m scripts.backforecast
+open .sportsrank/backforecasts/all/cfb/performance/index.html
+```
+
+For one season or week:
+
+```sh
+uv run --locked python -m scripts.backforecast 2023
+uv run --locked python -m scripts.backforecast 2026 --from-week 5 --through-week 5
 open .sportsrank/backforecasts/2026/report.html
 ```
 
-The default range covers all locally available result weeks and grades games
-with final scores. Week 0 uses PRESEASON ratings; every later week uses the
-preceding week's CORS ratings.
-The command uses the current CORS matchup and grading functions and reports
-straight-up results, CORS line coverage (including pushes), MAE and RMSE. It
-writes `games.csv`, `weekly.csv`, `report.json` and `report.html` below the output
-directory. FBS-versus-FBS games with final scores are evaluated; omitted
-classifications and missing scores are counted in the weekly CSV/JSON.
+Saved spreads keep their original rounding. Where a scored FBS matchup has no
+saved prediction, the command uses preceding-checkpoint ratings with the current
+unchanged CORS arithmetic (PRESEASON for Week 0). Missing predictions/ratings,
+pending scores and non-FBS games are counted explicitly. Legacy HTML encodings
+are supported. No ranking rerun, historical-source validation or API request is
+needed. Reports show winner accuracy, CORS line coverage/pushes, MAE, RMSE,
+weekly summaries and game-level results with CSV/JSON downloads.
 
-For Week 5 alone or a historical season:
+The normal `cfb.public_site export` step also generates these reports at
+`cfb/performance/index.html` and `cfb/performance/<year>/index.html`, links them
+from CORS home, and binds them into the validated public manifest and receipt.
+Publication uses the existing reviewed-site workflow. Running the report command
+alone makes a local preview; it does not deploy. Existing predictions, rankings,
+result inputs and issued-forecast records are preserved.
 
-```sh
-uv run --locked python -m scripts.backforecast 2026 --from-week 5 --through-week 5
-uv run --locked python -m scripts.backforecast 2025
-uv run --locked python -m scripts.backforecast 2024 --output .sportsrank/backforecasts/2024
-```
-
-Inputs come from `website/` by default (`--website` selects another local site).
-Missing preceding rankings or invalid data produce an error. This is a local
-performance report using retained checkpoint ratings; no ratings are recomputed,
-CFBD calls made, site files changed or publication performed. Issued-forecast
-tracking remains independent.
-
-This command fits a manually run T3 project script named **Backforecast performance**.
-Use `uv run --locked python -m scripts.backforecast 2026` as its command; leave
-automatic worktree/settle execution disabled.
+For a manual T3 project script, use `uv run --locked python -m
+scripts.backforecast` from the repository root, with automatic execution disabled.
 
 ## Postseason calendar repair
 
