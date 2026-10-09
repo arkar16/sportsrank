@@ -51,6 +51,30 @@ The value must never enter source,
 command arguments, tracked environment files, generated artifacts, logs,
 issues, or chat.
 
+## Historical postseason reconstruction
+
+Saved forecasts/results cannot reveal games absent from both. To restore
+available postseason games from a local CFBD historical games CSV and rebuild
+the affected carryover chain through the latest completed archived checkpoint:
+
+```sh
+env -u CFBD_API -u CFBD_API_KEY uv run --locked python -m scripts.rebuild_history \
+  --games-csv /path/to/games.csv --output .sportsrank/historical-review
+open .sportsrank/historical-review/cfb/performance/index.html
+```
+
+The output must be a new directory separate from the source website and CSV.
+The command detects the earliest missing postseason season; `--from-season`
+can select an explicit chain start. It writes corrected rankings, results,
+records, progression, historical summaries, separate reconstructed predictions,
+and retrospective performance. Original input and saved spread/issued-forecast
+bytes remain unchanged. [ADR-0024](docs/adr/0024-reconstruct-history-with-archived-membership.md)
+owns historical membership and calendar compatibility. No API request occurs.
+
+This output is an **unsealed local review site**, not a production release.
+Inherited release metadata does not validate its corrections; do not deploy it.
+The delivery task owns acceptance and subsequent authenticated release integration.
+
 ## CORS model performance
 
 Evaluate every archived season using the predictions and final scores already
