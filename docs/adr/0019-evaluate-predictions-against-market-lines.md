@@ -211,3 +211,22 @@ historical model and feature reference; its formulas and saved results require
 comparison with current behavior before reuse. See the
 [workbook inspection](../evidence/2026-09-28-original-cors-workbook.md) for exact
 sheet references, retained feature ideas and grading limitations.
+
+## Recreational model performance — October 9, 2026
+
+The owner clarified that performance should be visible across the entire
+historical website using saved predictions and final scores. Historical-source
+qualification and proof of pregame publication are not prerequisites for these
+recreational reports. Preserve each saved spread's original value and rounding;
+calculate missing predictions from available preceding-checkpoint ratings with
+unchanged CORS arithmetic, identifying those reconstructed values and any gaps.
+A historical ranking rerun is not required to evaluate existing predictions.
+
+Apply the same winner, CORS line coverage, MAE and RMSE definitions. Keep the
+existing authenticated issued-forecast records intact; model-performance pages
+can evaluate saved or reconstructed predictions without relabeling them as
+verified pregame publications. Reports are static derived output in the normal
+public export. This direction supersedes the earlier local-report-only scope of
+[#33](https://github.com/arkar16/sportsrank/issues/33); task acceptance and
+implementation evidence remain there. It does not authorize model tuning,
+additional live requests, merge or production publication.

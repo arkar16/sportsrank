@@ -36,7 +36,7 @@ Python 3.12 and the locked dependencies are required:
 ```sh
 env -u CFBD_API -u CFBD_API_KEY uv sync --locked
 env -u CFBD_API -u CFBD_API_KEY uv run --locked python -m unittest discover -s tests -v
-env -u CFBD_API -u CFBD_API_KEY uv run --locked python -m compileall -q cfb tools tests
+env -u CFBD_API -u CFBD_API_KEY uv run --locked python -m compileall -q cfb tools scripts tests
 env -u CFBD_API -u CFBD_API_KEY npm ci
 env -u CFBD_API -u CFBD_API_KEY npm run build
 ```
@@ -50,6 +50,42 @@ settings. The adapter does not fall back to `CFBD_API_KEY` or load a dotenv file
 The value must never enter source,
 command arguments, tracked environment files, generated artifacts, logs,
 issues, or chat.
+
+## CORS model performance
+
+Evaluate every archived season using the predictions and final scores already
+on the website:
+
+```sh
+uv run --locked python -m scripts.backforecast
+open .sportsrank/backforecasts/all/cfb/performance/index.html
+```
+
+For one season or week:
+
+```sh
+uv run --locked python -m scripts.backforecast 2023
+uv run --locked python -m scripts.backforecast 2026 --from-week 5 --through-week 5
+open .sportsrank/backforecasts/2026/report.html
+```
+
+Saved spreads keep their original rounding. Where a scored FBS matchup has no
+saved prediction, the command uses preceding-checkpoint ratings with the current
+unchanged CORS arithmetic (PRESEASON for Week 0). Missing predictions/ratings,
+pending scores and non-FBS games are counted explicitly. Legacy HTML encodings
+are supported. No ranking rerun, historical-source validation or API request is
+needed. Reports show winner accuracy, CORS line coverage/pushes, MAE, RMSE,
+weekly summaries and game-level results with CSV/JSON downloads.
+
+The normal `cfb.public_site export` step also generates these reports at
+`cfb/performance/index.html` and `cfb/performance/<year>/index.html`, links them
+from CORS home, and binds them into the validated public manifest and receipt.
+Publication uses the existing reviewed-site workflow. Running the report command
+alone makes a local preview; it does not deploy. Existing predictions, rankings,
+result inputs and issued-forecast records are preserved.
+
+For a manual T3 project script, use `uv run --locked python -m
+scripts.backforecast` from the repository root, with automatic execution disabled.
 
 ## Postseason calendar repair
 
