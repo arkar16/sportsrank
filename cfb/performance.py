@@ -22,7 +22,7 @@ from .ranking_engine import HFA, MODEL_VERSION, natural_matchup
 from .market_lines import (
     MarketLines, PUBLIC_PATH as MARKET_PATH, GAME_COLUMNS as MARKET_GAME_COLUMNS,
     SUMMARY_COLUMNS as MARKET_SUMMARY_COLUMNS, enrich as enrich_market,
-    compare as compare_market, summarize as summarize_market,
+    compare as compare_market, summarize as summarize_market, observation_for,
 )
 
 SCHEMA = "cors-performance/v1"
@@ -326,8 +326,8 @@ def _pending_forecasts(website: Path, report: dict, market_index: dict) -> list[
     root = website / "cfb/years" / str(year)
     slate = root / f"data/slate/{year}_FBS_slate.html"
     season_slate, season_slate_sha = _read(slate) if slate.exists() else ([], None)
-    scored = {(game["week"], game["home"], game["away"], game["neutral_site"])
-              for game in report["games"] if game.get("home_score") is not None and game.get("away_score") is not None}
+    scored = Counter((game["week"], game["home"], game["away"], game["neutral_site"])
+                     for game in report["games"] if game.get("home_score") is not None and game.get("away_score") is not None)
     forecasts = []
     seen = set()
     for path in sorted((root / "spread").glob(f"{year}_W*_FBS_spread.html")):
@@ -339,10 +339,14 @@ def _pending_forecasts(website: Path, report: dict, market_index: dict) -> list[
         slate_rows, slate_sha = (_read(weekly_slate) if weekly_slate.exists() else
                                 ([row for row in season_slate if _integer(row["week"]) == week], season_slate_sha))
         eligible = {}
+        occurrences = Counter((week, *_identity(row, week)) for row in slate_rows
+                              if all(row[side + "_division"].lower() == "fbs" for side in ("home", "away")))
         for row in slate_rows:
             if any(row[side + "_division"].lower() != "fbs" for side in ("home", "away")):
                 continue
             key = week, *_identity(row, week)
+            if scored[key] >= occurrences[key]:
+                continue
             if key in eligible:
                 raise ValueError("ambiguous forecast slate matchup")
             eligible[key] = row
@@ -354,14 +358,16 @@ def _pending_forecasts(website: Path, report: dict, market_index: dict) -> list[
             if key in seen:
                 raise ValueError("duplicate issued forecast matchup")
             seen.add(key)
-            if key not in eligible or key in scored:
+            if key not in eligible:
                 continue
             margin, _ = _saved_margin(row, home)
             game = {"week": week, "home": home, "away": away, "neutral_site": neutral,
                     "home_handicap": str(-margin), "prediction_source": "Saved spread",
                     "home_score": None, "away_score": None, "absolute_error": None,
                     "status": "Pending result"}
-            game.update(compare_market(game, market_index.get((year, week, home, away)), year))
+            if eligible[key].get("game_id"):
+                game["game_id"] = eligible[key]["game_id"]
+            game.update(compare_market(game, observation_for(market_index, year, game), year))
             disposition = eligible[key].get("disposition", "").lower()
             if disposition in {"canceled", "cancelled"}:
                 game.update(status="Canceled", market_status="Canceled", market_pick=None, market_ats=None)

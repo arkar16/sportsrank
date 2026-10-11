@@ -119,8 +119,8 @@ class MarketLines:
         path = website / PUBLIC_PATH
         return cls(json.loads(path.read_bytes())) if path.exists() else None
 
-    def index(self, website: Path) -> dict[tuple[int, int, str, str], dict]:
-        """Join only unambiguous oriented matchups on their calendar checkpoint."""
+    def index(self, website: Path) -> dict[tuple, dict | None]:
+        """Retain exact game IDs and flag ambiguous calendar-only joins."""
         boundaries = {year: value.date() for year, value in WEEK_ONE_BOUNDARIES.items()}
         corrected = set()
         review = website / "historical-review.json"
@@ -160,9 +160,8 @@ class MarketLines:
                 if _day(row["start"]) < boundary:
                     week = 0
             key = year, week, row["home"], row["away"]
-            if key in result:
-                raise ValueError("ambiguous market matchup; game IDs are required to distinguish it")
-            result[key] = row
+            result[(*key, row["game_id"])] = row
+            result[key] = None if key in result else row
         return result
 
 
@@ -269,10 +268,19 @@ def summarize(games: list[dict]) -> dict:
             "missing_market_lines": sum(game.get("market_status") == "Missing line" for game in games)}
 
 
+def observation_for(index: dict, season: int, game: dict) -> dict | None:
+    key = season, game["week"], game["home"], game["away"]
+    identifier = game.get("game_id")
+    if identifier and not identifier.startswith("archive:"):
+        return index.get((*key, identifier))
+    if key in index and index[key] is None:
+        raise ValueError("ambiguous market matchup; game IDs are required to distinguish it")
+    return index.get(key)
+
+
 def enrich(report: dict, index: dict) -> None:
     for game in report["games"]:
-        key = report["season"], game["week"], game["home"], game["away"]
-        game.update(compare(game, index.get(key), report["season"]))
+        game.update(compare(game, observation_for(index, report["season"], game), report["season"]))
     report["market_policy"] = POLICY
     report["summary"].update(summarize(report["games"]))
     for week in report["weekly"]:

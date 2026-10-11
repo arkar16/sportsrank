@@ -10,7 +10,7 @@ from unittest.mock import patch, MagicMock
 
 from cfb.market_lines import (
     MarketLines, POLICY, SCHEMA, PUBLIC_PATH, compare, enrich, load_inputs,
-    provider_for, summarize,
+    provider_for, summarize, observation_for,
 )
 from cfb.performance import backforecast, build_performance_files, validate_performance
 from cfb.public_site import validate_and_export, validate_public_output
@@ -149,8 +149,12 @@ class MarketInputTests(unittest.TestCase):
         self.assertIn((2024, 1, "A", "B"), index)
         self.assertIn((2024, 22, "A", "B"), index)
         self.assertIn((2024, 0, "C", "B"), index)
+        index = lines(normal, {**normal, "game_id": "9", "home_handicap": "-2"}).index(self.root)
         with self.assertRaisesRegex(ValueError, "ambiguous"):
-            lines(normal, {**normal, "game_id": "9"}).index(self.root)
+            observation_for(index, 2024, game())
+        self.assertEqual(observation_for(index, 2024, game(game_id="1"))["home_handicap"], "-7")
+        self.assertEqual(observation_for(index, 2024, game(game_id="9"))["home_handicap"], "-2")
+        self.assertIsNone(observation_for(index, 2024, game(game_id="missing")))
 
 
 class MarketPerformanceIntegrationTests(unittest.TestCase):
