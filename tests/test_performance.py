@@ -80,6 +80,23 @@ class PerformanceTests(unittest.TestCase):
             validate_performance(self.site)
         self.assertEqual(inputs, {p: p.read_bytes() for p in inputs})
 
+    def test_missing_spread_uses_retained_four_decimal_ratings_without_rounding(self):
+        self.seed()
+        self.spread.unlink()
+        rating_path = self.root / 'rankings/2020_W0_FBS_cors.html'
+        self.table(rating_path, [{'school': 'A', 'cors': '15.4025'}, {'school': 'B', 'cors': '10.1275'}])
+        original = rating_path.read_bytes()
+        for neutral, expected in ((True, '-5.2750'), (False, '-7.2750')):
+            with self.subTest(neutral=neutral):
+                self.table(self.result, [{'week': 1, 'home_team': 'A', 'away_team': 'B',
+                    'home_division': 'fbs', 'away_division': 'fbs', 'neutral_site': neutral,
+                    'home_score': 20, 'away_score': 17}])
+                report = backforecast(self.site, 2020)
+                self.assertEqual(report['games'][0]['home_handicap'], expected)
+                self.assertEqual(report['games'][0]['prediction_source'], 'Reconstructed')
+                self.assertEqual(report['summary']['reconstructed_predictions'], 1)
+                self.assertEqual(rating_path.read_bytes(), original)
+
     def test_default_command_builds_a_navigable_full_site_preview(self):
         self.seed()
         output = Path(self.tmp.name) / 'preview'

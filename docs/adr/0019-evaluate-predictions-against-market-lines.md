@@ -222,6 +222,12 @@ calculate missing predictions from available preceding-checkpoint ratings with
 unchanged CORS arithmetic, identifying those reconstructed values and any gaps.
 A historical ranking rerun is not required to evaluate existing predictions.
 
+When an archived preceding checkpoint retains more than two decimal places,
+the retrospective gap calculation uses those retained values in the same
+home-minus-away-plus-HFA arithmetic. It does not round or rewrite the archive,
+change the production engine's two-decimal input contract, or replace any saved
+spread. The report retains the resulting precision and reconstruction label.
+
 Apply the same winner, CORS line coverage, MAE and RMSE definitions. Keep the
 existing authenticated issued-forecast records intact; model-performance pages
 can evaluate saved or reconstructed predictions without relabeling them as

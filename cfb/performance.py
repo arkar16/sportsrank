@@ -102,6 +102,16 @@ def _summary(grades: list[ForecastGrade]) -> dict[str, Any]:
     return value
 
 
+def _retained_margin(home_rating: Any, away_rating: Any, neutral: bool) -> Decimal:
+    home, away = _number(home_rating), _number(away_rating)
+    if all(value.quantize(Decimal("0.01")) == value for value in (home, away)):
+        return natural_matchup(home, away, neutral_site=neutral).home_margin
+    # Older archived checkpoints retain more than two decimals. Apply the same
+    # margin arithmetic to those values; do not rewrite/round the source ratings
+    # or relax the production engine's two-decimal input contract.
+    return home - away + (Decimal(0) if neutral else Decimal(str(HFA)))
+
+
 def seasons(website: Path) -> list[int]:
     root = website / "cfb/years"
     return sorted(int(path.name) for path in root.iterdir()
@@ -181,8 +191,7 @@ def evaluate_season(website: Path, season: int, *, from_week: int | None = None,
                     continue
                 home_rating, away_rating = ratings[home], ratings[away]
                 # Existing CORS arithmetic; no changes to rating precision or model.
-                matchup = natural_matchup(home_rating, away_rating, neutral_site=neutral)
-                margin, source, forecast_sha = matchup.home_margin, "Reconstructed", rating_sha
+                margin, source, forecast_sha = _retained_margin(home_rating, away_rating, neutral), "Reconstructed", rating_sha
                 counts["reconstructed_predictions"] += 1
                 game["rating_checkpoint"] = checkpoint
             identity = GameIdentity("site-performance:" + _digest(json.dumps([season, week, *key]).encode()),
