@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import csv
+from collections import Counter
 from datetime import datetime, timezone
 from decimal import Decimal
 import hashlib
@@ -141,7 +142,7 @@ def evaluate_season(website: Path, season: int, *, from_week: int | None = None,
                                       else ([], None))
         prediction_map = {}
         for row in prediction_rows:
-            key = _identity(row, week)
+            key = (*_identity(row, week), row.get("game_id") or None)
             if key in prediction_map:
                 raise ValueError(f"duplicate saved prediction in {spread_path}: {key}")
             prediction_map[key] = row
@@ -151,17 +152,21 @@ def evaluate_season(website: Path, season: int, *, from_week: int | None = None,
         rating_sha = None
         counts = dict.fromkeys(COUNTS, 0)
         grades, seen = [], set()
+        occurrences = Counter(_identity(row, week) for row in result_rows)
         for row in result_rows:
             if any(row[side + "_division"].lower() != "fbs" for side in ("home", "away")):
                 counts["non_fbs_games"] += 1
                 continue
-            key = _identity(row, week)
+            home, away, neutral = _identity(row, week)
+            occurrence = row.get("game_id") or None
+            key = (home, away, neutral, occurrence)
             if key in seen:
                 raise ValueError(f"duplicate result in {result_path}: {key}")
             seen.add(key)
-            home, away, neutral = key
             game = {name: None for name in GAME_COLUMNS}
             game.update(week=week, home=home, away=away, neutral_site=neutral)
+            if occurrence is not None:
+                game.update(game_id=occurrence, game_date=row.get("game_date") or None)
             if any(row[side + "_score"].strip() in {"", "—", "-", "None", "nan"} for side in ("home", "away")):
                 counts["missing_scores"] += 1
                 game["status"] = "Pending score"
@@ -170,6 +175,8 @@ def evaluate_season(website: Path, season: int, *, from_week: int | None = None,
             home_score, away_score = (_integer(row[side + "_score"]) for side in ("home", "away"))
             game.update(home_score=home_score, away_score=away_score, actual_home_margin=str(home_score-away_score))
             prediction = prediction_map.get(key)
+            if prediction is None and occurrences[(home, away, neutral)] == 1:
+                prediction = prediction_map.get((home, away, neutral, None))
             selection = None
             if prediction is not None:
                 margin, selection = _saved_margin(prediction, home)
@@ -286,6 +293,7 @@ WEEK_COLUMNS = ("week", "game_count", "straight_up_wins", "straight_up_losses", 
 
 def report_files(report: dict, *, site_links: bool = False) -> dict[str, bytes]:
     year, summary = report["season"], report["summary"]
+    occurrence_columns = ("game_id", "game_date") if any("game_id" in game for game in report["games"]) else ()
     navigation = '<a href="../index.html">All seasons</a> · <a href="../../cfb.html">CORS home</a>' if site_links else "CORS model performance"
     reconstructed = report.get("prediction_policy") == "reconstructed_history"
     description = ('Retrospective CORS predictions from the corrected preceding-checkpoint ratings, '
@@ -302,7 +310,7 @@ def report_files(report: dict, *, site_links: bool = False) -> dict[str, bytes]:
         body += '<details><summary>Saved inputs</summary><ul>'+"".join(f'<li><a href="../../../{escape(s["path"], quote=True)}">{escape(s["path"])}</a></li>' for s in report["sources"])+"</ul></details>"
     return {"index.html": _page(f"{year} CORS model performance", body, navigation),
             "report.json": (json.dumps(report, sort_keys=True, indent=2, ensure_ascii=False)+"\n").encode(),
-            "games.csv": _csv(report["games"], GAME_COLUMNS).encode(),
+            "games.csv": _csv(report["games"], GAME_COLUMNS + occurrence_columns).encode(),
             "weekly.csv": _csv(report["weekly"], WEEK_COLUMNS).encode()}
 
 

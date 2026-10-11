@@ -64,7 +64,7 @@ open .sportsrank/historical-review/cfb/performance/index.html
 ```
 
 The output must be a new directory separate from the source website and CSV.
-The command detects the earliest missing postseason season; `--from-season`
+The command detects the earliest missing or relocated postseason season; `--from-season`
 can select an explicit chain start. It writes corrected rankings, results,
 records, progression, historical summaries, separate reconstructed predictions,
 and retrospective performance. Original input and saved spread/issued-forecast

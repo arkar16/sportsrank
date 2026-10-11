@@ -32,7 +32,7 @@ from .week_calendar import EASTERN, WEEK_ONE_BOUNDARIES
 
 POLICY = "historical-reconstruction/v1"
 RESULT_COLUMNS = ("week", "home_team", "home_division", "home_score", "away_team",
-                  "away_division", "away_score", "neutral_site")
+                  "away_division", "away_score", "neutral_site", "game_id", "game_date")
 
 
 def _json(value) -> bytes:
@@ -176,7 +176,7 @@ class HistoricalInputs:
                 date=candidates[0]["start_date"] if len(candidates) == 1 else None,
                 completed=True, disposition="completed",
             ))
-        added = []
+        added, relocated = [], []
         for row in raw:
             if row["season_type"] != "postseason" or not ({_school(row["home_team"]), _school(row["away_team"])} & members):
                 continue
@@ -198,7 +198,11 @@ class HistoricalInputs:
                 if matches:
                     retained_counts[key] -= 1
                     from dataclasses import replace
-                    games[matches[0]] = replace(games[matches[0]], week=week)
+                    old = games[matches[0]]
+                    if old.week != week:
+                        relocated.append({"id": row["id"], "home": key[0], "away": key[1],
+                                          "from": old.week, "to": week})
+                    games[matches[0]] = replace(old, week=week, provider_id=row["id"], date=row["start_date"])
                     continue
             home_class = "fbs" if key[0] in members else row["home_classification"] or "unknown"
             away_class = "fbs" if key[1] in members else row["away_classification"] or "unknown"
@@ -218,6 +222,7 @@ class HistoricalInputs:
         evidence = {"season": year, "snapshot_sha256": checksum,
                     "retained_results_sha256": result_sha, "week_one_boundary": boundary.isoformat(),
                     "boundary_votes": origins.get(boundary, 0), "added_games": added,
+                    "postseason_relocations": relocated,
                     "week_zero_moves": moved, "deduplicated_results": deduplicated,
                     "result_count": len(games)}
         snapshot = SeasonSnapshot("cfb", "FBS", year, teams, tuple(games),
@@ -255,6 +260,29 @@ def _data_page(title: str, rows: list[dict], columns: tuple[str, ...]) -> bytes:
                  + _row_table(rows, columns), '<a href="__CORS_HOME__">CORS home</a>')
 
 
+def game_identity(year: int, game: SourceGame) -> str:
+    """Preserve a dated occurrence through results and retrospective grading."""
+    if game.provider_id is not None:
+        return str(game.provider_id)
+    return "archive:" + _sha(_json([year, game.week, game.home_team, game.away_team,
+                                    game.neutral_site, game.date]))
+
+
+def correction_start(inputs: HistoricalInputs, years: list[int]) -> int:
+    affected = []
+    for year in years:
+        members = {team.school for team in inputs.roster(year)}
+        if any(row["season_type"] == "postseason" and
+               {_school(row["home_team"]), _school(row["away_team"])} & members
+               for row in inputs.games[year]):
+            evidence = inputs.snapshot(year)[1]
+            if evidence["added_games"] or evidence["postseason_relocations"]:
+                affected.append(year)
+    if not affected:
+        raise ValueError("no missing or relocated historical postseason games found")
+    return min(affected)
+
+
 def rebuild_history(website: Path, games_csv: Path, output: Path, *,
                     from_season: int | None = None,
                     progress: Callable[[str], None] | None = None) -> dict:
@@ -267,17 +295,7 @@ def rebuild_history(website: Path, games_csv: Path, output: Path, *,
     if not years:
         raise ValueError("no archived seasons")
     if from_season is None:
-        affected = []
-        for year in years:
-            members = {team.school for team in inputs.roster(year)}
-            if any(row["season_type"] == "postseason" and
-                   {_school(row["home_team"]), _school(row["away_team"])} & members
-                   for row in inputs.games[year]):
-                if inputs.snapshot(year)[1]["added_games"]:
-                    affected.append(year)
-        if not affected:
-            raise ValueError("no missing historical postseason games found")
-        from_season = min(affected)
+        from_season = correction_start(inputs, years)
     selected = [year for year in years if year >= from_season]
     if not selected or selected[0] != from_season or selected != list(range(from_season, max(years) + 1)):
         raise ValueError("historical rebuild requires an unbroken season chain")
@@ -319,6 +337,8 @@ def rebuild_history(website: Path, games_csv: Path, output: Path, *,
                         "away_team": game.away_team, "away_division": game.away_classification,
                         "away_score": game.away_points, "neutral_site": game.neutral_site}
                        for game in snapshot.games]
+            for row, game in zip(results, snapshot.games):
+                row.update(game_id=game_identity(year, game), game_date=game.date or "")
             _write(site, f"{prefix}/data/results/{year}_FBS_results.html",
                    _data_page(f"{year} results", results, RESULT_COLUMNS))
             if year < 2024:

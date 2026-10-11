@@ -177,6 +177,7 @@ class HistoricalRebuildTests(unittest.TestCase):
         self.assertEqual([game.week for game in snapshot.games], [0, 2, 3])
 
     def test_distinct_dated_games_in_one_provider_week_are_not_deduplicated(self):
+        self.season(1905, ['A', 'B'], [self.result()])
         self.season(1906, ['A', 'B'], [self.result(week=1, score=15),
                                      self.result(week=3, score=12), self.result(week=3, score=28)])
         self.csv([self.game(1906, day='1906-10-06', week=3, home_points=12),
@@ -186,6 +187,35 @@ class HistoricalRebuildTests(unittest.TestCase):
         self.assertEqual(len(snapshot.games), 3)
         self.assertEqual(evidence['deduplicated_results'], [])
         self.assertEqual([game.provider_id for game in snapshot.games if game.week == 3], ['r', 'second'])
+        corrected = self.root / 'corrected'
+        rebuild_history(self.site, self.source, corrected, from_season=1906)
+        report = json.loads((corrected / 'cfb/performance/1906/report.json').read_bytes())
+        repeated = [game for game in report['games'] if game['week'] == 3]
+        self.assertEqual([game['game_id'] for game in repeated], ['r', 'second'])
+        self.assertEqual([game['home_score'] for game in repeated], [12, 28])
+        self.assertEqual(report['summary']['game_count'], 3)
+        with (corrected / 'cfb/performance/1906/games.csv').open() as handle:
+            exported = [row for row in csv.DictReader(handle) if row['week'] == '3']
+        self.assertEqual([row['game_id'] for row in exported], ['r', 'second'])
+        self.assertEqual([row['game_date'] for row in exported], ['1906-10-06', '1906-10-08'])
+
+    def test_relocated_postseason_alone_starts_the_full_carryover_chain(self):
+        self.sample(bowl=False)
+        self.table('cfb/years/1901/data/results/1901_FBS_results.html',
+                   [self.result(), self.result(week=2, score=21, neutral=True)])
+        self.table('cfb/years/1901/data/results/weekly_results/1901_W2_FBS_results.html',
+                   [self.result(week=2, score=21, neutral=True)])
+        self.csv([self.game(), self.game(identifier='bowl', phase='postseason', day='1902-01-01',
+                                         home_points=21, neutral_site=True),
+                  self.game(1902, 'r2', day='1902-09-16', away_team='C', home_points=14, away_points=7)])
+        report = rebuild_history(self.site, self.source, self.root / 'relocated')
+        self.assertEqual(report['from_season'], 1901)
+        self.assertEqual(report['through_season'], 1902)
+        self.assertEqual(report['added_postseason_games'], 0)
+        self.assertEqual(report['seasons'][0]['postseason_relocations'],
+                         [{'id': 'bowl', 'home': 'A', 'away': 'B', 'from': 2, 'to': 16}])
+        old_week = self.root / 'relocated/cfb/years/1901/data/results/weekly_results/1901_W2_FBS_results.html'
+        self.assertEqual(_read(old_week)[0], [])
 
     def test_duplicate_source_and_source_output_overlap_reject(self):
         self.sample()
