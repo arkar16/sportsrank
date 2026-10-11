@@ -47,3 +47,23 @@ project pins. Sharing role definitions does not restore Codex Workflow routes or
 change project constraints, acceptance, or merge/publication authority.
 [Delivery task #28](https://github.com/arkar16/sportsrank/issues/28) owns validation
 and merge status.
+
+## Active orchestration amendment — 2026-10-11
+
+The owner's current instructions select T3 native orchestration and prohibit
+BB CLI/Tasks unless explicitly requested. GitHub issues are already the active
+fallback for current deliveries. Supersede the earlier BB execution directions
+with T3 threads/workspaces and the GitHub issue workflow in
+[tracker configuration](../agents/issue-tracker.md). Historical SR identifiers
+remain evidence references; no historical task migration is implied.
+
+Shared `~/.codex/coding-policy.md` owns current subscription routing and dispatch;
+`~/.codex/agents/` retains role definitions and `~/.codex/worker-handoff.md` owns
+assignment structure. Continue existing threads unless the owner requests a new
+one. T3 supplies authorized local `CFBD_API` through the environment. These
+operational corrections preserve task acceptance, metered request allowances,
+credential privacy, and human merge/publication authority.
+
+This keeps cold-start guidance consistent with the active environment while
+retaining dated decisions as history. [Delivery task #43](https://github.com/arkar16/sportsrank/issues/43)
+owns validation and merge status.

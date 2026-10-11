@@ -45,8 +45,8 @@ These commands do not require a CFBD key and must not publish. Ordinary
 verification uses portable Schema 2/3 fixtures and does not depend on private
 or ignored caches. Static hosting build success does not establish strict
 Release, link, or HTML acceptance. The production adapter reads the project-
-only bearer token from `CFBD_API`, supplied through the BB environment variables
-settings. The adapter does not fall back to `CFBD_API_KEY` or load a dotenv file.
+only bearer token from `CFBD_API`, injected by T3 for authorized local fetches.
+The adapter does not fall back to `CFBD_API_KEY` or load a dotenv file.
 The value must never enter source,
 command arguments, tracked environment files, generated artifacts, logs,
 issues, or chat.
@@ -131,6 +131,7 @@ record the accepted behavior and retention limits.
 
 [AGENTS.md](AGENTS.md) is the portable repository entry point.
 [Project memory](docs/agents/project-memory.md) assigns one home to each kind
-of information. Installed ask-matt skills guide design and delivery; BB owns
-thread and environment state. Historical workflow records are retained in the
+of information. Installed ask-matt skills guide design and delivery; T3 owns
+thread and execution state. [GitHub issues](docs/agents/issue-tracker.md) own
+current task scope, dependencies, and acceptance. Historical workflow records are retained in the
 [frozen archive](docs/archive/codex-workflow/2026-09-10/README.md).
