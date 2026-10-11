@@ -75,6 +75,36 @@ This output is an **unsealed local review site**, not a production release.
 Inherited release metadata does not validate its corrections; do not deploy it.
 The delivery task owns acceptance and subsequent authenticated release integration.
 
+For a complete release candidate, use the public export boundary with
+`--historical-games-csv /private/path/games.csv --historical-games-sha256 SHA256`
+and `--market-inputs /private/path/inputs.json`. It first validates the ordinary
+private release, then independently checks restored results, rankings, records,
+carryover, progression, original forecast preservation and complete reports.
+The resulting correction and its input identities are bound into the reviewed
+public receipt. Passing local validation does not authorize publication.
+
+To keep those inputs together, retain one **private** JSON configuration (no
+credentials) and run:
+
+```sh
+env -u CFBD_API -u CFBD_API_KEY uv run --locked python -m scripts.prepare_site \
+  --config /private/path/site-preparation.json --output /new/preparation
+```
+
+The configuration's `schema` is `sportsrank-site-preparation/v1`. Required path
+fields are `private_candidate`, `baseline_archive`, `source_input_root`,
+`source_archive`, `trusted_input_manifest`, `firebase_json`, `code_root`,
+`historical_games_csv` and `market_inputs`; relative paths resolve beside the
+configuration. Required digest fields are `baseline_sha256`,
+`source_archive_sha256` and `historical_games_sha256`. Select the authenticated
+current predecessor with `successor_baseline` for successor publication.
+Omitting it supports an initial-baseline draft, not a replacement for current
+live-predecessor reconciliation. Calculations and tests use cached inputs and
+make zero CFBD requests. Successor authentication retrieves existing immutable
+GitHub evidence using `GITHUB_TOKEN`, `GH_TOKEN`, or the existing `gh` login,
+without printing or saving the credential; it does not read or
+write Firebase. Results are `site/` and `receipt.json` under a new output folder.
+
 ## CORS model performance
 
 Evaluate every archived season using the predictions and final scores already

@@ -33,6 +33,7 @@ if TYPE_CHECKING:
     from .forecast_publication import VerifiedForecastPublication
     from .forecast_record import GameTimingEvidence
     from .market_lines import MarketLines
+    from .historical_correction import CorrectionInputs
 
 try:
     from .baseline import VerifiedBaseline, import_baseline
@@ -126,6 +127,16 @@ def _digest(value: Any, label: str) -> str:
 
 
 def _validate_used_coverage(value: Any) -> Mapping[str, Any]:
+    if isinstance(value, Mapping) and value.get("schema") == "ranking-progression/used-coverage/v2":
+        if set(value) != {"schema", "status", "original", "correction_sha256", "artifact_snapshot_checksum", "carryover_identity"} or value["status"] != "corrected":
+            raise PublicSiteError("corrected used coverage fields are invalid")
+        if not isinstance(value["original"], Mapping) or value["original"].get("schema") != "ranking-progression/used-coverage/v1":
+            raise PublicSiteError("corrected coverage requires literal original coverage")
+        if _validate_used_coverage(value["original"])["status"] != "required":
+            raise PublicSiteError("corrected coverage has no original required progression")
+        for key in ("correction_sha256", "artifact_snapshot_checksum", "carryover_identity"):
+            _digest(value[key], "corrected coverage " + key)
+        return dict(value)
     if not isinstance(value, Mapping) or value.get("schema") != "ranking-progression/used-coverage/v1":
         raise PublicSiteError("receipt used coverage is invalid")
     status = value.get("status")
@@ -877,6 +888,12 @@ def _public_manifest_bytes(value: Mapping[str, Any]) -> bytes:
         expected.add("artifact_contract")
         if type(value.get("artifact_contract")) is not int or value["artifact_contract"] not in PUBLIC_RELEASE_CONTRACTS:
             raise PublicSiteError("public manifest artifact contract is invalid")
+    if "historical_correction" in value:
+        if value.get("schema_version") != 2 or value.get("artifact_contract") != 4:
+            raise PublicSiteError("historical correction requires current public contract")
+        from .historical_correction import validate_binding
+        validate_binding(value["historical_correction"])
+        expected.add("historical_correction")
     if set(value) != expected or type(value.get("schema_version")) is not int or value.get("schema_version") not in (1, 2) or value.get("record_type") != PUBLIC_MANIFEST_TYPE or value.get("format") != "public-export-v1":
         raise PublicSiteError("public manifest schema is invalid")
     release_id = value.get("source_release_id")
@@ -1140,7 +1157,16 @@ def validate_public_output(site: str | Path, *, expected_receipt: "LocalValidati
                 ):
                     has_2025_fbs_source = True
                     break
+        correction_binding = manifest.get("historical_correction")
+        correction_document = None
+        from .historical_correction import PUBLIC_PATH as CORRECTION_PATH, validate_public_correction
+        if correction_binding is not None:
+            correction_document = validate_public_correction(root, correction_binding)
+        elif (root / CORRECTION_PATH).exists() or (root / "historical-review.json").exists():
+            raise PublicSiteValidationError("historical correction lacks validated manifest binding")
         if expected_receipt is not None:
+            if expected_receipt.transform.get("historical_correction") != correction_binding:
+                raise PublicSiteValidationError("receipt historical correction binding differs")
             coverage = expected_receipt.used_coverage
             if manifest.get("artifact_contract") == 4 and coverage is None:
                 raise PublicSiteValidationError(
@@ -1150,7 +1176,15 @@ def validate_public_output(site: str | Path, *, expected_receipt: "LocalValidati
                 raise PublicSiteValidationError(
                     "legacy public output cannot claim current used coverage"
                 )
-            if coverage is not None and coverage["status"] == "required":
+            if coverage is not None and coverage["status"] == "corrected":
+                if correction_document is None:
+                    raise PublicSiteValidationError("corrected coverage lacks its validated transformation")
+                from .historical_correction import validate_corrected_coverage
+                _validate_public_progression_feature(root, coverage["original"])
+                validate_corrected_coverage(root, coverage, correction_document, correction_binding)
+            elif coverage is not None and coverage["status"] == "required":
+                if correction_document is not None and any(row["season"] == 2025 for row in correction_document["seasons"]):
+                    raise PublicSiteValidationError("corrected progression cannot claim unchanged coverage")
                 _validate_public_progression_feature(root, coverage)
             elif coverage is not None:
                 forbidden = (
@@ -1166,7 +1200,7 @@ def validate_public_output(site: str | Path, *, expected_receipt: "LocalValidati
         performance = expected_receipt.transform.get("performance") if expected_receipt else None
         if performance is not None or (root / "cfb/performance/index.html").exists():
             from .performance import validate_performance
-            paths = list(validate_performance(root))
+            paths = list(validate_performance(root, reconstruct_all=correction_document is not None))
             if performance is not None and performance != {"schema": "cors-performance/v1", "paths": paths}:
                 raise PublicSiteValidationError("performance export binding differs")
         if expected_receipt is not None and actual_inventory != expected_receipt.public_site_inventory:
@@ -1531,6 +1565,14 @@ def _validate_receipt_nested(value: Mapping[str, Any]) -> None:
         "format", "public_manifest_path", "public_release_path", "snapshot_paths",
         "replaced_snapshot_count", "private_manifest_retained_for_validation",
     }
+    if "historical_correction" in transform:
+        if value.get("schema_version") != 2 or independent.get("artifact_contract") != 4:
+            raise PublicSiteError("historical correction requires a current validation receipt")
+        from .historical_correction import validate_binding
+        validate_binding(transform["historical_correction"])
+        transform_fields.add("historical_correction")
+    if value.get("used_coverage", {}).get("status") == "corrected" and "historical_correction" not in transform:
+        raise PublicSiteError("corrected coverage lacks a correction transform")
     if "performance" in transform:
         transform_fields.add("performance")
         performance = transform["performance"]
@@ -1588,6 +1630,7 @@ def validate_and_export(
     timing_evidence: Sequence[GameTimingEvidence] = (),
     successor: VerifiedSuccessorBaseline | None = None,
     market_lines: MarketLines | None = None,
+    historical_correction: CorrectionInputs | None = None,
 ) -> LocalValidationReceipt:
     """Validate a private candidate, then create a provenance-only site."""
 
@@ -1702,9 +1745,21 @@ def validate_and_export(
         # Derived reader-facing reports use only the saved static pages. They
         # do not requalify historical sources or modify issued forecasts.
         from .performance import write_performance, validate_performance
-        performance_paths = write_performance(temporary_directory, market_lines=market_lines)
-        if validate_performance(temporary_directory) != performance_paths:
-            raise LocalValidationError("performance export paths differ")
+        correction_binding = None
+        if historical_correction is not None:
+            from .historical_correction import apply_correction, corrected_coverage, validate_public_correction
+            with tempfile.TemporaryDirectory(prefix="sportsrank-correction-", dir=output_path.parent) as correction_workspace:
+                corrected = Path(correction_workspace) / "site"
+                correction_binding = apply_correction(temporary_directory, corrected, historical_correction, market_lines=market_lines)
+                correction_document = validate_public_correction(corrected, correction_binding)
+                used_coverage = corrected_coverage(used_coverage, correction_document, correction_binding)
+                shutil.rmtree(temporary_directory)
+                os.replace(corrected, temporary_directory)
+            performance_paths = validate_performance(temporary_directory, reconstruct_all=True)
+        else:
+            performance_paths = write_performance(temporary_directory, market_lines=market_lines)
+            if validate_performance(temporary_directory) != performance_paths:
+                raise LocalValidationError("performance export paths differ")
 
         manifest_inventory = tuple(
             item
@@ -1728,6 +1783,8 @@ def validate_and_export(
             "source_fingerprint": fingerprint,
             "trusted_input_manifest_sha256": trust_sha,
         }
+        if correction_binding is not None:
+            public_manifest["historical_correction"] = correction_binding
         manifest_bytes = _public_manifest_bytes(public_manifest)
         (temporary_directory / "manifest.json").write_bytes(manifest_bytes)
         public_release = {
@@ -1754,6 +1811,8 @@ def validate_and_export(
             # candidate manifest's asserted ownership. Public provenance and
             # export metadata are the only additional export-owned paths.
             owned = set(report.checked_artifacts) | {"manifest.json", "release.json"} | {item["path"] for item in snapshot_provenance_bindings} | set(performance_paths)
+            if correction_binding is not None:
+                owned.update(correction_binding["paths"])
             try:
                 assert_successor_overlay(successor, temporary_directory, owned)
             except ValueError as exc:
@@ -1790,6 +1849,8 @@ def validate_and_export(
             "private_manifest_retained_for_validation": True,
             "performance": {"schema": "cors-performance/v1", "paths": list(performance_paths)},
         }
+        if correction_binding is not None:
+            transform["historical_correction"] = correction_binding
         receipt_value = _receipt_value(
             inventory=inventory,
             firebase_sha=firebase_sha,
@@ -1805,6 +1866,17 @@ def validate_and_export(
         validate_public_output(
             temporary_directory, expected_receipt=receipt
         ).raise_for_failure()
+        # Correction calculation can be lengthy. Bind the complete export to
+        # the same code, trust pins and private bytes checked at its start.
+        if source_fingerprint(code_root or Path(__file__).resolve().parents[1]) != fingerprint:
+            raise LocalValidationError("validator/runtime source changed during public export")
+        source_inputs.assert_current()
+        if _trusted_manifest_details(trusted_input_manifest)[0] != trust_sha:
+            raise LocalValidationError("trusted input manifest changed during public export")
+        if _tree_digest(private_site, "private candidate") != candidate_tree_before:
+            raise LocalValidationError("private candidate changed during public export")
+        if historical_correction is not None:
+            historical_correction.assert_current()
         _write_new(receipt_output, receipt.to_bytes(), "local validation receipt")
         if output_path.exists() and any(output_path.iterdir()):
             raise PublicSiteError("public output directory became non-empty during export")
@@ -2017,6 +2089,8 @@ def build_parser() -> argparse.ArgumentParser:
     export.add_argument("--receipt", "--receipt-path", dest="receipt_path", type=Path, required=True)
     export.add_argument("--code-root", type=Path)
     export.add_argument("--market-inputs", type=Path, help="private hash-pinned cached provider responses; makes no live requests")
+    export.add_argument("--historical-games-csv", type=Path, help="private historical games CSV for validated correction")
+    export.add_argument("--historical-games-sha256", help="pinned identity of the historical CSV")
     from .forecast_inputs import add_forecast_arguments
     add_forecast_arguments(export)
 
@@ -2036,6 +2110,9 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "export":
             from .forecast_inputs import load_forecast_inputs
             from .market_lines import load_inputs as load_market_inputs
+            from .historical_correction import CorrectionInputs
+            if bool(args.historical_games_csv) != bool(args.historical_games_sha256):
+                raise PublicSiteError("historical correction requires both the CSV and its pinned SHA-256")
             forecasts = load_forecast_inputs(args)
             successor = None
             if args.successor_baseline is not None:
@@ -2070,6 +2147,7 @@ def main(argv: list[str] | None = None) -> int:
                     forecast_publications=forecasts.publications,
                     timing_evidence=forecasts.timing,
                     market_lines=(load_market_inputs(args.market_inputs) if args.market_inputs is not None else None),
+                    historical_correction=(CorrectionInputs(args.historical_games_csv, args.historical_games_sha256) if args.historical_games_csv else None),
                 )
             finally:
                 baseline.close()

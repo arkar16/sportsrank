@@ -123,7 +123,9 @@ class MarketLines:
         """Retain exact game IDs and flag ambiguous calendar-only joins."""
         boundaries = {year: value.date() for year, value in WEEK_ONE_BOUNDARIES.items()}
         corrected = set()
-        review = website / "historical-review.json"
+        review = website / "historical-correction.json"
+        if not review.exists():
+            review = website / "historical-review.json"
         if review.exists():
             document = json.loads(review.read_bytes())
             for entry in document["seasons"]:

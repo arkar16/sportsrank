@@ -1,328 +1,329 @@
 week,home,away,neutral_site,prediction_source,rating_checkpoint,home_handicap,predicted_winner,home_score,away_score,actual_home_margin,straight_up,cors_line_coverage,absolute_error,status,provider,market_home_handicap,market_pick,market_ats,market_absolute_error,market_status
-1,VMI,Wofford,False,Saved spread,,-24.5,VMI,9,0,9,correct,no_cover,15.5,Evaluated,,,,,,No provider selected
-2,NC State,Richmond,False,Saved spread,,-2.0,NC State,20,0,20,correct,cover,18.0,Evaluated,,,,,,No provider selected
-2,Furman,Newberry,False,Saved spread,,5.0,Newberry,27,10,17,incorrect,no_cover,22.0,Evaluated,,,,,,No provider selected
-2,North Carolina,Wake Forest,False,Saved spread,,5.5,Wake Forest,0,6,-6,correct,cover,0.5,Evaluated,,,,,,No provider selected
-2,Virginia,Hampden-Sydney,False,Saved spread,,-12.0,Virginia,40,0,40,correct,cover,28.0,Evaluated,,,,,,No provider selected
-2,Clemson,Presbyterian,False,Saved spread,,-5.5,Clemson,0,14,-14,incorrect,no_cover,19.5,Evaluated,,,,,,No provider selected
-2,Pittsburgh,Washington and Lee,False,Saved spread,,-0.5,Pittsburgh,28,0,28,correct,cover,27.5,Evaluated,,,,,,No provider selected
-2,Notre Dame,Baylor,False,Saved spread,,-3.5,Notre Dame,41,0,41,correct,cover,37.5,Evaluated,,,,,,No provider selected
-2,Georgia Tech,Oglethorpe,False,Saved spread,,0.0,Unknown (zero line),13,7,6,ungraded,ungraded,6.0,Evaluated,,,,,,No provider selected
-2,Mercer,Georgia,False,Saved spread,,0.0,Unknown (zero line),0,32,-32,ungraded,ungraded,32.0,Evaluated,,,,,,No provider selected
-2,Davidson,Wofford,False,Saved spread,,-35.5,Davidson,7,0,7,correct,no_cover,28.5,Evaluated,,,,,,No provider selected
-2,Western Colorado,Colorado College,False,Saved spread,,6.0,Colorado College,0,6,-6,correct,push,0.0,Evaluated,,,,,,No provider selected
-3,Montana,Washington State,False,Saved spread,,-2.5,Montana,0,9,-9,incorrect,no_cover,11.5,Evaluated,,,,,,No provider selected
-3,Kansas,Oklahoma State,False,Saved spread,,-1.0,Kansas,13,3,10,correct,cover,9.0,Evaluated,,,,,,No provider selected
-3,Denver,Northern Colorado,False,Saved spread,,-4.0,Denver,13,0,13,correct,cover,9.0,Evaluated,,,,,,No provider selected
-3,Colorado,Montana State,False,Saved spread,,24.5,Montana State,23,3,20,incorrect,no_cover,44.5,Evaluated,,,,,,No provider selected
-3,Clemson,Auburn,False,Saved spread,,21.0,Auburn,6,13,-7,correct,no_cover,14.0,Evaluated,,,,,,No provider selected
-3,Wake Forest,Davidson,False,Saved spread,,2.0,Davidson,7,7,0,tie,no_cover,2.0,Evaluated,,,,,,No provider selected
-3,Georgia,Virginia,False,Saved spread,,-6.0,Georgia,6,7,-1,incorrect,no_cover,7.0,Evaluated,,,,,,No provider selected
-3,South Carolina,North Carolina,False,Saved spread,,-25.5,South Carolina,0,7,-7,incorrect,no_cover,32.5,Evaluated,,,,,,No provider selected
-3,Navy,William & Mary,False,Saved spread,,24.5,William & Mary,25,0,25,incorrect,no_cover,49.5,Evaluated,,,,,,No provider selected
-3,Kansas State,Oklahoma,False,Saved spread,,-23.0,Kansas State,16,0,16,correct,no_cover,7.0,Evaluated,,,,,,No provider selected
-3,Georgia Tech,VMI,False,Saved spread,,2.5,VMI,33,0,33,incorrect,no_cover,35.5,Evaluated,,,,,,No provider selected
-3,Washington University (St. Louis),Drake,False,Saved spread,,0.0,Unknown (zero line),0,5,-5,ungraded,ungraded,5.0,Evaluated,,,,,,No provider selected
-3,Wisconsin,Iowa State,False,Saved spread,,19.5,Iowa State,30,0,30,incorrect,no_cover,49.5,Evaluated,,,,,,No provider selected
-3,Virginia Tech,Hampden-Sydney,False,Saved spread,,-33.5,Virginia Tech,13,3,10,correct,no_cover,23.5,Evaluated,,,,,,No provider selected
-3,Texas,Ole Miss,False,Saved spread,,-4.0,Texas,25,0,25,correct,cover,21.0,Evaluated,,,,,,No provider selected
-3,Duke,NC State,False,Saved spread,,-2.0,Duke,0,13,-13,incorrect,no_cover,15.0,Evaluated,,,,,,No provider selected
-3,Illinois,Nebraska,False,Saved spread,,-3.0,Illinois,0,14,-14,incorrect,no_cover,17.0,Evaluated,,,,,,No provider selected
-3,Missouri,Tulane,False,Saved spread,,19.0,Tulane,6,6,0,tie,no_cover,19.0,Evaluated,,,,,,No provider selected
-3,Michigan,Michigan State,False,Saved spread,,14.0,Michigan State,39,0,39,incorrect,no_cover,53.0,Evaluated,,,,,,No provider selected
-3,Iowa,Arkansas,False,Saved spread,,-2.0,Iowa,25,0,25,correct,cover,23.0,Evaluated,,,,,,No provider selected
-3,Washington and Lee,Furman,False,Saved spread,,22.0,Furman,15,20,-5,correct,no_cover,17.0,Evaluated,,,,,,No provider selected
-3,Florida,Mercer,False,Saved spread,,-6.0,Florida,24,0,24,correct,cover,18.0,Evaluated,,,,,,No provider selected
-3,Colorado School Of Mines,Western Colorado,False,Saved spread,,-4.0,Colorado School Of Mines,6,15,-9,incorrect,no_cover,13.0,Evaluated,,,,,,No provider selected
-3,Chicago,Kentucky,False,Saved spread,,16.0,Kentucky,9,0,9,incorrect,no_cover,25.0,Evaluated,,,,,,No provider selected
-4,SMU,Washington University (St. Louis),False,Saved spread,,-28.0,SMU,20,6,14,correct,no_cover,14.0,Evaluated,,,,,,No provider selected
-4,Ohio State,Chicago,False,Saved spread,,4.5,Chicago,3,3,0,tie,no_cover,4.5,Evaluated,,,,,,No provider selected
-4,Missouri,Nebraska,False,Saved spread,,20.5,Nebraska,9,6,3,incorrect,no_cover,23.5,Evaluated,,,,,,No provider selected
-4,Michigan,Indiana,False,Saved spread,,-8.0,Michigan,63,0,63,correct,cover,55.0,Evaluated,,,,,,No provider selected
-4,Kentucky,Clemson,False,Saved spread,,-17.0,Kentucky,19,6,13,correct,no_cover,4.0,Evaluated,,,,,,No provider selected
-4,Iowa State,Kansas,False,Saved spread,,7.5,Kansas,20,0,20,incorrect,no_cover,27.5,Evaluated,,,,,,No provider selected
-4,Oregon,Idaho,False,Saved spread,,17.0,Idaho,0,6,-6,correct,no_cover,11.0,Evaluated,,,,,,No provider selected
-4,Furman,The Citadel,False,Saved spread,,-4.0,Furman,7,0,7,correct,cover,3.0,Evaluated,,,,,,No provider selected
-4,Northern Colorado,Colorado School Of Mines,False,Saved spread,,-1.5,Northern Colorado,2,6,-4,incorrect,no_cover,5.5,Evaluated,,,,,,No provider selected
-4,Baylor,TCU,False,Saved spread,,13.0,TCU,7,7,0,tie,no_cover,13.0,Evaluated,,,,,,No provider selected
-4,Western Colorado,Wyoming,False,Saved spread,,7.0,Wyoming,0,7,-7,correct,push,0.0,Evaluated,,,,,,No provider selected
-4,Washington,Montana,False,Saved spread,,-29.0,Washington,30,10,20,correct,no_cover,9.0,Evaluated,,,,,,No provider selected
-4,Denver,Utah State,False,Saved spread,,-24.0,Denver,0,13,-13,incorrect,no_cover,37.0,Evaluated,,,,,,No provider selected
-4,Oglethorpe,Centre College Kentucky,False,Saved spread,,8.0,Centre College Kentucky,20,0,20,incorrect,no_cover,28.0,Evaluated,,,,,,No provider selected
-4,Drake,Kansas State,False,Saved spread,,1.0,Kansas State,19,0,19,incorrect,no_cover,20.0,Evaluated,,,,,,No provider selected
-4,Colorado State,BYU,False,Saved spread,,-22.5,Colorado State,21,7,14,correct,no_cover,8.5,Evaluated,,,,,,No provider selected
-4,Auburn,Virginia Tech,False,Saved spread,,-2.0,Auburn,19,0,19,correct,cover,17.0,Evaluated,,,,,,No provider selected
-4,LSU,Alabama,False,Saved spread,,-1.5,LSU,0,42,-42,incorrect,no_cover,43.5,Evaluated,,,,,,No provider selected
-4,Yale,Georgia,False,Saved spread,,-6.0,Yale,35,7,28,correct,cover,22.0,Evaluated,,,,,,No provider selected
-4,Virginia,Richmond,False,Saved spread,,-21.5,Virginia,19,0,19,correct,no_cover,2.5,Evaluated,,,,,,No provider selected
-4,Vanderbilt,Texas,False,Saved spread,,1.0,Texas,14,6,8,incorrect,no_cover,9.0,Evaluated,,,,,,No provider selected
-4,USC,Utah,False,Saved spread,,-26.5,USC,28,2,26,correct,no_cover,0.5,Evaluated,,,,,,No provider selected
-4,Sewanee,Texas A&M,False,Saved spread,,-2.5,Sewanee,6,6,0,tie,no_cover,2.5,Evaluated,,,,,,No provider selected
-4,Princeton,Washington and Lee,False,Saved spread,,-25.0,Princeton,15,6,9,correct,no_cover,16.0,Evaluated,,,,,,No provider selected
-4,Brown,Pennsylvania,False,Saved spread,,-2.0,Brown,0,9,-9,incorrect,no_cover,11.0,Evaluated,,,,,,No provider selected
-4,Oregon State,Gonzaga,False,Saved spread,,1.5,Gonzaga,22,0,22,incorrect,no_cover,23.5,Evaluated,,,,,,No provider selected
-4,Duke,North Carolina,False,Saved spread,,-5.5,Duke,0,41,-41,incorrect,no_cover,46.5,Evaluated,,,,,,No provider selected
-4,Minnesota,Grinnell,False,Saved spread,,0.5,Grinnell,34,6,28,incorrect,no_cover,28.5,Evaluated,,,,,,No provider selected
-4,Georgia Tech,Penn State,False,Saved spread,,-7.5,Georgia Tech,16,7,9,correct,cover,1.5,Evaluated,,,,,,No provider selected
-4,Florida,Hampden-Sydney,False,Saved spread,,-28.0,Florida,22,6,16,correct,no_cover,12.0,Evaluated,,,,,,No provider selected
-4,Tulane,Ole Miss,False,Saved spread,,-12.0,Tulane,26,7,19,correct,cover,7.0,Evaluated,,,,,,No provider selected
-4,Syracuse,William & Mary,False,Saved spread,,-7.5,Syracuse,33,0,33,correct,cover,25.5,Evaluated,,,,,,No provider selected
-4,Pittsburgh,West Virginia,False,Saved spread,,6.0,West Virginia,15,7,8,incorrect,no_cover,14.0,Evaluated,,,,,,No provider selected
-4,NC State,South Carolina,False,Saved spread,,-14.5,NC State,6,7,-1,incorrect,no_cover,15.5,Evaluated,,,,,,No provider selected
-5,NC State,North Carolina,False,Saved spread,,-3.0,NC State,0,17,-17,incorrect,no_cover,20.0,Evaluated,,,,,,No provider selected
-5,Texas A&M,SMU,False,Saved spread,,-2.5,Texas A&M,7,0,7,correct,cover,4.5,Evaluated,,,,,,No provider selected
-5,South Carolina,Wofford,False,Saved spread,,-6.0,South Carolina,6,0,6,correct,push,0.0,Evaluated,,,,,,No provider selected
-5,Oklahoma State,Washington University (St. Louis),False,Saved spread,,-2.0,Oklahoma State,0,0,0,tie,no_cover,2.0,Evaluated,,,,,,No provider selected
-5,Oklahoma,Drake,False,Saved spread,,27.5,Drake,7,0,7,incorrect,no_cover,34.5,Evaluated,,,,,,No provider selected
-5,Wisconsin,Michigan,False,Saved spread,,1.0,Michigan,0,21,-21,correct,cover,20.0,Evaluated,,,,,,No provider selected
-5,Kansas,Kansas State,False,Saved spread,,4.0,Kansas State,7,14,-7,correct,cover,3.0,Evaluated,,,,,,No provider selected
-5,Presbyterian,Davidson,False,Saved spread,,0.0,Unknown (zero line),0,13,-13,ungraded,ungraded,13.0,Evaluated,,,,,,No provider selected
-5,Denver,Colorado State,False,Saved spread,,9.0,Colorado State,0,17,-17,correct,cover,8.0,Evaluated,,,,,,No provider selected
-5,Carnegie Mellon,Washington & Jefferson,False,Saved spread,,-1.5,Carnegie Mellon,0,0,0,tie,no_cover,1.5,Evaluated,,,,,,No provider selected
-5,Alabama,Sewanee,False,Saved spread,,-2.5,Alabama,27,0,27,correct,cover,24.5,Evaluated,,,,,,No provider selected
-5,Wyoming,Colorado School Of Mines,False,Saved spread,,-17.5,Wyoming,43,0,43,correct,cover,25.5,Evaluated,,,,,,No provider selected
-5,Kentucky,Washington and Lee,False,Saved spread,,-21.0,Kentucky,0,25,-25,incorrect,no_cover,46.0,Evaluated,,,,,,No provider selected
-5,Virginia,VMI,False,Saved spread,,-9.5,Virginia,18,10,8,correct,no_cover,1.5,Evaluated,,,,,,No provider selected
-5,Tulane,Mississippi State,False,Saved spread,,-5.5,Tulane,25,3,22,correct,cover,16.5,Evaluated,,,,,,No provider selected
-5,USC,Stanford,False,Saved spread,,-11.0,USC,9,13,-4,incorrect,no_cover,15.0,Evaluated,,,,,,No provider selected
-5,Princeton,Navy,False,Saved spread,,1.0,Navy,10,10,0,tie,no_cover,1.0,Evaluated,,,,,,No provider selected
-5,Michigan State,Centre College Kentucky,False,Saved spread,,2.5,Centre College Kentucky,15,13,2,incorrect,no_cover,4.5,Evaluated,,,,,,No provider selected
-5,Iowa,Illinois,False,Saved spread,,-17.0,Iowa,12,10,2,correct,no_cover,15.0,Evaluated,,,,,,No provider selected
-5,Washington State,Idaho,False,Saved spread,,-3.5,Washington State,6,7,-1,incorrect,no_cover,4.5,Evaluated,,,,,,No provider selected
-5,Georgia Tech,Florida,False,Saved spread,,-7.5,Georgia Tech,23,7,16,correct,cover,8.5,Evaluated,,,,,,No provider selected
-5,The Citadel,Newberry,False,Saved spread,,-22.5,The Citadel,26,0,26,correct,cover,3.5,Evaluated,,,,,,No provider selected
-5,Chicago,Northwestern,False,Saved spread,,-7.0,Chicago,6,0,6,correct,no_cover,1.0,Evaluated,,,,,,No provider selected
-5,BYU,Colorado College,False,Saved spread,,24.0,Colorado College,7,6,1,incorrect,no_cover,25.0,Evaluated,,,,,,No provider selected
-5,Army,Notre Dame,False,Saved spread,,0.5,Notre Dame,27,0,27,incorrect,no_cover,27.5,Evaluated,,,,,,No provider selected
-5,Washington,Nebraska,False,Saved spread,,-12.5,Washington,6,6,0,tie,no_cover,12.5,Evaluated,,,,,,No provider selected
-5,Texas,Auburn,False,Saved spread,,3.5,Auburn,33,0,33,incorrect,no_cover,36.5,Evaluated,,,,,,No provider selected
-5,Indiana,Syracuse,False,Saved spread,,12.0,Syracuse,0,14,-14,correct,cover,2.0,Evaluated,,,,,,No provider selected
-5,Yale,Pennsylvania,False,Saved spread,,-2.5,Yale,13,16,-3,incorrect,no_cover,5.5,Evaluated,,,,,,No provider selected
-5,Ohio State,Columbia,False,Saved spread,,-3.0,Ohio State,9,0,9,correct,cover,6.0,Evaluated,,,,,,No provider selected
-5,Montana,Gonzaga,False,Saved spread,,19.0,Gonzaga,14,14,0,tie,no_cover,19.0,Evaluated,,,,,,No provider selected
-5,Georgia,Furman,False,Saved spread,,14.0,Furman,21,0,21,incorrect,no_cover,35.0,Evaluated,,,,,,No provider selected
-5,William & Mary,Duke,False,Saved spread,,-7.5,William & Mary,41,0,41,correct,cover,33.5,Evaluated,,,,,,No provider selected
-5,Virginia Tech,Maryland,False,Saved spread,,4.5,Maryland,3,0,3,incorrect,no_cover,7.5,Evaluated,,,,,,No provider selected
-5,Vanderbilt,Tennessee,False,Saved spread,,-4.5,Vanderbilt,34,7,27,correct,cover,22.5,Evaluated,,,,,,No provider selected
-5,Rice,Arkansas,False,Saved spread,,-21.0,Rice,13,9,4,correct,no_cover,17.0,Evaluated,,,,,,No provider selected
-6,South Carolina,Clemson,False,Saved spread,,-24.5,South Carolina,33,0,33,correct,cover,8.5,Evaluated,,,,,,No provider selected
-6,Wofford,Oglethorpe,False,Saved spread,,-2.5,Wofford,7,13,-6,incorrect,no_cover,8.5,Evaluated,,,,,,No provider selected
-6,Penn State,Michigan State,False,Saved spread,,-10.5,Penn State,13,6,7,correct,no_cover,3.5,Evaluated,,,,,,No provider selected
-6,Newberry,Presbyterian,False,Saved spread,,18.5,Presbyterian,26,7,19,incorrect,no_cover,37.5,Evaluated,,,,,,No provider selected
-6,Nebraska,Kansas,False,Saved spread,,-9.5,Nebraska,14,0,14,correct,cover,4.5,Evaluated,,,,,,No provider selected
-6,Illinois,Michigan,False,Saved spread,,19.5,Michigan,0,3,-3,correct,no_cover,16.5,Evaluated,,,,,,No provider selected
-6,Ohio State,Iowa,False,Saved spread,,-4.0,Ohio State,0,15,-15,incorrect,no_cover,19.0,Evaluated,,,,,,No provider selected
-6,Furman,Davidson,False,Saved spread,,5.5,Davidson,7,0,7,incorrect,no_cover,12.5,Evaluated,,,,,,No provider selected
-6,Denver,Colorado School Of Mines,False,Saved spread,,-3.5,Denver,7,16,-9,incorrect,no_cover,12.5,Evaluated,,,,,,No provider selected
-6,Oregon,California,False,Saved spread,,4.5,California,0,28,-28,correct,cover,23.5,Evaluated,,,,,,No provider selected
-6,Brown,Yale,False,Saved spread,,-1.5,Brown,7,20,-13,incorrect,no_cover,14.5,Evaluated,,,,,,No provider selected
-6,Wisconsin,Purdue,False,Saved spread,,-6.0,Wisconsin,7,0,7,correct,cover,1.0,Evaluated,,,,,,No provider selected
-6,Washington and Lee,Virginia Tech,False,Saved spread,,11.5,Virginia Tech,20,0,20,incorrect,no_cover,31.5,Evaluated,,,,,,No provider selected
-6,VMI,NC State,False,Saved spread,,-4.0,VMI,27,6,21,correct,cover,17.0,Evaluated,,,,,,No provider selected
-6,Virginia,Maryland,False,Saved spread,,-11.0,Virginia,6,0,6,correct,no_cover,5.0,Evaluated,,,,,,No provider selected
-6,Utah State,BYU,False,Saved spread,,-18.5,Utah State,14,0,14,correct,no_cover,4.5,Evaluated,,,,,,No provider selected
-6,Utah,Colorado,False,Saved spread,,6.0,Colorado,12,7,5,incorrect,no_cover,11.0,Evaluated,,,,,,No provider selected
-6,Pittsburgh,Carnegie Mellon,False,Saved spread,,4.5,Carnegie Mellon,12,0,12,incorrect,no_cover,16.5,Evaluated,,,,,,No provider selected
-6,Kansas State,Missouri,False,Saved spread,,5.0,Missouri,0,3,-3,correct,no_cover,2.0,Evaluated,,,,,,No provider selected
-6,Mississippi State,Ole Miss,False,Saved spread,,-3.0,Mississippi State,6,0,6,correct,cover,3.0,Evaluated,,,,,,No provider selected
-6,LSU,Tennessee,False,Saved spread,,-2.5,LSU,0,0,0,tie,no_cover,2.5,Evaluated,,,,,,No provider selected
-6,Kentucky,Sewanee,False,Saved spread,,6.0,Sewanee,14,0,14,incorrect,no_cover,20.0,Evaluated,,,,,,No provider selected
-6,Iowa State,Washington University (St. Louis),False,Saved spread,,-21.5,Iowa State,28,13,15,correct,no_cover,6.5,Evaluated,,,,,,No provider selected
-6,Georgia,Vanderbilt,False,Saved spread,,9.5,Vanderbilt,26,7,19,incorrect,no_cover,28.5,Evaluated,,,,,,No provider selected
-6,Grinnell,Drake,False,Saved spread,,6.0,Drake,6,7,-1,correct,no_cover,5.0,Evaluated,,,,,,No provider selected
-6,Harvard,Dartmouth,False,Saved spread,,4.5,Dartmouth,9,32,-23,correct,cover,18.5,Evaluated,,,,,,No provider selected
-6,Colorado College,Colorado State,False,Saved spread,,6.0,Colorado State,3,7,-4,correct,no_cover,2.0,Evaluated,,,,,,No provider selected
-6,Princeton,Colgate,False,Saved spread,,-4.0,Princeton,0,9,-9,incorrect,no_cover,13.0,Evaluated,,,,,,No provider selected
-6,Georgia Tech,Alabama,False,Saved spread,,-4.5,Georgia Tech,0,7,-7,incorrect,no_cover,11.5,Evaluated,,,,,,No provider selected
-6,Northwestern,Tulane,False,Saved spread,,8.0,Tulane,7,18,-11,correct,cover,3.0,Evaluated,,,,,,No provider selected
-6,Pennsylvania,Chicago,False,Saved spread,,0.5,Chicago,7,0,7,incorrect,no_cover,7.5,Evaluated,,,,,,No provider selected
-6,Oklahoma State,TCU,False,Saved spread,,23.5,TCU,22,7,15,incorrect,no_cover,38.5,Evaluated,,,,,,No provider selected
-6,SMU,Oklahoma,False,Saved spread,,-11.5,SMU,0,9,-9,incorrect,no_cover,20.5,Evaluated,,,,,,No provider selected
-6,Idaho,Gonzaga,False,Saved spread,,-8.5,Idaho,3,12,-9,incorrect,no_cover,17.5,Evaluated,,,,,,No provider selected
-6,Florida,Wake Forest,False,Saved spread,,5.5,Wake Forest,24,3,21,incorrect,no_cover,26.5,Evaluated,,,,,,No provider selected
-6,Minnesota,Notre Dame,False,Saved spread,,-6.0,Minnesota,7,19,-12,incorrect,no_cover,18.0,Evaluated,,,,,,No provider selected
-6,Mercer,North Carolina,False,Saved spread,,16.0,North Carolina,0,3,-3,correct,no_cover,13.0,Evaluated,,,,,,No provider selected
-6,Western Colorado,Northern Colorado,False,Saved spread,,-1.5,Western Colorado,18,7,11,correct,cover,9.5,Evaluated,,,,,,No provider selected
-6,Texas,Rice,False,Saved spread,,-6.0,Texas,27,6,21,correct,cover,15.0,Evaluated,,,,,,No provider selected
-6,Stanford,Oregon State,False,Saved spread,,5.0,Oregon State,26,10,16,incorrect,no_cover,21.0,Evaluated,,,,,,No provider selected
-7,South Carolina,The Citadel,False,Saved spread,,-4.5,South Carolina,30,6,24,correct,cover,19.5,Evaluated,,,,,,No provider selected
-7,Wofford,Clemson,False,Saved spread,,-14.5,Wofford,13,0,13,correct,no_cover,1.5,Evaluated,,,,,,No provider selected
-7,Idaho,USC,False,Saved spread,,0.5,USC,7,51,-44,correct,cover,43.5,Evaluated,,,,,,No provider selected
-7,Montana State,Wyoming,False,Saved spread,,2.5,Wyoming,0,7,-7,correct,cover,4.5,Evaluated,,,,,,No provider selected
-7,Texas,SMU,False,Saved spread,,-8.0,Texas,0,0,0,tie,no_cover,8.0,Evaluated,,,,,,No provider selected
-7,Stanford,Oregon,False,Saved spread,,-15.0,Stanford,35,13,22,correct,cover,7.0,Evaluated,,,,,,No provider selected
-7,Oregon State,Montana,False,Saved spread,,-13.5,Oregon State,27,7,20,correct,cover,6.5,Evaluated,,,,,,No provider selected
-7,Missouri,Iowa State,False,Saved spread,,-9.5,Missouri,23,8,15,correct,cover,5.5,Evaluated,,,,,,No provider selected
-7,Duke,Richmond,False,Saved spread,,1.5,Richmond,10,0,10,incorrect,no_cover,11.5,Evaluated,,,,,,No provider selected
-7,Brown,Dartmouth,False,Saved spread,,5.5,Dartmouth,0,14,-14,correct,cover,8.5,Evaluated,,,,,,No provider selected
-7,Columbia,Cornell,False,Saved spread,,1.0,Cornell,14,17,-3,correct,cover,2.0,Evaluated,,,,,,No provider selected
-7,Yale,Army,False,Saved spread,,1.0,Army,28,7,21,incorrect,no_cover,22.0,Evaluated,,,,,,No provider selected
-7,Wisconsin,Minnesota,False,Saved spread,,-3.0,Wisconsin,12,12,0,tie,no_cover,3.0,Evaluated,,,,,,No provider selected
-7,Vanderbilt,Ole Miss,False,Saved spread,,-13.0,Vanderbilt,7,0,7,correct,no_cover,6.0,Evaluated,,,,,,No provider selected
-7,BYU,Utah,False,Saved spread,,5.0,Utah,0,27,-27,correct,cover,22.0,Evaluated,,,,,,No provider selected
-7,Baylor,Texas A&M,False,Saved spread,,13.0,Texas A&M,0,13,-13,correct,push,0.0,Evaluated,,,,,,No provider selected
-7,Tennessee,Georgia,False,Saved spread,,-2.5,Tennessee,12,7,5,correct,cover,2.5,Evaluated,,,,,,No provider selected
-7,Syracuse,Penn State,False,Saved spread,,-7.0,Syracuse,7,0,7,correct,push,0.0,Evaluated,,,,,,No provider selected
-7,Northwestern,Indiana,False,Saved spread,,-5.5,Northwestern,17,14,3,correct,no_cover,2.5,Evaluated,,,,,,No provider selected
-7,Maryland,North Carolina,False,Saved spread,,6.5,North Carolina,0,16,-16,correct,cover,9.5,Evaluated,,,,,,No provider selected
-7,Nebraska,Oklahoma,False,Saved spread,,-3.5,Nebraska,12,0,12,correct,cover,8.5,Evaluated,,,,,,No provider selected
-7,Harvard,William & Mary,False,Saved spread,,2.0,William & Mary,14,7,7,incorrect,no_cover,9.0,Evaluated,,,,,,No provider selected
-7,Oklahoma State,Grinnell,False,Saved spread,,-1.0,Oklahoma State,0,28,-28,incorrect,no_cover,29.0,Evaluated,,,,,,No provider selected
-7,Furman,Presbyterian,False,Saved spread,,-9.5,Furman,27,3,24,correct,cover,14.5,Evaluated,,,,,,No provider selected
-7,Kansas,Drake,False,Saved spread,,12.5,Drake,0,7,-7,correct,no_cover,5.5,Evaluated,,,,,,No provider selected
-7,Utah State,Colorado State,False,Saved spread,,-2.5,Utah State,0,13,-13,incorrect,no_cover,15.5,Evaluated,,,,,,No provider selected
-7,Denver,Colorado College,False,Saved spread,,6.0,Colorado College,7,38,-31,correct,cover,25.0,Evaluated,,,,,,No provider selected
-7,Colorado School Of Mines,Colorado,False,Saved spread,,1.0,Colorado,3,14,-11,correct,cover,10.0,Evaluated,,,,,,No provider selected
-7,Mercer,The Citadel,False,Saved spread,,13.5,The Citadel,0,31,-31,correct,cover,17.5,Evaluated,,,,,,No provider selected
-7,Chicago,Purdue,False,Saved spread,,-8.0,Chicago,6,0,6,correct,no_cover,2.0,Evaluated,,,,,,No provider selected
-7,Alabama,Mississippi State,False,Saved spread,,-12.0,Alabama,6,0,6,correct,no_cover,6.0,Evaluated,,,,,,No provider selected
-7,West Virginia,Washington and Lee,False,Saved spread,,-11.0,West Virginia,21,0,21,correct,cover,10.0,Evaluated,,,,,,No provider selected
-7,Arkansas,LSU,False,Saved spread,,10.5,LSU,12,0,12,incorrect,no_cover,22.5,Evaluated,,,,,,No provider selected
-7,Michigan,Navy,False,Saved spread,,-3.5,Michigan,54,0,54,correct,cover,50.5,Evaluated,,,,,,No provider selected
-7,Centre College Kentucky,Kentucky,False,Saved spread,,2.0,Kentucky,0,16,-16,correct,cover,14.0,Evaluated,,,,,,No provider selected
-7,Pennsylvania,Illinois,False,Saved spread,,-23.0,Pennsylvania,2,24,-22,incorrect,no_cover,45.0,Evaluated,,,,,,No provider selected
-7,Davidson,NC State,False,Saved spread,,-14.0,Davidson,9,0,9,correct,no_cover,5.0,Evaluated,,,,,,No provider selected
-7,Georgia Tech,Notre Dame,False,Saved spread,,-4.0,Georgia Tech,0,13,-13,incorrect,no_cover,17.0,Evaluated,,,,,,No provider selected
-7,Washington State,Washington,False,Saved spread,,8.5,Washington,0,23,-23,correct,cover,14.5,Evaluated,,,,,,No provider selected
-7,Virginia Tech,South Carolina,False,Saved spread,,5.5,South Carolina,6,0,6,incorrect,no_cover,11.5,Evaluated,,,,,,No provider selected
-7,Auburn,Tulane,False,Saved spread,,6.0,Tulane,0,13,-13,correct,cover,7.0,Evaluated,,,,,,No provider selected
-7,Michigan State,Colgate,False,Saved spread,,14.0,Colgate,0,14,-14,correct,push,0.0,Evaluated,,,,,,No provider selected
-8,Utah State,Wyoming,False,Saved spread,,5.0,Wyoming,26,13,13,incorrect,no_cover,18.0,Evaluated,,,,,,No provider selected
-8,Duke,Wake Forest,False,Saved spread,,10.5,Wake Forest,3,21,-18,correct,cover,7.5,Evaluated,,,,,,No provider selected
-8,Utah,Denver,False,Saved spread,,-17.0,Utah,27,0,27,correct,cover,10.0,Evaluated,,,,,,No provider selected
-8,TCU,Texas A&M,False,Saved spread,,4.0,Texas A&M,3,0,3,incorrect,no_cover,7.0,Evaluated,,,,,,No provider selected
-8,Sewanee,Ole Miss,False,Saved spread,,-9.5,Sewanee,10,9,1,correct,no_cover,8.5,Evaluated,,,,,,No provider selected
-8,Pittsburgh,Washington & Jefferson,False,Saved spread,,0.5,Washington & Jefferson,6,0,6,incorrect,no_cover,6.5,Evaluated,,,,,,No provider selected
-8,Ohio State,Indiana,False,Saved spread,,-12.5,Ohio State,7,0,7,correct,no_cover,5.5,Evaluated,,,,,,No provider selected
-8,Notre Dame,Penn State,False,Saved spread,,-7.0,Notre Dame,0,0,0,tie,no_cover,7.0,Evaluated,,,,,,No provider selected
-8,NC State,Virginia Tech,False,Saved spread,,5.5,Virginia Tech,0,0,0,tie,no_cover,5.5,Evaluated,,,,,,No provider selected
-8,Colorado School Of Mines,Montana State,False,Saved spread,,8.0,Montana State,0,25,-25,correct,cover,17.0,Evaluated,,,,,,No provider selected
-8,Idaho,Montana,False,Saved spread,,-7.5,Idaho,14,20,-6,incorrect,no_cover,13.5,Evaluated,,,,,,No provider selected
-8,Washington University (St. Louis),Missouri,False,Saved spread,,26.0,Missouri,0,14,-14,correct,no_cover,12.0,Evaluated,,,,,,No provider selected
-8,Mercer,Furman,False,Saved spread,,18.0,Furman,17,0,17,incorrect,no_cover,35.0,Evaluated,,,,,,No provider selected
-8,Vanderbilt,Georgia Tech,False,Saved spread,,-4.0,Vanderbilt,0,7,-7,incorrect,no_cover,11.0,Evaluated,,,,,,No provider selected
-8,Georgia,Auburn,False,Saved spread,,-1.0,Georgia,34,0,34,correct,cover,33.0,Evaluated,,,,,,No provider selected
-8,Clemson,Florida,False,Saved spread,,21.5,Florida,0,42,-42,correct,cover,20.5,Evaluated,,,,,,No provider selected
-8,Drake,Nebraska,False,Saved spread,,-2.0,Drake,14,0,14,correct,cover,12.0,Evaluated,,,,,,No provider selected
-8,Dartmouth,Cornell,False,Saved spread,,-2.5,Dartmouth,62,13,49,correct,cover,46.5,Evaluated,,,,,,No provider selected
-8,Colorado State,Northern Colorado,False,Saved spread,,-17.0,Colorado State,43,18,25,correct,cover,8.0,Evaluated,,,,,,No provider selected
-8,Colorado,Colorado College,False,Saved spread,,-2.0,Colorado,23,6,17,correct,cover,15.0,Evaluated,,,,,,No provider selected
-8,California,Washington State,False,Saved spread,,-14.0,California,35,0,35,correct,cover,21.0,Evaluated,,,,,,No provider selected
-8,BYU,Western Colorado,False,Saved spread,,6.5,Western Colorado,39,6,33,incorrect,no_cover,39.5,Evaluated,,,,,,No provider selected
-8,Alabama,Kentucky,False,Saved spread,,-12.0,Alabama,31,0,31,correct,cover,19.0,Evaluated,,,,,,No provider selected
-8,Iowa,Wisconsin,False,Saved spread,,-6.0,Iowa,0,6,-6,incorrect,no_cover,12.0,Evaluated,,,,,,No provider selected
-8,Washington and Lee,Virginia,False,Saved spread,,17.0,Virginia,12,0,12,incorrect,no_cover,29.0,Evaluated,,,,,,No provider selected
-8,Texas,Baylor,False,Saved spread,,-15.5,Texas,13,3,10,correct,no_cover,5.5,Evaluated,,,,,,No provider selected
-8,Princeton,Harvard,False,Saved spread,,-6.0,Princeton,36,0,36,correct,cover,30.0,Evaluated,,,,,,No provider selected
-8,Presbyterian,Wofford,False,Saved spread,,1.0,Wofford,9,6,3,incorrect,no_cover,4.0,Evaluated,,,,,,No provider selected
-8,Oglethorpe,The Citadel,False,Saved spread,,-0.5,Oglethorpe,7,0,7,correct,cover,6.5,Evaluated,,,,,,No provider selected
-8,Northwestern,Michigan,False,Saved spread,,10.5,Michigan,3,2,1,incorrect,no_cover,11.5,Evaluated,,,,,,No provider selected
-8,VMI,North Carolina,False,Saved spread,,2.0,North Carolina,11,23,-12,correct,cover,10.0,Evaluated,,,,,,No provider selected
-8,Kansas,Oklahoma,False,Saved spread,,6.5,Oklahoma,0,0,0,tie,no_cover,6.5,Evaluated,,,,,,No provider selected
-8,Illinois,Chicago,False,Saved spread,,7.5,Chicago,13,6,7,incorrect,no_cover,14.5,Evaluated,,,,,,No provider selected
-8,Hampden-Sydney,Davidson,False,Saved spread,,13.0,Davidson,6,6,0,tie,no_cover,13.0,Evaluated,,,,,,No provider selected
-8,Grinnell,Iowa State,False,Saved spread,,1.5,Iowa State,9,9,0,tie,no_cover,1.5,Evaluated,,,,,,No provider selected
-8,Arkansas,SMU,False,Saved spread,,3.5,SMU,0,0,0,tie,no_cover,3.5,Evaluated,,,,,,No provider selected
-8,Washington,Stanford,False,Saved spread,,-6.0,Washington,13,0,13,correct,cover,7.0,Evaluated,,,,,,No provider selected
-8,Yale,Maryland,False,Saved spread,,-14.0,Yale,43,14,29,correct,cover,15.0,Evaluated,,,,,,No provider selected
-8,Centre College Kentucky,Tennessee,False,Saved spread,,9.0,Tennessee,0,12,-12,correct,cover,3.0,Evaluated,,,,,,No provider selected
-8,LSU,Rice,False,Saved spread,,-1.0,LSU,6,0,6,correct,cover,5.0,Evaluated,,,,,,No provider selected
-9,Wyoming,Northern Colorado,False,Saved spread,,-14.5,Wyoming,13,10,3,correct,no_cover,11.5,Evaluated,,,,,,No provider selected
-9,Presbyterian,Oglethorpe,False,Saved spread,,3.5,Oglethorpe,16,17,-1,correct,no_cover,2.5,Evaluated,,,,,,No provider selected
-9,Virginia,Virginia Tech,False,Saved spread,,-9.0,Virginia,10,0,10,correct,cover,1.0,Evaluated,,,,,,No provider selected
-9,Colorado College,Utah,False,Saved spread,,5.0,Utah,0,20,-20,correct,cover,15.0,Evaluated,,,,,,No provider selected
-9,Tulane,Sewanee,False,Saved spread,,-11.0,Tulane,14,0,14,correct,cover,3.0,Evaluated,,,,,,No provider selected
-9,TCU,Arkansas,False,Saved spread,,-11.0,TCU,3,0,3,correct,no_cover,8.0,Evaluated,,,,,,No provider selected
-9,Tennessee,Mississippi State,False,Saved spread,,-6.5,Tennessee,14,9,5,correct,no_cover,1.5,Evaluated,,,,,,No provider selected
-9,SMU,Baylor,False,Saved spread,,-11.5,SMU,7,6,1,correct,no_cover,10.5,Evaluated,,,,,,No provider selected
-9,USC,Montana,False,Saved spread,,-13.5,USC,27,7,20,correct,cover,6.5,Evaluated,,,,,,No provider selected
-9,Notre Dame,Carnegie Mellon,False,Saved spread,,-5.0,Notre Dame,26,0,26,correct,cover,21.0,Evaluated,,,,,,No provider selected
-9,Michigan,Ohio State,False,Saved spread,,-5.5,Michigan,10,0,10,correct,cover,4.5,Evaluated,,,,,,No provider selected
-9,Harvard,Brown,False,Saved spread,,0.0,Unknown (zero line),3,0,3,ungraded,ungraded,3.0,Evaluated,,,,,,No provider selected
-9,Grinnell,Kansas,False,Saved spread,,-11.0,Grinnell,3,0,3,correct,no_cover,8.0,Evaluated,,,,,,No provider selected
-9,Georgia Tech,Georgia,False,Saved spread,,-5.5,Georgia Tech,3,0,3,correct,no_cover,2.5,Evaluated,,,,,,No provider selected
-9,Columbia,Army,False,Saved spread,,1.0,Army,21,7,14,incorrect,no_cover,15.0,Evaluated,,,,,,No provider selected
-9,Colorado State,Colorado,False,Saved spread,,-10.0,Colorado State,12,0,12,correct,cover,2.0,Evaluated,,,,,,No provider selected
-9,Syracuse,Colgate,False,Saved spread,,-2.5,Syracuse,6,19,-13,incorrect,no_cover,15.5,Evaluated,,,,,,No provider selected
-9,Auburn,Vanderbilt,False,Saved spread,,4.5,Vanderbilt,10,9,1,incorrect,no_cover,5.5,Evaluated,,,,,,No provider selected
-9,California,Washington,False,Saved spread,,3.0,Washington,0,7,-7,correct,cover,4.0,Evaluated,,,,,,No provider selected
-9,Utah State,Montana State,False,Saved spread,,-3.0,Utah State,10,7,3,correct,push,0.0,Evaluated,,,,,,No provider selected
-9,Rice,Texas A&M,False,Saved spread,,5.5,Texas A&M,0,17,-17,correct,cover,11.5,Evaluated,,,,,,No provider selected
-9,Richmond,Hampden-Sydney,False,Saved spread,,-0.5,Richmond,12,0,12,correct,cover,11.5,Evaluated,,,,,,No provider selected
-9,Yale,Princeton,False,Saved spread,,-4.0,Yale,12,25,-13,incorrect,no_cover,17.0,Evaluated,,,,,,No provider selected
-9,Oregon,Oregon State,False,Saved spread,,15.0,Oregon State,13,24,-11,correct,no_cover,4.0,Evaluated,,,,,,No provider selected
-9,Purdue,Northwestern,False,Saved spread,,1.5,Northwestern,9,13,-4,correct,cover,2.5,Evaluated,,,,,,No provider selected
-9,Nebraska,Kansas State,False,Saved spread,,-2.0,Nebraska,0,0,0,tie,no_cover,2.0,Evaluated,,,,,,No provider selected
-9,Missouri,Oklahoma,False,Saved spread,,-16.5,Missouri,16,14,2,correct,no_cover,14.5,Evaluated,,,,,,No provider selected
-9,Minnesota,Iowa,False,Saved spread,,-0.5,Minnesota,33,0,33,correct,cover,32.5,Evaluated,,,,,,No provider selected
-9,Kentucky,VMI,False,Saved spread,,1.5,VMI,7,0,7,incorrect,no_cover,8.5,Evaluated,,,,,,No provider selected
-9,Alabama,Florida,False,Saved spread,,-6.5,Alabama,34,0,34,correct,cover,27.5,Evaluated,,,,,,No provider selected
-9,Wisconsin,Michigan State,False,Saved spread,,-13.0,Wisconsin,21,10,11,correct,no_cover,2.0,Evaluated,,,,,,No provider selected
-9,Pennsylvania,Pittsburgh,False,Saved spread,,-2.0,Pennsylvania,0,14,-14,incorrect,no_cover,16.0,Evaluated,,,,,,No provider selected
-9,NC State,Wake Forest,False,Saved spread,,11.5,Wake Forest,6,0,6,incorrect,no_cover,17.5,Evaluated,,,,,,No provider selected
-9,North Carolina,Davidson,False,Saved spread,,-3.5,North Carolina,13,0,13,correct,cover,9.5,Evaluated,,,,,,No provider selected
-9,Furman,South Carolina,False,Saved spread,,-1.5,Furman,2,0,2,correct,cover,0.5,Evaluated,,,,,,No provider selected
-9,Chicago,Dartmouth,False,Saved spread,,7.0,Dartmouth,7,33,-26,correct,cover,19.0,Evaluated,,,,,,No provider selected
-9,West Virginia,Penn State,False,Saved spread,,-5.5,West Virginia,14,0,14,correct,cover,8.5,Evaluated,,,,,,No provider selected
-9,The Citadel,Clemson,False,Saved spread,,-19.5,The Citadel,0,6,-6,incorrect,no_cover,25.5,Evaluated,,,,,,No provider selected
-9,Maryland,Washington and Lee,False,Saved spread,,1.5,Washington and Lee,3,7,-4,correct,cover,2.5,Evaluated,,,,,,No provider selected
-10,Wyoming,Utah,False,Saved spread,,-2.5,Wyoming,6,7,-1,incorrect,no_cover,3.5,Evaluated,,,,,,No provider selected
-10,Wake Forest,Furman,False,Saved spread,,-0.5,Wake Forest,9,0,9,correct,cover,8.5,Evaluated,,,,,,No provider selected
-10,South Carolina,Presbyterian,False,Saved spread,,-9.0,South Carolina,21,0,21,correct,cover,12.0,Evaluated,,,,,,No provider selected
-10,LSU,Tulane,False,Saved spread,,6.5,Tulane,0,16,-16,correct,cover,9.5,Evaluated,,,,,,No provider selected
-10,Stanford,California,False,Saved spread,,-3.0,Stanford,27,14,13,correct,cover,10.0,Evaluated,,,,,,No provider selected
-10,Oglethorpe,Mercer,False,Saved spread,,-14.5,Oglethorpe,6,21,-15,incorrect,no_cover,29.5,Evaluated,,,,,,No provider selected
-10,Drake,Iowa State,False,Saved spread,,-8.0,Drake,6,7,-1,incorrect,no_cover,9.0,Evaluated,,,,,,No provider selected
-10,Ohio State,Illinois,False,Saved spread,,-4.0,Ohio State,9,14,-5,incorrect,no_cover,9.0,Evaluated,,,,,,No provider selected
-10,Florida,Mississippi State,False,Saved spread,,-8.0,Florida,12,0,12,correct,cover,4.0,Evaluated,,,,,,No provider selected
-10,Colorado,Western Colorado,False,Saved spread,,-8.5,Colorado,34,0,34,correct,cover,25.5,Evaluated,,,,,,No provider selected
-10,Chicago,Wisconsin,False,Saved spread,,8.0,Wisconsin,7,20,-13,correct,cover,5.0,Evaluated,,,,,,No provider selected
-10,Purdue,Indiana,False,Saved spread,,-4.5,Purdue,0,0,0,tie,no_cover,4.5,Evaluated,,,,,,No provider selected
-10,Idaho,Oregon State,False,Saved spread,,9.5,Oregon State,7,16,-9,correct,no_cover,0.5,Evaluated,,,,,,No provider selected
-10,Oklahoma,Washington University (St. Louis),False,Saved spread,,-8.0,Oklahoma,28,0,28,correct,cover,20.0,Evaluated,,,,,,No provider selected
-10,Michigan,Minnesota,False,Saved spread,,-4.5,Michigan,35,0,35,correct,cover,30.5,Evaluated,,,,,,No provider selected
-10,Kansas,Missouri,False,Saved spread,,20.5,Missouri,10,7,3,incorrect,no_cover,23.5,Evaluated,,,,,,No provider selected
-10,Wofford,Duke,False,Saved spread,,-5.0,Wofford,0,6,-6,incorrect,no_cover,11.0,Evaluated,,,,,,No provider selected
-10,Colorado School Of Mines,Colorado State,False,Saved spread,,18.5,Colorado State,10,41,-31,correct,cover,12.5,Evaluated,,,,,,No provider selected
-10,Northern Colorado,Colorado College,False,Saved spread,,0.5,Colorado College,6,10,-4,correct,cover,3.5,Evaluated,,,,,,No provider selected
-10,BYU,Montana State,False,Saved spread,,6.5,Montana State,16,7,9,incorrect,no_cover,15.5,Evaluated,,,,,,No provider selected
-10,Washington State,Gonzaga,False,Saved spread,,11.0,Gonzaga,0,0,0,tie,no_cover,11.0,Evaluated,,,,,,No provider selected
-10,USC,Iowa,False,Saved spread,,-5.5,USC,18,0,18,correct,cover,12.5,Evaluated,,,,,,No provider selected
-10,Notre Dame,Northwestern,False,Saved spread,,-7.0,Notre Dame,13,10,3,correct,no_cover,4.0,Evaluated,,,,,,No provider selected
-10,Yale,Harvard,False,Saved spread,,-7.5,Yale,0,0,0,tie,no_cover,7.5,Evaluated,,,,,,No provider selected
-10,Arkansas,Oklahoma State,False,Saved spread,,-3.5,Arkansas,9,7,2,correct,no_cover,1.5,Evaluated,,,,,,No provider selected
-10,Washington and Lee,NC State,False,Saved spread,,-4.5,Washington and Lee,12,0,12,correct,cover,7.5,Evaluated,,,,,,No provider selected
-10,Vanderbilt,Sewanee,False,Saved spread,,-4.0,Vanderbilt,19,7,12,correct,cover,8.0,Evaluated,,,,,,No provider selected
-11,Richmond,William & Mary,False,Saved spread,,5.5,William & Mary,0,14,-14,correct,cover,8.5,Evaluated,,,,,,No provider selected
-11,Denver,Colorado,False,Saved spread,,12.0,Colorado,0,41,-41,correct,cover,29.0,Evaluated,,,,,,No provider selected
-11,Pittsburgh,Penn State,False,Saved spread,,-10.0,Pittsburgh,23,7,16,correct,cover,6.0,Evaluated,,,,,,No provider selected
-11,Kentucky,Tennessee,False,Saved spread,,4.5,Tennessee,23,20,3,incorrect,no_cover,7.5,Evaluated,,,,,,No provider selected
-11,Iowa State,Kansas State,False,Saved spread,,-2.5,Iowa State,7,12,-5,incorrect,no_cover,7.5,Evaluated,,,,,,No provider selected
-11,Auburn,Georgia Tech,False,Saved spread,,5.0,Georgia Tech,7,7,0,tie,no_cover,5.0,Evaluated,,,,,,No provider selected
-11,Alabama,Georgia,False,Saved spread,,-13.5,Alabama,27,0,27,correct,cover,13.5,Evaluated,,,,,,No provider selected
-11,SMU,Drake,False,Saved spread,,-1.0,SMU,21,6,15,correct,cover,14.0,Evaluated,,,,,,No provider selected
-11,Pennsylvania,Cornell,False,Saved spread,,-0.5,Pennsylvania,7,0,7,correct,cover,6.5,Evaluated,,,,,,No provider selected
-11,Nebraska,Notre Dame,False,Saved spread,,5.0,Notre Dame,17,0,17,incorrect,no_cover,22.0,Evaluated,,,,,,No provider selected
-11,Furman,Clemson,False,Saved spread,,-17.5,Furman,26,0,26,correct,cover,8.5,Evaluated,,,,,,No provider selected
-11,Virginia Tech,VMI,False,Saved spread,,0.0,Unknown (zero line),7,0,7,ungraded,ungraded,7.0,Evaluated,,,,,,No provider selected
-11,Virginia,North Carolina,False,Saved spread,,-1.5,Virginia,3,3,0,tie,no_cover,1.5,Evaluated,,,,,,No provider selected
-11,Utah,Utah State,False,Saved spread,,-2.5,Utah,6,10,-4,incorrect,no_cover,6.5,Evaluated,,,,,,No provider selected
-11,Texas A&M,Texas,False,Saved spread,,-1.5,Texas A&M,28,0,28,correct,cover,26.5,Evaluated,,,,,,No provider selected
-11,Oklahoma,Oklahoma State,False,Saved spread,,-8.5,Oklahoma,35,0,35,correct,cover,26.5,Evaluated,,,,,,No provider selected
-11,Florida,Washington and Lee,False,Saved spread,,-7.5,Florida,17,14,3,correct,no_cover,4.5,Evaluated,,,,,,No provider selected
-11,Colorado State,Wyoming,False,Saved spread,,-7.5,Colorado State,40,0,40,correct,cover,32.5,Evaluated,,,,,,No provider selected
-11,West Virginia,Washington & Jefferson,False,Saved spread,,-3.0,West Virginia,19,0,19,correct,cover,16.0,Evaluated,,,,,,No provider selected
-11,Columbia,Syracuse,False,Saved spread,,1.0,Syracuse,5,16,-11,correct,cover,10.0,Evaluated,,,,,,No provider selected
-11,Army,Navy,False,Saved spread,,-0.5,Army,10,3,7,correct,cover,6.5,Evaluated,,,,,,No provider selected
-11,South Carolina,Centre College Kentucky,False,Saved spread,,-12.5,South Carolina,20,0,20,correct,cover,7.5,Evaluated,,,,,,No provider selected
-11,Montana State,Montana,False,Saved spread,,-10.0,Montana State,7,28,-21,incorrect,no_cover,31.0,Evaluated,,,,,,No provider selected
-11,Baylor,Rice,False,Saved spread,,2.0,Rice,7,7,0,tie,no_cover,2.0,Evaluated,,,,,,No provider selected
-11,Grinnell,Washington University (St. Louis),False,Saved spread,,-14.0,Grinnell,0,3,-3,incorrect,no_cover,17.0,Evaluated,,,,,,No provider selected
-11,USC,Washington State,False,Saved spread,,-20.0,USC,12,17,-5,incorrect,no_cover,25.0,Evaluated,,,,,,No provider selected
-11,Washington,Oregon,False,Saved spread,,-23.5,Washington,15,14,1,correct,no_cover,22.5,Evaluated,,,,,,No provider selected
-11,Newberry,Wofford,False,Saved spread,,-6.0,Newberry,26,0,26,correct,cover,20.0,Evaluated,,,,,,No provider selected
-11,Davidson,Duke,False,Saved spread,,-10.5,Davidson,26,0,26,correct,cover,15.5,Evaluated,,,,,,No provider selected
-11,Colgate,Brown,False,Saved spread,,-11.5,Colgate,14,14,0,tie,no_cover,11.5,Evaluated,,,,,,No provider selected
-11,Presbyterian,The Citadel,False,Saved spread,,4.5,The Citadel,0,7,-7,correct,cover,2.5,Evaluated,,,,,,No provider selected
-11,Colorado College,Colorado School Of Mines,False,Saved spread,,-10.0,Colorado College,20,16,4,correct,no_cover,6.0,Evaluated,,,,,,No provider selected
-12,USC,Oregon State,False,Saved spread,,-1.0,USC,28,0,28,correct,cover,27.0,Evaluated,,,,,,No provider selected
+1,VMI,Wofford,False,Reconstructed history,W0,-24.36,VMI,9,0,9,correct,no_cover,15.36,Evaluated,,,,,,No provider selected
+2,NC State,Richmond,False,Reconstructed history,W1,-2.07,NC State,20,0,20,correct,cover,17.93,Evaluated,,,,,,No provider selected
+2,Clemson,Presbyterian,False,Reconstructed history,W1,-5.53,Clemson,0,14,-14,incorrect,no_cover,19.53,Evaluated,,,,,,No provider selected
+2,Pittsburgh,Washington and Lee,False,Reconstructed history,W1,-0.62,Pittsburgh,28,0,28,correct,cover,27.38,Evaluated,,,,,,No provider selected
+2,Furman,Newberry,False,Reconstructed history,W1,5.18,Newberry,27,10,17,incorrect,no_cover,22.18,Evaluated,,,,,,No provider selected
+2,Notre Dame,Baylor,False,Reconstructed history,W1,-3.69,Notre Dame,41,0,41,correct,cover,37.31,Evaluated,,,,,,No provider selected
+2,Georgia Tech,Oglethorpe,False,Reconstructed history,W1,-0.07,Georgia Tech,13,7,6,correct,cover,5.93,Evaluated,,,,,,No provider selected
+2,Mercer,Georgia,False,Reconstructed history,W1,-0.01,Mercer,0,32,-32,incorrect,no_cover,32.01,Evaluated,,,,,,No provider selected
+2,Davidson,Wofford,False,Reconstructed history,W1,-35.36,Davidson,7,0,7,correct,no_cover,28.36,Evaluated,,,,,,No provider selected
+2,Western Colorado,Colorado College,False,Reconstructed history,W1,5.77,Colorado College,0,6,-6,correct,cover,0.23,Evaluated,,,,,,No provider selected
+2,North Carolina,Wake Forest,False,Reconstructed history,W1,5.46,Wake Forest,0,6,-6,correct,cover,0.54,Evaluated,,,,,,No provider selected
+2,Virginia,Hampden-Sydney,False,Reconstructed history,W1,-11.88,Virginia,40,0,40,correct,cover,28.12,Evaluated,,,,,,No provider selected
+3,Virginia Tech,Hampden-Sydney,False,Reconstructed history,W2,-33.41,Virginia Tech,13,3,10,correct,no_cover,23.41,Evaluated,,,,,,No provider selected
+3,Texas,Ole Miss,False,Reconstructed history,W2,-3.86,Texas,25,0,25,correct,cover,21.14,Evaluated,,,,,,No provider selected
+3,Wake Forest,Davidson,False,Reconstructed history,W2,2.26,Davidson,7,7,0,tie,no_cover,2.26,Evaluated,,,,,,No provider selected
+3,Georgia,Virginia,False,Reconstructed history,W2,-5.88,Georgia,6,7,-1,incorrect,no_cover,6.88,Evaluated,,,,,,No provider selected
+3,South Carolina,North Carolina,False,Reconstructed history,W2,-25.71,South Carolina,0,7,-7,incorrect,no_cover,32.71,Evaluated,,,,,,No provider selected
+3,Navy,William & Mary,False,Reconstructed history,W2,24.69,William & Mary,25,0,25,incorrect,no_cover,49.69,Evaluated,,,,,,No provider selected
+3,Kansas State,Oklahoma,False,Reconstructed history,W2,-23.00,Kansas State,16,0,16,correct,no_cover,7.00,Evaluated,,,,,,No provider selected
+3,Georgia Tech,VMI,False,Reconstructed history,W2,2.58,VMI,33,0,33,incorrect,no_cover,35.58,Evaluated,,,,,,No provider selected
+3,Washington University (St. Louis),Drake,False,Reconstructed history,W2,0.10,Drake,0,5,-5,correct,cover,4.90,Evaluated,,,,,,No provider selected
+3,Chicago,Kentucky,False,Reconstructed history,W2,16.17,Kentucky,9,0,9,incorrect,no_cover,25.17,Evaluated,,,,,,No provider selected
+3,Florida,Mercer,False,Reconstructed history,W2,-5.77,Florida,24,0,24,correct,cover,18.23,Evaluated,,,,,,No provider selected
+3,Washington and Lee,Furman,False,Reconstructed history,W2,21.83,Furman,15,20,-5,correct,no_cover,16.83,Evaluated,,,,,,No provider selected
+3,Iowa,Arkansas,False,Reconstructed history,W2,-1.79,Iowa,25,0,25,correct,cover,23.21,Evaluated,,,,,,No provider selected
+3,Michigan,Michigan State,False,Reconstructed history,W2,14.18,Michigan State,39,0,39,incorrect,no_cover,53.18,Evaluated,,,,,,No provider selected
+3,Missouri,Tulane,False,Reconstructed history,W2,19.10,Tulane,6,6,0,tie,no_cover,19.10,Evaluated,,,,,,No provider selected
+3,Illinois,Nebraska,False,Reconstructed history,W2,-2.82,Illinois,0,14,-14,incorrect,no_cover,16.82,Evaluated,,,,,,No provider selected
+3,Duke,NC State,False,Reconstructed history,W2,-1.84,Duke,0,13,-13,incorrect,no_cover,14.84,Evaluated,,,,,,No provider selected
+3,Wisconsin,Iowa State,False,Reconstructed history,W2,19.26,Iowa State,30,0,30,incorrect,no_cover,49.26,Evaluated,,,,,,No provider selected
+3,Colorado School Of Mines,Western Colorado,False,Reconstructed history,W2,-3.78,Colorado School Of Mines,6,15,-9,incorrect,no_cover,12.78,Evaluated,,,,,,No provider selected
+3,Montana,Washington State,False,Reconstructed history,W2,-2.53,Montana,0,9,-9,incorrect,no_cover,11.53,Evaluated,,,,,,No provider selected
+3,Kansas,Oklahoma State,False,Reconstructed history,W2,-1.01,Kansas,13,3,10,correct,cover,8.99,Evaluated,,,,,,No provider selected
+3,Denver,Northern Colorado,False,Reconstructed history,W2,-3.77,Denver,13,0,13,correct,cover,9.23,Evaluated,,,,,,No provider selected
+3,Colorado,Montana State,False,Reconstructed history,W2,24.48,Montana State,23,3,20,incorrect,no_cover,44.48,Evaluated,,,,,,No provider selected
+3,Clemson,Auburn,False,Reconstructed history,W2,20.95,Auburn,6,13,-7,correct,no_cover,13.95,Evaluated,,,,,,No provider selected
+4,SMU,Washington University (St. Louis),False,Reconstructed history,W3,-27.85,SMU,20,6,14,correct,no_cover,13.85,Evaluated,,,,,,No provider selected
+4,Florida,Hampden-Sydney,False,Reconstructed history,W3,-28.09,Florida,22,6,16,correct,no_cover,12.09,Evaluated,,,,,,No provider selected
+4,Furman,The Citadel,False,Reconstructed history,W3,-4.13,Furman,7,0,7,correct,cover,2.87,Evaluated,,,,,,No provider selected
+4,Northern Colorado,Colorado School Of Mines,False,Reconstructed history,W3,-1.64,Northern Colorado,2,6,-4,incorrect,no_cover,5.64,Evaluated,,,,,,No provider selected
+4,Denver,Utah State,False,Reconstructed history,W3,-23.77,Denver,0,13,-13,incorrect,no_cover,36.77,Evaluated,,,,,,No provider selected
+4,Georgia Tech,Penn State,False,Reconstructed history,W3,-7.44,Georgia Tech,16,7,9,correct,cover,1.56,Evaluated,,,,,,No provider selected
+4,Drake,Kansas State,False,Reconstructed history,W3,0.91,Kansas State,19,0,19,incorrect,no_cover,19.91,Evaluated,,,,,,No provider selected
+4,Colorado State,BYU,False,Reconstructed history,W3,-22.68,Colorado State,21,7,14,correct,no_cover,8.68,Evaluated,,,,,,No provider selected
+4,Auburn,Virginia Tech,False,Reconstructed history,W3,-1.93,Auburn,19,0,19,correct,cover,17.07,Evaluated,,,,,,No provider selected
+4,LSU,Alabama,False,Reconstructed history,W3,-1.52,LSU,0,42,-42,incorrect,no_cover,43.52,Evaluated,,,,,,No provider selected
+4,Baylor,TCU,False,Reconstructed history,W3,13.07,TCU,7,7,0,tie,no_cover,13.07,Evaluated,,,,,,No provider selected
+4,Tulane,Ole Miss,False,Reconstructed history,W3,-11.75,Tulane,26,7,19,correct,cover,7.25,Evaluated,,,,,,No provider selected
+4,Syracuse,William & Mary,False,Reconstructed history,W3,-7.33,Syracuse,33,0,33,correct,cover,25.67,Evaluated,,,,,,No provider selected
+4,Pittsburgh,West Virginia,False,Reconstructed history,W3,6.13,West Virginia,15,7,8,incorrect,no_cover,14.13,Evaluated,,,,,,No provider selected
+4,Ohio State,Chicago,False,Reconstructed history,W3,4.36,Chicago,3,3,0,tie,no_cover,4.36,Evaluated,,,,,,No provider selected
+4,Missouri,Nebraska,False,Reconstructed history,W3,20.36,Nebraska,9,6,3,incorrect,no_cover,23.36,Evaluated,,,,,,No provider selected
+4,Michigan,Indiana,False,Reconstructed history,W3,-7.94,Michigan,63,0,63,correct,cover,55.06,Evaluated,,,,,,No provider selected
+4,Kentucky,Clemson,False,Reconstructed history,W3,-16.99,Kentucky,19,6,13,correct,no_cover,3.99,Evaluated,,,,,,No provider selected
+4,Duke,North Carolina,False,Reconstructed history,W3,-5.68,Duke,0,41,-41,incorrect,no_cover,46.68,Evaluated,,,,,,No provider selected
+4,Washington,Montana,False,Reconstructed history,W3,-29.19,Washington,30,10,20,correct,no_cover,9.19,Evaluated,,,,,,No provider selected
+4,Yale,Georgia,False,Reconstructed history,W3,-5.81,Yale,35,7,28,correct,cover,22.19,Evaluated,,,,,,No provider selected
+4,Iowa State,Kansas,False,Reconstructed history,W3,7.66,Kansas,20,0,20,incorrect,no_cover,27.66,Evaluated,,,,,,No provider selected
+4,Oregon,Idaho,False,Reconstructed history,W3,17.00,Idaho,0,6,-6,correct,no_cover,11.00,Evaluated,,,,,,No provider selected
+4,Oregon State,Gonzaga,False,Reconstructed history,W3,1.68,Gonzaga,22,0,22,incorrect,no_cover,23.68,Evaluated,,,,,,No provider selected
+4,Brown,Pennsylvania,False,Reconstructed history,W3,-2.13,Brown,0,9,-9,incorrect,no_cover,11.13,Evaluated,,,,,,No provider selected
+4,Princeton,Washington and Lee,False,Reconstructed history,W3,-24.99,Princeton,15,6,9,correct,no_cover,15.99,Evaluated,,,,,,No provider selected
+4,Sewanee,Texas A&M,False,Reconstructed history,W3,-2.44,Sewanee,6,6,0,tie,no_cover,2.44,Evaluated,,,,,,No provider selected
+4,USC,Utah,False,Reconstructed history,W3,-26.52,USC,28,2,26,correct,no_cover,0.52,Evaluated,,,,,,No provider selected
+4,Vanderbilt,Texas,False,Reconstructed history,W3,0.87,Texas,14,6,8,incorrect,no_cover,8.87,Evaluated,,,,,,No provider selected
+4,Virginia,Richmond,False,Reconstructed history,W3,-21.61,Virginia,19,0,19,correct,no_cover,2.61,Evaluated,,,,,,No provider selected
+4,Western Colorado,Wyoming,False,Reconstructed history,W3,6.95,Wyoming,0,7,-7,correct,cover,0.05,Evaluated,,,,,,No provider selected
+4,Minnesota,Grinnell,False,Reconstructed history,W3,0.44,Grinnell,34,6,28,incorrect,no_cover,28.44,Evaluated,,,,,,No provider selected
+4,Oglethorpe,Centre College Kentucky,False,Reconstructed history,W3,7.76,Centre College Kentucky,20,0,20,incorrect,no_cover,27.76,Evaluated,,,,,,No provider selected
+4,NC State,South Carolina,False,Reconstructed history,W3,-14.54,NC State,6,7,-1,incorrect,no_cover,15.54,Evaluated,,,,,,No provider selected
+5,NC State,North Carolina,False,Reconstructed history,W4,-2.87,NC State,0,17,-17,incorrect,no_cover,19.87,Evaluated,,,,,,No provider selected
+5,Texas A&M,SMU,False,Reconstructed history,W4,-2.64,Texas A&M,7,0,7,correct,cover,4.36,Evaluated,,,,,,No provider selected
+5,South Carolina,Wofford,False,Reconstructed history,W4,-6.05,South Carolina,6,0,6,correct,no_cover,0.05,Evaluated,,,,,,No provider selected
+5,Wisconsin,Michigan,False,Reconstructed history,W4,1.17,Michigan,0,21,-21,correct,cover,19.83,Evaluated,,,,,,No provider selected
+5,Washington,Nebraska,False,Reconstructed history,W4,-12.44,Washington,6,6,0,tie,no_cover,12.44,Evaluated,,,,,,No provider selected
+5,Texas,Auburn,False,Reconstructed history,W4,3.60,Auburn,33,0,33,incorrect,no_cover,36.60,Evaluated,,,,,,No provider selected
+5,Indiana,Syracuse,False,Reconstructed history,W4,12.15,Syracuse,0,14,-14,correct,cover,1.85,Evaluated,,,,,,No provider selected
+5,Yale,Pennsylvania,False,Reconstructed history,W4,-2.67,Yale,13,16,-3,incorrect,no_cover,5.67,Evaluated,,,,,,No provider selected
+5,Ohio State,Columbia,False,Reconstructed history,W4,-3.10,Ohio State,9,0,9,correct,cover,5.90,Evaluated,,,,,,No provider selected
+5,Montana,Gonzaga,False,Reconstructed history,W4,19.10,Gonzaga,14,14,0,tie,no_cover,19.10,Evaluated,,,,,,No provider selected
+5,Georgia,Furman,False,Reconstructed history,W4,13.84,Furman,21,0,21,incorrect,no_cover,34.84,Evaluated,,,,,,No provider selected
+5,Oklahoma State,Washington University (St. Louis),False,Reconstructed history,W4,-1.91,Oklahoma State,0,0,0,tie,no_cover,1.91,Evaluated,,,,,,No provider selected
+5,Rice,Arkansas,False,Reconstructed history,W4,-20.96,Rice,13,9,4,correct,no_cover,16.96,Evaluated,,,,,,No provider selected
+5,Vanderbilt,Tennessee,False,Reconstructed history,W4,-4.71,Vanderbilt,34,7,27,correct,cover,22.29,Evaluated,,,,,,No provider selected
+5,Virginia Tech,Maryland,False,Reconstructed history,W4,4.28,Maryland,3,0,3,incorrect,no_cover,7.28,Evaluated,,,,,,No provider selected
+5,William & Mary,Duke,False,Reconstructed history,W4,-7.30,William & Mary,41,0,41,correct,cover,33.70,Evaluated,,,,,,No provider selected
+5,Wyoming,Colorado School Of Mines,False,Reconstructed history,W4,-17.51,Wyoming,43,0,43,correct,cover,25.49,Evaluated,,,,,,No provider selected
+5,Kentucky,Washington and Lee,False,Reconstructed history,W4,-21.18,Kentucky,0,25,-25,incorrect,no_cover,46.18,Evaluated,,,,,,No provider selected
+5,Virginia,VMI,False,Reconstructed history,W4,-9.51,Virginia,18,10,8,correct,no_cover,1.51,Evaluated,,,,,,No provider selected
+5,Tulane,Mississippi State,False,Reconstructed history,W4,-5.41,Tulane,25,3,22,correct,cover,16.59,Evaluated,,,,,,No provider selected
+5,USC,Stanford,False,Reconstructed history,W4,-11.25,USC,9,13,-4,incorrect,no_cover,15.25,Evaluated,,,,,,No provider selected
+5,Princeton,Navy,False,Reconstructed history,W4,1.25,Navy,10,10,0,tie,no_cover,1.25,Evaluated,,,,,,No provider selected
+5,Michigan State,Centre College Kentucky,False,Reconstructed history,W4,2.44,Centre College Kentucky,15,13,2,incorrect,no_cover,4.44,Evaluated,,,,,,No provider selected
+5,Iowa,Illinois,False,Reconstructed history,W4,-17.19,Iowa,12,10,2,correct,no_cover,15.19,Evaluated,,,,,,No provider selected
+5,Washington State,Idaho,False,Reconstructed history,W4,-3.48,Washington State,6,7,-1,incorrect,no_cover,4.48,Evaluated,,,,,,No provider selected
+5,Georgia Tech,Florida,False,Reconstructed history,W4,-7.29,Georgia Tech,23,7,16,correct,cover,8.71,Evaluated,,,,,,No provider selected
+5,Oklahoma,Drake,False,Reconstructed history,W4,27.41,Drake,7,0,7,incorrect,no_cover,34.41,Evaluated,,,,,,No provider selected
+5,Kansas,Kansas State,False,Reconstructed history,W4,4.15,Kansas State,7,14,-7,correct,cover,2.85,Evaluated,,,,,,No provider selected
+5,Presbyterian,Davidson,False,Reconstructed history,W4,0.17,Davidson,0,13,-13,correct,cover,12.83,Evaluated,,,,,,No provider selected
+5,Denver,Colorado State,False,Reconstructed history,W4,9.18,Colorado State,0,17,-17,correct,cover,7.82,Evaluated,,,,,,No provider selected
+5,Carnegie Mellon,Washington & Jefferson,False,Reconstructed history,W4,-1.34,Carnegie Mellon,0,0,0,tie,no_cover,1.34,Evaluated,,,,,,No provider selected
+5,Alabama,Sewanee,False,Reconstructed history,W4,-2.59,Alabama,27,0,27,correct,cover,24.41,Evaluated,,,,,,No provider selected
+5,The Citadel,Newberry,False,Reconstructed history,W4,-22.55,The Citadel,26,0,26,correct,cover,3.45,Evaluated,,,,,,No provider selected
+5,Chicago,Northwestern,False,Reconstructed history,W4,-7.11,Chicago,6,0,6,correct,no_cover,1.11,Evaluated,,,,,,No provider selected
+5,BYU,Colorado College,False,Reconstructed history,W4,23.95,Colorado College,7,6,1,incorrect,no_cover,24.95,Evaluated,,,,,,No provider selected
+5,Army,Notre Dame,False,Reconstructed history,W4,0.33,Notre Dame,27,0,27,incorrect,no_cover,27.33,Evaluated,,,,,,No provider selected
+6,South Carolina,Clemson,False,Reconstructed history,W5,-24.27,South Carolina,33,0,33,correct,cover,8.73,Evaluated,,,,,,No provider selected
+6,Wofford,Oglethorpe,False,Reconstructed history,W5,-2.60,Wofford,7,13,-6,incorrect,no_cover,8.60,Evaluated,,,,,,No provider selected
+6,VMI,NC State,False,Reconstructed history,W5,-3.77,VMI,27,6,21,correct,cover,17.23,Evaluated,,,,,,No provider selected
+6,Utah State,BYU,False,Reconstructed history,W5,-18.70,Utah State,14,0,14,correct,no_cover,4.70,Evaluated,,,,,,No provider selected
+6,Utah,Colorado,False,Reconstructed history,W5,5.89,Colorado,12,7,5,incorrect,no_cover,10.89,Evaluated,,,,,,No provider selected
+6,Pittsburgh,Carnegie Mellon,False,Reconstructed history,W5,4.38,Carnegie Mellon,12,0,12,incorrect,no_cover,16.38,Evaluated,,,,,,No provider selected
+6,Kansas State,Missouri,False,Reconstructed history,W5,5.11,Missouri,0,3,-3,correct,no_cover,2.11,Evaluated,,,,,,No provider selected
+6,Mississippi State,Ole Miss,False,Reconstructed history,W5,-3.03,Mississippi State,6,0,6,correct,cover,2.97,Evaluated,,,,,,No provider selected
+6,LSU,Tennessee,False,Reconstructed history,W5,-2.38,LSU,0,0,0,tie,no_cover,2.38,Evaluated,,,,,,No provider selected
+6,Kentucky,Sewanee,False,Reconstructed history,W5,5.76,Sewanee,14,0,14,incorrect,no_cover,19.76,Evaluated,,,,,,No provider selected
+6,Iowa State,Washington University (St. Louis),False,Reconstructed history,W5,-21.56,Iowa State,28,13,15,correct,no_cover,6.56,Evaluated,,,,,,No provider selected
+6,Georgia,Vanderbilt,False,Reconstructed history,W5,9.54,Vanderbilt,26,7,19,incorrect,no_cover,28.54,Evaluated,,,,,,No provider selected
+6,Grinnell,Drake,False,Reconstructed history,W5,5.85,Drake,6,7,-1,correct,no_cover,4.85,Evaluated,,,,,,No provider selected
+6,Harvard,Dartmouth,False,Reconstructed history,W5,4.48,Dartmouth,9,32,-23,correct,cover,18.52,Evaluated,,,,,,No provider selected
+6,Colorado College,Colorado State,False,Reconstructed history,W5,6.18,Colorado State,3,7,-4,correct,no_cover,2.18,Evaluated,,,,,,No provider selected
+6,Princeton,Colgate,False,Reconstructed history,W5,-3.98,Princeton,0,9,-9,incorrect,no_cover,12.98,Evaluated,,,,,,No provider selected
+6,Georgia Tech,Alabama,False,Reconstructed history,W5,-4.30,Georgia Tech,0,7,-7,incorrect,no_cover,11.30,Evaluated,,,,,,No provider selected
+6,Oregon,California,False,Reconstructed history,W5,4.46,California,0,28,-28,correct,cover,23.54,Evaluated,,,,,,No provider selected
+6,Denver,Colorado School Of Mines,False,Reconstructed history,W5,-3.30,Denver,7,16,-9,incorrect,no_cover,12.30,Evaluated,,,,,,No provider selected
+6,Furman,Davidson,False,Reconstructed history,W5,5.26,Davidson,7,0,7,incorrect,no_cover,12.26,Evaluated,,,,,,No provider selected
+6,Ohio State,Iowa,False,Reconstructed history,W5,-3.94,Ohio State,0,15,-15,incorrect,no_cover,18.94,Evaluated,,,,,,No provider selected
+6,Illinois,Michigan,False,Reconstructed history,W5,19.62,Michigan,0,3,-3,correct,no_cover,16.62,Evaluated,,,,,,No provider selected
+6,Nebraska,Kansas,False,Reconstructed history,W5,-9.36,Nebraska,14,0,14,correct,cover,4.64,Evaluated,,,,,,No provider selected
+6,Newberry,Presbyterian,False,Reconstructed history,W5,18.74,Presbyterian,26,7,19,incorrect,no_cover,37.74,Evaluated,,,,,,No provider selected
+6,Penn State,Michigan State,False,Reconstructed history,W5,-10.69,Penn State,13,6,7,correct,no_cover,3.69,Evaluated,,,,,,No provider selected
+6,Stanford,Oregon State,False,Reconstructed history,W5,5.25,Oregon State,26,10,16,incorrect,no_cover,21.25,Evaluated,,,,,,No provider selected
+6,Texas,Rice,False,Reconstructed history,W5,-6.10,Texas,27,6,21,correct,cover,14.90,Evaluated,,,,,,No provider selected
+6,Western Colorado,Northern Colorado,False,Reconstructed history,W5,-1.37,Western Colorado,18,7,11,correct,cover,9.63,Evaluated,,,,,,No provider selected
+6,Idaho,Gonzaga,False,Reconstructed history,W5,-8.71,Idaho,3,12,-9,incorrect,no_cover,17.71,Evaluated,,,,,,No provider selected
+6,Mercer,North Carolina,False,Reconstructed history,W5,15.77,North Carolina,0,3,-3,correct,no_cover,12.77,Evaluated,,,,,,No provider selected
+6,Minnesota,Notre Dame,False,Reconstructed history,W5,-6.09,Minnesota,7,19,-12,incorrect,no_cover,18.09,Evaluated,,,,,,No provider selected
+6,Florida,Wake Forest,False,Reconstructed history,W5,5.42,Wake Forest,24,3,21,incorrect,no_cover,26.42,Evaluated,,,,,,No provider selected
+6,SMU,Oklahoma,False,Reconstructed history,W5,-11.51,SMU,0,9,-9,incorrect,no_cover,20.51,Evaluated,,,,,,No provider selected
+6,Oklahoma State,TCU,False,Reconstructed history,W5,23.26,TCU,22,7,15,incorrect,no_cover,38.26,Evaluated,,,,,,No provider selected
+6,Pennsylvania,Chicago,False,Reconstructed history,W5,0.35,Chicago,7,0,7,incorrect,no_cover,7.35,Evaluated,,,,,,No provider selected
+6,Northwestern,Tulane,False,Reconstructed history,W5,8.04,Tulane,7,18,-11,correct,cover,2.96,Evaluated,,,,,,No provider selected
+6,Brown,Yale,False,Reconstructed history,W5,-1.53,Brown,7,20,-13,incorrect,no_cover,14.53,Evaluated,,,,,,No provider selected
+6,Wisconsin,Purdue,False,Reconstructed history,W5,-6.20,Wisconsin,7,0,7,correct,cover,0.80,Evaluated,,,,,,No provider selected
+6,Washington and Lee,Virginia Tech,False,Reconstructed history,W5,11.46,Virginia Tech,20,0,20,incorrect,no_cover,31.46,Evaluated,,,,,,No provider selected
+6,Virginia,Maryland,False,Reconstructed history,W5,-11.20,Virginia,6,0,6,correct,no_cover,5.20,Evaluated,,,,,,No provider selected
+7,South Carolina,The Citadel,False,Reconstructed history,W6,-4.34,South Carolina,30,6,24,correct,cover,19.66,Evaluated,,,,,,No provider selected
+7,Wofford,Clemson,False,Reconstructed history,W6,-14.62,Wofford,13,0,13,correct,no_cover,1.62,Evaluated,,,,,,No provider selected
+7,Idaho,USC,False,Reconstructed history,W6,0.50,USC,7,51,-44,correct,cover,43.50,Evaluated,,,,,,No provider selected
+7,Montana State,Wyoming,False,Reconstructed history,W6,2.28,Wyoming,0,7,-7,correct,cover,4.72,Evaluated,,,,,,No provider selected
+7,Michigan,Navy,False,Reconstructed history,W6,-3.55,Michigan,54,0,54,correct,cover,50.45,Evaluated,,,,,,No provider selected
+7,Texas,SMU,False,Reconstructed history,W6,-7.91,Texas,0,0,0,tie,no_cover,7.91,Evaluated,,,,,,No provider selected
+7,Pennsylvania,Illinois,False,Reconstructed history,W6,-22.80,Pennsylvania,2,24,-22,incorrect,no_cover,44.80,Evaluated,,,,,,No provider selected
+7,Washington State,Washington,False,Reconstructed history,W6,8.47,Washington,0,23,-23,correct,cover,14.53,Evaluated,,,,,,No provider selected
+7,Auburn,Tulane,False,Reconstructed history,W6,5.90,Tulane,0,13,-13,correct,cover,7.10,Evaluated,,,,,,No provider selected
+7,Virginia Tech,South Carolina,False,Reconstructed history,W6,5.66,South Carolina,6,0,6,incorrect,no_cover,11.66,Evaluated,,,,,,No provider selected
+7,Stanford,Oregon,False,Reconstructed history,W6,-15.24,Stanford,35,13,22,correct,cover,6.76,Evaluated,,,,,,No provider selected
+7,Oregon State,Montana,False,Reconstructed history,W6,-13.39,Oregon State,27,7,20,correct,cover,6.61,Evaluated,,,,,,No provider selected
+7,Missouri,Iowa State,False,Reconstructed history,W6,-9.66,Missouri,23,8,15,correct,cover,5.34,Evaluated,,,,,,No provider selected
+7,Duke,Richmond,False,Reconstructed history,W6,1.63,Richmond,10,0,10,incorrect,no_cover,11.63,Evaluated,,,,,,No provider selected
+7,Brown,Dartmouth,False,Reconstructed history,W6,5.64,Dartmouth,0,14,-14,correct,cover,8.36,Evaluated,,,,,,No provider selected
+7,Columbia,Cornell,False,Reconstructed history,W6,0.91,Cornell,14,17,-3,correct,cover,2.09,Evaluated,,,,,,No provider selected
+7,Maryland,North Carolina,False,Reconstructed history,W6,6.50,North Carolina,0,16,-16,correct,cover,9.50,Evaluated,,,,,,No provider selected
+7,Nebraska,Oklahoma,False,Reconstructed history,W6,-3.58,Nebraska,12,0,12,correct,cover,8.42,Evaluated,,,,,,No provider selected
+7,Harvard,William & Mary,False,Reconstructed history,W6,2.15,William & Mary,14,7,7,incorrect,no_cover,9.15,Evaluated,,,,,,No provider selected
+7,Oklahoma State,Grinnell,False,Reconstructed history,W6,-0.91,Oklahoma State,0,28,-28,incorrect,no_cover,28.91,Evaluated,,,,,,No provider selected
+7,Furman,Presbyterian,False,Reconstructed history,W6,-9.44,Furman,27,3,24,correct,cover,14.56,Evaluated,,,,,,No provider selected
+7,Kansas,Drake,False,Reconstructed history,W6,12.57,Drake,0,7,-7,correct,no_cover,5.57,Evaluated,,,,,,No provider selected
+7,Utah State,Colorado State,False,Reconstructed history,W6,-2.55,Utah State,0,13,-13,incorrect,no_cover,15.55,Evaluated,,,,,,No provider selected
+7,Denver,Colorado College,False,Reconstructed history,W6,5.87,Colorado College,7,38,-31,correct,cover,25.13,Evaluated,,,,,,No provider selected
+7,Colorado School Of Mines,Colorado,False,Reconstructed history,W6,1.09,Colorado,3,14,-11,correct,cover,9.91,Evaluated,,,,,,No provider selected
+7,Mercer,The Citadel,False,Reconstructed history,W6,13.49,The Citadel,0,31,-31,correct,cover,17.51,Evaluated,,,,,,No provider selected
+7,Chicago,Purdue,False,Reconstructed history,W6,-7.94,Chicago,6,0,6,correct,no_cover,1.94,Evaluated,,,,,,No provider selected
+7,Alabama,Mississippi State,False,Reconstructed history,W6,-12.11,Alabama,6,0,6,correct,no_cover,6.11,Evaluated,,,,,,No provider selected
+7,Arkansas,LSU,False,Reconstructed history,W6,10.28,LSU,12,0,12,incorrect,no_cover,22.28,Evaluated,,,,,,No provider selected
+7,Centre College Kentucky,Kentucky,False,Reconstructed history,W6,1.79,Kentucky,0,16,-16,correct,cover,14.21,Evaluated,,,,,,No provider selected
+7,Yale,Army,False,Reconstructed history,W6,1.12,Army,28,7,21,incorrect,no_cover,22.12,Evaluated,,,,,,No provider selected
+7,Wisconsin,Minnesota,False,Reconstructed history,W6,-2.93,Wisconsin,12,12,0,tie,no_cover,2.93,Evaluated,,,,,,No provider selected
+7,Vanderbilt,Ole Miss,False,Reconstructed history,W6,-13.15,Vanderbilt,7,0,7,correct,no_cover,6.15,Evaluated,,,,,,No provider selected
+7,BYU,Utah,False,Reconstructed history,W6,5.13,Utah,0,27,-27,correct,cover,21.87,Evaluated,,,,,,No provider selected
+7,Baylor,Texas A&M,False,Reconstructed history,W6,12.94,Texas A&M,0,13,-13,correct,cover,0.06,Evaluated,,,,,,No provider selected
+7,Tennessee,Georgia,False,Reconstructed history,W6,-2.26,Tennessee,12,7,5,correct,cover,2.74,Evaluated,,,,,,No provider selected
+7,Syracuse,Penn State,False,Reconstructed history,W6,-6.91,Syracuse,7,0,7,correct,cover,0.09,Evaluated,,,,,,No provider selected
+7,Northwestern,Indiana,False,Reconstructed history,W6,-5.26,Northwestern,17,14,3,correct,no_cover,2.26,Evaluated,,,,,,No provider selected
+7,Davidson,NC State,False,Reconstructed history,W6,-14.04,Davidson,9,0,9,correct,no_cover,5.04,Evaluated,,,,,,No provider selected
+7,Georgia Tech,Notre Dame,False,Reconstructed history,W6,-3.99,Georgia Tech,0,13,-13,incorrect,no_cover,16.99,Evaluated,,,,,,No provider selected
+7,West Virginia,Washington and Lee,False,Reconstructed history,W6,-10.82,West Virginia,21,0,21,correct,cover,10.18,Evaluated,,,,,,No provider selected
+7,Michigan State,Colgate,False,Reconstructed history,W6,13.93,Colgate,0,14,-14,correct,cover,0.07,Evaluated,,,,,,No provider selected
+8,Utah State,Wyoming,False,Reconstructed history,W7,4.79,Wyoming,26,13,13,incorrect,no_cover,17.79,Evaluated,,,,,,No provider selected
+8,Clemson,Florida,False,Reconstructed history,W7,21.48,Florida,0,42,-42,correct,cover,20.52,Evaluated,,,,,,No provider selected
+8,Washington,Stanford,False,Reconstructed history,W7,-6.10,Washington,13,0,13,correct,cover,6.90,Evaluated,,,,,,No provider selected
+8,Duke,Wake Forest,False,Reconstructed history,W7,10.36,Wake Forest,3,21,-18,correct,cover,7.64,Evaluated,,,,,,No provider selected
+8,Utah,Denver,False,Reconstructed history,W7,-17.23,Utah,27,0,27,correct,cover,9.77,Evaluated,,,,,,No provider selected
+8,Iowa,Wisconsin,False,Reconstructed history,W7,-6.16,Iowa,0,6,-6,incorrect,no_cover,12.16,Evaluated,,,,,,No provider selected
+8,Washington and Lee,Virginia,False,Reconstructed history,W7,16.98,Virginia,12,0,12,incorrect,no_cover,28.98,Evaluated,,,,,,No provider selected
+8,Texas,Baylor,False,Reconstructed history,W7,-15.68,Texas,13,3,10,correct,no_cover,5.68,Evaluated,,,,,,No provider selected
+8,Princeton,Harvard,False,Reconstructed history,W7,-5.79,Princeton,36,0,36,correct,cover,30.21,Evaluated,,,,,,No provider selected
+8,Presbyterian,Wofford,False,Reconstructed history,W7,1.09,Wofford,9,6,3,incorrect,no_cover,4.09,Evaluated,,,,,,No provider selected
+8,Oglethorpe,The Citadel,False,Reconstructed history,W7,-0.51,Oglethorpe,7,0,7,correct,cover,6.49,Evaluated,,,,,,No provider selected
+8,Northwestern,Michigan,False,Reconstructed history,W7,10.63,Michigan,3,2,1,incorrect,no_cover,11.63,Evaluated,,,,,,No provider selected
+8,VMI,North Carolina,False,Reconstructed history,W7,1.95,North Carolina,11,23,-12,correct,cover,10.05,Evaluated,,,,,,No provider selected
+8,Kansas,Oklahoma,False,Reconstructed history,W7,6.42,Oklahoma,0,0,0,tie,no_cover,6.42,Evaluated,,,,,,No provider selected
+8,Illinois,Chicago,False,Reconstructed history,W7,7.42,Chicago,13,6,7,incorrect,no_cover,14.42,Evaluated,,,,,,No provider selected
+8,Hampden-Sydney,Davidson,False,Reconstructed history,W7,13.02,Davidson,6,6,0,tie,no_cover,13.02,Evaluated,,,,,,No provider selected
+8,Grinnell,Iowa State,False,Reconstructed history,W7,1.46,Iowa State,9,9,0,tie,no_cover,1.46,Evaluated,,,,,,No provider selected
+8,Arkansas,SMU,False,Reconstructed history,W7,3.72,SMU,0,0,0,tie,no_cover,3.72,Evaluated,,,,,,No provider selected
+8,Yale,Maryland,False,Reconstructed history,W7,-14.02,Yale,43,14,29,correct,cover,14.98,Evaluated,,,,,,No provider selected
+8,Centre College Kentucky,Tennessee,False,Reconstructed history,W7,9.13,Tennessee,0,12,-12,correct,cover,2.87,Evaluated,,,,,,No provider selected
+8,LSU,Rice,False,Reconstructed history,W7,-1.25,LSU,6,0,6,correct,cover,4.75,Evaluated,,,,,,No provider selected
+8,TCU,Texas A&M,False,Reconstructed history,W7,3.99,Texas A&M,3,0,3,incorrect,no_cover,6.99,Evaluated,,,,,,No provider selected
+8,Sewanee,Ole Miss,False,Reconstructed history,W7,-9.62,Sewanee,10,9,1,correct,no_cover,8.62,Evaluated,,,,,,No provider selected
+8,Pittsburgh,Washington & Jefferson,False,Reconstructed history,W7,0.49,Washington & Jefferson,6,0,6,incorrect,no_cover,6.49,Evaluated,,,,,,No provider selected
+8,Ohio State,Indiana,False,Reconstructed history,W7,-12.72,Ohio State,7,0,7,correct,no_cover,5.72,Evaluated,,,,,,No provider selected
+8,Notre Dame,Penn State,False,Reconstructed history,W7,-7.20,Notre Dame,0,0,0,tie,no_cover,7.20,Evaluated,,,,,,No provider selected
+8,NC State,Virginia Tech,False,Reconstructed history,W7,5.34,Virginia Tech,0,0,0,tie,no_cover,5.34,Evaluated,,,,,,No provider selected
+8,Colorado School Of Mines,Montana State,False,Reconstructed history,W7,8.04,Montana State,0,25,-25,correct,cover,16.96,Evaluated,,,,,,No provider selected
+8,Idaho,Montana,False,Reconstructed history,W7,-7.67,Idaho,14,20,-6,incorrect,no_cover,13.67,Evaluated,,,,,,No provider selected
+8,Washington University (St. Louis),Missouri,False,Reconstructed history,W7,26.11,Missouri,0,14,-14,correct,no_cover,12.11,Evaluated,,,,,,No provider selected
+8,Mercer,Furman,False,Reconstructed history,W7,17.77,Furman,17,0,17,incorrect,no_cover,34.77,Evaluated,,,,,,No provider selected
+8,Vanderbilt,Georgia Tech,False,Reconstructed history,W7,-4.21,Vanderbilt,0,7,-7,incorrect,no_cover,11.21,Evaluated,,,,,,No provider selected
+8,Georgia,Auburn,False,Reconstructed history,W7,-0.88,Georgia,34,0,34,correct,cover,33.12,Evaluated,,,,,,No provider selected
+8,Drake,Nebraska,False,Reconstructed history,W7,-1.90,Drake,14,0,14,correct,cover,12.10,Evaluated,,,,,,No provider selected
+8,Dartmouth,Cornell,False,Reconstructed history,W7,-2.51,Dartmouth,62,13,49,correct,cover,46.49,Evaluated,,,,,,No provider selected
+8,Colorado State,Northern Colorado,False,Reconstructed history,W7,-16.99,Colorado State,43,18,25,correct,cover,8.01,Evaluated,,,,,,No provider selected
+8,Colorado,Colorado College,False,Reconstructed history,W7,-1.92,Colorado,23,6,17,correct,cover,15.08,Evaluated,,,,,,No provider selected
+8,California,Washington State,False,Reconstructed history,W7,-13.80,California,35,0,35,correct,cover,21.20,Evaluated,,,,,,No provider selected
+8,BYU,Western Colorado,False,Reconstructed history,W7,6.71,Western Colorado,39,6,33,incorrect,no_cover,39.71,Evaluated,,,,,,No provider selected
+8,Alabama,Kentucky,False,Reconstructed history,W7,-11.82,Alabama,31,0,31,correct,cover,19.18,Evaluated,,,,,,No provider selected
+9,Wyoming,Northern Colorado,False,Reconstructed history,W8,-14.38,Wyoming,13,10,3,correct,no_cover,11.38,Evaluated,,,,,,No provider selected
+9,Presbyterian,Oglethorpe,False,Reconstructed history,W8,3.71,Oglethorpe,16,17,-1,correct,no_cover,2.71,Evaluated,,,,,,No provider selected
+9,Purdue,Northwestern,False,Reconstructed history,W8,1.73,Northwestern,9,13,-4,correct,cover,2.27,Evaluated,,,,,,No provider selected
+9,Oregon,Oregon State,False,Reconstructed history,W8,14.80,Oregon State,13,24,-11,correct,no_cover,3.80,Evaluated,,,,,,No provider selected
+9,Yale,Princeton,False,Reconstructed history,W8,-4.00,Yale,12,25,-13,incorrect,no_cover,17.00,Evaluated,,,,,,No provider selected
+9,Richmond,Hampden-Sydney,False,Reconstructed history,W8,-0.67,Richmond,12,0,12,correct,cover,11.33,Evaluated,,,,,,No provider selected
+9,Rice,Texas A&M,False,Reconstructed history,W8,5.29,Texas A&M,0,17,-17,correct,cover,11.71,Evaluated,,,,,,No provider selected
+9,Utah State,Montana State,False,Reconstructed history,W8,-3.15,Utah State,10,7,3,correct,no_cover,0.15,Evaluated,,,,,,No provider selected
+9,California,Washington,False,Reconstructed history,W8,2.84,Washington,0,7,-7,correct,cover,4.16,Evaluated,,,,,,No provider selected
+9,Wisconsin,Michigan State,False,Reconstructed history,W8,-13.01,Wisconsin,21,10,11,correct,no_cover,2.01,Evaluated,,,,,,No provider selected
+9,The Citadel,Clemson,False,Reconstructed history,W8,-19.27,The Citadel,0,6,-6,incorrect,no_cover,25.27,Evaluated,,,,,,No provider selected
+9,Chicago,Dartmouth,False,Reconstructed history,W8,7.00,Dartmouth,7,33,-26,correct,cover,19.00,Evaluated,,,,,,No provider selected
+9,Harvard,Brown,False,Reconstructed history,W8,0.11,Brown,3,0,3,incorrect,no_cover,3.11,Evaluated,,,,,,No provider selected
+9,Grinnell,Kansas,False,Reconstructed history,W8,-11.00,Grinnell,3,0,3,correct,no_cover,8.00,Evaluated,,,,,,No provider selected
+9,Georgia Tech,Georgia,False,Reconstructed history,W8,-5.53,Georgia Tech,3,0,3,correct,no_cover,2.53,Evaluated,,,,,,No provider selected
+9,Columbia,Army,False,Reconstructed history,W8,1.15,Army,21,7,14,incorrect,no_cover,15.15,Evaluated,,,,,,No provider selected
+9,Colorado State,Colorado,False,Reconstructed history,W8,-10.23,Colorado State,12,0,12,correct,cover,1.77,Evaluated,,,,,,No provider selected
+9,Syracuse,Colgate,False,Reconstructed history,W8,-2.70,Syracuse,6,19,-13,incorrect,no_cover,15.70,Evaluated,,,,,,No provider selected
+9,Auburn,Vanderbilt,False,Reconstructed history,W8,4.71,Vanderbilt,10,9,1,incorrect,no_cover,5.71,Evaluated,,,,,,No provider selected
+9,Furman,South Carolina,False,Reconstructed history,W8,-1.70,Furman,2,0,2,correct,cover,0.30,Evaluated,,,,,,No provider selected
+9,North Carolina,Davidson,False,Reconstructed history,W8,-3.57,North Carolina,13,0,13,correct,cover,9.43,Evaluated,,,,,,No provider selected
+9,NC State,Wake Forest,False,Reconstructed history,W8,11.34,Wake Forest,6,0,6,incorrect,no_cover,17.34,Evaluated,,,,,,No provider selected
+9,Pennsylvania,Pittsburgh,False,Reconstructed history,W8,-2.15,Pennsylvania,0,14,-14,incorrect,no_cover,16.15,Evaluated,,,,,,No provider selected
+9,Kentucky,VMI,False,Reconstructed history,W8,1.40,VMI,7,0,7,incorrect,no_cover,8.40,Evaluated,,,,,,No provider selected
+9,Missouri,Oklahoma,False,Reconstructed history,W8,-16.38,Missouri,16,14,2,correct,no_cover,14.38,Evaluated,,,,,,No provider selected
+9,Nebraska,Kansas State,False,Reconstructed history,W8,-1.86,Nebraska,0,0,0,tie,no_cover,1.86,Evaluated,,,,,,No provider selected
+9,Michigan,Ohio State,False,Reconstructed history,W8,-5.31,Michigan,10,0,10,correct,cover,4.69,Evaluated,,,,,,No provider selected
+9,Alabama,Florida,False,Reconstructed history,W8,-6.34,Alabama,34,0,34,correct,cover,27.66,Evaluated,,,,,,No provider selected
+9,Minnesota,Iowa,False,Reconstructed history,W8,-0.60,Minnesota,33,0,33,correct,cover,32.40,Evaluated,,,,,,No provider selected
+9,West Virginia,Penn State,False,Reconstructed history,W8,-5.56,West Virginia,14,0,14,correct,cover,8.44,Evaluated,,,,,,No provider selected
+9,Maryland,Washington and Lee,False,Reconstructed history,W8,1.42,Washington and Lee,3,7,-4,correct,cover,2.58,Evaluated,,,,,,No provider selected
+9,Virginia,Virginia Tech,False,Reconstructed history,W8,-9.19,Virginia,10,0,10,correct,cover,0.81,Evaluated,,,,,,No provider selected
+9,Colorado College,Utah,False,Reconstructed history,W8,5.18,Utah,0,20,-20,correct,cover,14.82,Evaluated,,,,,,No provider selected
+9,Tulane,Sewanee,False,Reconstructed history,W8,-10.79,Tulane,14,0,14,correct,cover,3.21,Evaluated,,,,,,No provider selected
+9,TCU,Arkansas,False,Reconstructed history,W8,-10.79,TCU,3,0,3,correct,no_cover,7.79,Evaluated,,,,,,No provider selected
+9,Tennessee,Mississippi State,False,Reconstructed history,W8,-6.70,Tennessee,14,9,5,correct,no_cover,1.70,Evaluated,,,,,,No provider selected
+9,SMU,Baylor,False,Reconstructed history,W8,-11.51,SMU,7,6,1,correct,no_cover,10.51,Evaluated,,,,,,No provider selected
+9,USC,Montana,False,Reconstructed history,W8,-13.40,USC,27,7,20,correct,cover,6.60,Evaluated,,,,,,No provider selected
+9,Notre Dame,Carnegie Mellon,False,Reconstructed history,W8,-4.96,Notre Dame,26,0,26,correct,cover,21.04,Evaluated,,,,,,No provider selected
+10,Wyoming,Utah,False,Reconstructed history,W9,-2.54,Wyoming,6,7,-1,incorrect,no_cover,3.54,Evaluated,,,,,,No provider selected
+10,South Carolina,Presbyterian,False,Reconstructed history,W9,-8.75,South Carolina,21,0,21,correct,cover,12.25,Evaluated,,,,,,No provider selected
+10,Wake Forest,Furman,False,Reconstructed history,W9,-0.44,Wake Forest,9,0,9,correct,cover,8.56,Evaluated,,,,,,No provider selected
+10,Drake,Iowa State,False,Reconstructed history,W9,-7.92,Drake,6,7,-1,incorrect,no_cover,8.92,Evaluated,,,,,,No provider selected
+10,Arkansas,Oklahoma State,False,Reconstructed history,W9,-3.56,Arkansas,9,7,2,correct,no_cover,1.56,Evaluated,,,,,,No provider selected
+10,Notre Dame,Northwestern,False,Reconstructed history,W9,-7.08,Notre Dame,13,10,3,correct,no_cover,4.08,Evaluated,,,,,,No provider selected
+10,USC,Iowa,False,Reconstructed history,W9,-5.45,USC,18,0,18,correct,cover,12.55,Evaluated,,,,,,No provider selected
+10,Washington State,Gonzaga,False,Reconstructed history,W9,10.88,Gonzaga,0,0,0,tie,no_cover,10.88,Evaluated,,,,,,No provider selected
+10,BYU,Montana State,False,Reconstructed history,W9,6.60,Montana State,16,7,9,incorrect,no_cover,15.60,Evaluated,,,,,,No provider selected
+10,Northern Colorado,Colorado College,False,Reconstructed history,W9,0.54,Colorado College,6,10,-4,correct,cover,3.46,Evaluated,,,,,,No provider selected
+10,Colorado School Of Mines,Colorado State,False,Reconstructed history,W9,18.35,Colorado State,10,41,-31,correct,cover,12.65,Evaluated,,,,,,No provider selected
+10,Wofford,Duke,False,Reconstructed history,W9,-4.80,Wofford,0,6,-6,incorrect,no_cover,10.80,Evaluated,,,,,,No provider selected
+10,Kansas,Missouri,False,Reconstructed history,W9,20.53,Missouri,10,7,3,incorrect,no_cover,23.53,Evaluated,,,,,,No provider selected
+10,Michigan,Minnesota,False,Reconstructed history,W9,-4.56,Michigan,35,0,35,correct,cover,30.44,Evaluated,,,,,,No provider selected
+10,Oklahoma,Washington University (St. Louis),False,Reconstructed history,W9,-8.06,Oklahoma,28,0,28,correct,cover,19.94,Evaluated,,,,,,No provider selected
+10,Idaho,Oregon State,False,Reconstructed history,W9,9.60,Oregon State,7,16,-9,correct,no_cover,0.60,Evaluated,,,,,,No provider selected
+10,Purdue,Indiana,False,Reconstructed history,W9,-4.48,Purdue,0,0,0,tie,no_cover,4.48,Evaluated,,,,,,No provider selected
+10,Chicago,Wisconsin,False,Reconstructed history,W9,8.20,Wisconsin,7,20,-13,correct,cover,4.80,Evaluated,,,,,,No provider selected
+10,Colorado,Western Colorado,False,Reconstructed history,W9,-8.70,Colorado,34,0,34,correct,cover,25.30,Evaluated,,,,,,No provider selected
+10,Florida,Mississippi State,False,Reconstructed history,W9,-8.11,Florida,12,0,12,correct,cover,3.89,Evaluated,,,,,,No provider selected
+10,Ohio State,Illinois,False,Reconstructed history,W9,-3.81,Ohio State,9,14,-5,incorrect,no_cover,8.81,Evaluated,,,,,,No provider selected
+10,Oglethorpe,Mercer,False,Reconstructed history,W9,-14.57,Oglethorpe,6,21,-15,incorrect,no_cover,29.57,Evaluated,,,,,,No provider selected
+10,Stanford,California,False,Reconstructed history,W9,-2.77,Stanford,27,14,13,correct,cover,10.23,Evaluated,,,,,,No provider selected
+10,LSU,Tulane,False,Reconstructed history,W9,6.60,Tulane,0,16,-16,correct,cover,9.40,Evaluated,,,,,,No provider selected
+10,Vanderbilt,Sewanee,False,Reconstructed history,W9,-3.85,Vanderbilt,19,7,12,correct,cover,8.15,Evaluated,,,,,,No provider selected
+10,Washington and Lee,NC State,False,Reconstructed history,W9,-4.30,Washington and Lee,12,0,12,correct,cover,7.70,Evaluated,,,,,,No provider selected
+10,Yale,Harvard,False,Reconstructed history,W9,-7.32,Yale,0,0,0,tie,no_cover,7.32,Evaluated,,,,,,No provider selected
+11,Richmond,William & Mary,False,Reconstructed history,W10,5.62,William & Mary,0,14,-14,correct,cover,8.38,Evaluated,,,,,,No provider selected
+11,Florida,Washington and Lee,False,Reconstructed history,W10,-7.66,Florida,17,14,3,correct,no_cover,4.66,Evaluated,,,,,,No provider selected
+11,Oklahoma,Oklahoma State,False,Reconstructed history,W10,-8.72,Oklahoma,35,0,35,correct,cover,26.28,Evaluated,,,,,,No provider selected
+11,Texas A&M,Texas,False,Reconstructed history,W10,-1.71,Texas A&M,28,0,28,correct,cover,26.29,Evaluated,,,,,,No provider selected
+11,Furman,Clemson,False,Reconstructed history,W10,-17.70,Furman,26,0,26,correct,cover,8.30,Evaluated,,,,,,No provider selected
+11,Utah,Utah State,False,Reconstructed history,W10,-2.35,Utah,6,10,-4,incorrect,no_cover,6.35,Evaluated,,,,,,No provider selected
+11,Virginia,North Carolina,False,Reconstructed history,W10,-1.30,Virginia,3,3,0,tie,no_cover,1.30,Evaluated,,,,,,No provider selected
+11,Virginia Tech,VMI,False,Reconstructed history,W10,0.23,VMI,7,0,7,incorrect,no_cover,7.23,Evaluated,,,,,,No provider selected
+11,Pittsburgh,Penn State,False,Reconstructed history,W10,-9.98,Pittsburgh,23,7,16,correct,cover,6.02,Evaluated,,,,,,No provider selected
+11,Kentucky,Tennessee,False,Reconstructed history,W10,4.65,Tennessee,23,20,3,incorrect,no_cover,7.65,Evaluated,,,,,,No provider selected
+11,Denver,Colorado,False,Reconstructed history,W10,11.90,Colorado,0,41,-41,correct,cover,29.10,Evaluated,,,,,,No provider selected
+11,Iowa State,Kansas State,False,Reconstructed history,W10,-2.27,Iowa State,7,12,-5,incorrect,no_cover,7.27,Evaluated,,,,,,No provider selected
+11,Auburn,Georgia Tech,False,Reconstructed history,W10,5.23,Georgia Tech,7,7,0,tie,no_cover,5.23,Evaluated,,,,,,No provider selected
+11,Alabama,Georgia,False,Reconstructed history,W10,-13.58,Alabama,27,0,27,correct,cover,13.42,Evaluated,,,,,,No provider selected
+11,West Virginia,Washington & Jefferson,False,Reconstructed history,W10,-2.89,West Virginia,19,0,19,correct,cover,16.11,Evaluated,,,,,,No provider selected
+11,Columbia,Syracuse,False,Reconstructed history,W10,0.80,Syracuse,5,16,-11,correct,cover,10.20,Evaluated,,,,,,No provider selected
+11,SMU,Drake,False,Reconstructed history,W10,-0.81,SMU,21,6,15,correct,cover,14.19,Evaluated,,,,,,No provider selected
+11,Pennsylvania,Cornell,False,Reconstructed history,W10,-0.32,Pennsylvania,7,0,7,correct,cover,6.68,Evaluated,,,,,,No provider selected
+11,Colorado State,Wyoming,False,Reconstructed history,W10,-7.74,Colorado State,40,0,40,correct,cover,32.26,Evaluated,,,,,,No provider selected
+11,Nebraska,Notre Dame,False,Reconstructed history,W10,4.80,Notre Dame,17,0,17,incorrect,no_cover,21.80,Evaluated,,,,,,No provider selected
+11,USC,Washington State,False,Reconstructed history,W10,-20.08,USC,12,17,-5,incorrect,no_cover,25.08,Evaluated,,,,,,No provider selected
+11,Montana State,Montana,False,Reconstructed history,W10,-10.07,Montana State,7,28,-21,incorrect,no_cover,31.07,Evaluated,,,,,,No provider selected
+11,Washington,Oregon,False,Reconstructed history,W10,-23.41,Washington,15,14,1,correct,no_cover,22.41,Evaluated,,,,,,No provider selected
+11,South Carolina,Centre College Kentucky,False,Reconstructed history,W10,-12.55,South Carolina,20,0,20,correct,cover,7.45,Evaluated,,,,,,No provider selected
+11,Presbyterian,The Citadel,False,Reconstructed history,W10,4.41,The Citadel,0,7,-7,correct,cover,2.59,Evaluated,,,,,,No provider selected
+11,Baylor,Rice,False,Reconstructed history,W10,2.15,Rice,7,7,0,tie,no_cover,2.15,Evaluated,,,,,,No provider selected
+11,Army,Navy,False,Reconstructed history,W10,-0.31,Army,10,3,7,correct,cover,6.69,Evaluated,,,,,,No provider selected
+11,Grinnell,Washington University (St. Louis),False,Reconstructed history,W10,-14.21,Grinnell,0,3,-3,incorrect,no_cover,17.21,Evaluated,,,,,,No provider selected
+11,Colgate,Brown,False,Reconstructed history,W10,-11.28,Colgate,14,14,0,tie,no_cover,11.28,Evaluated,,,,,,No provider selected
+11,Davidson,Duke,False,Reconstructed history,W10,-10.32,Davidson,26,0,26,correct,cover,15.68,Evaluated,,,,,,No provider selected
+11,Newberry,Wofford,False,Reconstructed history,W10,-6.12,Newberry,26,0,26,correct,cover,19.88,Evaluated,,,,,,No provider selected
+11,Colorado College,Colorado School Of Mines,False,Reconstructed history,W10,-10.07,Colorado College,20,16,4,correct,no_cover,6.07,Evaluated,,,,,,No provider selected
+12,USC,Oregon State,False,Reconstructed history,W11,-0.83,USC,28,0,28,correct,cover,27.17,Evaluated,,,,,,No provider selected
+16,Alabama,Washington,True,Reconstructed history,W15,-1.24,Alabama,20,19,1,correct,no_cover,0.24,Evaluated,,,,,,No provider selected

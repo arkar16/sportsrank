@@ -47,7 +47,12 @@ supplied historical games CSV into Season Snapshots, calls the existing ranking
 engine, and writes an isolated retrospective review site. It does not fetch,
 promote, create publication receipts, or weaken production carryover/Release
 validation. Corrected-history performance is an explicit optional policy;
-ordinary saved-forecast reporting is unchanged.
+ordinary saved-forecast reporting is unchanged. `cfb/historical_correction.py`
+independently checks that reconstruction against original inputs and the ranking
+engine before public export may bind it as a correction. Original source
+provenance remains intact; versioned coverage identifies corrected progression.
+`scripts/prepare_site.py` composes the existing export boundary from one private
+path/hash configuration, without adding a fetch or publication action.
 
 ## Compatibility and deferred architecture
 
