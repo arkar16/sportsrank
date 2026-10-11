@@ -3,8 +3,9 @@
 The CFB boundary currently supports FBS data from CFBD and renders static
 HTML. The supported recovery entry point is `python -m cfb.recovery`; it keeps
 external fetching, cached snapshots, Release generation, validation, and local
-promotion as separate stages. See SportsRank task SR-7 (`bb tasks show SR-7`)
-for the recorded approval boundary and [historical Gate 1 reports](../docs/evidence/2026-gate1.md)
+promotion as separate stages. The [recovery contract](../docs/plans/2026-p0-recovery-and-backfill.md)
+retains SR-7's approval boundary; [current work](../docs/work/current.md) points
+to active tasks. See [historical Gate 1 reports](../docs/evidence/2026-gate1.md)
 for historical verification. Commands below describe interfaces; fetch and
 publication examples do not grant authorization to execute them.
 
@@ -17,8 +18,8 @@ uv sync --locked
 export SPORTSRANK_DATA_DIR="$PWD/.sportsrank"
 ```
 
-Configure `CFBD_API` in the BB environment variables settings for authorized
-local fetches. BB supplies it to the process environment; the adapter reads it
+Use T3-injected `CFBD_API` for authorized local fetches. T3 supplies it to the
+process environment; the adapter reads it
 as a bearer token without a dotenv file or legacy-variable fallback. The
 request meter stores credential-free
 audit rows in `$SPORTSRANK_DATA_DIR/cfbd_requests.sqlite3`.
