@@ -218,6 +218,24 @@ class MarketPerformanceIntegrationTests(unittest.TestCase):
 
 
 class MarketAcquisitionTests(MarketInputTests):
+    def test_cli_rejects_raw_output_under_real_website_from_another_directory(self):
+        from contextlib import chdir, redirect_stderr
+        from io import StringIO
+        from scripts.fetch_market_lines import main
+        meter = self.root / "audit.sqlite3"
+        meter.touch()
+        target = REPOSITORY / "website/market-cache-test-must-not-exist"
+        self.assertFalse(target.exists())
+        with chdir(REPOSITORY / "scripts"), patch("scripts.fetch_market_lines.RequestMeter") as request_meter:
+            for output in ("../website/market-cache-test-must-not-exist", str(target)):
+                with self.subTest(output=output), redirect_stderr(StringIO()) as error:
+                    with self.assertRaises(SystemExit) as stopped:
+                        main(["--seasons", "2020", "--meter", str(meter), "--output", output])
+                    self.assertEqual(stopped.exception.code, 2)
+                    self.assertIn("outside website", error.getvalue())
+            request_meter.assert_not_called()
+        self.assertFalse(target.exists())
+
     def test_explicit_season_boundary_meters_once_and_never_reuses_claim(self):
         from cfb.request_meter import RequestMeter
         from cfb.season_source import ProductionSeasonSource

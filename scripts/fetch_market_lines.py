@@ -28,7 +28,8 @@ def main(argv=None) -> int:
     if len(years) != len(args.seasons) or not all(2013 <= year <= datetime.now(timezone.utc).year for year in years):
         parser.error("seasons must be distinct selected-provider seasons through the current year")
     output = args.output.resolve()
-    if output.is_relative_to((Path.cwd() / "website").resolve()):
+    website = (Path(__file__).resolve().parents[1] / "website").resolve()
+    if output.is_relative_to(website):
         parser.error("raw provider snapshots must remain outside website")
     try:
         # A failed/uncertain batch is never replayed merely by rerunning a command.
