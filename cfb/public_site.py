@@ -32,6 +32,7 @@ from bs4 import BeautifulSoup
 if TYPE_CHECKING:
     from .forecast_publication import VerifiedForecastPublication
     from .forecast_record import GameTimingEvidence
+    from .market_lines import MarketLines
 
 try:
     from .baseline import VerifiedBaseline, import_baseline
@@ -1586,6 +1587,7 @@ def validate_and_export(
     forecast_publications: Sequence[VerifiedForecastPublication] = (),
     timing_evidence: Sequence[GameTimingEvidence] = (),
     successor: VerifiedSuccessorBaseline | None = None,
+    market_lines: MarketLines | None = None,
 ) -> LocalValidationReceipt:
     """Validate a private candidate, then create a provenance-only site."""
 
@@ -1700,7 +1702,7 @@ def validate_and_export(
         # Derived reader-facing reports use only the saved static pages. They
         # do not requalify historical sources or modify issued forecasts.
         from .performance import write_performance, validate_performance
-        performance_paths = write_performance(temporary_directory)
+        performance_paths = write_performance(temporary_directory, market_lines=market_lines)
         if validate_performance(temporary_directory) != performance_paths:
             raise LocalValidationError("performance export paths differ")
 
@@ -2014,6 +2016,7 @@ def build_parser() -> argparse.ArgumentParser:
     export.add_argument("--output-site", "--site", dest="output_site", type=Path, required=True)
     export.add_argument("--receipt", "--receipt-path", dest="receipt_path", type=Path, required=True)
     export.add_argument("--code-root", type=Path)
+    export.add_argument("--market-inputs", type=Path, help="private hash-pinned cached provider responses; makes no live requests")
     from .forecast_inputs import add_forecast_arguments
     add_forecast_arguments(export)
 
@@ -2032,6 +2035,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "export":
             from .forecast_inputs import load_forecast_inputs
+            from .market_lines import load_inputs as load_market_inputs
             forecasts = load_forecast_inputs(args)
             successor = None
             if args.successor_baseline is not None:
@@ -2065,6 +2069,7 @@ def main(argv: list[str] | None = None) -> int:
                     successor=successor,
                     forecast_publications=forecasts.publications,
                     timing_evidence=forecasts.timing,
+                    market_lines=(load_market_inputs(args.market_inputs) if args.market_inputs is not None else None),
                 )
             finally:
                 baseline.close()

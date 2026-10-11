@@ -511,6 +511,25 @@ class ProductionSeasonSource:
         )
         return response
 
+    def fetch_market_response(self, year: int) -> bytes:
+        """One explicitly requested full-season lines observation, without retries."""
+        if type(year) is not int or not 2013 <= year <= 9999:
+            raise ValueError("market observations require a supported provider season")
+
+        def transport():
+            with create_api_client() as api_client:
+                response = cfbd.BettingApi(api_client).get_lines_with_http_info(
+                    year=year, season_type=cfbd.SeasonType.BOTH,
+                    _preload_content=False, _request_timeout=(15, 60),
+                )
+                raw = response.raw_data
+                if not isinstance(raw, bytes) or not isinstance(json.loads(raw), list):
+                    raise ValueError("invalid market response envelope")
+                return raw
+
+        return self.meter.execute(purpose=self.category, endpoint="lines", season=year,
+                                  cache_decision="refresh", transport=transport)
+
 
 class FixtureSeasonSource:
     """Recorded-file adapter with the same consumer interface as production."""

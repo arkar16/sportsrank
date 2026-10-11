@@ -1,5 +1,12 @@
 # Current work
 
+The owner’s October 11 outcome is one published corrected website with CORS
+forecasts, selected provider lines and model performance. The provider/Market ATS
+integration is resumed in [#37](https://github.com/arkar16/sportsrank/issues/37).
+ADR-0019 records the selected providers and every-nonzero-difference pick rule.
+Historical correction release integration is still required after the local
+reconstruction; a successful preview is not publication.
+
 The active outcome is site-wide CORS model performance from retained predictions
 and results, including prior-rating reconstruction where predictions are missing.
 [#33](https://github.com/arkar16/sportsrank/issues/33) owns scope and acceptance;
@@ -31,11 +38,12 @@ October 9; it is closed. Its prerequisite repairs #30 and #32 are merged.
   and exact public-workbook transport repair [#25](https://github.com/arkar16/sportsrank/pull/25)
   are merged. Read the current audit/publication evidence before asserting that
   deployed state is fully verified; a merge alone does not establish that.
-- Excitement, conference projections and market-comparison implementation are
+- Excitement and conference projections are
   parked by owner direction. Preserve their existing branches and evidence.
   The selected forecast-comparison providers are recorded in
-  [#23](https://github.com/arkar16/sportsrank/pull/23); that decision does not
-  resume implementation or settle excitement’s separate market policy.
+  [#23](https://github.com/arkar16/sportsrank/pull/23) and now reconciled into
+  ADR-0019 with the October 11 implementation direction. Excitement’s separate
+  market policy remains outside this delivery.
 
 ## Current-season source and publication boundaries
 
@@ -45,6 +53,11 @@ the original source versions and new snapshot privately on the owner’s compute
 The full historical chain is reconstructed under the expanded source bundle,
 as required by the current-season extension procedure. Preserve issued forecasts;
 reconstructed performance values do not overwrite authenticated pregame forecasts.
+
+On October 11 the owner approved needed API requests after a bounded search for
+the provider-survey cache. The selected-line refresh and private retention are
+tracked in #37. Reporting/export still make zero live calls; do not infer another
+allowance from completed acquisition evidence.
 
 The owner explicitly selected T3-injected `CFBD_API` for this continuation and
 prohibited BB CLI/Tasks use. Keep task evidence in the delivery PR/local fallback;

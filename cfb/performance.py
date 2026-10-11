@@ -19,6 +19,11 @@ from .forecast_record import (
     ForecastSelection, GameIdentity, ScoreRevision, aggregate_grades, grade_forecast,
 )
 from .ranking_engine import HFA, MODEL_VERSION, natural_matchup
+from .market_lines import (
+    MarketLines, PUBLIC_PATH as MARKET_PATH, GAME_COLUMNS as MARKET_GAME_COLUMNS,
+    SUMMARY_COLUMNS as MARKET_SUMMARY_COLUMNS, enrich as enrich_market,
+    compare as compare_market, summarize as summarize_market,
+)
 
 SCHEMA = "cors-performance/v1"
 PREFIX = "cfb/performance"
@@ -122,7 +127,7 @@ def seasons(website: Path) -> list[int]:
 
 def evaluate_season(website: Path, season: int, *, from_week: int | None = None,
                     through_week: int | None = None,
-                    reconstruct_all: bool = False) -> tuple[dict, list[ForecastGrade]]:
+                    reconstruct_all: bool = False, market_index: dict | None = None) -> tuple[dict, list[ForecastGrade]]:
     root = website / "cfb/years" / str(season)
     available = {int(p.stem.split("_W", 1)[1].split("_", 1)[0]): p
                  for p in (root / "data/results/weekly_results").glob(f"{season}_W*_FBS_results.html")}
@@ -231,14 +236,20 @@ def evaluate_season(website: Path, season: int, *, from_week: int | None = None,
         for path, digest in ((result_path, result_sha), (spread_path, spread_sha), (rating_path, rating_sha)):
             if digest:
                 sources.append({"path": path.relative_to(website).as_posix(), "sha256": digest})
-    return {"schema_version": SCHEMA, "season": season, "from_week": first, "through_week": last,
+    report = {"schema_version": SCHEMA, "season": season, "from_week": first, "through_week": last,
             "summary": {**_summary(all_grades), **{k: sum(w[k] for w in weekly) for k in COUNTS}},
             "weekly": weekly, "games": games, "sources": sources,
-            **({"prediction_policy": "reconstructed_history"} if reconstruct_all else {})}, all_grades
+            **({"prediction_policy": "reconstructed_history"} if reconstruct_all else {})}
+    if market_index is not None:
+        enrich_market(report, market_index)
+    return report, all_grades
 
 
-def backforecast(website: Path, season: int, *, from_week: int | None = None, through_week: int | None = None) -> dict:
-    return evaluate_season(website, season, from_week=from_week, through_week=through_week)[0]
+def backforecast(website: Path, season: int, *, from_week: int | None = None, through_week: int | None = None,
+                 market_lines: MarketLines | None = None) -> dict:
+    market = market_lines or MarketLines.from_site(website)
+    return evaluate_season(website, season, from_week=from_week, through_week=through_week,
+                           market_index=market.index(website) if market is not None else None)[0]
 
 
 def _csv(rows: list[dict], columns: tuple[str, ...]) -> str:
@@ -252,7 +263,10 @@ def _csv(rows: list[dict], columns: tuple[str, ...]) -> str:
 def _label(key: str) -> str:
     return {"home_handicap": "CORS spread (home)", "cors_line_coverage": "CORS line coverage",
             "mae": "MAE (pts)", "rmse": "RMSE (pts)", "game_count": "Games", "straight_up_wins": "Wins",
-            "straight_up_losses": "Losses", "straight_up_ties": "Ties", "no_covers": "No covers"}.get(key, key.replace("_", " ").capitalize())
+            "straight_up_losses": "Losses", "straight_up_ties": "Ties", "no_covers": "No covers",
+            "market_home_handicap": "Provider spread (home)", "market_ats": "Market ATS",
+            "market_ats_percentage": "ATS win rate", "paired_cors_mae": "Paired CORS MAE",
+            "paired_cors_rmse": "Paired CORS RMSE", "market_games": "Paired games"}.get(key, key.replace("_", " ").capitalize())
 
 
 def _text(value: Any) -> str:
@@ -265,8 +279,10 @@ def _table(rows: list[dict], columns: tuple[str, ...], *, season_links: bool = F
         values = []
         for key in columns:
             value = row.get(key)
-            if key in {"mae", "rmse", "absolute_error"} and value is not None:
+            if (key.endswith(("mae", "rmse", "absolute_error"))) and value is not None:
                 value = f"{Decimal(value):.2f}"
+            elif key == "market_ats_percentage" and value is not None:
+                value = f"{Decimal(value) * 100:.1f}%"
             cell = _text(value)
             if key == "season" and season_links:
                 cell = f'<a href="{int(value)}/index.html">{int(value)}</a>'
@@ -291,6 +307,72 @@ def _metrics(s: dict) -> str:
 WEEK_COLUMNS = ("week", "game_count", "straight_up_wins", "straight_up_losses", "straight_up_ties", "covers", "no_covers", "pushes", "mae", "rmse", *COUNTS)
 
 
+def _market_metrics(summary: dict) -> str:
+    value = summary["market_ats_percentage"]
+    rate = "—" if value is None else f"{Decimal(value) * 100:.1f}%"
+    def points(key):
+        return "—" if summary[key] is None else f"{Decimal(summary[key]):.2f}"
+    return (f'<h2>Provider comparison</h2><p class="metrics">Market ATS {rate} '
+            f'({summary["market_wins"]:,}–{summary["market_losses"]:,}; '
+            f'{summary["market_pushes"]:,} pushes; {summary["market_no_picks"]:,} no picks)<br>'
+            f'{summary["market_games"]:,} paired games · CORS MAE {points("paired_cors_mae")} / '
+            f'provider MAE {points("market_mae")} points<br>CORS RMSE {points("paired_cors_rmse")} / '
+            f'provider RMSE {points("market_rmse")} points · {summary["missing_market_lines"]:,} missing lines</p>')
+
+
+def _pending_forecasts(website: Path, report: dict, market_index: dict) -> list[dict]:
+    """Read retained spread pages without replacing their values or rounding."""
+    year = report["season"]
+    root = website / "cfb/years" / str(year)
+    slate = root / f"data/slate/{year}_FBS_slate.html"
+    season_slate, season_slate_sha = _read(slate) if slate.exists() else ([], None)
+    scored = {(game["week"], game["home"], game["away"], game["neutral_site"])
+              for game in report["games"] if game.get("home_score") is not None and game.get("away_score") is not None}
+    forecasts = []
+    seen = set()
+    for path in sorted((root / "spread").glob(f"{year}_W*_FBS_spread.html")):
+        week = int(path.stem.split("_W", 1)[1].split("_", 1)[0])
+        # The modern aggregate slate stops at the completed checkpoint; the
+        # next week's schedule is a separate permanent weekly artifact.
+        weekly_slate = root / f"data/slate/weekly_slate/{year}_W{week}_FBS_slate.html"
+        slate_path = weekly_slate if weekly_slate.exists() else slate
+        slate_rows, slate_sha = (_read(weekly_slate) if weekly_slate.exists() else
+                                ([row for row in season_slate if _integer(row["week"]) == week], season_slate_sha))
+        eligible = {}
+        for row in slate_rows:
+            if any(row[side + "_division"].lower() != "fbs" for side in ("home", "away")):
+                continue
+            key = week, *_identity(row, week)
+            if key in eligible:
+                raise ValueError("ambiguous forecast slate matchup")
+            eligible[key] = row
+        rows, digest = _read(path)
+        used = False
+        for row in rows:
+            home, away, neutral = _identity(row, week)
+            key = week, home, away, neutral
+            if key in seen:
+                raise ValueError("duplicate issued forecast matchup")
+            seen.add(key)
+            if key not in eligible or key in scored:
+                continue
+            margin, _ = _saved_margin(row, home)
+            game = {"week": week, "home": home, "away": away, "neutral_site": neutral,
+                    "home_handicap": str(-margin), "prediction_source": "Saved spread",
+                    "home_score": None, "away_score": None, "absolute_error": None,
+                    "status": "Pending result"}
+            game.update(compare_market(game, market_index.get((year, week, home, away)), year))
+            disposition = eligible[key].get("disposition", "").lower()
+            if disposition in {"canceled", "cancelled"}:
+                game.update(status="Canceled", market_status="Canceled", market_pick=None, market_ats=None)
+            forecasts.append(game)
+            used = True
+        if used:
+            report["sources"].append({"path": path.relative_to(website).as_posix(), "sha256": digest})
+            report["sources"].append({"path": slate_path.relative_to(website).as_posix(), "sha256": slate_sha})
+    return sorted(forecasts, key=lambda game: (game["week"], game["home"], game["away"]))
+
+
 def report_files(report: dict, *, site_links: bool = False) -> dict[str, bytes]:
     year, summary = report["season"], report["summary"]
     occurrence_columns = ("game_id", "game_date") if any("game_id" in game for game in report["games"]) else ()
@@ -304,20 +386,42 @@ def report_files(report: dict, *, site_links: bool = False) -> dict[str, bytes]:
     body = f'<p>{description}</p>' + _metrics(summary)
     body += f'<p>{summary["saved_predictions"]:,} saved predictions · {summary["reconstructed_predictions"]:,} reconstructed · {summary["missing_predictions"]:,} unavailable · {summary["missing_scores"]:,} pending scores · {summary["non_fbs_games"]:,} non-FBS games excluded.</p>'
     body += '<p>CORS line coverage measures whether the selected favorite covered the CORS spread. Pushes are reported separately; zero lines have no winner selection. MAE/RMSE use every evaluated margin, including ties and zero lines. Lower margin error is better.</p>'
-    body += '<p><a href="games.csv">Game CSV</a> · <a href="weekly.csv">Weekly CSV</a> · <a href="report.json">Report JSON</a></p><h2>Weekly performance</h2>' + _table(report["weekly"], WEEK_COLUMNS)
-    body += '<h2>Game results</h2>' + _table(report["games"], GAME_COLUMNS)
+    market = "market_policy" in report
+    if market:
+        body += _market_metrics(summary)
+        body += ('<p>teamrankings 2013–2020; Bovada from 2021. API returned spreads, '
+                 'without a closing-line claim or provider substitution. Every nonzero CORS advantage '
+                 'selects a side; equal lines have no pick. ATS excludes pushes. '
+                 'CORS and provider errors above use the same games.</p>')
+        if site_links:
+            body += '<p><a href="../market-lines.json">Selected lines and retrieval provenance</a></p>'
+    if "upcoming" in report:
+        body += '<h2>Forecasts awaiting results</h2><p>Saved CORS spreads; results are not yet in this report.</p>' + _table(report["upcoming"],
+                    ("week", "home", "away", "home_handicap", "provider", "market_home_handicap", "market_pick", "status"))
+    game_columns = GAME_COLUMNS + (MARKET_GAME_COLUMNS if market else ())
+    week_columns = WEEK_COLUMNS + (MARKET_SUMMARY_COLUMNS if market else ())
+    body += '<p><a href="games.csv">Game CSV</a> · <a href="weekly.csv">Weekly CSV</a> · <a href="report.json">Report JSON</a></p><h2>Weekly performance</h2>' + _table(report["weekly"], week_columns)
+    body += '<h2>Game results</h2>' + _table(report["games"], game_columns)
     if site_links:
         body += '<details><summary>Saved inputs</summary><ul>'+"".join(f'<li><a href="../../../{escape(s["path"], quote=True)}">{escape(s["path"])}</a></li>' for s in report["sources"])+"</ul></details>"
     return {"index.html": _page(f"{year} CORS model performance", body, navigation),
             "report.json": (json.dumps(report, sort_keys=True, indent=2, ensure_ascii=False)+"\n").encode(),
-            "games.csv": _csv(report["games"], GAME_COLUMNS + occurrence_columns).encode(),
-            "weekly.csv": _csv(report["weekly"], WEEK_COLUMNS).encode()}
+            "games.csv": _csv(report["games"], game_columns + occurrence_columns).encode(),
+            "weekly.csv": _csv(report["weekly"], week_columns).encode()}
 
 
-def build_performance_files(website: Path, *, reconstruct_all: bool = False) -> dict[str, bytes]:
-    output, summaries, grades = {}, [], []
-    for year in seasons(website):
-        report, evaluated = evaluate_season(website, year, reconstruct_all=reconstruct_all)
+def build_performance_files(website: Path, *, reconstruct_all: bool = False,
+                            market_lines: MarketLines | None = None) -> dict[str, bytes]:
+    output, summaries, grades, market_games = {}, [], [], []
+    market = market_lines or MarketLines.from_site(website)
+    market_index = market.index(website) if market is not None else None
+    years = seasons(website)
+    for year in years:
+        report, evaluated = evaluate_season(website, year, reconstruct_all=reconstruct_all, market_index=market_index)
+        if market is not None:
+            market_games.extend(report["games"])
+            if year == max(years):
+                report["upcoming"] = _pending_forecasts(website, report, market_index)
         grades.extend(evaluated)
         summaries.append({"season": year, **report["summary"]})
         for name, raw in report_files(report, site_links=True).items():
@@ -331,10 +435,17 @@ def build_performance_files(website: Path, *, reconstruct_all: bool = False) -> 
                    'original values; reconstructed gaps are counted separately. This uses the existing site '
                    'data without rerunning historical rankings.')
     body = f'<p>{description}</p>'+_metrics(totals)
+    if market is not None:
+        totals.update(summarize_market(market_games))
+        body += _market_metrics(totals)
+        output[MARKET_PATH] = market.to_bytes()
+        if years:
+            body += f'<p><a href="{max(years)}/index.html">Current forecasts and results</a> · <a href="market-lines.json">Selected lines and retrieval provenance</a></p>'
     body += f'<p>{len(summaries)} seasons · {totals["saved_predictions"]:,} saved predictions · {totals["reconstructed_predictions"]:,} reconstructed · {totals["missing_predictions"]:,} unavailable.</p><p><a href="seasons.csv">Download season summaries</a></p>'
-    body += _table(list(reversed(summaries)), ("season", *WEEK_COLUMNS[1:]), season_links=True)
+    summary_columns = ("season", *WEEK_COLUMNS[1:], *(MARKET_SUMMARY_COLUMNS if market is not None else ()))
+    body += _table(list(reversed(summaries)), summary_columns, season_links=True)
     output[f"{PREFIX}/index.html"] = _page("CORS model performance", body, '<a href="../cfb.html">CORS home</a>')
-    output[f"{PREFIX}/seasons.csv"] = _csv(summaries, ("season", *WEEK_COLUMNS[1:])).encode()
+    output[f"{PREFIX}/seasons.csv"] = _csv(summaries, summary_columns).encode()
     # Add one discoverable entry point; preserve the rest of this legacy page.
     nav = website / NAVIGATION
     if nav.exists():
@@ -343,8 +454,8 @@ def build_performance_files(website: Path, *, reconstruct_all: bool = False) -> 
     return output
 
 
-def write_performance(website: Path) -> tuple[str, ...]:
-    files = build_performance_files(website)
+def write_performance(website: Path, *, market_lines: MarketLines | None = None) -> tuple[str, ...]:
+    files = build_performance_files(website, market_lines=market_lines)
     for relative, raw in files.items():
         path = website / relative
         path.parent.mkdir(parents=True, exist_ok=True)

@@ -653,6 +653,38 @@ class SeasonSnapshotService:
         self.cache = cache
         self._clock = clock or (lambda: datetime.now(timezone.utc))
 
+    def fetch_market_snapshot(self, year: int, destination: Path) -> dict:
+        """Explicit acquisition only; ordinary snapshots/rebuilds never call this.
+
+        Claim a new observation directory before transport. Failed or interrupted
+        attempts retain that claim, so reusing the destination cannot retry.
+        Raw response bodies stay in this private directory; export projects only
+        the selected line and safe provenance through the market input adapter.
+        """
+        if type(year) is not int or not 2013 <= year <= 9999:
+            raise ValueError("market observations require a selected-provider season")
+        fetch = getattr(self.source, "fetch_market_response", None)
+        if fetch is None:
+            raise TypeError("source does not support explicit market acquisition")
+        destination = Path(destination)
+        destination.mkdir(parents=True, exist_ok=False)
+        try:
+            raw = fetch(year)
+            if not isinstance(raw, bytes):
+                raise ValueError("market transport must return retained bytes")
+            (destination / "response.json").write_bytes(raw)
+            observation = {"season": year, "path": "response.json",
+                           "sha256": hashlib.sha256(raw).hexdigest(), "retrieved_at": self._now()}
+            manifest = {"schema": "market-inputs/v1", "responses": [observation]}
+            path = destination / "inputs.json"
+            path.write_text(json.dumps(manifest, sort_keys=True, indent=2) + "\n")
+            from .market_lines import load_inputs
+            load_inputs(path)  # Validate preserved bytes before acceptance.
+            return observation
+        except Exception as error:
+            (destination / "failure.json").write_text(json.dumps({"error_type": type(error).__name__}) + "\n")
+            raise
+
     def get(
         self,
         year: int,

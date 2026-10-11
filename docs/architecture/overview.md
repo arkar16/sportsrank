@@ -10,6 +10,13 @@ JavaScript progressively enhances the published content.
   `request_meter.py` form the CFBD v2 source boundary. Explicit fetch/refresh
   operations create shared snapshots; calculation and release operations reuse
   them. SQLite currently holds the local request audit.
+- `cfb/market_lines.py` projects selected provider quotes from privately retained
+  seasonal line responses, applies the season-based provider policy, and grades
+  Market ATS and paired margin error. Explicit acquisition goes through
+  `SeasonSnapshotService.fetch_market_snapshot` and the metered source adapter;
+  ordinary calculation/export never acquires data. `cfb/performance.py` adds the
+  comparison and pending retained forecasts to the static reports. Public export
+  binds selected observations and derived reports into its existing receipt.
 - `cfb/week_calendar.py` normalizes provider weeks using source-backed season
   calendars. `postseason_registry.py` holds the bounded historical correction
   registry; it is not an allowlist for future games. Schema 4 retains provider
