@@ -29,6 +29,14 @@ the implementation and operating requirements.
 The recovery contract above owns product requirements. Use
 [CFB CLI documentation](cfb/README.md) for supported recovery interfaces.
 
+## Local working files
+
+Keep private inputs and generated review output in the ignored `.sportsrank/`
+directory. The root `.scratch/` directory holds local investigation and release
+evidence; the root `error.log` is a legacy runtime log. Both are ignored to keep
+them out of accidental staging. Ignoring these paths does not delete or back up
+their contents. Preserve evidence needed by active tasks and publication.
+
 ## Safe offline verification
 
 Python 3.12 and the locked dependencies are required:
