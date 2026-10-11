@@ -18,7 +18,7 @@ from bs4 import BeautifulSoup
 
 from .historical_rebuild import (
     HistoricalInputs, POLICY, RESULT_COLUMNS, _bool, _school, historical_carryover,
-    rebuild_history,
+    rebuild_history, correction_start, game_identity,
 )
 from .performance import _read, seasons, validate_performance
 from .ranking_engine import PreviousFinal, preseason_ranking, records_for_week, spreads_for_week, week_ranking
@@ -69,11 +69,7 @@ class CorrectionInputs:
 def _chain(inputs: HistoricalInputs, start: int | None) -> list[int]:
     years = seasons(inputs.website)
     if start is None:
-        affected = [year for year in years if year < 2024 and inputs.games[year]
-                    and inputs.snapshot(year)[1]["added_games"]]
-        if not affected:
-            raise ValueError("no missing historical postseason games found")
-        start = min(affected)
+        start = correction_start(inputs, years)
     selected = [year for year in years if year >= start]
     if not selected or selected != list(range(start, max(years) + 1)):
         raise ValueError("correction requires the complete affected season chain")
@@ -155,7 +151,8 @@ def validate_reconstruction(original: Path, corrected: Path, request: Correction
             check(f"{prefix}/rankings/{year}_{checkpoint}_FBS_cors.html", rows, RANK_COLUMNS)
         results = [{"week": g.week, "home_team": g.home_team, "home_division": g.home_classification,
                     "home_score": g.home_points, "away_team": g.away_team, "away_division": g.away_classification,
-                    "away_score": g.away_points, "neutral_site": g.neutral_site} for g in snapshot.games]
+                    "away_score": g.away_points, "neutral_site": g.neutral_site,
+                    "game_id": game_identity(year, g), "game_date": g.date or ""} for g in snapshot.games]
         check(f"{prefix}/data/results/{year}_FBS_results.html", results, RESULT_COLUMNS)
         if year < 2024:
             relative = f"{prefix}/data/slate/{year}_FBS_slate.html"

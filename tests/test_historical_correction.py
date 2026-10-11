@@ -50,6 +50,7 @@ class CorrectionTests(unittest.TestCase):
         self.rebuild()
         for relative, old, new in [
             ('data/results/weekly_results/1901_W16_FBS_results.html', '<td>21</td>', '<td>20</td>'),
+            ('data/results/weekly_results/1901_W16_FBS_results.html', '<td>bowl</td>', '<td>other-game</td>'),
             ('rankings/1901_PRESEASON_FBS_cors.html', '<td>18.25</td>', '<td>18.26</td>'),
             ('reconstructed/1901_W1_FBS_spread.html', '<td>A</td>', '<td>Wrong</td>'),
             ('data/records/1901_W1_FBS_records.html', '<td>A</td>', '<td>Wrong</td>'),
