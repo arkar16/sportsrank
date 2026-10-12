@@ -4,8 +4,10 @@ The owner’s October 11 outcome is one published corrected website with CORS
 forecasts, selected provider lines and model performance. The provider/Market ATS
 integration is resumed in [#37](https://github.com/arkar16/sportsrank/issues/37).
 ADR-0019 records the selected providers and every-nonzero-difference pick rule.
-Historical correction release integration is still required after the local
-reconstruction; a successful preview is not publication.
+The provider implementation is [PR #38](https://github.com/arkar16/sportsrank/pull/38).
+Historical correction release integration is active in
+[#39](https://github.com/arkar16/sportsrank/issues/39); a successful preview is not
+publication. Its delivery extends ADR-0024 to independently validated public export.
 
 The active outcome is site-wide CORS model performance from retained predictions
 and results, including prior-rating reconstruction where predictions are missing.

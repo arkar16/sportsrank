@@ -38,3 +38,33 @@ release integration remain with the delivery task and owner; this decision
 does not authorize a provider request, merge, publication or weakened release
 validation. It supersedes the recovery plan's pre-2024 freeze only for this
 authorized isolated reconstruction, not for ordinary publication.
+
+## Validated correction delivery — October 11, 2026
+
+The owner subsequently requested the entire corrected website published with
+provider comparisons and performance. [#39](https://github.com/arkar16/sportsrank/issues/39)
+extends this decision to preparation of a publishable correction; human merge
+and protected publication approvals remain separate.
+
+Keep the ordinary private Release validation intact, then apply the correction
+inside public export. A separate validator derives the affected artifact graph
+from the pinned original site and CSV, recalculates checkpoints with the unchanged
+engine, compares parsed output values, and preserves every unrelated byte and
+issued forecast. A preview's manifest never grants replacement authority.
+
+Bind this explicit `historical-correction/v1` transformation into the public
+manifest and reviewed receipt. Its safe evidence retains the CSV and original
+site identities, corrected snapshot/carryover identities, and validated artifact
+hashes. The original modern source provenance remains retained. Where 2025
+progression is corrected, a versioned `used-coverage/v2` descriptor retains the
+original validated coverage and binds the replacement to the correction evidence.
+This avoids attributing corrected values to the old carryover. Existing contract-4
+receipts without this transformation retain their literal ordinary semantics and
+cannot validate a corrected tree. Hosted preparation still authenticates the exact
+reviewed receipt and site at the candidate commit.
+
+This bounded export transformation avoids replacing the modern source contract
+with historical archive assumptions. The trade-off is a separate correction
+validation stage. One offline preparation command composes these stages; it does
+not fetch, merge, seal or publish. The earlier pre-2024 publication freeze is
+superseded only for corrections validated through this explicit path.

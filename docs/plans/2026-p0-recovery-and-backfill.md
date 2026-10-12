@@ -26,6 +26,15 @@ belong to SR-17; the original mission below records the earlier recovery scope.
 
 ## Mission
 
+The October 11 owner direction extends delivery to the full CSV-corrected site.
+[ADR-0024](../adr/0024-reconstruct-history-with-archived-membership.md) defines
+the bounded historical correction transform and its independent validation;
+[#39](https://github.com/arkar16/sportsrank/issues/39) owns implementation and
+acceptance. Its explicit transform may replace validated historical rankings,
+results and carryover while preserving original issued forecasts and URLs.
+The historical freeze remains applicable to every path outside that derived
+correction graph. Ordinary source validation and human publication gates remain.
+
 The approved recovery mission was to make the CFB/FBS static-site recovery
 safe to run with the user's new CFBD key, rebuild 2024 and 2025 in carryover
 order, prepare 2026 PRESEASON plus the Week 0 slate and spreads, and produce a
@@ -68,7 +77,8 @@ contradiction scan across all human- and machine-facing guidance.
   games; W0 is calculated only after completed Week 0 games using the normal
   first-week divisor of `1`.
 - Correct PRESEASON/W0 semantics apply to rebuilt Seasons from 2024 onward.
-  Pre-2024 public artifacts remain byte-for-byte unchanged.
+  Pre-2024 public artifacts remain byte-for-byte unchanged except the explicit
+  independently validated CSV correction defined by ADR-0024's October 11 extension.
 - Every public path remains addressable indefinitely. A candidate Release is a
   full overlay of the Published Site, not a partial replacement.
   ADR-0017 preserves the availability and app identity of exactly the two

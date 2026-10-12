@@ -1,577 +1,593 @@
-week,home,away,neutral_site,prediction_source,rating_checkpoint,home_handicap,predicted_winner,home_score,away_score,actual_home_margin,straight_up,cors_line_coverage,absolute_error,status,provider,market_home_handicap,market_pick,market_ats,market_absolute_error,market_status
-1,UNLV,BYU,False,Saved spread,,13.0,BYU,0,27,-27,correct,cover,14.0,Evaluated,,,,,,No provider selected
-1,Illinois,Northwestern,False,Saved spread,,-17.0,Illinois,49,13,36,correct,cover,19.0,Evaluated,,,,,,No provider selected
-1,Florida State,Cincinnati,False,Saved spread,,-1.0,Florida State,38,31,7,correct,cover,6.0,Evaluated,,,,,,No provider selected
-1,Bowling Green,Ohio,False,Saved spread,,-8.0,Bowling Green,40,0,40,correct,cover,32.0,Evaluated,,,,,,No provider selected
-1,Oregon,Arizona State,False,Saved spread,,16.0,Arizona State,3,34,-31,correct,cover,15.0,Evaluated,,,,,,No provider selected
-1,Richmond,Virginia Tech,False,Saved spread,,7.5,Virginia Tech,9,20,-11,correct,cover,3.5,Evaluated,,,,,,No provider selected
-1,Toledo,Northern Illinois,False,Saved spread,,-15.5,Toledo,9,3,6,correct,no_cover,9.5,Evaluated,,,,,,No provider selected
-1,Rutgers,Syracuse,False,Saved spread,,3.0,Syracuse,8,31,-23,correct,cover,20.0,Evaluated,,,,,,No provider selected
-1,Wyoming,New Mexico,False,Saved spread,,-10.5,Wyoming,20,41,-21,incorrect,no_cover,31.5,Evaluated,,,,,,No provider selected
-1,Texas A&M,Boston College,False,Saved spread,,-10.5,Texas A&M,16,38,-22,incorrect,no_cover,32.5,Evaluated,,,,,,No provider selected
-1,Baylor,North Texas,False,Saved spread,,-12.5,Baylor,21,17,4,correct,no_cover,8.5,Evaluated,,,,,,No provider selected
-1,Central Michigan,Indiana State,False,Saved spread,,-3.0,Central Michigan,35,10,25,correct,cover,22.0,Evaluated,,,,,,No provider selected
-1,Penn State,Temple,False,Saved spread,,-14.5,Penn State,31,14,17,correct,cover,2.5,Evaluated,,,,,,No provider selected
-1,Tulsa,Air Force,False,Saved spread,,-15.5,Tulsa,35,17,18,correct,cover,2.5,Evaluated,,,,,,No provider selected
-1,New Mexico State,UTEP,False,Saved spread,,-5.5,New Mexico State,17,20,-3,incorrect,no_cover,8.5,Evaluated,,,,,,No provider selected
-1,South Carolina,Pacific,False,Saved spread,,-8.5,South Carolina,41,6,35,correct,cover,26.5,Evaluated,,,,,,No provider selected
-1,Missouri,Colorado State,False,Saved spread,,-23.0,Missouri,28,14,14,correct,no_cover,9.0,Evaluated,,,,,,No provider selected
-1,Tulane,Mississippi State,False,Saved spread,,-1.5,Tulane,21,30,-9,incorrect,no_cover,10.5,Evaluated,,,,,,No provider selected
-1,Ole Miss,Memphis,False,Saved spread,,-6.5,Ole Miss,27,10,17,correct,cover,10.5,Evaluated,,,,,,No provider selected
-1,Florida,Miami,False,Saved spread,,-2.5,Florida,17,14,3,correct,cover,0.5,Evaluated,,,,,,No provider selected
-1,Tennessee,Duke,False,Saved spread,,-1.5,Tennessee,24,25,-1,incorrect,no_cover,2.5,Evaluated,,,,,,No provider selected
-1,Georgia,Clemson,False,Saved spread,,-2.0,Georgia,13,7,6,correct,cover,4.0,Evaluated,,,,,,No provider selected
-2,Pittsburgh,North Carolina,False,Saved spread,,-2.0,Pittsburgh,7,6,1,correct,no_cover,1.0,Evaluated,,,,,,No provider selected
-2,South Carolina,Richmond,False,Saved spread,,-28.5,South Carolina,30,10,20,correct,no_cover,8.5,Evaluated,,,,,,No provider selected
-2,Illinois,Michigan State,False,Saved spread,,-23.5,Illinois,23,16,7,correct,no_cover,16.5,Evaluated,,,,,,No provider selected
-2,Ball State,Toledo,False,Saved spread,,27.0,Toledo,14,31,-17,correct,no_cover,10.0,Evaluated,,,,,,No provider selected
-2,Illinois State,Southern Illinois,False,Saved spread,,25.5,Southern Illinois,0,16,-16,correct,no_cover,9.5,Evaluated,,,,,,No provider selected
-2,Michigan,Wisconsin,False,Saved spread,,-4.5,Michigan,20,9,11,correct,cover,6.5,Evaluated,,,,,,No provider selected
-2,Indiana State,New Mexico State,False,Saved spread,,-8.0,Indiana State,14,10,4,correct,no_cover,4.0,Evaluated,,,,,,No provider selected
-2,Indiana,Northwestern,False,Saved spread,,-7.0,Indiana,30,0,30,correct,cover,23.0,Evaluated,,,,,,No provider selected
-2,Colorado State,Wyoming,False,Saved spread,,8.5,Wyoming,9,3,6,incorrect,no_cover,14.5,Evaluated,,,,,,No provider selected
-2,Cincinnati,Louisville,False,Saved spread,,18.5,Louisville,38,16,22,incorrect,no_cover,40.5,Evaluated,,,,,,No provider selected
-2,Arizona,Oregon State,False,Saved spread,,-10.0,Arizona,38,12,26,correct,cover,16.0,Evaluated,,,,,,No provider selected
-2,Air Force,San Diego State,False,Saved spread,,5.5,San Diego State,44,32,12,incorrect,no_cover,17.5,Evaluated,,,,,,No provider selected
-2,Kansas,Wichita State,False,Saved spread,,19.0,Wichita State,10,13,-3,correct,no_cover,16.0,Evaluated,,,,,,No provider selected
-2,Oklahoma,West Virginia,False,Saved spread,,-2.5,Oklahoma,27,41,-14,incorrect,no_cover,16.5,Evaluated,,,,,,No provider selected
-2,Washington,UTEP,False,Saved spread,,10.0,UTEP,55,0,55,incorrect,no_cover,65.0,Evaluated,,,,,,No provider selected
-2,Memphis,Vanderbilt,False,Saved spread,,3.0,Vanderbilt,14,24,-10,correct,cover,7.0,Evaluated,,,,,,No provider selected
-2,UCLA,Long Beach State,False,Saved spread,,-10.5,UCLA,41,10,31,correct,cover,20.5,Evaluated,,,,,,No provider selected
-2,TCU,Utah State,False,Saved spread,,0.5,Utah State,24,9,15,incorrect,no_cover,15.5,Evaluated,,,,,,No provider selected
-2,Tennessee,Iowa State,False,Saved spread,,-1.0,Tennessee,23,21,2,correct,cover,1.0,Evaluated,,,,,,No provider selected
-2,Purdue,Stanford,False,Saved spread,,-1.0,Purdue,14,35,-21,incorrect,no_cover,22.0,Evaluated,,,,,,No provider selected
-2,SMU,Tulane,False,Saved spread,,-6.5,SMU,51,7,44,correct,cover,37.5,Evaluated,,,,,,No provider selected
-2,Oregon,San José State,False,Saved spread,,8.5,San José State,13,18,-5,correct,no_cover,3.5,Evaluated,,,,,,No provider selected
-2,Penn State,Maryland,False,Saved spread,,-30.0,Penn State,39,31,8,correct,no_cover,22.0,Evaluated,,,,,,No provider selected
-2,Oklahoma State,North Texas,False,Saved spread,,-8.5,Oklahoma State,27,6,21,correct,cover,12.5,Evaluated,,,,,,No provider selected
-2,Ohio State,Baylor,False,Saved spread,,16.0,Baylor,21,14,7,incorrect,no_cover,23.0,Evaluated,,,,,,No provider selected
-2,NC State,East Carolina,False,Saved spread,,-27.5,NC State,33,26,7,correct,no_cover,20.5,Evaluated,,,,,,No provider selected
-2,New Mexico,Texas Tech,False,Saved spread,,-31.5,New Mexico,14,0,14,correct,no_cover,17.5,Evaluated,,,,,,No provider selected
-2,Nebraska,Iowa,False,Saved spread,,-3.5,Nebraska,42,7,35,correct,cover,31.5,Evaluated,,,,,,No provider selected
-2,Navy,Virginia,False,Saved spread,,-10.5,Navy,30,16,14,correct,cover,3.5,Evaluated,,,,,,No provider selected
-2,Missouri,Army,False,Saved spread,,-31.5,Missouri,23,10,13,correct,no_cover,18.5,Evaluated,,,,,,No provider selected
-2,Ole Miss,Southern Miss,False,Saved spread,,11.0,Southern Miss,28,19,9,incorrect,no_cover,20.0,Evaluated,,,,,,No provider selected
-2,Minnesota,Ohio,False,Saved spread,,-7.0,Minnesota,57,7,50,correct,cover,43.0,Evaluated,,,,,,No provider selected
-2,Miami (OH),William & Mary,False,Saved spread,,-8.5,Miami (OH),35,17,18,correct,cover,9.5,Evaluated,,,,,,No provider selected
-2,Miami,Houston,False,Saved spread,,-0.5,Miami,31,12,19,correct,cover,18.5,Evaluated,,,,,,No provider selected
-2,Rice,Louisiana,False,Saved spread,,-2.0,Rice,14,21,-7,incorrect,no_cover,9.0,Evaluated,,,,,,No provider selected
-2,Kansas State,Kentucky,False,Saved spread,,-1.5,Kansas State,23,9,14,correct,cover,12.5,Evaluated,,,,,,No provider selected
-2,Georgia,BYU,False,Saved spread,,-5.5,Georgia,17,14,3,correct,no_cover,2.5,Evaluated,,,,,,No provider selected
-2,Florida,USC,False,Saved spread,,-26.5,Florida,17,9,8,correct,no_cover,18.5,Evaluated,,,,,,No provider selected
-2,Colorado,California,False,Saved spread,,-0.5,Colorado,17,31,-14,incorrect,no_cover,14.5,Evaluated,,,,,,No provider selected
-2,Boston College,Clemson,False,Saved spread,,-21.0,Boston College,17,17,0,tie,no_cover,21.0,Evaluated,,,,,,No provider selected
-2,Syracuse,Temple,False,Saved spread,,-28.0,Syracuse,18,23,-5,incorrect,no_cover,33.0,Evaluated,,,,,,No provider selected
-2,Auburn,Wake Forest,False,Saved spread,,16.5,Wake Forest,28,10,18,incorrect,no_cover,34.5,Evaluated,,,,,,No provider selected
-2,Arkansas,Tulsa,False,Saved spread,,21.0,Tulsa,38,0,38,incorrect,no_cover,59.0,Evaluated,,,,,,No provider selected
-2,Arizona State,Utah,False,Saved spread,,-6.0,Arizona State,23,10,13,correct,cover,7.0,Evaluated,,,,,,No provider selected
-2,Georgia Tech,Alabama,False,Saved spread,,9.5,Alabama,7,45,-38,correct,cover,28.5,Evaluated,,,,,,No provider selected
-3,Oregon,Fresno State,False,Saved spread,,22.0,Fresno State,4,10,-6,correct,no_cover,16.0,Evaluated,,,,,,No provider selected
-3,Southern Illinois,Drake,False,Saved spread,,-13.5,Southern Illinois,24,17,7,correct,no_cover,6.5,Evaluated,,,,,,No provider selected
-3,Florida State,Pittsburgh,False,Saved spread,,-5.5,Florida State,17,37,-20,incorrect,no_cover,25.5,Evaluated,,,,,,No provider selected
-3,Penn State,Rutgers,False,Saved spread,,-36.5,Penn State,49,14,35,correct,no_cover,1.5,Evaluated,,,,,,No provider selected
-3,Purdue,Minnesota,False,Saved spread,,23.5,Minnesota,10,36,-26,correct,cover,2.5,Evaluated,,,,,,No provider selected
-3,Virginia Tech,Miami,False,Saved spread,,-16.5,Virginia Tech,8,14,-6,incorrect,no_cover,22.5,Evaluated,,,,,,No provider selected
-3,Central Michigan,Bowling Green,False,Saved spread,,-3.5,Central Michigan,30,34,-4,incorrect,no_cover,7.5,Evaluated,,,,,,No provider selected
-3,Michigan State,Ohio State,False,Saved spread,,27.0,Ohio State,10,31,-21,correct,no_cover,6.0,Evaluated,,,,,,No provider selected
-3,Northern Illinois,Kent State,False,Saved spread,,-1.5,Northern Illinois,23,15,8,correct,cover,6.5,Evaluated,,,,,,No provider selected
-3,NC State,Wake Forest,False,Saved spread,,-14.0,NC State,30,0,30,correct,cover,16.0,Evaluated,,,,,,No provider selected
-3,Colorado State,Hawai'i,False,Saved spread,,11.5,Hawai'i,13,23,-10,correct,no_cover,1.5,Evaluated,,,,,,No provider selected
-3,Ole Miss,Alabama,False,Saved spread,,-8.0,Ole Miss,14,42,-28,incorrect,no_cover,36.0,Evaluated,,,,,,No provider selected
-3,North Carolina,Vanderbilt,False,Saved spread,,17.5,Vanderbilt,34,10,24,incorrect,no_cover,41.5,Evaluated,,,,,,No provider selected
-3,New Mexico,UNLV,False,Saved spread,,-35.5,New Mexico,49,21,28,correct,no_cover,7.5,Evaluated,,,,,,No provider selected
-3,Nebraska,New Mexico State,False,Saved spread,,-30.5,Nebraska,68,0,68,correct,cover,37.5,Evaluated,,,,,,No provider selected
-3,Memphis,Mississippi State,False,Saved spread,,30.5,Mississippi State,17,41,-24,correct,no_cover,6.5,Evaluated,,,,,,No provider selected
-3,Northwestern,Miami (OH),False,Saved spread,,26.5,Miami (OH),13,27,-14,correct,no_cover,12.5,Evaluated,,,,,,No provider selected
-3,LSU,Oregon State,False,Saved spread,,-5.0,LSU,45,7,38,correct,cover,33.0,Evaluated,,,,,,No provider selected
-3,Louisiana,West Texas A&M,False,Saved spread,,-24.0,Louisiana,31,18,13,correct,no_cover,11.0,Evaluated,,,,,,No provider selected
-3,Kansas,TCU,False,Saved spread,,21.5,TCU,30,19,11,incorrect,no_cover,32.5,Evaluated,,,,,,No provider selected
-3,Iowa,Iowa State,False,Saved spread,,-1.5,Iowa,7,19,-12,incorrect,no_cover,13.5,Evaluated,,,,,,No provider selected
-3,Syracuse,Illinois,False,Saved spread,,8.5,Illinois,10,47,-37,correct,cover,28.5,Evaluated,,,,,,No provider selected
-3,Washington State,Colorado,False,Saved spread,,-26.5,Washington State,0,12,-12,incorrect,no_cover,38.5,Evaluated,,,,,,No provider selected
-3,California,San Diego State,False,Saved spread,,-24.5,California,28,0,28,correct,cover,3.5,Evaluated,,,,,,No provider selected
-3,Arizona,Washington,False,Saved spread,,3.0,Washington,13,23,-10,correct,cover,7.0,Evaluated,,,,,,No provider selected
-3,Wyoming,Long Beach State,False,Saved spread,,-4.0,Wyoming,36,27,9,correct,cover,5.0,Evaluated,,,,,,No provider selected
-3,Wichita State,Ball State,False,Saved spread,,-32.5,Wichita State,33,20,13,correct,no_cover,19.5,Evaluated,,,,,,No provider selected
-3,Texas Tech,Air Force,False,Saved spread,,10.5,Air Force,31,30,1,incorrect,no_cover,11.5,Evaluated,,,,,,No provider selected
-3,Texas,Utah,False,Saved spread,,15.0,Utah,21,12,9,incorrect,no_cover,24.0,Evaluated,,,,,,No provider selected
-3,UTEP,SMU,False,Saved spread,,11.5,SMU,10,31,-21,correct,cover,9.5,Evaluated,,,,,,No provider selected
-3,USC,Indiana,False,Saved spread,,19.0,Indiana,28,7,21,incorrect,no_cover,40.0,Evaluated,,,,,,No provider selected
-3,Stanford,San José State,False,Saved spread,,-3.5,Stanford,31,35,-4,incorrect,no_cover,7.5,Evaluated,,,,,,No provider selected
-3,Kentucky,Oklahoma,False,Saved spread,,0.0,Unknown (zero line),8,29,-21,ungraded,ungraded,21.0,Evaluated,,,,,,No provider selected
-3,Ohio,Richmond,False,Saved spread,,-1.0,Ohio,23,14,9,correct,cover,8.0,Evaluated,,,,,,No provider selected
-3,Notre Dame,Michigan,False,Saved spread,,22.0,Michigan,23,17,6,incorrect,no_cover,28.0,Evaluated,,,,,,No provider selected
-3,Auburn,Southern Miss,False,Saved spread,,-9.5,Auburn,21,19,2,correct,no_cover,7.5,Evaluated,,,,,,No provider selected
-3,Arkansas,Navy,False,Saved spread,,-9.0,Arkansas,29,17,12,correct,cover,3.0,Evaluated,,,,,,No provider selected
-3,Houston,Arizona State,False,Saved spread,,31.0,Arizona State,10,24,-14,correct,no_cover,17.0,Evaluated,,,,,,No provider selected
-3,West Virginia,Maryland,False,Saved spread,,-28.5,West Virginia,19,18,1,correct,no_cover,27.5,Evaluated,,,,,,No provider selected
-3,Wisconsin,UCLA,False,Saved spread,,23.5,UCLA,26,51,-25,correct,cover,1.5,Evaluated,,,,,,No provider selected
-3,Tulane,Rice,False,Saved spread,,-2.0,Tulane,30,6,24,correct,cover,22.0,Evaluated,,,,,,No provider selected
-3,South Carolina,Duke,False,Saved spread,,-4.0,South Carolina,17,30,-13,incorrect,no_cover,17.0,Evaluated,,,,,,No provider selected
-3,Tulsa,Oklahoma State,False,Saved spread,,5.0,Oklahoma State,25,15,10,incorrect,no_cover,15.0,Evaluated,,,,,,No provider selected
-4,SMU,TCU,False,Saved spread,,-15.5,SMU,16,13,3,correct,no_cover,12.5,Evaluated,,,,,,No provider selected
-4,Temple,Rutgers,False,Saved spread,,-23.5,Temple,7,10,-3,incorrect,no_cover,26.5,Evaluated,,,,,,No provider selected
-4,Miami (OH),Eastern Michigan,False,Saved spread,,-30.0,Miami (OH),35,0,35,correct,cover,5.0,Evaluated,,,,,,No provider selected
-4,North Texas,Louisiana,False,Saved spread,,25.5,Louisiana,14,31,-17,correct,no_cover,8.5,Evaluated,,,,,,No provider selected
-4,Florida,Mississippi State,False,Saved spread,,-4.0,Florida,27,17,10,correct,cover,6.0,Evaluated,,,,,,No provider selected
-4,Navy,Boston College,False,Saved spread,,9.0,Boston College,0,31,-31,correct,cover,22.0,Evaluated,,,,,,No provider selected
-4,California,Arizona State,False,Saved spread,,1.0,Arizona State,0,15,-15,correct,cover,14.0,Evaluated,,,,,,No provider selected
-4,BYU,Air Force,False,Saved spread,,-11.5,BYU,38,39,-1,incorrect,no_cover,12.5,Evaluated,,,,,,No provider selected
-4,Western Michigan,Kent State,False,Saved spread,,-28.5,Western Michigan,24,14,10,correct,no_cover,18.5,Evaluated,,,,,,No provider selected
-4,West Virginia,Richmond,False,Saved spread,,-30.5,West Virginia,43,10,33,correct,cover,2.5,Evaluated,,,,,,No provider selected
-4,Washington,Oregon,False,Saved spread,,-35.5,Washington,37,21,16,correct,no_cover,19.5,Evaluated,,,,,,No provider selected
-4,Virginia Tech,William & Mary,False,Saved spread,,-9.5,Virginia Tech,47,3,44,correct,cover,34.5,Evaluated,,,,,,No provider selected
-4,Cal State Fullerton,Utah State,False,Saved spread,,-4.5,Cal State Fullerton,0,19,-19,incorrect,no_cover,23.5,Evaluated,,,,,,No provider selected
-4,Maryland,NC State,False,Saved spread,,27.0,NC State,23,6,17,incorrect,no_cover,44.0,Evaluated,,,,,,No provider selected
-4,Hawai'i,UTEP,False,Saved spread,,-21.0,Hawai'i,17,10,7,correct,no_cover,14.0,Evaluated,,,,,,No provider selected
-4,Memphis,Georgia Tech,False,Saved spread,,10.0,Georgia Tech,20,24,-4,correct,no_cover,6.0,Evaluated,,,,,,No provider selected
-4,Southern Miss,Florida State,False,Saved spread,,1.0,Florida State,17,24,-7,correct,cover,6.0,Evaluated,,,,,,No provider selected
-4,Duke,Virginia,False,Saved spread,,-34.0,Duke,51,17,34,correct,push,0.0,Evaluated,,,,,,No provider selected
-4,Texas Tech,Baylor,False,Saved spread,,1.5,Baylor,23,24,-1,correct,no_cover,0.5,Evaluated,,,,,,No provider selected
-4,Auburn,Tennessee,False,Saved spread,,-18.5,Auburn,24,14,10,correct,no_cover,8.5,Evaluated,,,,,,No provider selected
-4,Alabama,Vanderbilt,False,Saved spread,,-19.5,Alabama,24,21,3,correct,no_cover,16.5,Evaluated,,,,,,No provider selected
-4,Colorado,Wyoming,False,Saved spread,,-7.5,Colorado,10,24,-14,incorrect,no_cover,21.5,Evaluated,,,,,,No provider selected
-4,Wisconsin,Toledo,False,Saved spread,,26.5,Toledo,36,27,9,incorrect,no_cover,35.5,Evaluated,,,,,,No provider selected
-4,Michigan,UCLA,False,Saved spread,,9.0,UCLA,27,31,-4,correct,no_cover,5.0,Evaluated,,,,,,No provider selected
-4,Texas,Missouri,False,Saved spread,,0.0,Unknown (zero line),21,0,21,ungraded,ungraded,21.0,Evaluated,,,,,,No provider selected
-4,Ohio State,Stanford,False,Saved spread,,-13.5,Ohio State,20,23,-3,incorrect,no_cover,16.5,Evaluated,,,,,,No provider selected
-4,Oklahoma,USC,False,Saved spread,,0.0,Unknown (zero line),0,12,-12,ungraded,ungraded,12.0,Evaluated,,,,,,No provider selected
-4,Oregon State,San José State,False,Saved spread,,28.5,San José State,13,17,-4,correct,no_cover,24.5,Evaluated,,,,,,No provider selected
-4,San Diego State,UNLV,False,Saved spread,,-3.0,San Diego State,26,23,3,correct,push,0.0,Evaluated,,,,,,No provider selected
-4,Illinois,Pittsburgh,False,Saved spread,,-1.0,Illinois,3,20,-17,incorrect,no_cover,18.0,Evaluated,,,,,,No provider selected
-4,Penn State,Nebraska,False,Saved spread,,-2.5,Penn State,27,24,3,correct,cover,0.5,Evaluated,,,,,,No provider selected
-4,Notre Dame,Purdue,False,Saved spread,,-31.5,Notre Dame,28,14,14,correct,no_cover,17.5,Evaluated,,,,,,No provider selected
-4,Northwestern,Northern Illinois,False,Saved spread,,13.0,Northern Illinois,31,6,25,incorrect,no_cover,38.0,Evaluated,,,,,,No provider selected
-4,North Carolina,Army,False,Saved spread,,-7.0,North Carolina,62,8,54,correct,cover,47.0,Evaluated,,,,,,No provider selected
-4,Minnesota,Washington State,False,Saved spread,,-14.0,Minnesota,41,11,30,correct,cover,16.0,Evaluated,,,,,,No provider selected
-4,Miami,Michigan State,False,Saved spread,,-24.5,Miami,25,22,3,correct,no_cover,21.5,Evaluated,,,,,,No provider selected
-4,Louisville,Oklahoma State,False,Saved spread,,2.5,Oklahoma State,28,22,6,incorrect,no_cover,8.5,Evaluated,,,,,,No provider selected
-4,LSU,Rice,False,Saved spread,,-26.5,LSU,52,13,39,correct,cover,12.5,Evaluated,,,,,,No provider selected
-4,Kansas State,Wichita State,False,Saved spread,,-1.0,Kansas State,31,7,24,correct,cover,23.0,Evaluated,,,,,,No provider selected
-4,Kansas,Kentucky,False,Saved spread,,-18.0,Kansas,13,13,0,tie,no_cover,18.0,Evaluated,,,,,,No provider selected
-4,Iowa State,Drake,False,Saved spread,,-4.5,Iowa State,35,10,25,correct,cover,20.5,Evaluated,,,,,,No provider selected
-4,Arizona,Iowa,False,Saved spread,,-21.5,Arizona,14,17,-3,incorrect,no_cover,24.5,Evaluated,,,,,,No provider selected
-4,Ball State,Indiana State,False,Saved spread,,15.5,Indiana State,0,17,-17,correct,cover,1.5,Evaluated,,,,,,No provider selected
-4,Indiana,Syracuse,False,Saved spread,,-7.5,Indiana,17,10,7,correct,no_cover,0.5,Evaluated,,,,,,No provider selected
-4,South Carolina,Georgia,False,Saved spread,,6.0,Georgia,18,34,-16,correct,cover,10.0,Evaluated,,,,,,No provider selected
-4,East Carolina,Central Michigan,False,Saved spread,,4.5,Central Michigan,24,6,18,incorrect,no_cover,22.5,Evaluated,,,,,,No provider selected
-4,Colorado State,New Mexico State,False,Saved spread,,-12.5,Colorado State,28,17,11,correct,no_cover,1.5,Evaluated,,,,,,No provider selected
-4,Arkansas,Ole Miss,False,Saved spread,,-13.5,Arkansas,14,12,2,correct,no_cover,11.5,Evaluated,,,,,,No provider selected
-5,Utah,Colorado State,False,Saved spread,,1.5,Colorado State,35,14,21,incorrect,no_cover,22.5,Evaluated,,,,,,No provider selected
-5,Long Beach State,Cal State Fullerton,False,Saved spread,,11.0,Cal State Fullerton,7,3,4,incorrect,no_cover,15.0,Evaluated,,,,,,No provider selected
-5,Texas A&M,Texas Tech,False,Saved spread,,-11.5,Texas A&M,15,24,-9,incorrect,no_cover,20.5,Evaluated,,,,,,No provider selected
-5,Stanford,Oregon State,False,Saved spread,,-24.0,Stanford,45,5,40,correct,cover,16.0,Evaluated,,,,,,No provider selected
-5,Rutgers,William & Mary,False,Saved spread,,-0.5,Rutgers,27,17,10,correct,cover,9.5,Evaluated,,,,,,No provider selected
-5,Pacific,UNLV,False,Saved spread,,-2.5,Pacific,29,27,2,correct,no_cover,0.5,Evaluated,,,,,,No provider selected
-5,Iowa State,Oklahoma,False,Saved spread,,-11.5,Iowa State,3,13,-10,incorrect,no_cover,21.5,Evaluated,,,,,,No provider selected
-5,New Mexico State,Illinois State,False,Saved spread,,4.0,Illinois State,26,17,9,incorrect,no_cover,13.0,Evaluated,,,,,,No provider selected
-5,Air Force,New Mexico,False,Saved spread,,13.0,New Mexico,37,49,-12,correct,no_cover,1.0,Evaluated,,,,,,No provider selected
-5,Michigan,Indiana,False,Saved spread,,5.5,Indiana,24,10,14,incorrect,no_cover,19.5,Evaluated,,,,,,No provider selected
-5,Iowa,Northwestern,False,Saved spread,,-4.0,Iowa,45,7,38,correct,cover,34.0,Evaluated,,,,,,No provider selected
-5,Drake,Indiana State,False,Saved spread,,10.0,Indiana State,19,29,-10,correct,push,0.0,Evaluated,,,,,,No provider selected
-5,Minnesota,Illinois,False,Saved spread,,-7.0,Minnesota,24,42,-18,incorrect,no_cover,25.0,Evaluated,,,,,,No provider selected
-5,Mississippi State,Georgia,False,Saved spread,,5.0,Georgia,22,29,-7,correct,cover,2.0,Evaluated,,,,,,No provider selected
-5,Bowling Green,Western Michigan,False,Saved spread,,-6.5,Bowling Green,7,3,4,correct,no_cover,2.5,Evaluated,,,,,,No provider selected
-5,West Texas A&M,Wichita State,False,Saved spread,,15.5,Wichita State,21,24,-3,correct,no_cover,12.5,Evaluated,,,,,,No provider selected
-5,Rice,Texas,False,Saved spread,,29.5,Texas,7,34,-27,correct,no_cover,2.5,Evaluated,,,,,,No provider selected
-5,Southern Miss,Memphis,False,Saved spread,,-11.5,Southern Miss,34,14,20,correct,cover,8.5,Evaluated,,,,,,No provider selected
-5,USC,Oregon,False,Saved spread,,-24.0,USC,38,7,31,correct,cover,7.0,Evaluated,,,,,,No provider selected
-5,South Carolina,Cincinnati,False,Saved spread,,1.0,Cincinnati,37,10,27,incorrect,no_cover,28.0,Evaluated,,,,,,No provider selected
-5,Pittsburgh,West Virginia,False,Saved spread,,-5.5,Pittsburgh,16,13,3,correct,no_cover,2.5,Evaluated,,,,,,No provider selected
-5,Ohio,Toledo,False,Saved spread,,12.0,Toledo,17,14,3,incorrect,no_cover,15.0,Evaluated,,,,,,No provider selected
-5,Virginia,NC State,False,Saved spread,,21.0,NC State,13,16,-3,correct,no_cover,18.0,Evaluated,,,,,,No provider selected
-5,Kent State,Miami (OH),False,Saved spread,,25.5,Miami (OH),0,20,-20,correct,no_cover,5.5,Evaluated,,,,,,No provider selected
-5,Louisville,Miami,False,Saved spread,,3.5,Miami,6,28,-22,correct,cover,18.5,Evaluated,,,,,,No provider selected
-5,Florida,LSU,False,Saved spread,,-6.0,Florida,13,24,-11,incorrect,no_cover,17.0,Evaluated,,,,,,No provider selected
-5,Houston,Baylor,False,Saved spread,,6.0,Baylor,21,21,0,tie,no_cover,6.0,Evaluated,,,,,,No provider selected
-5,Fresno State,Utah State,False,Saved spread,,-8.0,Fresno State,31,6,25,correct,cover,17.0,Evaluated,,,,,,No provider selected
-5,Eastern Michigan,Central Michigan,False,Saved spread,,11.5,Central Michigan,8,13,-5,correct,no_cover,6.5,Evaluated,,,,,,No provider selected
-5,UTEP,BYU,False,Saved spread,,4.5,BYU,3,51,-48,correct,cover,43.5,Evaluated,,,,,,No provider selected
-5,Boston College,Temple,False,Saved spread,,-15.5,Boston College,17,7,10,correct,no_cover,5.5,Evaluated,,,,,,No provider selected
-5,Northern Illinois,Ball State,False,Saved spread,,-11.5,Northern Illinois,7,14,-7,incorrect,no_cover,18.5,Evaluated,,,,,,No provider selected
-5,Arkansas,TCU,False,Saved spread,,-21.5,Arkansas,35,0,35,correct,cover,13.5,Evaluated,,,,,,No provider selected
-5,Washington,San Diego State,False,Saved spread,,-24.5,Washington,46,25,21,correct,no_cover,3.5,Evaluated,,,,,,No provider selected
-5,Virginia Tech,Wake Forest,False,Saved spread,,-10.0,Virginia Tech,10,13,-3,incorrect,no_cover,13.0,Evaluated,,,,,,No provider selected
-5,Vanderbilt,Tulane,False,Saved spread,,-3.0,Vanderbilt,24,21,3,correct,push,0.0,Evaluated,,,,,,No provider selected
-5,Colorado,UCLA,False,Saved spread,,16.5,UCLA,6,34,-28,correct,cover,11.5,Evaluated,,,,,,No provider selected
-5,Kansas,Tulsa,False,Saved spread,,0.5,Tulsa,15,20,-5,correct,cover,4.5,Evaluated,,,,,,No provider selected
-5,Tennessee,Washington State,False,Saved spread,,-3.0,Tennessee,10,3,7,correct,cover,4.0,Evaluated,,,,,,No provider selected
-5,SMU,North Texas,False,Saved spread,,-32.0,SMU,38,10,28,correct,no_cover,4.0,Evaluated,,,,,,No provider selected
-5,Michigan State,Notre Dame,False,Saved spread,,26.5,Notre Dame,3,11,-8,correct,no_cover,18.5,Evaluated,,,,,,No provider selected
-5,North Carolina,Georgia Tech,False,Saved spread,,-7.5,North Carolina,41,0,41,correct,cover,33.5,Evaluated,,,,,,No provider selected
-5,Auburn,Nebraska,False,Saved spread,,-9.5,Auburn,7,41,-34,incorrect,no_cover,43.5,Evaluated,,,,,,No provider selected
-5,Duke,Navy,False,Saved spread,,-22.0,Duke,21,27,-6,incorrect,no_cover,28.0,Evaluated,,,,,,No provider selected
-5,Missouri,East Carolina,False,Saved spread,,-3.0,Missouri,28,9,19,correct,cover,16.0,Evaluated,,,,,,No provider selected
-5,Syracuse,Maryland,False,Saved spread,,2.0,Maryland,3,26,-23,correct,cover,21.0,Evaluated,,,,,,No provider selected
-5,Louisiana,Southern Illinois,False,Saved spread,,-7.0,Louisiana,20,10,10,correct,cover,3.0,Evaluated,,,,,,No provider selected
-5,Ohio State,Florida State,False,Saved spread,,-5.0,Ohio State,17,34,-17,incorrect,no_cover,22.0,Evaluated,,,,,,No provider selected
-5,Clemson,Kentucky,False,Saved spread,,-16.5,Clemson,24,6,18,correct,cover,1.5,Evaluated,,,,,,No provider selected
-5,California,San José State,False,Saved spread,,3.5,San José State,26,7,19,incorrect,no_cover,22.5,Evaluated,,,,,,No provider selected
-5,Arizona State,Kansas State,False,Saved spread,,-3.0,Arizona State,30,7,23,correct,cover,20.0,Evaluated,,,,,,No provider selected
-5,Hawai'i,Wyoming,False,Saved spread,,-16.5,Hawai'i,10,28,-18,incorrect,no_cover,34.5,Evaluated,,,,,,No provider selected
-5,Purdue,Wisconsin,False,Saved spread,,6.5,Wisconsin,31,35,-4,correct,no_cover,2.5,Evaluated,,,,,,No provider selected
-6,Illinois State,Wichita State,False,Saved spread,,15.5,Wichita State,14,48,-34,correct,cover,18.5,Evaluated,,,,,,No provider selected
-6,West Virginia,Boston College,False,Saved spread,,4.0,Boston College,20,13,7,incorrect,no_cover,11.0,Evaluated,,,,,,No provider selected
-6,Vanderbilt,Florida,False,Saved spread,,9.0,Florida,31,29,2,incorrect,no_cover,11.0,Evaluated,,,,,,No provider selected
-6,New Mexico State,Tulsa,False,Saved spread,,14.0,Tulsa,14,31,-17,correct,cover,3.0,Evaluated,,,,,,No provider selected
-6,Toledo,Eastern Michigan,False,Saved spread,,-19.5,Toledo,20,19,1,correct,no_cover,18.5,Evaluated,,,,,,No provider selected
-6,TCU,Rice,False,Saved spread,,-10.0,TCU,24,16,8,correct,no_cover,2.0,Evaluated,,,,,,No provider selected
-6,Tennessee,LSU,False,Saved spread,,12.0,LSU,24,24,0,tie,no_cover,12.0,Evaluated,,,,,,No provider selected
-6,Louisville,Temple,False,Saved spread,,-3.0,Louisville,14,55,-41,incorrect,no_cover,44.0,Evaluated,,,,,,No provider selected
-6,Baylor,SMU,False,Saved spread,,8.0,SMU,19,22,-3,correct,no_cover,5.0,Evaluated,,,,,,No provider selected
-6,Cal State Fullerton,San José State,False,Saved spread,,8.5,San José State,15,38,-23,correct,cover,14.5,Evaluated,,,,,,No provider selected
-6,Northwestern,Minnesota,False,Saved spread,,16.5,Minnesota,31,21,10,incorrect,no_cover,26.5,Evaluated,,,,,,No provider selected
-6,Colorado,Nebraska,False,Saved spread,,15.0,Nebraska,14,40,-26,correct,cover,11.0,Evaluated,,,,,,No provider selected
-6,Miami (OH),Bowling Green,False,Saved spread,,0.5,Bowling Green,17,12,5,incorrect,no_cover,5.5,Evaluated,,,,,,No provider selected
-6,Kansas,Oklahoma State,False,Saved spread,,-2.0,Kansas,24,24,0,tie,no_cover,2.0,Evaluated,,,,,,No provider selected
-6,Indiana,Iowa,False,Saved spread,,-4.0,Indiana,20,24,-4,incorrect,no_cover,8.0,Evaluated,,,,,,No provider selected
-6,Houston,Texas A&M,False,Saved spread,,2.0,Texas A&M,24,20,4,incorrect,no_cover,6.0,Evaluated,,,,,,No provider selected
-6,Tulane,Georgia Tech,False,Saved spread,,4.0,Georgia Tech,13,19,-6,correct,cover,2.0,Evaluated,,,,,,No provider selected
-6,Georgia,Ole Miss,False,Saved spread,,-17.0,Georgia,33,10,23,correct,cover,6.0,Evaluated,,,,,,No provider selected
-6,East Carolina,Richmond,False,Saved spread,,-19.0,East Carolina,35,14,21,correct,cover,2.0,Evaluated,,,,,,No provider selected
-6,New Mexico,BYU,False,Saved spread,,-14.0,New Mexico,12,40,-28,incorrect,no_cover,42.0,Evaluated,,,,,,No provider selected
-6,Auburn,Kentucky,False,Saved spread,,-23.0,Auburn,18,3,15,correct,no_cover,8.0,Evaluated,,,,,,No provider selected
-6,Arizona State,Stanford,False,Saved spread,,-9.0,Arizona State,21,17,4,correct,no_cover,5.0,Evaluated,,,,,,No provider selected
-6,Ohio State,Wisconsin,False,Saved spread,,-5.5,Ohio State,0,6,-6,incorrect,no_cover,11.5,Evaluated,,,,,,No provider selected
-6,Western Michigan,Central Michigan,False,Saved spread,,-8.5,Western Michigan,18,18,0,tie,no_cover,8.5,Evaluated,,,,,,No provider selected
-6,Washington,California,False,Saved spread,,-7.0,Washington,50,7,43,correct,cover,36.0,Evaluated,,,,,,No provider selected
-6,Wyoming,San Diego State,False,Saved spread,,-13.5,Wyoming,21,24,-3,incorrect,no_cover,16.5,Evaluated,,,,,,No provider selected
-6,Rutgers,Army,False,Saved spread,,-2.5,Rutgers,24,3,21,correct,cover,18.5,Evaluated,,,,,,No provider selected
-6,Oregon State,Washington State,False,Saved spread,,5.5,Washington State,14,14,0,tie,no_cover,5.5,Evaluated,,,,,,No provider selected
-6,Ball State,Ohio,False,Saved spread,,4.0,Ohio,7,34,-27,correct,cover,23.0,Evaluated,,,,,,No provider selected
-6,Notre Dame,Miami,False,Saved spread,,-5.0,Notre Dame,16,14,2,correct,no_cover,3.0,Evaluated,,,,,,No provider selected
-6,Wake Forest,North Carolina,False,Saved spread,,6.5,North Carolina,7,24,-17,correct,cover,10.5,Evaluated,,,,,,No provider selected
-6,Missouri,Kansas State,False,Saved spread,,-2.0,Missouri,7,7,0,tie,no_cover,2.0,Evaluated,,,,,,No provider selected
-6,Michigan,Michigan State,False,Saved spread,,-18.0,Michigan,31,17,14,correct,no_cover,4.0,Evaluated,,,,,,No provider selected
-6,Illinois,Purdue,False,Saved spread,,-26.5,Illinois,38,34,4,correct,no_cover,22.5,Evaluated,,,,,,No provider selected
-6,Hawai'i,Utah,False,Saved spread,,-8.5,Hawai'i,10,7,3,correct,no_cover,5.5,Evaluated,,,,,,No provider selected
-6,Fresno State,Pacific,False,Saved spread,,-24.0,Fresno State,49,30,19,correct,no_cover,5.0,Evaluated,,,,,,No provider selected
-6,Virginia,Clemson,False,Saved spread,,17.5,Clemson,0,48,-48,correct,cover,30.5,Evaluated,,,,,,No provider selected
-6,Arkansas,Texas Tech,False,Saved spread,,-18.0,Arkansas,21,3,18,correct,push,0.0,Evaluated,,,,,,No provider selected
-6,Arizona,UCLA,False,Saved spread,,14.5,UCLA,24,24,0,tie,no_cover,14.5,Evaluated,,,,,,No provider selected
-6,Duke,Virginia Tech,False,Saved spread,,-8.0,Duke,21,22,-1,incorrect,no_cover,9.0,Evaluated,,,,,,No provider selected
-6,Southern Miss,Mississippi State,False,Saved spread,,4.0,Mississippi State,20,14,6,incorrect,no_cover,10.0,Evaluated,,,,,,No provider selected
-6,Oklahoma,Texas,False,Saved spread,,12.0,Texas,28,22,6,incorrect,no_cover,18.0,Evaluated,,,,,,No provider selected
-6,UNLV,UTEP,False,Saved spread,,3.0,UTEP,28,21,7,incorrect,no_cover,10.0,Evaluated,,,,,,No provider selected
-6,Maryland,Indiana State,False,Saved spread,,2.0,Indiana State,38,0,38,incorrect,no_cover,40.0,Evaluated,,,,,,No provider selected
-6,Iowa State,Kent State,False,Saved spread,,-18.0,Iowa State,44,7,37,correct,cover,19.0,Evaluated,,,,,,No provider selected
-6,Florida State,Southern Illinois,False,Saved spread,,-6.5,Florida State,59,8,51,correct,cover,44.5,Evaluated,,,,,,No provider selected
-6,Cincinnati,Long Beach State,False,Saved spread,,-11.5,Cincinnati,34,14,20,correct,cover,8.5,Evaluated,,,,,,No provider selected
-6,Alabama,Penn State,False,Saved spread,,-1.5,Alabama,42,21,21,correct,cover,19.5,Evaluated,,,,,,No provider selected
-6,Air Force,Navy,False,Saved spread,,0.0,Unknown (zero line),24,21,3,ungraded,ungraded,3.0,Evaluated,,,,,,No provider selected
-7,Wisconsin,Michigan State,False,Saved spread,,-17.5,Wisconsin,24,23,1,correct,no_cover,16.5,Evaluated,,,,,,No provider selected
-7,Virginia Tech,West Virginia,False,Saved spread,,3.5,West Virginia,6,16,-10,correct,cover,6.5,Evaluated,,,,,,No provider selected
-7,UCLA,Washington State,False,Saved spread,,-23.5,UCLA,42,17,25,correct,cover,1.5,Evaluated,,,,,,No provider selected
-7,Rice,Texas Tech,False,Saved spread,,9.5,Texas Tech,21,23,-2,correct,no_cover,7.5,Evaluated,,,,,,No provider selected
-7,Texas A&M,Baylor,False,Saved spread,,-0.5,Texas A&M,28,23,5,correct,cover,4.5,Evaluated,,,,,,No provider selected
-7,Tennessee,Alabama,False,Saved spread,,12.0,Alabama,35,28,7,incorrect,no_cover,19.0,Evaluated,,,,,,No provider selected
-7,Tulane,Southern Miss,False,Saved spread,,8.0,Southern Miss,10,22,-12,correct,cover,4.0,Evaluated,,,,,,No provider selected
-7,SMU,Houston,False,Saved spread,,-14.0,SMU,20,14,6,correct,no_cover,8.0,Evaluated,,,,,,No provider selected
-7,Stanford,USC,False,Saved spread,,1.5,USC,21,41,-20,correct,cover,18.5,Evaluated,,,,,,No provider selected
-7,Purdue,Northwestern,False,Saved spread,,6.0,Northwestern,34,21,13,incorrect,no_cover,19.0,Evaluated,,,,,,No provider selected
-7,Pittsburgh,Temple,False,Saved spread,,-17.0,Pittsburgh,38,7,31,correct,cover,14.0,Evaluated,,,,,,No provider selected
-7,Penn State,Syracuse,False,Saved spread,,-21.5,Penn State,28,7,21,correct,no_cover,0.5,Evaluated,,,,,,No provider selected
-7,Navy,William & Mary,False,Saved spread,,-3.5,Navy,39,3,36,correct,cover,32.5,Evaluated,,,,,,No provider selected
-7,Maryland,Wake Forest,False,Saved spread,,-9.0,Maryland,52,31,21,correct,cover,12.0,Evaluated,,,,,,No provider selected
-7,Kentucky,LSU,False,Saved spread,,26.0,LSU,10,34,-24,correct,no_cover,2.0,Evaluated,,,,,,No provider selected
-7,Iowa State,Missouri,False,Saved spread,,2.5,Missouri,17,17,0,tie,no_cover,2.5,Evaluated,,,,,,No provider selected
-7,Minnesota,Indiana,False,Saved spread,,-9.0,Minnesota,21,40,-19,incorrect,no_cover,28.0,Evaluated,,,,,,No provider selected
-7,Georgia,Vanderbilt,False,Saved spread,,-15.5,Georgia,27,13,14,correct,no_cover,1.5,Evaluated,,,,,,No provider selected
-7,Memphis,Cincinnati,False,Saved spread,,16.5,Cincinnati,7,16,-9,correct,no_cover,7.5,Evaluated,,,,,,No provider selected
-7,BYU,Hawai'i,False,Saved spread,,1.5,Hawai'i,39,25,14,incorrect,no_cover,15.5,Evaluated,,,,,,No provider selected
-7,Boston College,Rutgers,False,Saved spread,,-10.5,Boston College,14,13,1,correct,no_cover,9.5,Evaluated,,,,,,No provider selected
-7,Wichita State,New Mexico State,False,Saved spread,,-21.0,Wichita State,28,26,2,correct,no_cover,19.0,Evaluated,,,,,,No provider selected
-7,Western Michigan,Miami (OH),False,Saved spread,,4.5,Miami (OH),10,0,10,incorrect,no_cover,14.5,Evaluated,,,,,,No provider selected
-7,Oregon State,Washington,False,Saved spread,,26.5,Washington,17,34,-17,correct,no_cover,9.5,Evaluated,,,,,,No provider selected
-7,Utah State,Pacific,False,Saved spread,,-15.0,Utah State,14,12,2,correct,no_cover,13.0,Evaluated,,,,,,No provider selected
-7,Tulsa,Southern Illinois,False,Saved spread,,-11.0,Tulsa,22,3,19,correct,cover,8.0,Evaluated,,,,,,No provider selected
-7,Kansas,Oklahoma,False,Saved spread,,5.5,Oklahoma,14,38,-24,correct,cover,18.5,Evaluated,,,,,,No provider selected
-7,Illinois,Ohio State,False,Saved spread,,-13.5,Illinois,21,26,-5,incorrect,no_cover,18.5,Evaluated,,,,,,No provider selected
-7,Eastern Michigan,Ohio,False,Saved spread,,12.5,Ohio,13,14,-1,correct,no_cover,11.5,Evaluated,,,,,,No provider selected
-7,North Carolina,NC State,False,Saved spread,,-4.0,North Carolina,41,9,32,correct,cover,28.0,Evaluated,,,,,,No provider selected
-7,San Diego State,New Mexico,False,Saved spread,,12.0,New Mexico,17,22,-5,correct,no_cover,7.0,Evaluated,,,,,,No provider selected
-7,Nebraska,Kansas State,False,Saved spread,,-4.0,Nebraska,42,13,29,correct,cover,25.0,Evaluated,,,,,,No provider selected
-7,Iowa,Michigan,False,Saved spread,,0.0,Unknown (zero line),7,29,-22,ungraded,ungraded,22.0,Evaluated,,,,,,No provider selected
-7,Louisville,Richmond,False,Saved spread,,-12.0,Louisville,35,0,35,correct,cover,23.0,Evaluated,,,,,,No provider selected
-7,San José State,Long Beach State,False,Saved spread,,-18.0,San José State,21,22,-1,incorrect,no_cover,19.0,Evaluated,,,,,,No provider selected
-7,Florida State,East Carolina,False,Saved spread,,-8.5,Florida State,56,17,39,correct,cover,30.5,Evaluated,,,,,,No provider selected
-7,Air Force,Colorado State,False,Saved spread,,-5.0,Air Force,11,21,-10,incorrect,no_cover,15.0,Evaluated,,,,,,No provider selected
-7,Colorado,Oklahoma State,False,Saved spread,,3.5,Oklahoma State,25,25,0,tie,no_cover,3.5,Evaluated,,,,,,No provider selected
-7,Clemson,Duke,False,Saved spread,,-5.0,Clemson,49,14,35,correct,cover,30.0,Evaluated,,,,,,No provider selected
-7,Central Michigan,Toledo,False,Saved spread,,1.0,Toledo,16,12,4,incorrect,no_cover,5.0,Evaluated,,,,,,No provider selected
-7,California,Oregon,False,Saved spread,,-20.5,California,10,7,3,correct,no_cover,17.5,Evaluated,,,,,,No provider selected
-7,Bowling Green,Northern Illinois,False,Saved spread,,-19.5,Bowling Green,20,18,2,correct,no_cover,17.5,Evaluated,,,,,,No provider selected
-7,Kent State,Ball State,False,Saved spread,,3.0,Ball State,3,21,-18,correct,cover,15.0,Evaluated,,,,,,No provider selected
-7,Utah,UNLV,False,Saved spread,,-11.0,Utah,24,14,10,correct,no_cover,1.0,Evaluated,,,,,,No provider selected
-7,Ole Miss,TCU,False,Saved spread,,-3.0,Ole Miss,27,9,18,correct,cover,15.0,Evaluated,,,,,,No provider selected
-7,Miami,Mississippi State,False,Saved spread,,-7.0,Miami,31,14,17,correct,cover,10.0,Evaluated,,,,,,No provider selected
-7,Florida,West Texas A&M,False,Saved spread,,-15.5,Florida,77,14,63,correct,cover,47.5,Evaluated,,,,,,No provider selected
-7,Wyoming,Cal State Fullerton,False,Saved spread,,-9.5,Wyoming,16,20,-4,incorrect,no_cover,13.5,Evaluated,,,,,,No provider selected
-7,Auburn,Georgia Tech,False,Saved spread,,-10.0,Auburn,24,0,24,correct,cover,14.0,Evaluated,,,,,,No provider selected
-7,Arizona State,UTEP,False,Saved spread,,-27.5,Arizona State,37,6,31,correct,cover,3.5,Evaluated,,,,,,No provider selected
-7,Notre Dame,Arizona,False,Saved spread,,-17.5,Notre Dame,13,16,-3,incorrect,no_cover,20.5,Evaluated,,,,,,No provider selected
-8,Wyoming,Utah,False,Saved spread,,0.0,Unknown (zero line),16,13,3,ungraded,ungraded,3.0,Evaluated,,,,,,No provider selected
-8,Virginia,Wake Forest,False,Saved spread,,9.0,Wake Forest,34,27,7,incorrect,no_cover,16.0,Evaluated,,,,,,No provider selected
-8,Vanderbilt,Ole Miss,False,Saved spread,,-1.5,Vanderbilt,19,10,9,correct,cover,7.5,Evaluated,,,,,,No provider selected
-8,California,UCLA,False,Saved spread,,7.0,UCLA,31,47,-16,correct,cover,9.0,Evaluated,,,,,,No provider selected
-8,Toledo,Bowling Green,False,Saved spread,,5.5,Bowling Green,24,10,14,incorrect,no_cover,19.5,Evaluated,,,,,,No provider selected
-8,Washington State,Stanford,False,Saved spread,,9.0,Stanford,26,31,-5,correct,no_cover,4.0,Evaluated,,,,,,No provider selected
-8,Southern Miss,Louisville,False,Saved spread,,-6.5,Southern Miss,48,0,48,correct,cover,41.5,Evaluated,,,,,,No provider selected
-8,Southern Illinois,Indiana State,False,Saved spread,,1.0,Indiana State,21,9,12,incorrect,no_cover,13.0,Evaluated,,,,,,No provider selected
-8,Michigan State,Purdue,False,Saved spread,,2.0,Purdue,21,24,-3,correct,cover,1.0,Evaluated,,,,,,No provider selected
-8,West Virginia,Penn State,False,Saved spread,,-2.0,West Virginia,0,24,-24,incorrect,no_cover,26.0,Evaluated,,,,,,No provider selected
-8,Oklahoma,Oklahoma State,False,Saved spread,,-11.5,Oklahoma,27,9,18,correct,cover,6.5,Evaluated,,,,,,No provider selected
-8,Indiana,Ohio State,False,Saved spread,,-2.5,Indiana,25,49,-24,incorrect,no_cover,26.5,Evaluated,,,,,,No provider selected
-8,Ohio,Miami (OH),False,Saved spread,,6.0,Miami (OH),20,0,20,incorrect,no_cover,26.0,Evaluated,,,,,,No provider selected
-8,Nebraska,Missouri,False,Saved spread,,-5.0,Nebraska,23,19,4,correct,no_cover,1.0,Evaluated,,,,,,No provider selected
-8,Maryland,Duke,False,Saved spread,,-8.0,Maryland,49,22,27,correct,cover,19.0,Evaluated,,,,,,No provider selected
-8,Minnesota,Iowa,False,Saved spread,,-5.0,Minnesota,16,21,-5,incorrect,no_cover,10.0,Evaluated,,,,,,No provider selected
-8,Wisconsin,Illinois,False,Saved spread,,2.0,Illinois,28,29,-1,correct,no_cover,1.0,Evaluated,,,,,,No provider selected
-8,NC State,Clemson,False,Saved spread,,2.0,Clemson,29,38,-9,correct,cover,7.0,Evaluated,,,,,,No provider selected
-8,Kent State,Central Michigan,False,Saved spread,,15.5,Central Michigan,20,31,-11,correct,no_cover,4.5,Evaluated,,,,,,No provider selected
-8,BYU,Colorado State,False,Saved spread,,-10.0,BYU,34,18,16,correct,cover,6.0,Evaluated,,,,,,No provider selected
-8,Army,Boston College,False,Saved spread,,10.5,Boston College,17,32,-15,correct,cover,4.5,Evaluated,,,,,,No provider selected
-8,Mississippi State,Auburn,False,Saved spread,,8.0,Auburn,17,35,-18,correct,cover,10.0,Evaluated,,,,,,No provider selected
-8,Houston,Arkansas,False,Saved spread,,13.5,Arkansas,3,38,-35,correct,cover,21.5,Evaluated,,,,,,No provider selected
-8,UTEP,Air Force,False,Saved spread,,6.5,Air Force,7,35,-28,correct,cover,21.5,Evaluated,,,,,,No provider selected
-8,Drake,Tulsa,False,Saved spread,,14.0,Tulsa,18,34,-16,correct,cover,2.0,Evaluated,,,,,,No provider selected
-8,Tulane,Memphis,False,Saved spread,,-6.5,Tulane,17,10,7,correct,cover,0.5,Evaluated,,,,,,No provider selected
-8,TCU,Baylor,False,Saved spread,,0.5,Baylor,38,14,24,incorrect,no_cover,24.5,Evaluated,,,,,,No provider selected
-8,Texas A&M,Rice,False,Saved spread,,-17.0,Texas A&M,49,7,42,correct,cover,25.0,Evaluated,,,,,,No provider selected
-8,Texas,SMU,False,Saved spread,,3.0,SMU,17,30,-13,correct,cover,10.0,Evaluated,,,,,,No provider selected
-8,USC,Oregon State,False,Saved spread,,-26.0,USC,38,0,38,correct,cover,12.0,Evaluated,,,,,,No provider selected
-8,Syracuse,Pittsburgh,False,Saved spread,,23.5,Pittsburgh,0,14,-14,correct,no_cover,9.5,Evaluated,,,,,,No provider selected
-8,Northern Illinois,Eastern Michigan,False,Saved spread,,-7.5,Northern Illinois,10,0,10,correct,cover,2.5,Evaluated,,,,,,No provider selected
-8,Northwestern,Michigan,False,Saved spread,,11.0,Michigan,14,49,-35,correct,cover,24.0,Evaluated,,,,,,No provider selected
-8,Kansas State,Kansas,False,Saved spread,,-13.0,Kansas State,36,7,29,correct,cover,16.0,Evaluated,,,,,,No provider selected
-8,Colorado,Iowa State,False,Saved spread,,11.5,Iowa State,14,31,-17,correct,cover,5.5,Evaluated,,,,,,No provider selected
-8,Kentucky,Georgia,False,Saved spread,,27.0,Georgia,14,27,-13,correct,no_cover,14.0,Evaluated,,,,,,No provider selected
-8,San José State,Fresno State,False,Saved spread,,1.0,Fresno State,27,39,-12,correct,cover,11.0,Evaluated,,,,,,No provider selected
-8,Ball State,Western Michigan,False,Saved spread,,12.5,Western Michigan,13,6,7,incorrect,no_cover,19.5,Evaluated,,,,,,No provider selected
-8,West Texas A&M,North Texas,False,Saved spread,,-2.0,West Texas A&M,24,22,2,correct,push,0.0,Evaluated,,,,,,No provider selected
-8,Washington,Texas Tech,False,Saved spread,,-16.5,Washington,10,3,7,correct,no_cover,9.5,Evaluated,,,,,,No provider selected
-8,San Diego State,Long Beach State,False,Saved spread,,-0.5,San Diego State,51,17,34,correct,cover,33.5,Evaluated,,,,,,No provider selected
-8,Notre Dame,Oregon,False,Saved spread,,-25.0,Notre Dame,13,13,0,tie,no_cover,25.0,Evaluated,,,,,,No provider selected
-8,New Mexico,New Mexico State,False,Saved spread,,-22.0,New Mexico,66,14,52,correct,cover,30.0,Evaluated,,,,,,No provider selected
-8,LSU,South Carolina,False,Saved spread,,-13.5,LSU,14,6,8,correct,no_cover,5.5,Evaluated,,,,,,No provider selected
-8,Georgia Tech,Tennessee,False,Saved spread,,3.5,Tennessee,31,21,10,incorrect,no_cover,13.5,Evaluated,,,,,,No provider selected
-8,East Carolina,Illinois State,False,Saved spread,,-12.5,East Carolina,21,0,21,correct,cover,8.5,Evaluated,,,,,,No provider selected
-8,Arizona,Pacific,False,Saved spread,,-14.0,Arizona,55,7,48,correct,cover,34.0,Evaluated,,,,,,No provider selected
-8,Alabama,Cincinnati,False,Saved spread,,-7.0,Alabama,21,3,18,correct,cover,11.0,Evaluated,,,,,,No provider selected
-9,West Virginia,East Carolina,False,Saved spread,,-7.0,West Virginia,30,3,27,correct,cover,20.0,Evaluated,,,,,,No provider selected
-9,Temple,Cincinnati,False,Saved spread,,2.5,Cincinnati,41,7,34,incorrect,no_cover,36.5,Evaluated,,,,,,No provider selected
-9,SMU,Texas A&M,False,Saved spread,,-12.5,SMU,47,9,38,correct,cover,25.5,Evaluated,,,,,,No provider selected
-9,Richmond,Rutgers,False,Saved spread,,13.0,Rutgers,14,20,-6,correct,no_cover,7.0,Evaluated,,,,,,No provider selected
-9,Pittsburgh,Louisville,False,Saved spread,,-21.0,Pittsburgh,63,14,49,correct,cover,28.0,Evaluated,,,,,,No provider selected
-9,Boston College,Penn State,False,Saved spread,,-1.0,Boston College,17,52,-35,incorrect,no_cover,36.0,Evaluated,,,,,,No provider selected
-9,Kansas,Nebraska,False,Saved spread,,18.0,Nebraska,0,52,-52,correct,cover,34.0,Evaluated,,,,,,No provider selected
-9,Indiana,Michigan State,False,Saved spread,,-13.5,Indiana,14,22,-8,incorrect,no_cover,21.5,Evaluated,,,,,,No provider selected
-9,Michigan,Minnesota,False,Saved spread,,-9.0,Michigan,52,14,38,correct,cover,29.0,Evaluated,,,,,,No provider selected
-9,LSU,Ole Miss,False,Saved spread,,-17.5,LSU,45,8,37,correct,cover,19.5,Evaluated,,,,,,No provider selected
-9,Iowa,Illinois,False,Saved spread,,4.5,Illinois,14,13,1,incorrect,no_cover,5.5,Evaluated,,,,,,No provider selected
-9,Indiana State,Illinois State,False,Saved spread,,-10.5,Indiana State,24,7,17,correct,cover,6.5,Evaluated,,,,,,No provider selected
-9,Fresno State,Long Beach State,False,Saved spread,,-16.5,Fresno State,40,22,18,correct,cover,1.5,Evaluated,,,,,,No provider selected
-9,Miami,Florida State,False,Saved spread,,2.0,Florida State,7,24,-17,correct,cover,15.0,Evaluated,,,,,,No provider selected
-9,Colorado State,UTEP,False,Saved spread,,-10.5,Colorado State,38,13,25,correct,cover,14.5,Evaluated,,,,,,No provider selected
-9,Arizona State,USC,False,Saved spread,,-6.0,Arizona State,17,10,7,correct,cover,1.0,Evaluated,,,,,,No provider selected
-9,Washington State,Arizona,False,Saved spread,,12.0,Arizona,17,34,-17,correct,cover,5.0,Evaluated,,,,,,No provider selected
-9,Wisconsin,Northwestern,False,Saved spread,,-11.0,Wisconsin,54,20,34,correct,cover,23.0,Evaluated,,,,,,No provider selected
-9,Western Michigan,Northern Illinois,False,Saved spread,,-13.0,Western Michigan,27,3,24,correct,cover,11.0,Evaluated,,,,,,No provider selected
-9,UCLA,Oregon,False,Saved spread,,-30.0,UCLA,40,12,28,correct,no_cover,2.0,Evaluated,,,,,,No provider selected
-9,Wichita State,Tulsa,False,Saved spread,,-1.5,Wichita State,21,30,-9,incorrect,no_cover,10.5,Evaluated,,,,,,No provider selected
-9,Texas Tech,Texas,False,Saved spread,,5.5,Texas,0,27,-27,correct,cover,21.5,Evaluated,,,,,,No provider selected
-9,Stanford,Washington,False,Saved spread,,8.0,Washington,43,31,12,incorrect,no_cover,20.0,Evaluated,,,,,,No provider selected
-9,Southern Miss,Louisiana,False,Saved spread,,-1.5,Southern Miss,36,0,36,correct,cover,34.5,Evaluated,,,,,,No provider selected
-9,UNLV,San José State,False,Saved spread,,9.5,San José State,14,48,-34,correct,cover,24.5,Evaluated,,,,,,No provider selected
-9,San Diego State,Utah,False,Saved spread,,0.5,Utah,21,17,4,incorrect,no_cover,4.5,Evaluated,,,,,,No provider selected
-9,Oklahoma State,Missouri,False,Saved spread,,9.0,Missouri,30,20,10,incorrect,no_cover,19.0,Evaluated,,,,,,No provider selected
-9,Colorado,Oklahoma,False,Saved spread,,14.5,Oklahoma,10,45,-35,correct,cover,20.5,Evaluated,,,,,,No provider selected
-9,Ohio State,Purdue,False,Saved spread,,-12.0,Ohio State,38,6,32,correct,cover,20.0,Evaluated,,,,,,No provider selected
-9,Notre Dame,Navy,False,Saved spread,,-7.0,Notre Dame,27,10,17,correct,cover,10.0,Evaluated,,,,,,No provider selected
-9,Miami (OH),Toledo,False,Saved spread,,-5.0,Miami (OH),21,17,4,correct,no_cover,1.0,Evaluated,,,,,,No provider selected
-9,North Carolina,Maryland,False,Saved spread,,-5.5,North Carolina,24,31,-7,incorrect,no_cover,12.5,Evaluated,,,,,,No provider selected
-9,Iowa State,Kansas State,False,Saved spread,,-2.0,Iowa State,3,9,-6,incorrect,no_cover,8.0,Evaluated,,,,,,No provider selected
-9,Houston,TCU,False,Saved spread,,0.0,Unknown (zero line),31,27,4,ungraded,ungraded,4.0,Evaluated,,,,,,No provider selected
-9,Florida,Auburn,False,Saved spread,,1.5,Auburn,19,17,2,incorrect,no_cover,3.5,Evaluated,,,,,,No provider selected
-9,West Texas A&M,Drake,False,Saved spread,,-2.0,West Texas A&M,24,31,-7,incorrect,no_cover,9.0,Evaluated,,,,,,No provider selected
-9,Central Michigan,Ohio,False,Saved spread,,-3.5,Central Michigan,42,18,24,correct,cover,20.5,Evaluated,,,,,,No provider selected
-9,Oregon State,California,False,Saved spread,,14.0,California,14,28,-14,correct,push,0.0,Evaluated,,,,,,No provider selected
-9,Kent State,Bowling Green,False,Saved spread,,18.0,Bowling Green,7,41,-34,correct,cover,16.0,Evaluated,,,,,,No provider selected
-9,Eastern Michigan,Ball State,False,Saved spread,,8.5,Ball State,7,16,-9,correct,cover,0.5,Evaluated,,,,,,No provider selected
-9,Arkansas,Rice,False,Saved spread,,-31.0,Arkansas,24,6,18,correct,no_cover,13.0,Evaluated,,,,,,No provider selected
-9,Mississippi State,Alabama,False,Saved spread,,12.0,Alabama,12,20,-8,correct,no_cover,4.0,Evaluated,,,,,,No provider selected
-9,Air Force,Wyoming,False,Saved spread,,-1.5,Air Force,44,34,10,correct,cover,8.5,Evaluated,,,,,,No provider selected
-9,Virginia Tech,Kentucky,False,Saved spread,,-19.0,Virginia Tech,29,3,26,correct,cover,7.0,Evaluated,,,,,,No provider selected
-9,Utah State,BYU,False,Saved spread,,1.0,BYU,20,17,3,incorrect,no_cover,4.0,Evaluated,,,,,,No provider selected
-9,Tulane,Baylor,False,Saved spread,,-0.5,Tulane,30,15,15,correct,cover,14.5,Evaluated,,,,,,No provider selected
-9,NC State,South Carolina,False,Saved spread,,-4.5,NC State,33,3,30,correct,cover,25.5,Evaluated,,,,,,No provider selected
-9,North Texas,New Mexico,False,Saved spread,,18.5,New Mexico,17,20,-3,correct,no_cover,15.5,Evaluated,,,,,,No provider selected
-9,Hawai'i,Cal State Fullerton,False,Saved spread,,-12.0,Hawai'i,9,3,6,correct,no_cover,6.0,Evaluated,,,,,,No provider selected
-9,Georgia,Memphis,False,Saved spread,,-30.0,Georgia,34,3,31,correct,cover,1.0,Evaluated,,,,,,No provider selected
-9,Georgia Tech,Duke,False,Saved spread,,-4.0,Georgia Tech,21,38,-17,incorrect,no_cover,21.0,Evaluated,,,,,,No provider selected
-10,Auburn,Rutgers,False,Saved spread,,-7.5,Auburn,30,7,23,correct,cover,15.5,Evaluated,,,,,,No provider selected
-10,Oregon,Washington State,False,Saved spread,,2.0,Washington State,3,10,-7,correct,cover,5.0,Evaluated,,,,,,No provider selected
-10,TCU,Texas Tech,False,Saved spread,,-2.5,TCU,14,16,-2,incorrect,no_cover,4.5,Evaluated,,,,,,No provider selected
-10,Rice,SMU,False,Saved spread,,25.5,SMU,14,41,-27,correct,cover,1.5,Evaluated,,,,,,No provider selected
-10,USC,California,False,Saved spread,,-6.0,USC,42,0,42,correct,cover,36.0,Evaluated,,,,,,No provider selected
-10,Purdue,Iowa,False,Saved spread,,8.0,Iowa,16,7,9,incorrect,no_cover,17.0,Evaluated,,,,,,No provider selected
-10,Ohio State,Minnesota,False,Saved spread,,-8.5,Ohio State,35,10,25,correct,cover,16.5,Evaluated,,,,,,No provider selected
-10,UTEP,New Mexico,False,Saved spread,,20.0,New Mexico,18,31,-13,correct,no_cover,7.0,Evaluated,,,,,,No provider selected
-10,Missouri,Colorado,False,Saved spread,,-13.5,Missouri,35,14,21,correct,cover,7.5,Evaluated,,,,,,No provider selected
-10,Illinois,Michigan,False,Saved spread,,0.5,Michigan,10,16,-6,correct,cover,5.5,Evaluated,,,,,,No provider selected
-10,Miami (OH),Central Michigan,False,Saved spread,,-3.0,Miami (OH),23,0,23,correct,cover,20.0,Evaluated,,,,,,No provider selected
-10,Alabama,LSU,False,Saved spread,,0.0,Unknown (zero line),10,20,-10,ungraded,ungraded,10.0,Evaluated,,,,,,No provider selected
-10,Long Beach State,Pacific,False,Saved spread,,-6.0,Long Beach State,32,31,1,correct,no_cover,5.0,Evaluated,,,,,,No provider selected
-10,Kansas,Iowa State,False,Saved spread,,11.0,Iowa State,24,17,7,incorrect,no_cover,18.0,Evaluated,,,,,,No provider selected
-10,Fresno State,Cal State Fullerton,False,Saved spread,,-17.0,Fresno State,31,14,17,correct,push,0.0,Evaluated,,,,,,No provider selected
-10,South Carolina,Florida State,False,Saved spread,,11.5,Florida State,26,56,-30,correct,cover,18.5,Evaluated,,,,,,No provider selected
-10,Clemson,North Carolina,False,Saved spread,,-3.5,Clemson,16,13,3,correct,no_cover,0.5,Evaluated,,,,,,No provider selected
-10,BYU,Wyoming,False,Saved spread,,-9.0,BYU,23,13,10,correct,cover,1.0,Evaluated,,,,,,No provider selected
-10,Bowling Green,Ball State,False,Saved spread,,-10.5,Bowling Green,28,7,21,correct,cover,10.5,Evaluated,,,,,,No provider selected
-10,Baylor,Arkansas,False,Saved spread,,18.5,Arkansas,24,17,7,incorrect,no_cover,25.5,Evaluated,,,,,,No provider selected
-10,Stanford,Arizona,False,Saved spread,,-0.5,Stanford,27,41,-14,incorrect,no_cover,14.5,Evaluated,,,,,,No provider selected
-10,Drake,Wichita State,False,Saved spread,,11.0,Wichita State,29,38,-9,correct,no_cover,2.0,Evaluated,,,,,,No provider selected
-10,Toledo,Western Michigan,False,Saved spread,,1.5,Western Michigan,10,17,-7,correct,cover,5.5,Evaluated,,,,,,No provider selected
-10,Washington,UCLA,False,Saved spread,,1.0,UCLA,10,7,3,incorrect,no_cover,4.0,Evaluated,,,,,,No provider selected
-10,Kentucky,Vanderbilt,False,Saved spread,,13.0,Vanderbilt,10,23,-13,correct,push,0.0,Evaluated,,,,,,No provider selected
-10,Tulsa,West Texas A&M,False,Saved spread,,-20.5,Tulsa,59,21,38,correct,cover,17.5,Evaluated,,,,,,No provider selected
-10,Texas,Houston,False,Saved spread,,-10.5,Texas,50,0,50,correct,cover,39.5,Evaluated,,,,,,No provider selected
-10,Hawai'i,San Diego State,False,Saved spread,,-8.5,Hawai'i,28,31,-3,incorrect,no_cover,11.5,Evaluated,,,,,,No provider selected
-10,Oklahoma,Kansas State,False,Saved spread,,-3.0,Oklahoma,24,10,14,correct,cover,11.0,Evaluated,,,,,,No provider selected
-10,Pittsburgh,Notre Dame,False,Saved spread,,-8.0,Pittsburgh,16,31,-15,incorrect,no_cover,23.0,Evaluated,,,,,,No provider selected
-10,Michigan State,Northwestern,False,Saved spread,,-0.5,Michigan State,24,28,-4,incorrect,no_cover,4.5,Evaluated,,,,,,No provider selected
-10,Ohio,Northern Illinois,False,Saved spread,,-10.0,Ohio,0,36,-36,incorrect,no_cover,46.0,Evaluated,,,,,,No provider selected
-10,Nebraska,Oklahoma State,False,Saved spread,,-16.5,Nebraska,48,10,38,correct,cover,21.5,Evaluated,,,,,,No provider selected
-10,Syracuse,Navy,False,Saved spread,,6.5,Navy,18,20,-2,correct,no_cover,4.5,Evaluated,,,,,,No provider selected
-10,Wisconsin,Indiana,False,Saved spread,,-9.5,Wisconsin,17,20,-3,incorrect,no_cover,12.5,Evaluated,,,,,,No provider selected
-10,Georgia,Florida,False,Saved spread,,-8.0,Georgia,44,0,44,correct,cover,36.0,Evaluated,,,,,,No provider selected
-10,Eastern Michigan,Kent State,False,Saved spread,,-2.5,Eastern Michigan,9,7,2,correct,no_cover,0.5,Evaluated,,,,,,No provider selected
-10,Duke,Wake Forest,False,Saved spread,,-6.5,Duke,46,26,20,correct,cover,13.5,Evaluated,,,,,,No provider selected
-10,Arizona State,Oregon State,False,Saved spread,,-30.0,Arizona State,30,16,14,correct,no_cover,16.0,Evaluated,,,,,,No provider selected
-10,Temple,West Virginia,False,Saved spread,,5.0,West Virginia,17,20,-3,correct,no_cover,2.0,Evaluated,,,,,,No provider selected
-10,Utah,Utah State,False,Saved spread,,5.0,Utah State,42,10,32,incorrect,no_cover,37.0,Evaluated,,,,,,No provider selected
-10,Tennessee,Memphis,False,Saved spread,,-16.0,Tennessee,29,3,26,correct,cover,10.0,Evaluated,,,,,,No provider selected
-10,Penn State,NC State,False,Saved spread,,-10.0,Penn State,54,0,54,correct,cover,44.0,Evaluated,,,,,,No provider selected
-10,New Mexico State,North Texas,False,Saved spread,,-4.0,New Mexico State,30,19,11,correct,cover,7.0,Evaluated,,,,,,No provider selected
-10,Colorado State,UNLV,False,Saved spread,,-12.0,Colorado State,31,36,-5,incorrect,no_cover,17.0,Evaluated,,,,,,No provider selected
-10,Ole Miss,Tulane,False,Saved spread,,-2.0,Ole Miss,45,14,31,correct,cover,29.0,Evaluated,,,,,,No provider selected
-10,Louisville,Indiana State,False,Saved spread,,2.5,Indiana State,35,23,12,incorrect,no_cover,14.5,Evaluated,,,,,,No provider selected
-10,Georgia Tech,Virginia,False,Saved spread,,-7.5,Georgia Tech,38,32,6,correct,no_cover,1.5,Evaluated,,,,,,No provider selected
-10,Army,Air Force,False,Saved spread,,2.5,Air Force,9,27,-18,correct,cover,15.5,Evaluated,,,,,,No provider selected
-10,Maryland,Miami,False,Saved spread,,-6.0,Maryland,18,17,1,correct,no_cover,5.0,Evaluated,,,,,,No provider selected
-11,Rutgers,West Virginia,False,Saved spread,,7.0,West Virginia,17,44,-27,correct,cover,20.0,Evaluated,,,,,,No provider selected
-11,UTEP,Utah,False,Saved spread,,10.0,Utah,30,45,-15,correct,cover,5.0,Evaluated,,,,,,No provider selected
-11,UCLA,Stanford,False,Saved spread,,-10.0,UCLA,38,35,3,correct,no_cover,7.0,Evaluated,,,,,,No provider selected
-11,Arizona,USC,False,Saved spread,,-0.5,Arizona,41,48,-7,incorrect,no_cover,7.5,Evaluated,,,,,,No provider selected
-11,Army,Pittsburgh,False,Saved spread,,13.5,Pittsburgh,6,24,-18,correct,cover,4.5,Evaluated,,,,,,No provider selected
-11,Kansas State,Oklahoma State,False,Saved spread,,-11.5,Kansas State,16,24,-8,incorrect,no_cover,19.5,Evaluated,,,,,,No provider selected
-11,Oklahoma,Missouri,False,Saved spread,,-7.5,Oklahoma,41,14,27,correct,cover,19.5,Evaluated,,,,,,No provider selected
-11,Mississippi State,LSU,False,Saved spread,,16.0,LSU,27,24,3,incorrect,no_cover,19.0,Evaluated,,,,,,No provider selected
-11,Iowa,Wisconsin,False,Saved spread,,0.0,Unknown (zero line),28,14,14,ungraded,ungraded,14.0,Evaluated,,,,,,No provider selected
-11,Indiana,Illinois,False,Saved spread,,4.0,Illinois,7,48,-41,correct,cover,37.0,Evaluated,,,,,,No provider selected
-11,Auburn,Georgia,False,Saved spread,,3.5,Georgia,14,19,-5,correct,cover,1.5,Evaluated,,,,,,No provider selected
-11,Kentucky,Florida,False,Saved spread,,16.5,Florida,13,39,-26,correct,cover,9.5,Evaluated,,,,,,No provider selected
-11,Illinois State,Drake,False,Saved spread,,0.5,Drake,35,42,-7,correct,cover,6.5,Evaluated,,,,,,No provider selected
-11,Central Michigan,Ball State,False,Saved spread,,-9.0,Central Michigan,24,13,11,correct,cover,2.0,Evaluated,,,,,,No provider selected
-11,California,Washington State,False,Saved spread,,-10.0,California,34,14,20,correct,cover,10.0,Evaluated,,,,,,No provider selected
-11,BYU,San Diego State,False,Saved spread,,-8.0,BYU,58,8,50,correct,cover,42.0,Evaluated,,,,,,No provider selected
-11,Boston College,Syracuse,False,Saved spread,,-17.5,Boston College,20,13,7,correct,no_cover,10.5,Evaluated,,,,,,No provider selected
-11,Rice,Baylor,False,Saved spread,,8.0,Baylor,13,35,-22,correct,cover,14.0,Evaluated,,,,,,No provider selected
-11,Western Michigan,Ohio,False,Saved spread,,-9.5,Western Michigan,16,7,9,correct,no_cover,0.5,Evaluated,,,,,,No provider selected
-11,West Texas A&M,New Mexico State,False,Saved spread,,0.0,Unknown (zero line),30,28,2,ungraded,ungraded,2.0,Evaluated,,,,,,No provider selected
-11,Tulsa,Indiana State,False,Saved spread,,-14.5,Tulsa,48,14,34,correct,cover,19.5,Evaluated,,,,,,No provider selected
-11,Kent State,Toledo,False,Saved spread,,12.5,Toledo,0,3,-3,correct,no_cover,9.5,Evaluated,,,,,,No provider selected
-11,TCU,Texas,False,Saved spread,,10.0,Texas,21,38,-17,correct,cover,7.0,Evaluated,,,,,,No provider selected
-11,Ole Miss,Tennessee,False,Saved spread,,3.0,Tennessee,17,30,-13,correct,cover,10.0,Evaluated,,,,,,No provider selected
-11,Texas Tech,SMU,False,Saved spread,,14.0,SMU,27,34,-7,correct,no_cover,7.0,Evaluated,,,,,,No provider selected
-11,South Carolina,Navy,False,Saved spread,,5.0,Navy,17,14,3,incorrect,no_cover,8.0,Evaluated,,,,,,No provider selected
-11,Pacific,San José State,False,Saved spread,,14.0,San José State,0,31,-31,correct,cover,17.0,Evaluated,,,,,,No provider selected
-11,Notre Dame,Penn State,False,Saved spread,,0.5,Penn State,14,24,-10,correct,cover,9.5,Evaluated,,,,,,No provider selected
-11,Northwestern,Ohio State,False,Saved spread,,11.0,Ohio State,28,40,-12,correct,cover,1.0,Evaluated,,,,,,No provider selected
-11,Northern Illinois,Miami (OH),False,Saved spread,,9.5,Miami (OH),12,7,5,incorrect,no_cover,14.5,Evaluated,,,,,,No provider selected
-11,Richmond,North Texas,False,Saved spread,,1.0,North Texas,13,22,-9,correct,cover,8.0,Evaluated,,,,,,No provider selected
-11,NC State,Duke,False,Saved spread,,-0.5,NC State,21,16,5,correct,cover,4.5,Evaluated,,,,,,No provider selected
-11,North Carolina,Virginia,False,Saved spread,,-15.5,North Carolina,27,14,13,correct,no_cover,2.5,Evaluated,,,,,,No provider selected
-11,New Mexico,Colorado State,False,Saved spread,,-14.5,New Mexico,29,24,5,correct,no_cover,9.5,Evaluated,,,,,,No provider selected
-11,Iowa State,Nebraska,False,Saved spread,,8.0,Nebraska,10,48,-38,correct,cover,30.0,Evaluated,,,,,,No provider selected
-11,Minnesota,Michigan State,False,Saved spread,,-8.0,Minnesota,7,26,-19,incorrect,no_cover,27.0,Evaluated,,,,,,No provider selected
-11,Michigan,Purdue,False,Saved spread,,-16.5,Michigan,52,21,31,correct,cover,14.5,Evaluated,,,,,,No provider selected
-11,Long Beach State,UNLV,False,Saved spread,,-5.0,Long Beach State,24,13,11,correct,cover,6.0,Evaluated,,,,,,No provider selected
-11,Florida State,Louisville,False,Saved spread,,-17.5,Florida State,49,14,35,correct,cover,17.5,Evaluated,,,,,,No provider selected
-11,William & Mary,East Carolina,False,Saved spread,,8.5,East Carolina,27,31,-4,correct,no_cover,4.5,Evaluated,,,,,,No provider selected
-11,Colorado,Kansas,False,Saved spread,,2.0,Kansas,28,3,25,incorrect,no_cover,27.0,Evaluated,,,,,,No provider selected
-11,Maryland,Clemson,False,Saved spread,,-1.0,Maryland,22,24,-2,incorrect,no_cover,3.0,Evaluated,,,,,,No provider selected
-11,Bowling Green,Eastern Michigan,False,Saved spread,,-21.0,Bowling Green,24,7,17,correct,no_cover,4.0,Evaluated,,,,,,No provider selected
-11,Arkansas,Texas A&M,False,Saved spread,,-12.5,Arkansas,35,0,35,correct,cover,22.5,Evaluated,,,,,,No provider selected
-11,Wyoming,Wichita State,False,Saved spread,,8.5,Wichita State,24,20,4,incorrect,no_cover,12.5,Evaluated,,,,,,No provider selected
-11,Vanderbilt,Virginia Tech,False,Saved spread,,-0.5,Vanderbilt,45,0,45,correct,cover,44.5,Evaluated,,,,,,No provider selected
-11,Alabama,Southern Miss,False,Saved spread,,-5.0,Alabama,29,38,-9,incorrect,no_cover,14.0,Evaluated,,,,,,No provider selected
-11,Wake Forest,Georgia Tech,False,Saved spread,,3.0,Georgia Tech,7,45,-38,correct,cover,35.0,Evaluated,,,,,,No provider selected
-11,Arizona State,Washington,False,Saved spread,,-4.5,Arizona State,13,17,-4,incorrect,no_cover,8.5,Evaluated,,,,,,No provider selected
-12,Cincinnati,Miami (OH),False,Saved spread,,1.5,Miami (OH),20,10,10,incorrect,no_cover,11.5,Evaluated,,,,,,No provider selected
-12,Washington State,Washington,False,Saved spread,,18.0,Washington,24,20,4,incorrect,no_cover,22.0,Evaluated,,,,,,No provider selected
-12,UCLA,USC,False,Saved spread,,-4.5,UCLA,20,19,1,correct,no_cover,3.5,Evaluated,,,,,,No provider selected
-12,UTEP,Wyoming,False,Saved spread,,8.5,Wyoming,39,32,7,incorrect,no_cover,15.5,Evaluated,,,,,,No provider selected
-12,Texas A&M,TCU,False,Saved spread,,-5.5,Texas A&M,34,14,20,correct,cover,14.5,Evaluated,,,,,,No provider selected
-12,Baylor,Texas,False,Saved spread,,8.5,Texas,23,31,-8,correct,no_cover,0.5,Evaluated,,,,,,No provider selected
-12,Southern Illinois,West Texas A&M,False,Saved spread,,-7.5,Southern Illinois,17,13,4,correct,no_cover,3.5,Evaluated,,,,,,No provider selected
-12,San José State,Utah State,False,Saved spread,,-8.0,San José State,49,26,23,correct,cover,15.0,Evaluated,,,,,,No provider selected
-12,San Diego State,Colorado State,False,Saved spread,,-3.5,San Diego State,38,10,28,correct,cover,24.5,Evaluated,,,,,,No provider selected
-12,Pacific,Cal State Fullerton,False,Saved spread,,3.0,Cal State Fullerton,31,0,31,incorrect,no_cover,34.0,Evaluated,,,,,,No provider selected
-12,Oregon,Arizona,False,Saved spread,,17.0,Arizona,13,7,6,incorrect,no_cover,23.0,Evaluated,,,,,,No provider selected
-12,Oklahoma State,Iowa State,False,Saved spread,,0.5,Iowa State,49,13,36,incorrect,no_cover,36.5,Evaluated,,,,,,No provider selected
-12,Mississippi State,Ole Miss,False,Saved spread,,-2.5,Mississippi State,27,10,17,correct,cover,14.5,Evaluated,,,,,,No provider selected
-12,Michigan State,Iowa,False,Saved spread,,8.0,Iowa,18,24,-6,correct,no_cover,2.0,Evaluated,,,,,,No provider selected
-12,Purdue,Indiana,False,Saved spread,,1.0,Indiana,7,13,-6,correct,cover,5.0,Evaluated,,,,,,No provider selected
-12,UNLV,Fresno State,False,Saved spread,,16.0,Fresno State,28,30,-2,correct,no_cover,14.0,Evaluated,,,,,,No provider selected
-12,Duke,North Carolina,False,Saved spread,,4.0,North Carolina,23,17,6,incorrect,no_cover,10.0,Evaluated,,,,,,No provider selected
-12,California,Stanford,False,Saved spread,,-2.0,California,25,20,5,correct,cover,3.0,Evaluated,,,,,,No provider selected
-12,Wisconsin,Minnesota,False,Saved spread,,-8.0,Wisconsin,24,0,24,correct,cover,16.0,Evaluated,,,,,,No provider selected
-12,Western Michigan,Eastern Michigan,False,Saved spread,,-21.0,Western Michigan,3,3,0,tie,no_cover,21.0,Evaluated,,,,,,No provider selected
-12,West Virginia,Syracuse,False,Saved spread,,-20.0,West Virginia,26,0,26,correct,cover,6.0,Evaluated,,,,,,No provider selected
-12,Tennessee,Kentucky,False,Saved spread,,-20.0,Tennessee,28,7,21,correct,cover,1.0,Evaluated,,,,,,No provider selected
-12,Pittsburgh,Rutgers,False,Saved spread,,-15.5,Pittsburgh,52,6,46,correct,cover,30.5,Evaluated,,,,,,No provider selected
-12,Ohio State,Michigan,False,Saved spread,,1.0,Michigan,24,14,10,incorrect,no_cover,11.0,Evaluated,,,,,,No provider selected
-12,Ohio,Kent State,False,Saved spread,,-14.0,Ohio,24,20,4,correct,no_cover,10.0,Evaluated,,,,,,No provider selected
-12,Northern Illinois,Central Michigan,False,Saved spread,,5.0,Central Michigan,19,13,6,incorrect,no_cover,11.0,Evaluated,,,,,,No provider selected
-12,New Mexico,Hawai'i,False,Saved spread,,-9.0,New Mexico,41,17,24,correct,cover,15.0,Evaluated,,,,,,No provider selected
-12,Missouri,Kansas,False,Saved spread,,-10.5,Missouri,16,10,6,correct,no_cover,4.5,Evaluated,,,,,,No provider selected
-12,Virginia,Maryland,False,Saved spread,,13.5,Maryland,14,45,-31,correct,cover,17.5,Evaluated,,,,,,No provider selected
-12,Memphis,Louisville,False,Saved spread,,7.5,Louisville,19,38,-19,correct,cover,11.5,Evaluated,,,,,,No provider selected
-12,Kansas State,Colorado,False,Saved spread,,-13.5,Kansas State,33,10,23,correct,cover,9.5,Evaluated,,,,,,No provider selected
-12,Texas Tech,Houston,False,Saved spread,,-3.0,Texas Tech,7,24,-17,incorrect,no_cover,20.0,Evaluated,,,,,,No provider selected
-12,Temple,East Carolina,False,Saved spread,,2.0,East Carolina,10,23,-13,correct,cover,11.0,Evaluated,,,,,,No provider selected
-12,Utah,BYU,False,Saved spread,,4.0,BYU,12,17,-5,correct,cover,1.0,Evaluated,,,,,,No provider selected
-12,Arkansas,SMU,False,Saved spread,,0.0,Unknown (zero line),17,17,0,ungraded,ungraded,0.0,Evaluated,,,,,,No provider selected
-12,LSU,Florida State,False,Saved spread,,-0.5,LSU,55,21,34,correct,cover,33.5,Evaluated,,,,,,No provider selected
-12,Long Beach State,Bowling Green,False,Saved spread,,9.5,Bowling Green,24,7,17,incorrect,no_cover,26.5,Evaluated,,,,,,No provider selected
-12,Tulane,Florida,False,Saved spread,,9.5,Florida,7,21,-14,correct,cover,4.5,Evaluated,,,,,,No provider selected
-12,Clemson,South Carolina,False,Saved spread,,-16.0,Clemson,24,6,18,correct,cover,2.0,Evaluated,,,,,,No provider selected
-12,Ball State,Illinois State,False,Saved spread,,-7.0,Ball State,52,17,35,correct,cover,28.0,Evaluated,,,,,,No provider selected
-12,Air Force,Notre Dame,False,Saved spread,,2.0,Notre Dame,30,17,13,incorrect,no_cover,15.0,Evaluated,,,,,,No provider selected
-12,North Texas,Tulsa,False,Saved spread,,18.0,Tulsa,20,38,-18,correct,push,0.0,Evaluated,,,,,,No provider selected
-12,Richmond,William & Mary,False,Saved spread,,2.5,William & Mary,17,28,-11,correct,cover,8.5,Evaluated,,,,,,No provider selected
-12,Miami,NC State,False,Saved spread,,-3.5,Miami,41,3,38,correct,cover,34.5,Evaluated,,,,,,No provider selected
-13,Texas,Texas A&M,False,Saved spread,,-10.5,Texas,53,16,37,correct,cover,26.5,Evaluated,,,,,,No provider selected
-13,Virginia Tech,Virginia,False,Saved spread,,-14.0,Virginia Tech,21,14,7,correct,no_cover,7.0,Evaluated,,,,,,No provider selected
-13,North Carolina,Bowling Green,False,Saved spread,,-0.5,North Carolina,33,14,19,correct,cover,18.5,Evaluated,,,,,,No provider selected
-13,Penn State,Pittsburgh,False,Saved spread,,-2.5,Penn State,19,10,9,correct,cover,6.5,Evaluated,,,,,,No provider selected
-13,Nebraska,Oklahoma,False,Saved spread,,-5.0,Nebraska,28,24,4,correct,no_cover,1.0,Evaluated,,,,,,No provider selected
-13,UNLV,Cal State Fullerton,False,Saved spread,,-0.5,UNLV,42,23,19,correct,cover,18.5,Evaluated,,,,,,No provider selected
-13,Miami,Cincinnati,False,Saved spread,,-3.0,Miami,19,13,6,correct,cover,3.0,Evaluated,,,,,,No provider selected
-13,Houston,Rice,False,Saved spread,,-13.0,Houston,28,21,7,correct,no_cover,6.0,Evaluated,,,,,,No provider selected
-13,Oregon State,Oregon,False,Saved spread,,-1.5,Oregon State,6,7,-1,incorrect,no_cover,2.5,Evaluated,,,,,,No provider selected
-13,Arizona,Arizona State,False,Saved spread,,6.0,Arizona State,28,18,10,incorrect,no_cover,16.0,Evaluated,,,,,,No provider selected
-13,LSU,Tulane,False,Saved spread,,-19.0,LSU,28,31,-3,incorrect,no_cover,22.0,Evaluated,,,,,,No provider selected
-13,USC,Notre Dame,False,Saved spread,,-3.5,USC,17,13,4,correct,cover,0.5,Evaluated,,,,,,No provider selected
-13,San Diego State,Oklahoma State,False,Saved spread,,-2.0,San Diego State,35,6,29,correct,cover,27.0,Evaluated,,,,,,No provider selected
-13,Georgia,Georgia Tech,False,Saved spread,,-15.0,Georgia,38,18,20,correct,cover,5.0,Evaluated,,,,,,No provider selected
-13,Auburn,Alabama,False,Saved spread,,-1.5,Auburn,23,22,1,correct,no_cover,0.5,Evaluated,,,,,,No provider selected
-13,Long Beach State,Utah State,False,Saved spread,,-2.0,Long Beach State,44,17,27,correct,cover,25.0,Evaluated,,,,,,No provider selected
-13,Hawai'i,Air Force,False,Saved spread,,1.0,Air Force,45,21,24,incorrect,no_cover,25.0,Evaluated,,,,,,No provider selected
-13,Clemson,Wake Forest,False,Saved spread,,-19.5,Clemson,21,17,4,correct,no_cover,15.5,Evaluated,,,,,,No provider selected
-13,Vanderbilt,Tennessee,False,Saved spread,,-2.5,Vanderbilt,28,21,7,correct,cover,4.5,Evaluated,,,,,,No provider selected
-14,Texas,Arkansas,False,Saved spread,,0.0,Unknown (zero line),33,7,26,ungraded,ungraded,26.0,Evaluated,,,,,,No provider selected
-14,Navy,Army,False,Saved spread,,-7.0,Navy,24,7,17,correct,cover,10.0,Evaluated,,,,,,No provider selected
-14,Hawai'i,Nebraska,False,Saved spread,,7.0,Nebraska,16,37,-21,correct,cover,14.0,Evaluated,,,,,,No provider selected
-14,Florida State,Florida,False,Saved spread,,-5.0,Florida State,10,13,-3,incorrect,no_cover,8.0,Evaluated,,,,,,No provider selected
+week,home,away,neutral_site,prediction_source,rating_checkpoint,home_handicap,predicted_winner,home_score,away_score,actual_home_margin,straight_up,cors_line_coverage,absolute_error,status,provider,market_home_handicap,market_pick,market_ats,market_absolute_error,market_status,game_id,game_date
+1,UNLV,BYU,False,Reconstructed history,W0,12.80,BYU,0,27,-27,correct,cover,14.20,Evaluated,,,,,,No provider selected,51280,1982-09-02
+1,Florida State,Cincinnati,False,Reconstructed history,W0,-0.78,Florida State,38,31,7,correct,cover,6.22,Evaluated,,,,,,No provider selected,51292,1982-09-04
+1,Richmond,Virginia Tech,False,Reconstructed history,W0,7.63,Virginia Tech,9,20,-11,correct,cover,3.37,Evaluated,,,,,,No provider selected,51310,1982-09-04
+1,Toledo,Northern Illinois,False,Reconstructed history,W0,-14.87,Toledo,9,3,6,correct,no_cover,8.87,Evaluated,,,,,,No provider selected,51307,1982-09-04
+1,Rutgers,Syracuse,False,Reconstructed history,W0,3.09,Syracuse,8,31,-23,correct,cover,19.91,Evaluated,,,,,,No provider selected,51305,1982-09-04
+1,Bowling Green,Ohio,False,Reconstructed history,W0,-8.14,Bowling Green,40,0,40,correct,cover,31.86,Evaluated,,,,,,No provider selected,51285,1982-09-04
+1,Oregon,Arizona State,False,Reconstructed history,W0,15.81,Arizona State,3,34,-31,correct,cover,15.19,Evaluated,,,,,,No provider selected,51282,1982-09-04
+1,Baylor,North Texas,False,Reconstructed history,W0,-12.41,Baylor,21,17,4,correct,no_cover,8.41,Evaluated,,,,,,No provider selected,51283,1982-09-04
+1,Texas A&M,Boston College,False,Reconstructed history,W0,-11.24,Texas A&M,16,38,-22,incorrect,no_cover,33.24,Evaluated,,,,,,No provider selected,51284,1982-09-04
+1,Tulsa,Air Force,False,Reconstructed history,W0,-15.27,Tulsa,35,17,18,correct,cover,2.73,Evaluated,,,,,,No provider selected,51308,1982-09-04
+1,New Mexico State,UTEP,False,Reconstructed history,W0,-5.50,New Mexico State,17,20,-3,incorrect,no_cover,8.50,Evaluated,,,,,,No provider selected,51306,1982-09-04
+1,South Carolina,Pacific,False,Reconstructed history,W0,-8.64,South Carolina,41,6,35,correct,cover,26.36,Evaluated,,,,,,No provider selected,51302,1982-09-04
+1,Missouri,Colorado State,False,Reconstructed history,W0,-22.93,Missouri,28,14,14,correct,no_cover,8.93,Evaluated,,,,,,No provider selected,51298,1982-09-04
+1,Tulane,Mississippi State,False,Reconstructed history,W0,-0.79,Tulane,21,30,-9,incorrect,no_cover,9.79,Evaluated,,,,,,No provider selected,51297,1982-09-04
+1,Ole Miss,Memphis,False,Reconstructed history,W0,-6.29,Ole Miss,27,10,17,correct,cover,10.71,Evaluated,,,,,,No provider selected,51296,1982-09-04
+1,Florida,Miami,False,Reconstructed history,W0,-1.26,Florida,17,14,3,correct,cover,1.74,Evaluated,,,,,,No provider selected,51291,1982-09-04
+1,Tennessee,Duke,False,Reconstructed history,W0,-1.94,Tennessee,24,25,-1,incorrect,no_cover,2.94,Evaluated,,,,,,No provider selected,51289,1982-09-04
+1,Central Michigan,Indiana State,False,Reconstructed history,W0,-2.88,Central Michigan,35,10,25,correct,cover,22.12,Evaluated,,,,,,No provider selected,51287,1982-09-04
+1,Wyoming,New Mexico,False,Reconstructed history,W0,-10.48,Wyoming,20,41,-21,incorrect,no_cover,31.48,Evaluated,,,,,,No provider selected,51299,1982-09-04
+1,Penn State,Temple,False,Reconstructed history,W0,-14.67,Penn State,31,14,17,correct,cover,2.33,Evaluated,,,,,,No provider selected,51301,1982-09-04
+1,Illinois,Northwestern,False,Reconstructed history,W0,-16.57,Illinois,49,13,36,correct,cover,19.43,Evaluated,,,,,,No provider selected,51293,1982-09-04
+1,Georgia,Clemson,False,Reconstructed history,W0,-1.82,Georgia,13,7,6,correct,cover,4.18,Evaluated,,,,,,No provider selected,51314,1982-09-06
+2,Pittsburgh,North Carolina,False,Reconstructed history,W1,-2.25,Pittsburgh,7,6,1,correct,no_cover,1.25,Evaluated,,,,,,No provider selected,51315,1982-09-09
+2,Kansas State,Kentucky,False,Reconstructed history,W1,-1.33,Kansas State,23,9,14,correct,cover,12.67,Evaluated,,,,,,No provider selected,51337,1982-09-11
+2,Rice,Louisiana,False,Reconstructed history,W1,-1.74,Rice,14,21,-7,incorrect,no_cover,8.74,Evaluated,,,,,,No provider selected,51338,1982-09-11
+2,Miami,Houston,False,Reconstructed history,W1,-1.82,Miami,31,12,19,correct,cover,17.18,Evaluated,,,,,,No provider selected,51340,1982-09-11
+2,Miami (OH),William & Mary,False,Reconstructed history,W1,-8.23,Miami (OH),35,17,18,correct,cover,9.77,Evaluated,,,,,,No provider selected,51341,1982-09-11
+2,Minnesota,Ohio,False,Reconstructed history,W1,-6.79,Minnesota,57,7,50,correct,cover,43.21,Evaluated,,,,,,No provider selected,51343,1982-09-11
+2,Ole Miss,Southern Miss,False,Reconstructed history,W1,5.90,Southern Miss,28,19,9,incorrect,no_cover,14.90,Evaluated,,,,,,No provider selected,51344,1982-09-11
+2,Missouri,Army,False,Reconstructed history,W1,-31.32,Missouri,23,10,13,correct,no_cover,18.32,Evaluated,,,,,,No provider selected,51346,1982-09-11
+2,Navy,Virginia,False,Reconstructed history,W1,-10.09,Navy,30,16,14,correct,cover,3.91,Evaluated,,,,,,No provider selected,51347,1982-09-11
+2,Nebraska,Iowa,False,Reconstructed history,W1,-4.10,Nebraska,42,7,35,correct,cover,30.90,Evaluated,,,,,,No provider selected,51348,1982-09-11
+2,New Mexico,Texas Tech,False,Reconstructed history,W1,-31.38,New Mexico,14,0,14,correct,no_cover,17.38,Evaluated,,,,,,No provider selected,51349,1982-09-11
+2,NC State,East Carolina,False,Reconstructed history,W1,-22.16,NC State,33,26,7,correct,no_cover,15.16,Evaluated,,,,,,No provider selected,51350,1982-09-11
+2,Ohio State,Baylor,False,Reconstructed history,W1,16.03,Baylor,21,14,7,incorrect,no_cover,23.03,Evaluated,,,,,,No provider selected,51351,1982-09-11
+2,Oklahoma State,North Texas,False,Reconstructed history,W1,-7.29,Oklahoma State,27,6,21,correct,cover,13.71,Evaluated,,,,,,No provider selected,51352,1982-09-11
+2,Penn State,Maryland,False,Reconstructed history,W1,-29.79,Penn State,39,31,8,correct,no_cover,21.79,Evaluated,,,,,,No provider selected,51353,1982-09-11
+2,Oregon,San José State,False,Reconstructed history,W1,7.89,San José State,13,18,-5,correct,no_cover,2.89,Evaluated,,,,,,No provider selected,51354,1982-09-11
+2,SMU,Tulane,False,Reconstructed history,W1,-6.63,SMU,51,7,44,correct,cover,37.37,Evaluated,,,,,,No provider selected,51357,1982-09-11
+2,Purdue,Stanford,False,Reconstructed history,W1,-0.99,Purdue,14,35,-21,incorrect,no_cover,21.99,Evaluated,,,,,,No provider selected,51358,1982-09-11
+2,Tennessee,Iowa State,False,Reconstructed history,W1,-1.44,Tennessee,23,21,2,correct,cover,0.56,Evaluated,,,,,,No provider selected,51360,1982-09-11
+2,TCU,Utah State,False,Reconstructed history,W1,0.25,Utah State,24,9,15,incorrect,no_cover,15.25,Evaluated,,,,,,No provider selected,51361,1982-09-11
+2,Illinois State,Southern Illinois,False,Reconstructed history,W1,25.27,Southern Illinois,0,16,-16,correct,no_cover,9.27,Evaluated,,,,,,No provider selected,51356,1982-09-11
+2,Michigan,Wisconsin,False,Reconstructed history,W1,-5.24,Michigan,20,9,11,correct,cover,5.76,Evaluated,,,,,,No provider selected,51342,1982-09-11
+2,Indiana State,New Mexico State,False,Reconstructed history,W1,-8.04,Indiana State,14,10,4,correct,no_cover,4.04,Evaluated,,,,,,No provider selected,51336,1982-09-11
+2,Indiana,Northwestern,False,Reconstructed history,W1,-7.03,Indiana,30,0,30,correct,cover,22.97,Evaluated,,,,,,No provider selected,51335,1982-09-11
+2,Colorado State,Wyoming,False,Reconstructed history,W1,8.23,Wyoming,9,3,6,incorrect,no_cover,14.23,Evaluated,,,,,,No provider selected,51328,1982-09-11
+2,Cincinnati,Louisville,False,Reconstructed history,W1,18.43,Louisville,38,16,22,incorrect,no_cover,40.43,Evaluated,,,,,,No provider selected,51327,1982-09-11
+2,Arizona,Oregon State,False,Reconstructed history,W1,-10.15,Arizona,38,12,26,correct,cover,15.85,Evaluated,,,,,,No provider selected,51319,1982-09-11
+2,Air Force,San Diego State,False,Reconstructed history,W1,5.51,San Diego State,44,32,12,incorrect,no_cover,17.51,Evaluated,,,,,,No provider selected,51316,1982-09-11
+2,UCLA,Long Beach State,False,Reconstructed history,W1,-9.95,UCLA,41,10,31,correct,cover,21.05,Evaluated,,,,,,No provider selected,51363,1982-09-11
+2,Memphis,Vanderbilt,False,Reconstructed history,W1,3.07,Vanderbilt,14,24,-10,correct,cover,6.93,Evaluated,,,,,,No provider selected,51364,1982-09-11
+2,Washington,UTEP,False,Reconstructed history,W1,9.45,UTEP,55,0,55,incorrect,no_cover,64.45,Evaluated,,,,,,No provider selected,51365,1982-09-11
+2,Oklahoma,West Virginia,False,Reconstructed history,W1,-2.60,Oklahoma,27,41,-14,incorrect,no_cover,16.60,Evaluated,,,,,,No provider selected,51367,1982-09-11
+2,Colorado,California,False,Reconstructed history,W1,-0.29,Colorado,17,31,-14,incorrect,no_cover,14.29,Evaluated,,,,,,No provider selected,51325,1982-09-11
+2,Boston College,Clemson,False,Reconstructed history,W1,-21.05,Boston College,17,17,0,tie,no_cover,21.05,Evaluated,,,,,,No provider selected,51324,1982-09-11
+2,Auburn,Wake Forest,False,Reconstructed history,W1,13.31,Wake Forest,28,10,18,incorrect,no_cover,31.31,Evaluated,,,,,,No provider selected,51322,1982-09-11
+2,Arkansas,Tulsa,False,Reconstructed history,W1,21.06,Tulsa,38,0,38,incorrect,no_cover,59.06,Evaluated,,,,,,No provider selected,51321,1982-09-11
+2,Arizona State,Utah,False,Reconstructed history,W1,-5.88,Arizona State,23,10,13,correct,cover,7.12,Evaluated,,,,,,No provider selected,51320,1982-09-11
+2,Georgia Tech,Alabama,False,Reconstructed history,W1,9.17,Alabama,7,45,-38,correct,cover,28.83,Evaluated,,,,,,No provider selected,51318,1982-09-11
+2,Ball State,Toledo,False,Reconstructed history,W1,26.85,Toledo,14,31,-17,correct,no_cover,9.85,Evaluated,,,,,,No provider selected,51362,1982-09-11
+2,Kansas,Wichita State,False,Reconstructed history,W1,19.67,Wichita State,10,13,-3,correct,no_cover,16.67,Evaluated,,,,,,No provider selected,51369,1982-09-11
+2,Illinois,Michigan State,False,Reconstructed history,W1,-23.71,Illinois,23,16,7,correct,no_cover,16.71,Evaluated,,,,,,No provider selected,51334,1982-09-11
+2,South Carolina,Richmond,False,Reconstructed history,W1,-28.63,South Carolina,30,10,20,correct,no_cover,8.63,Evaluated,,,,,,No provider selected,51355,1982-09-11
+2,Syracuse,Temple,False,Reconstructed history,W1,-27.83,Syracuse,18,23,-5,incorrect,no_cover,32.83,Evaluated,,,,,,No provider selected,51359,1982-09-11
+2,Florida,USC,False,Reconstructed history,W1,-26.35,Florida,17,9,8,correct,no_cover,18.35,Evaluated,,,,,,No provider selected,51329,1982-09-11
+2,Georgia,BYU,False,Reconstructed history,W1,-5.35,Georgia,17,14,3,correct,no_cover,2.35,Evaluated,,,,,,No provider selected,51331,1982-09-11
+3,Kansas,TCU,False,Reconstructed history,W2,21.66,TCU,30,19,11,incorrect,no_cover,32.66,Evaluated,,,,,,No provider selected,51389,1982-09-18
+3,Central Michigan,Bowling Green,False,Reconstructed history,W2,-3.51,Central Michigan,30,34,-4,incorrect,no_cover,7.51,Evaluated,,,,,,No provider selected,51375,1982-09-18
+3,Virginia Tech,Miami,False,Reconstructed history,W2,-16.62,Virginia Tech,8,14,-6,incorrect,no_cover,22.62,Evaluated,,,,,,No provider selected,51395,1982-09-18
+3,Purdue,Minnesota,False,Reconstructed history,W2,23.43,Minnesota,10,36,-26,correct,cover,2.57,Evaluated,,,,,,No provider selected,51397,1982-09-18
+3,Penn State,Rutgers,False,Reconstructed history,W2,-36.28,Penn State,49,14,35,correct,no_cover,1.28,Evaluated,,,,,,No provider selected,51408,1982-09-18
+3,Florida State,Pittsburgh,False,Reconstructed history,W2,-5.62,Florida State,17,37,-20,incorrect,no_cover,25.62,Evaluated,,,,,,No provider selected,51409,1982-09-18
+3,Southern Illinois,Drake,False,Reconstructed history,W2,-13.39,Southern Illinois,24,17,7,correct,no_cover,6.39,Evaluated,,,,,,No provider selected,51412,1982-09-18
+3,Arizona,Washington,False,Reconstructed history,W2,3.29,Washington,13,23,-10,correct,cover,6.71,Evaluated,,,,,,No provider selected,51422,1982-09-18
+3,Michigan State,Ohio State,False,Reconstructed history,W2,27.12,Ohio State,10,31,-21,correct,no_cover,6.12,Evaluated,,,,,,No provider selected,51406,1982-09-18
+3,Northern Illinois,Kent State,False,Reconstructed history,W2,-1.46,Northern Illinois,23,15,8,correct,cover,6.54,Evaluated,,,,,,No provider selected,51403,1982-09-18
+3,NC State,Wake Forest,False,Reconstructed history,W2,-13.45,NC State,30,0,30,correct,cover,16.55,Evaluated,,,,,,No provider selected,51402,1982-09-18
+3,Colorado State,Hawai'i,False,Reconstructed history,W2,11.66,Hawai'i,13,23,-10,correct,no_cover,1.66,Evaluated,,,,,,No provider selected,51383,1982-09-18
+3,Ole Miss,Alabama,False,Reconstructed history,W2,-7.45,Ole Miss,14,42,-28,incorrect,no_cover,35.45,Evaluated,,,,,,No provider selected,51370,1982-09-18
+3,Oregon,Fresno State,False,Reconstructed history,W2,21.89,Fresno State,4,10,-6,correct,no_cover,15.89,Evaluated,,,,,,No provider selected,51381,1982-09-18
+3,South Carolina,Duke,False,Reconstructed history,W2,-3.92,South Carolina,17,30,-13,incorrect,no_cover,16.92,Evaluated,,,,,,No provider selected,51379,1982-09-18
+3,Wyoming,Long Beach State,False,Reconstructed history,W2,-3.88,Wyoming,36,27,9,correct,cover,5.12,Evaluated,,,,,,No provider selected,51427,1982-09-18
+3,Wichita State,Ball State,False,Reconstructed history,W2,-32.31,Wichita State,33,20,13,correct,no_cover,19.31,Evaluated,,,,,,No provider selected,51425,1982-09-18
+3,Texas Tech,Air Force,False,Reconstructed history,W2,10.53,Air Force,31,30,1,incorrect,no_cover,11.53,Evaluated,,,,,,No provider selected,51417,1982-09-18
+3,Tulane,Rice,False,Reconstructed history,W2,-2.05,Tulane,30,6,24,correct,cover,21.95,Evaluated,,,,,,No provider selected,51419,1982-09-18
+3,Wisconsin,UCLA,False,Reconstructed history,W2,23.24,UCLA,26,51,-25,correct,cover,1.76,Evaluated,,,,,,No provider selected,51420,1982-09-18
+3,West Virginia,Maryland,False,Reconstructed history,W2,-28.55,West Virginia,19,18,1,correct,no_cover,27.55,Evaluated,,,,,,No provider selected,51423,1982-09-18
+3,Texas,Utah,False,Reconstructed history,W2,14.83,Utah,21,12,9,incorrect,no_cover,23.83,Evaluated,,,,,,No provider selected,51415,1982-09-18
+3,UTEP,SMU,False,Reconstructed history,W2,11.51,SMU,10,31,-21,correct,cover,9.49,Evaluated,,,,,,No provider selected,51413,1982-09-18
+3,USC,Indiana,False,Reconstructed history,W2,19.32,Indiana,28,7,21,incorrect,no_cover,40.32,Evaluated,,,,,,No provider selected,51411,1982-09-18
+3,Stanford,San José State,False,Reconstructed history,W2,-3.63,Stanford,31,35,-4,incorrect,no_cover,7.63,Evaluated,,,,,,No provider selected,51410,1982-09-18
+3,Kentucky,Oklahoma,False,Reconstructed history,W2,0.05,Oklahoma,8,29,-21,correct,cover,20.95,Evaluated,,,,,,No provider selected,51407,1982-09-18
+3,Ohio,Richmond,False,Reconstructed history,W2,-1.03,Ohio,23,14,9,correct,cover,7.97,Evaluated,,,,,,No provider selected,51405,1982-09-18
+3,Notre Dame,Michigan,False,Reconstructed history,W2,21.79,Michigan,23,17,6,incorrect,no_cover,27.79,Evaluated,,,,,,No provider selected,51404,1982-09-18
+3,Auburn,Southern Miss,False,Reconstructed history,W2,-9.99,Auburn,21,19,2,correct,no_cover,7.99,Evaluated,,,,,,No provider selected,51374,1982-09-18
+3,Arkansas,Navy,False,Reconstructed history,W2,-8.97,Arkansas,29,17,12,correct,cover,3.03,Evaluated,,,,,,No provider selected,51372,1982-09-18
+3,Houston,Arizona State,False,Reconstructed history,W2,31.42,Arizona State,10,24,-14,correct,no_cover,17.42,Evaluated,,,,,,No provider selected,51371,1982-09-18
+3,North Carolina,Vanderbilt,False,Reconstructed history,W2,17.80,Vanderbilt,34,10,24,incorrect,no_cover,41.80,Evaluated,,,,,,No provider selected,51401,1982-09-18
+3,New Mexico,UNLV,False,Reconstructed history,W2,-35.68,New Mexico,49,21,28,correct,no_cover,7.68,Evaluated,,,,,,No provider selected,51400,1982-09-18
+3,Nebraska,New Mexico State,False,Reconstructed history,W2,-30.42,Nebraska,68,0,68,correct,cover,37.58,Evaluated,,,,,,No provider selected,51399,1982-09-18
+3,Memphis,Mississippi State,False,Reconstructed history,W2,30.67,Mississippi State,17,41,-24,correct,no_cover,6.67,Evaluated,,,,,,No provider selected,51398,1982-09-18
+3,Northwestern,Miami (OH),False,Reconstructed history,W2,26.57,Miami (OH),13,27,-14,correct,no_cover,12.57,Evaluated,,,,,,No provider selected,51396,1982-09-18
+3,LSU,Oregon State,False,Reconstructed history,W2,-5.15,LSU,45,7,38,correct,cover,32.85,Evaluated,,,,,,No provider selected,51392,1982-09-18
+3,Louisiana,West Texas A&M,False,Reconstructed history,W2,-24.13,Louisiana,31,18,13,correct,no_cover,11.13,Evaluated,,,,,,No provider selected,51391,1982-09-18
+3,Iowa,Iowa State,False,Reconstructed history,W2,-1.24,Iowa,7,19,-12,incorrect,no_cover,13.24,Evaluated,,,,,,No provider selected,51387,1982-09-18
+3,Syracuse,Illinois,False,Reconstructed history,W2,8.50,Illinois,10,47,-37,correct,cover,28.50,Evaluated,,,,,,No provider selected,51385,1982-09-18
+3,Washington State,Colorado,False,Reconstructed history,W2,-26.38,Washington State,0,12,-12,incorrect,no_cover,38.38,Evaluated,,,,,,No provider selected,51378,1982-09-18
+3,California,San Diego State,False,Reconstructed history,W2,-24.43,California,28,0,28,correct,cover,3.57,Evaluated,,,,,,No provider selected,51377,1982-09-18
+3,Tulsa,Oklahoma State,False,Reconstructed history,W2,4.55,Oklahoma State,25,15,10,incorrect,no_cover,14.55,Evaluated,,,,,,No provider selected,51428,1982-09-19
+4,BYU,Air Force,False,Reconstructed history,W3,-11.33,BYU,38,39,-1,incorrect,no_cover,12.33,Evaluated,,,,,,No provider selected,51429,1982-09-25
+4,Minnesota,Washington State,False,Reconstructed history,W3,-13.97,Minnesota,41,11,30,correct,cover,16.03,Evaluated,,,,,,No provider selected,51463,1982-09-25
+4,North Carolina,Army,False,Reconstructed history,W3,-7.15,North Carolina,62,8,54,correct,cover,46.85,Evaluated,,,,,,No provider selected,51464,1982-09-25
+4,Northwestern,Northern Illinois,False,Reconstructed history,W3,13.03,Northern Illinois,31,6,25,incorrect,no_cover,38.03,Evaluated,,,,,,No provider selected,51465,1982-09-25
+4,Notre Dame,Purdue,False,Reconstructed history,W3,-31.39,Notre Dame,28,14,14,correct,no_cover,17.39,Evaluated,,,,,,No provider selected,51466,1982-09-25
+4,Navy,Boston College,False,Reconstructed history,W3,8.97,Boston College,0,31,-31,correct,cover,22.03,Evaluated,,,,,,No provider selected,51437,1982-09-25
+4,Florida,Mississippi State,False,Reconstructed history,W3,-3.92,Florida,27,17,10,correct,cover,6.08,Evaluated,,,,,,No provider selected,51443,1982-09-25
+4,North Texas,Louisiana,False,Reconstructed history,W3,25.73,Louisiana,14,31,-17,correct,no_cover,8.73,Evaluated,,,,,,No provider selected,51457,1982-09-25
+4,Miami (OH),Eastern Michigan,False,Reconstructed history,W3,-29.83,Miami (OH),35,0,35,correct,cover,5.17,Evaluated,,,,,,No provider selected,51462,1982-09-25
+4,Temple,Rutgers,False,Reconstructed history,W3,-23.40,Temple,7,10,-3,incorrect,no_cover,26.40,Evaluated,,,,,,No provider selected,51469,1982-09-25
+4,SMU,TCU,False,Reconstructed history,W3,-15.38,SMU,16,13,3,correct,no_cover,12.38,Evaluated,,,,,,No provider selected,51473,1982-09-25
+4,California,Arizona State,False,Reconstructed history,W3,1.00,Arizona State,0,15,-15,correct,cover,14.00,Evaluated,,,,,,No provider selected,51431,1982-09-25
+4,Western Michigan,Kent State,False,Reconstructed history,W3,-28.60,Western Michigan,24,14,10,correct,no_cover,18.60,Evaluated,,,,,,No provider selected,51484,1982-09-25
+4,West Virginia,Richmond,False,Reconstructed history,W3,-30.40,West Virginia,43,10,33,correct,cover,2.60,Evaluated,,,,,,No provider selected,51483,1982-09-25
+4,Washington,Oregon,False,Reconstructed history,W3,-35.75,Washington,37,21,16,correct,no_cover,19.75,Evaluated,,,,,,No provider selected,51481,1982-09-25
+4,Virginia Tech,William & Mary,False,Reconstructed history,W3,-9.28,Virginia Tech,47,3,44,correct,cover,34.72,Evaluated,,,,,,No provider selected,51479,1982-09-25
+4,Cal State Fullerton,Utah State,False,Reconstructed history,W3,-4.53,Cal State Fullerton,0,19,-19,incorrect,no_cover,23.53,Evaluated,,,,,,No provider selected,51478,1982-09-25
+4,Maryland,NC State,False,Reconstructed history,W3,26.56,NC State,23,6,17,incorrect,no_cover,43.56,Evaluated,,,,,,No provider selected,51460,1982-09-25
+4,Hawai'i,UTEP,False,Reconstructed history,W3,-20.86,Hawai'i,17,10,7,correct,no_cover,13.86,Evaluated,,,,,,No provider selected,51448,1982-09-25
+4,Memphis,Georgia Tech,False,Reconstructed history,W3,9.86,Georgia Tech,20,24,-4,correct,no_cover,5.86,Evaluated,,,,,,No provider selected,51447,1982-09-25
+4,Southern Miss,Florida State,False,Reconstructed history,W3,1.13,Florida State,17,24,-7,correct,cover,5.87,Evaluated,,,,,,No provider selected,51444,1982-09-25
+4,Duke,Virginia,False,Reconstructed history,W3,-34.13,Duke,51,17,34,correct,no_cover,0.13,Evaluated,,,,,,No provider selected,51441,1982-09-25
+4,Kansas State,Wichita State,False,Reconstructed history,W3,-0.92,Kansas State,31,7,24,correct,cover,23.08,Evaluated,,,,,,No provider selected,51456,1982-09-25
+4,Kansas,Kentucky,False,Reconstructed history,W3,-18.16,Kansas,13,13,0,tie,no_cover,18.16,Evaluated,,,,,,No provider selected,51455,1982-09-25
+4,Iowa State,Drake,False,Reconstructed history,W3,-4.31,Iowa State,35,10,25,correct,cover,20.69,Evaluated,,,,,,No provider selected,51454,1982-09-25
+4,Indiana,Syracuse,False,Reconstructed history,W3,-7.72,Indiana,17,10,7,correct,no_cover,0.72,Evaluated,,,,,,No provider selected,51451,1982-09-25
+4,Ball State,Indiana State,False,Reconstructed history,W3,15.38,Indiana State,0,17,-17,correct,cover,1.62,Evaluated,,,,,,No provider selected,51452,1982-09-25
+4,Arizona,Iowa,False,Reconstructed history,W3,-21.43,Arizona,14,17,-3,incorrect,no_cover,24.43,Evaluated,,,,,,No provider selected,51453,1982-09-25
+4,Colorado State,New Mexico State,False,Reconstructed history,W3,-12.46,Colorado State,28,17,11,correct,no_cover,1.46,Evaluated,,,,,,No provider selected,51440,1982-09-25
+4,East Carolina,Central Michigan,False,Reconstructed history,W3,4.71,Central Michigan,24,6,18,incorrect,no_cover,22.71,Evaluated,,,,,,No provider selected,51442,1982-09-25
+4,South Carolina,Georgia,False,Reconstructed history,W3,5.79,Georgia,18,34,-16,correct,cover,10.21,Evaluated,,,,,,No provider selected,51446,1982-09-25
+4,LSU,Rice,False,Reconstructed history,W3,-26.44,LSU,52,13,39,correct,cover,12.56,Evaluated,,,,,,No provider selected,51458,1982-09-25
+4,Louisville,Oklahoma State,False,Reconstructed history,W3,2.67,Oklahoma State,28,22,6,incorrect,no_cover,8.67,Evaluated,,,,,,No provider selected,51459,1982-09-25
+4,Texas Tech,Baylor,False,Reconstructed history,W3,1.37,Baylor,23,24,-1,correct,no_cover,0.37,Evaluated,,,,,,No provider selected,51435,1982-09-25
+4,Auburn,Tennessee,False,Reconstructed history,W3,-18.03,Auburn,24,14,10,correct,no_cover,8.03,Evaluated,,,,,,No provider selected,51434,1982-09-25
+4,Miami,Michigan State,False,Reconstructed history,W3,-24.63,Miami,25,22,3,correct,no_cover,21.63,Evaluated,,,,,,No provider selected,51461,1982-09-25
+4,Colorado,Wyoming,False,Reconstructed history,W3,-7.31,Colorado,10,24,-14,incorrect,no_cover,21.31,Evaluated,,,,,,No provider selected,51486,1982-09-25
+4,Wisconsin,Toledo,False,Reconstructed history,W3,26.36,Toledo,36,27,9,incorrect,no_cover,35.36,Evaluated,,,,,,No provider selected,51485,1982-09-25
+4,Michigan,UCLA,False,Reconstructed history,W3,9.05,UCLA,27,31,-4,correct,no_cover,5.05,Evaluated,,,,,,No provider selected,51477,1982-09-25
+4,Texas,Missouri,False,Reconstructed history,W3,-0.18,Texas,21,0,21,correct,cover,20.82,Evaluated,,,,,,No provider selected,51475,1982-09-25
+4,Ohio State,Stanford,False,Reconstructed history,W3,-13.40,Ohio State,20,23,-3,incorrect,no_cover,16.40,Evaluated,,,,,,No provider selected,51474,1982-09-25
+4,Oklahoma,USC,False,Reconstructed history,W3,-0.20,Oklahoma,0,12,-12,incorrect,no_cover,12.20,Evaluated,,,,,,No provider selected,51472,1982-09-25
+4,Oregon State,San José State,False,Reconstructed history,W3,28.24,San José State,13,17,-4,correct,no_cover,24.24,Evaluated,,,,,,No provider selected,51471,1982-09-25
+4,San Diego State,UNLV,False,Reconstructed history,W3,-2.95,San Diego State,26,23,3,correct,cover,0.05,Evaluated,,,,,,No provider selected,51470,1982-09-25
+4,Illinois,Pittsburgh,False,Reconstructed history,W3,-1.28,Illinois,3,20,-17,incorrect,no_cover,18.28,Evaluated,,,,,,No provider selected,51468,1982-09-25
+4,Arkansas,Ole Miss,False,Reconstructed history,W3,-13.63,Arkansas,14,12,2,correct,no_cover,11.63,Evaluated,,,,,,No provider selected,51432,1982-09-25
+4,Alabama,Vanderbilt,False,Reconstructed history,W3,-19.20,Alabama,24,21,3,correct,no_cover,16.20,Evaluated,,,,,,No provider selected,51430,1982-09-25
+4,Penn State,Nebraska,False,Reconstructed history,W3,-2.79,Penn State,27,24,3,correct,cover,0.21,Evaluated,,,,,,No provider selected,51467,1982-09-25
+5,Long Beach State,Cal State Fullerton,False,Reconstructed history,W4,10.86,Cal State Fullerton,7,3,4,incorrect,no_cover,14.86,Evaluated,,,,,,No provider selected,51487,1982-10-01
+5,Utah,Colorado State,False,Reconstructed history,W4,1.40,Colorado State,35,14,21,incorrect,no_cover,22.40,Evaluated,,,,,,No provider selected,51488,1982-10-01
+5,Michigan State,Notre Dame,False,Reconstructed history,W4,26.52,Notre Dame,3,11,-8,correct,no_cover,18.52,Evaluated,,,,,,No provider selected,51520,1982-10-02
+5,North Carolina,Georgia Tech,False,Reconstructed history,W4,-7.36,North Carolina,41,0,41,correct,cover,33.64,Evaluated,,,,,,No provider selected,51518,1982-10-02
+5,Auburn,Nebraska,False,Reconstructed history,W4,-9.22,Auburn,7,41,-34,incorrect,no_cover,43.22,Evaluated,,,,,,No provider selected,51515,1982-10-02
+5,Duke,Navy,False,Reconstructed history,W4,-22.10,Duke,21,27,-6,incorrect,no_cover,28.10,Evaluated,,,,,,No provider selected,51514,1982-10-02
+5,Missouri,East Carolina,False,Reconstructed history,W4,-2.93,Missouri,28,9,19,correct,cover,16.07,Evaluated,,,,,,No provider selected,51513,1982-10-02
+5,Syracuse,Maryland,False,Reconstructed history,W4,1.91,Maryland,3,26,-23,correct,cover,21.09,Evaluated,,,,,,No provider selected,51509,1982-10-02
+5,Louisiana,Southern Illinois,False,Reconstructed history,W4,-6.80,Louisiana,20,10,10,correct,cover,3.20,Evaluated,,,,,,No provider selected,51507,1982-10-02
+5,Ohio State,Florida State,False,Reconstructed history,W4,-5.09,Ohio State,17,34,-17,incorrect,no_cover,22.09,Evaluated,,,,,,No provider selected,51500,1982-10-02
+5,Tennessee,Washington State,False,Reconstructed history,W4,-3.21,Tennessee,10,3,7,correct,cover,3.79,Evaluated,,,,,,No provider selected,51531,1982-10-02
+5,Clemson,Kentucky,False,Reconstructed history,W4,-16.33,Clemson,24,6,18,correct,cover,1.67,Evaluated,,,,,,No provider selected,51499,1982-10-02
+5,California,San José State,False,Reconstructed history,W4,3.37,San José State,26,7,19,incorrect,no_cover,22.37,Evaluated,,,,,,No provider selected,51497,1982-10-02
+5,Kansas,Tulsa,False,Reconstructed history,W4,0.73,Tulsa,15,20,-5,correct,cover,4.27,Evaluated,,,,,,No provider selected,51534,1982-10-02
+5,Colorado,UCLA,False,Reconstructed history,W4,16.64,UCLA,6,34,-28,correct,cover,11.36,Evaluated,,,,,,No provider selected,51535,1982-10-02
+5,Vanderbilt,Tulane,False,Reconstructed history,W4,-3.04,Vanderbilt,24,21,3,correct,no_cover,0.04,Evaluated,,,,,,No provider selected,51536,1982-10-02
+5,Virginia Tech,Wake Forest,False,Reconstructed history,W4,-10.12,Virginia Tech,10,13,-3,incorrect,no_cover,13.12,Evaluated,,,,,,No provider selected,51537,1982-10-02
+5,Washington,San Diego State,False,Reconstructed history,W4,-24.66,Washington,46,25,21,correct,no_cover,3.66,Evaluated,,,,,,No provider selected,51538,1982-10-02
+5,Iowa State,Oklahoma,False,Reconstructed history,W4,-11.46,Iowa State,3,13,-10,incorrect,no_cover,21.46,Evaluated,,,,,,No provider selected,51522,1982-10-02
+5,New Mexico State,Illinois State,False,Reconstructed history,W4,4.23,Illinois State,26,17,9,incorrect,no_cover,13.23,Evaluated,,,,,,No provider selected,51517,1982-10-02
+5,Air Force,New Mexico,False,Reconstructed history,W4,13.11,New Mexico,37,49,-12,correct,no_cover,1.11,Evaluated,,,,,,No provider selected,51516,1982-10-02
+5,Michigan,Indiana,False,Reconstructed history,W4,5.65,Indiana,24,10,14,incorrect,no_cover,19.65,Evaluated,,,,,,No provider selected,51512,1982-10-02
+5,Iowa,Northwestern,False,Reconstructed history,W4,-3.88,Iowa,45,7,38,correct,cover,34.12,Evaluated,,,,,,No provider selected,51506,1982-10-02
+5,Drake,Indiana State,False,Reconstructed history,W4,9.82,Indiana State,19,29,-10,correct,cover,0.18,Evaluated,,,,,,No provider selected,51505,1982-10-02
+5,Minnesota,Illinois,False,Reconstructed history,W4,-7.17,Minnesota,24,42,-18,incorrect,no_cover,25.17,Evaluated,,,,,,No provider selected,51504,1982-10-02
+5,Mississippi State,Georgia,False,Reconstructed history,W4,4.79,Georgia,22,29,-7,correct,cover,2.21,Evaluated,,,,,,No provider selected,51502,1982-10-02
+5,Bowling Green,Western Michigan,False,Reconstructed history,W4,-6.32,Bowling Green,7,3,4,correct,no_cover,2.32,Evaluated,,,,,,No provider selected,51495,1982-10-02
+5,Arizona State,Kansas State,False,Reconstructed history,W4,-2.83,Arizona State,30,7,23,correct,cover,20.17,Evaluated,,,,,,No provider selected,51490,1982-10-02
+5,Hawai'i,Wyoming,False,Reconstructed history,W4,-16.52,Hawai'i,10,28,-18,incorrect,no_cover,34.52,Evaluated,,,,,,No provider selected,51541,1982-10-02
+5,Purdue,Wisconsin,False,Reconstructed history,W4,6.58,Wisconsin,31,35,-4,correct,no_cover,2.58,Evaluated,,,,,,No provider selected,51540,1982-10-02
+5,Texas A&M,Texas Tech,False,Reconstructed history,W4,-11.49,Texas A&M,15,24,-9,incorrect,no_cover,20.49,Evaluated,,,,,,No provider selected,51533,1982-10-02
+5,Stanford,Oregon State,False,Reconstructed history,W4,-24.20,Stanford,45,5,40,correct,cover,15.80,Evaluated,,,,,,No provider selected,51530,1982-10-02
+5,Rutgers,William & Mary,False,Reconstructed history,W4,-0.64,Rutgers,27,17,10,correct,cover,9.36,Evaluated,,,,,,No provider selected,51525,1982-10-02
+5,Pacific,UNLV,False,Reconstructed history,W4,-2.55,Pacific,29,27,2,correct,no_cover,0.55,Evaluated,,,,,,No provider selected,51523,1982-10-02
+5,West Texas A&M,Wichita State,False,Reconstructed history,W4,15.40,Wichita State,21,24,-3,correct,no_cover,12.40,Evaluated,,,,,,No provider selected,51539,1982-10-02
+5,Rice,Texas,False,Reconstructed history,W4,29.57,Texas,7,34,-27,correct,no_cover,2.57,Evaluated,,,,,,No provider selected,51532,1982-10-02
+5,Southern Miss,Memphis,False,Reconstructed history,W4,-11.58,Southern Miss,34,14,20,correct,cover,8.42,Evaluated,,,,,,No provider selected,51529,1982-10-02
+5,USC,Oregon,False,Reconstructed history,W4,-23.83,USC,38,7,31,correct,cover,7.17,Evaluated,,,,,,No provider selected,51527,1982-10-02
+5,South Carolina,Cincinnati,False,Reconstructed history,W4,0.94,Cincinnati,37,10,27,incorrect,no_cover,27.94,Evaluated,,,,,,No provider selected,51526,1982-10-02
+5,Arkansas,TCU,False,Reconstructed history,W4,-21.66,Arkansas,35,0,35,correct,cover,13.34,Evaluated,,,,,,No provider selected,51491,1982-10-02
+5,Northern Illinois,Ball State,False,Reconstructed history,W4,-11.54,Northern Illinois,7,14,-7,incorrect,no_cover,18.54,Evaluated,,,,,,No provider selected,51493,1982-10-02
+5,Boston College,Temple,False,Reconstructed history,W4,-15.63,Boston College,17,7,10,correct,no_cover,5.63,Evaluated,,,,,,No provider selected,51494,1982-10-02
+5,UTEP,BYU,False,Reconstructed history,W4,4.72,BYU,3,51,-48,correct,cover,43.28,Evaluated,,,,,,No provider selected,51496,1982-10-02
+5,Eastern Michigan,Central Michigan,False,Reconstructed history,W4,11.29,Central Michigan,8,13,-5,correct,no_cover,6.29,Evaluated,,,,,,No provider selected,51498,1982-10-02
+5,Fresno State,Utah State,False,Reconstructed history,W4,-8.24,Fresno State,31,6,25,correct,cover,16.76,Evaluated,,,,,,No provider selected,51501,1982-10-02
+5,Houston,Baylor,False,Reconstructed history,W4,5.76,Baylor,21,21,0,tie,no_cover,5.76,Evaluated,,,,,,No provider selected,51503,1982-10-02
+5,Florida,LSU,False,Reconstructed history,W4,-5.96,Florida,13,24,-11,incorrect,no_cover,16.96,Evaluated,,,,,,No provider selected,51508,1982-10-02
+5,Pittsburgh,West Virginia,False,Reconstructed history,W4,-5.35,Pittsburgh,16,13,3,correct,no_cover,2.35,Evaluated,,,,,,No provider selected,51524,1982-10-02
+5,Ohio,Toledo,False,Reconstructed history,W4,11.88,Toledo,17,14,3,incorrect,no_cover,14.88,Evaluated,,,,,,No provider selected,51521,1982-10-02
+5,Virginia,NC State,False,Reconstructed history,W4,20.96,NC State,13,16,-3,correct,no_cover,17.96,Evaluated,,,,,,No provider selected,51519,1982-10-02
+5,Kent State,Miami (OH),False,Reconstructed history,W4,25.55,Miami (OH),0,20,-20,correct,no_cover,5.55,Evaluated,,,,,,No provider selected,51511,1982-10-02
+5,Louisville,Miami,False,Reconstructed history,W4,3.48,Miami,6,28,-22,correct,cover,18.52,Evaluated,,,,,,No provider selected,51510,1982-10-02
+5,SMU,North Texas,False,Reconstructed history,W4,-31.98,SMU,38,10,28,correct,no_cover,3.98,Evaluated,,,,,,No provider selected,51528,1982-10-02
+6,Arizona,UCLA,False,Reconstructed history,W5,14.28,UCLA,24,24,0,tie,no_cover,14.28,Evaluated,,,,,,No provider selected,51544,1982-10-09
+6,Ohio State,Wisconsin,False,Reconstructed history,W5,-5.67,Ohio State,0,6,-6,incorrect,no_cover,11.67,Evaluated,,,,,,No provider selected,51595,1982-10-09
+6,Western Michigan,Central Michigan,False,Reconstructed history,W5,-8.35,Western Michigan,18,18,0,tie,no_cover,8.35,Evaluated,,,,,,No provider selected,51592,1982-10-09
+6,Washington,California,False,Reconstructed history,W5,-6.75,Washington,50,7,43,correct,cover,36.25,Evaluated,,,,,,No provider selected,51590,1982-10-09
+6,Wyoming,San Diego State,False,Reconstructed history,W5,-13.61,Wyoming,21,24,-3,incorrect,no_cover,16.61,Evaluated,,,,,,No provider selected,51578,1982-10-09
+6,Rutgers,Army,False,Reconstructed history,W5,-2.64,Rutgers,24,3,21,correct,cover,18.36,Evaluated,,,,,,No provider selected,51577,1982-10-09
+6,Oregon State,Washington State,False,Reconstructed history,W5,5.54,Washington State,14,14,0,tie,no_cover,5.54,Evaluated,,,,,,No provider selected,51576,1982-10-09
+6,Ball State,Ohio,False,Reconstructed history,W5,4.16,Ohio,7,34,-27,correct,cover,22.84,Evaluated,,,,,,No provider selected,51574,1982-10-09
+6,Notre Dame,Miami,False,Reconstructed history,W5,-4.76,Notre Dame,16,14,2,correct,no_cover,2.76,Evaluated,,,,,,No provider selected,51573,1982-10-09
+6,Wake Forest,North Carolina,False,Reconstructed history,W5,6.53,North Carolina,7,24,-17,correct,cover,10.47,Evaluated,,,,,,No provider selected,51570,1982-10-09
+6,Missouri,Kansas State,False,Reconstructed history,W5,-1.84,Missouri,7,7,0,tie,no_cover,1.84,Evaluated,,,,,,No provider selected,51567,1982-10-09
+6,Michigan,Michigan State,False,Reconstructed history,W5,-18.08,Michigan,31,17,14,correct,no_cover,4.08,Evaluated,,,,,,No provider selected,51566,1982-10-09
+6,Illinois,Purdue,False,Reconstructed history,W5,-26.70,Illinois,38,34,4,correct,no_cover,22.70,Evaluated,,,,,,No provider selected,51560,1982-10-09
+6,Hawai'i,Utah,False,Reconstructed history,W5,-8.48,Hawai'i,10,7,3,correct,no_cover,5.48,Evaluated,,,,,,No provider selected,51558,1982-10-09
+6,Fresno State,Pacific,False,Reconstructed history,W5,-24.15,Fresno State,49,30,19,correct,no_cover,5.15,Evaluated,,,,,,No provider selected,51555,1982-10-09
+6,Virginia,Clemson,False,Reconstructed history,W5,17.60,Clemson,0,48,-48,correct,cover,30.40,Evaluated,,,,,,No provider selected,51551,1982-10-09
+6,Arkansas,Texas Tech,False,Reconstructed history,W5,-17.78,Arkansas,21,3,18,correct,cover,0.22,Evaluated,,,,,,No provider selected,51546,1982-10-09
+6,Duke,Virginia Tech,False,Reconstructed history,W5,-8.04,Duke,21,22,-1,incorrect,no_cover,9.04,Evaluated,,,,,,No provider selected,51589,1982-10-09
+6,Southern Miss,Mississippi State,False,Reconstructed history,W5,4.20,Mississippi State,20,14,6,incorrect,no_cover,10.20,Evaluated,,,,,,No provider selected,51581,1982-10-09
+6,Oklahoma,Texas,False,Reconstructed history,W5,11.77,Texas,28,22,6,incorrect,no_cover,17.77,Evaluated,,,,,,No provider selected,51575,1982-10-09
+6,UNLV,UTEP,False,Reconstructed history,W5,2.79,UTEP,28,21,7,incorrect,no_cover,9.79,Evaluated,,,,,,No provider selected,51569,1982-10-09
+6,Maryland,Indiana State,False,Reconstructed history,W5,2.00,Indiana State,38,0,38,incorrect,no_cover,40.00,Evaluated,,,,,,No provider selected,51564,1982-10-09
+6,Iowa State,Kent State,False,Reconstructed history,W5,-17.94,Iowa State,44,7,37,correct,cover,19.06,Evaluated,,,,,,No provider selected,51562,1982-10-09
+6,Florida State,Southern Illinois,False,Reconstructed history,W5,-6.37,Florida State,59,8,51,correct,cover,44.63,Evaluated,,,,,,No provider selected,51554,1982-10-09
+6,Cincinnati,Long Beach State,False,Reconstructed history,W5,-11.27,Cincinnati,34,14,20,correct,cover,8.73,Evaluated,,,,,,No provider selected,51550,1982-10-09
+6,Alabama,Penn State,False,Reconstructed history,W5,-1.33,Alabama,42,21,21,correct,cover,19.67,Evaluated,,,,,,No provider selected,51543,1982-10-09
+6,Air Force,Navy,False,Reconstructed history,W5,0.14,Navy,24,21,3,incorrect,no_cover,3.14,Evaluated,,,,,,No provider selected,51542,1982-10-09
+6,Illinois State,Wichita State,False,Reconstructed history,W5,15.44,Wichita State,14,48,-34,correct,cover,18.56,Evaluated,,,,,,No provider selected,51593,1982-10-09
+6,West Virginia,Boston College,False,Reconstructed history,W5,4.17,Boston College,20,13,7,incorrect,no_cover,11.17,Evaluated,,,,,,No provider selected,51591,1982-10-09
+6,Vanderbilt,Florida,False,Reconstructed history,W5,8.97,Florida,31,29,2,incorrect,no_cover,10.97,Evaluated,,,,,,No provider selected,51588,1982-10-09
+6,New Mexico State,Tulsa,False,Reconstructed history,W5,14.14,Tulsa,14,31,-17,correct,cover,2.86,Evaluated,,,,,,No provider selected,51586,1982-10-09
+6,Toledo,Eastern Michigan,False,Reconstructed history,W5,-19.64,Toledo,20,19,1,correct,no_cover,18.64,Evaluated,,,,,,No provider selected,51585,1982-10-09
+6,TCU,Rice,False,Reconstructed history,W5,-10.01,TCU,24,16,8,correct,no_cover,2.01,Evaluated,,,,,,No provider selected,51584,1982-10-09
+6,Tennessee,LSU,False,Reconstructed history,W5,12.06,LSU,24,24,0,tie,no_cover,12.06,Evaluated,,,,,,No provider selected,51583,1982-10-09
+6,Louisville,Temple,False,Reconstructed history,W5,-3.00,Louisville,14,55,-41,incorrect,no_cover,44.00,Evaluated,,,,,,No provider selected,51582,1982-10-09
+6,Baylor,SMU,False,Reconstructed history,W5,8.19,SMU,19,22,-3,correct,no_cover,5.19,Evaluated,,,,,,No provider selected,51580,1982-10-09
+6,Cal State Fullerton,San José State,False,Reconstructed history,W5,8.37,San José State,15,38,-23,correct,cover,14.63,Evaluated,,,,,,No provider selected,51579,1982-10-09
+6,Northwestern,Minnesota,False,Reconstructed history,W5,16.53,Minnesota,31,21,10,incorrect,no_cover,26.53,Evaluated,,,,,,No provider selected,51572,1982-10-09
+6,Colorado,Nebraska,False,Reconstructed history,W5,15.20,Nebraska,14,40,-26,correct,cover,10.80,Evaluated,,,,,,No provider selected,51568,1982-10-09
+6,Miami (OH),Bowling Green,False,Reconstructed history,W5,0.39,Bowling Green,17,12,5,incorrect,no_cover,5.39,Evaluated,,,,,,No provider selected,51565,1982-10-09
+6,Kansas,Oklahoma State,False,Reconstructed history,W5,-2.17,Kansas,24,24,0,tie,no_cover,2.17,Evaluated,,,,,,No provider selected,51563,1982-10-09
+6,Indiana,Iowa,False,Reconstructed history,W5,-3.93,Indiana,20,24,-4,incorrect,no_cover,7.93,Evaluated,,,,,,No provider selected,51561,1982-10-09
+6,Houston,Texas A&M,False,Reconstructed history,W5,1.98,Texas A&M,24,20,4,incorrect,no_cover,5.98,Evaluated,,,,,,No provider selected,51559,1982-10-09
+6,Tulane,Georgia Tech,False,Reconstructed history,W5,3.83,Georgia Tech,13,19,-6,correct,cover,2.17,Evaluated,,,,,,No provider selected,51557,1982-10-09
+6,Georgia,Ole Miss,False,Reconstructed history,W5,-16.91,Georgia,33,10,23,correct,cover,6.09,Evaluated,,,,,,No provider selected,51556,1982-10-09
+6,East Carolina,Richmond,False,Reconstructed history,W5,-18.77,East Carolina,35,14,21,correct,cover,2.23,Evaluated,,,,,,No provider selected,51553,1982-10-09
+6,New Mexico,BYU,False,Reconstructed history,W5,-13.81,New Mexico,12,40,-28,incorrect,no_cover,41.81,Evaluated,,,,,,No provider selected,51549,1982-10-09
+6,Auburn,Kentucky,False,Reconstructed history,W5,-23.07,Auburn,18,3,15,correct,no_cover,8.07,Evaluated,,,,,,No provider selected,51548,1982-10-09
+6,Arizona State,Stanford,False,Reconstructed history,W5,-8.82,Arizona State,21,17,4,correct,no_cover,4.82,Evaluated,,,,,,No provider selected,51545,1982-10-09
+7,Boston College,Rutgers,False,Reconstructed history,W6,-10.53,Boston College,14,13,1,correct,no_cover,9.53,Evaluated,,,,,,No provider selected,51601,1982-10-16
+7,BYU,Hawai'i,False,Reconstructed history,W6,1.31,Hawai'i,39,25,14,incorrect,no_cover,15.31,Evaluated,,,,,,No provider selected,51603,1982-10-16
+7,Memphis,Cincinnati,False,Reconstructed history,W6,16.38,Cincinnati,7,16,-9,correct,no_cover,7.38,Evaluated,,,,,,No provider selected,51607,1982-10-16
+7,Georgia,Vanderbilt,False,Reconstructed history,W6,-15.48,Georgia,27,13,14,correct,no_cover,1.48,Evaluated,,,,,,No provider selected,51615,1982-10-16
+7,Minnesota,Indiana,False,Reconstructed history,W6,-9.06,Minnesota,21,40,-19,incorrect,no_cover,28.06,Evaluated,,,,,,No provider selected,51616,1982-10-16
+7,Iowa State,Missouri,False,Reconstructed history,W6,2.36,Missouri,17,17,0,tie,no_cover,2.36,Evaluated,,,,,,No provider selected,51617,1982-10-16
+7,Kentucky,LSU,False,Reconstructed history,W6,26.04,LSU,10,34,-24,correct,no_cover,2.04,Evaluated,,,,,,No provider selected,51619,1982-10-16
+7,Maryland,Wake Forest,False,Reconstructed history,W6,-8.76,Maryland,52,31,21,correct,cover,12.24,Evaluated,,,,,,No provider selected,51621,1982-10-16
+7,Navy,William & Mary,False,Reconstructed history,W6,-3.65,Navy,39,3,36,correct,cover,32.35,Evaluated,,,,,,No provider selected,51625,1982-10-16
+7,Penn State,Syracuse,False,Reconstructed history,W6,-21.43,Penn State,28,7,21,correct,no_cover,0.43,Evaluated,,,,,,No provider selected,51634,1982-10-16
+7,Pittsburgh,Temple,False,Reconstructed history,W6,-16.76,Pittsburgh,38,7,31,correct,cover,14.24,Evaluated,,,,,,No provider selected,51635,1982-10-16
+7,Purdue,Northwestern,False,Reconstructed history,W6,6.01,Northwestern,34,21,13,incorrect,no_cover,19.01,Evaluated,,,,,,No provider selected,51636,1982-10-16
+7,Stanford,USC,False,Reconstructed history,W6,1.54,USC,21,41,-20,correct,cover,18.46,Evaluated,,,,,,No provider selected,51637,1982-10-16
+7,SMU,Houston,False,Reconstructed history,W6,-14.16,SMU,20,14,6,correct,no_cover,8.16,Evaluated,,,,,,No provider selected,51638,1982-10-16
+7,Tulane,Southern Miss,False,Reconstructed history,W6,7.79,Southern Miss,10,22,-12,correct,cover,4.21,Evaluated,,,,,,No provider selected,51639,1982-10-16
+7,Tennessee,Alabama,False,Reconstructed history,W6,12.14,Alabama,35,28,7,incorrect,no_cover,19.14,Evaluated,,,,,,No provider selected,51640,1982-10-16
+7,Texas A&M,Baylor,False,Reconstructed history,W6,-0.72,Texas A&M,28,23,5,correct,cover,4.28,Evaluated,,,,,,No provider selected,51641,1982-10-16
+7,Rice,Texas Tech,False,Reconstructed history,W6,9.58,Texas Tech,21,23,-2,correct,no_cover,7.58,Evaluated,,,,,,No provider selected,51642,1982-10-16
+7,UCLA,Washington State,False,Reconstructed history,W6,-23.65,UCLA,42,17,25,correct,cover,1.35,Evaluated,,,,,,No provider selected,51645,1982-10-16
+7,Virginia Tech,West Virginia,False,Reconstructed history,W6,3.73,West Virginia,6,16,-10,correct,cover,6.27,Evaluated,,,,,,No provider selected,51649,1982-10-16
+7,Wisconsin,Michigan State,False,Reconstructed history,W6,-17.26,Wisconsin,24,23,1,correct,no_cover,16.26,Evaluated,,,,,,No provider selected,51652,1982-10-16
+7,Notre Dame,Arizona,False,Reconstructed history,W6,-17.59,Notre Dame,13,16,-3,incorrect,no_cover,20.59,Evaluated,,,,,,No provider selected,51596,1982-10-16
+7,Arizona State,UTEP,False,Reconstructed history,W6,-27.33,Arizona State,37,6,31,correct,cover,3.67,Evaluated,,,,,,No provider selected,51597,1982-10-16
+7,Auburn,Georgia Tech,False,Reconstructed history,W6,-9.92,Auburn,24,0,24,correct,cover,14.08,Evaluated,,,,,,No provider selected,51599,1982-10-16
+7,Wyoming,Cal State Fullerton,False,Reconstructed history,W6,-9.36,Wyoming,16,20,-4,incorrect,no_cover,13.36,Evaluated,,,,,,No provider selected,51604,1982-10-16
+7,Florida,West Texas A&M,False,Reconstructed history,W6,-15.69,Florida,77,14,63,correct,cover,47.31,Evaluated,,,,,,No provider selected,51612,1982-10-16
+7,Miami,Mississippi State,False,Reconstructed history,W6,-6.91,Miami,31,14,17,correct,cover,10.09,Evaluated,,,,,,No provider selected,51622,1982-10-16
+7,Ole Miss,TCU,False,Reconstructed history,W6,-2.77,Ole Miss,27,9,18,correct,cover,15.23,Evaluated,,,,,,No provider selected,51624,1982-10-16
+7,Utah,UNLV,False,Reconstructed history,W6,-10.87,Utah,24,14,10,correct,no_cover,0.87,Evaluated,,,,,,No provider selected,51646,1982-10-16
+7,Iowa,Michigan,False,Reconstructed history,W6,0.23,Michigan,7,29,-22,correct,cover,21.77,Evaluated,,,,,,No provider selected,51623,1982-10-16
+7,Kent State,Ball State,False,Reconstructed history,W6,3.06,Ball State,3,21,-18,correct,cover,14.94,Evaluated,,,,,,No provider selected,51600,1982-10-16
+7,Bowling Green,Northern Illinois,False,Reconstructed history,W6,-19.44,Bowling Green,20,18,2,correct,no_cover,17.44,Evaluated,,,,,,No provider selected,51602,1982-10-16
+7,California,Oregon,False,Reconstructed history,W6,-20.48,California,10,7,3,correct,no_cover,17.48,Evaluated,,,,,,No provider selected,51605,1982-10-16
+7,Central Michigan,Toledo,False,Reconstructed history,W6,0.79,Toledo,16,12,4,incorrect,no_cover,4.79,Evaluated,,,,,,No provider selected,51606,1982-10-16
+7,Clemson,Duke,False,Reconstructed history,W6,-5.00,Clemson,49,14,35,correct,cover,30.00,Evaluated,,,,,,No provider selected,51608,1982-10-16
+7,Colorado,Oklahoma State,False,Reconstructed history,W6,3.64,Oklahoma State,25,25,0,tie,no_cover,3.64,Evaluated,,,,,,No provider selected,51609,1982-10-16
+7,Air Force,Colorado State,False,Reconstructed history,W6,-4.76,Air Force,11,21,-10,incorrect,no_cover,14.76,Evaluated,,,,,,No provider selected,51610,1982-10-16
+7,Florida State,East Carolina,False,Reconstructed history,W6,-8.34,Florida State,56,17,39,correct,cover,30.66,Evaluated,,,,,,No provider selected,51613,1982-10-16
+7,San José State,Long Beach State,False,Reconstructed history,W6,-17.83,San José State,21,22,-1,incorrect,no_cover,18.83,Evaluated,,,,,,No provider selected,51618,1982-10-16
+7,Louisville,Richmond,False,Reconstructed history,W6,-12.08,Louisville,35,0,35,correct,cover,22.92,Evaluated,,,,,,No provider selected,51620,1982-10-16
+7,Wichita State,New Mexico State,False,Reconstructed history,W6,-21.05,Wichita State,28,26,2,correct,no_cover,19.05,Evaluated,,,,,,No provider selected,51651,1982-10-16
+7,Western Michigan,Miami (OH),False,Reconstructed history,W6,4.26,Miami (OH),10,0,10,incorrect,no_cover,14.26,Evaluated,,,,,,No provider selected,51650,1982-10-16
+7,Oregon State,Washington,False,Reconstructed history,W6,26.58,Washington,17,34,-17,correct,no_cover,9.58,Evaluated,,,,,,No provider selected,51648,1982-10-16
+7,Utah State,Pacific,False,Reconstructed history,W6,-14.98,Utah State,14,12,2,correct,no_cover,12.98,Evaluated,,,,,,No provider selected,51647,1982-10-16
+7,Tulsa,Southern Illinois,False,Reconstructed history,W6,-11.04,Tulsa,22,3,19,correct,cover,7.96,Evaluated,,,,,,No provider selected,51644,1982-10-16
+7,Kansas,Oklahoma,False,Reconstructed history,W6,5.37,Oklahoma,14,38,-24,correct,cover,18.63,Evaluated,,,,,,No provider selected,51633,1982-10-16
+7,Illinois,Ohio State,False,Reconstructed history,W6,-13.37,Illinois,21,26,-5,incorrect,no_cover,18.37,Evaluated,,,,,,No provider selected,51632,1982-10-16
+7,Eastern Michigan,Ohio,False,Reconstructed history,W6,12.62,Ohio,13,14,-1,correct,no_cover,11.62,Evaluated,,,,,,No provider selected,51631,1982-10-16
+7,North Carolina,NC State,False,Reconstructed history,W6,-4.14,North Carolina,41,9,32,correct,cover,27.86,Evaluated,,,,,,No provider selected,51630,1982-10-16
+7,San Diego State,New Mexico,False,Reconstructed history,W6,11.91,New Mexico,17,22,-5,correct,no_cover,6.91,Evaluated,,,,,,No provider selected,51629,1982-10-16
+7,Nebraska,Kansas State,False,Reconstructed history,W6,-4.19,Nebraska,42,13,29,correct,cover,24.81,Evaluated,,,,,,No provider selected,51626,1982-10-16
+8,New Mexico,New Mexico State,False,Reconstructed history,W7,-22.11,New Mexico,66,14,52,correct,cover,29.89,Evaluated,,,,,,No provider selected,51679,1982-10-23
+8,Notre Dame,Oregon,False,Reconstructed history,W7,-24.77,Notre Dame,13,13,0,tie,no_cover,24.77,Evaluated,,,,,,No provider selected,51681,1982-10-23
+8,San Diego State,Long Beach State,False,Reconstructed history,W7,-0.66,San Diego State,51,17,34,correct,cover,33.34,Evaluated,,,,,,No provider selected,51689,1982-10-23
+8,Washington,Texas Tech,False,Reconstructed history,W7,-16.49,Washington,10,3,7,correct,no_cover,9.49,Evaluated,,,,,,No provider selected,51705,1982-10-23
+8,West Texas A&M,North Texas,False,Reconstructed history,W7,-1.93,West Texas A&M,24,22,2,correct,cover,0.07,Evaluated,,,,,,No provider selected,51706,1982-10-23
+8,Ball State,Western Michigan,False,Reconstructed history,W7,12.41,Western Michigan,13,6,7,incorrect,no_cover,19.41,Evaluated,,,,,,No provider selected,51658,1982-10-23
+8,San José State,Fresno State,False,Reconstructed history,W7,1.15,Fresno State,27,39,-12,correct,cover,10.85,Evaluated,,,,,,No provider selected,51664,1982-10-23
+8,Kentucky,Georgia,False,Reconstructed history,W7,26.91,Georgia,14,27,-13,correct,no_cover,13.91,Evaluated,,,,,,No provider selected,51665,1982-10-23
+8,Colorado,Iowa State,False,Reconstructed history,W7,11.40,Iowa State,14,31,-17,correct,cover,5.60,Evaluated,,,,,,No provider selected,51669,1982-10-23
+8,Kansas State,Kansas,False,Reconstructed history,W7,-13.12,Kansas State,36,7,29,correct,cover,15.88,Evaluated,,,,,,No provider selected,51671,1982-10-23
+8,Northwestern,Michigan,False,Reconstructed history,W7,11.21,Michigan,14,49,-35,correct,cover,23.79,Evaluated,,,,,,No provider selected,51675,1982-10-23
+8,Northern Illinois,Eastern Michigan,False,Reconstructed history,W7,-7.28,Northern Illinois,10,0,10,correct,cover,2.72,Evaluated,,,,,,No provider selected,51680,1982-10-23
+8,Syracuse,Pittsburgh,False,Reconstructed history,W7,23.72,Pittsburgh,0,14,-14,correct,no_cover,9.72,Evaluated,,,,,,No provider selected,51686,1982-10-23
+8,USC,Oregon State,False,Reconstructed history,W7,-25.78,USC,38,0,38,correct,cover,12.22,Evaluated,,,,,,No provider selected,51690,1982-10-23
+8,Texas,SMU,False,Reconstructed history,W7,3.15,SMU,17,30,-13,correct,cover,9.85,Evaluated,,,,,,No provider selected,51692,1982-10-23
+8,UTEP,Air Force,False,Reconstructed history,W7,6.42,Air Force,7,35,-28,correct,cover,21.58,Evaluated,,,,,,No provider selected,51653,1982-10-23
+8,Houston,Arkansas,False,Reconstructed history,W7,13.50,Arkansas,3,38,-35,correct,cover,21.50,Evaluated,,,,,,No provider selected,51656,1982-10-23
+8,Mississippi State,Auburn,False,Reconstructed history,W7,8.03,Auburn,17,35,-18,correct,cover,9.97,Evaluated,,,,,,No provider selected,51657,1982-10-23
+8,Army,Boston College,False,Reconstructed history,W7,10.33,Boston College,17,32,-15,correct,cover,4.67,Evaluated,,,,,,No provider selected,51659,1982-10-23
+8,BYU,Colorado State,False,Reconstructed history,W7,-9.91,BYU,34,18,16,correct,cover,6.09,Evaluated,,,,,,No provider selected,51660,1982-10-23
+8,Kent State,Central Michigan,False,Reconstructed history,W7,15.61,Central Michigan,20,31,-11,correct,no_cover,4.61,Evaluated,,,,,,No provider selected,51661,1982-10-23
+8,NC State,Clemson,False,Reconstructed history,W7,1.83,Clemson,29,38,-9,correct,cover,7.17,Evaluated,,,,,,No provider selected,51662,1982-10-23
+8,Wisconsin,Illinois,False,Reconstructed history,W7,2.08,Illinois,28,29,-1,correct,no_cover,1.08,Evaluated,,,,,,No provider selected,51667,1982-10-23
+8,Minnesota,Iowa,False,Reconstructed history,W7,-4.81,Minnesota,16,21,-5,incorrect,no_cover,9.81,Evaluated,,,,,,No provider selected,51668,1982-10-23
+8,Maryland,Duke,False,Reconstructed history,W7,-7.88,Maryland,49,22,27,correct,cover,19.12,Evaluated,,,,,,No provider selected,51674,1982-10-23
+8,Nebraska,Missouri,False,Reconstructed history,W7,-5.20,Nebraska,23,19,4,correct,no_cover,1.20,Evaluated,,,,,,No provider selected,51677,1982-10-23
+8,Ohio,Miami (OH),False,Reconstructed history,W7,5.95,Miami (OH),20,0,20,incorrect,no_cover,25.95,Evaluated,,,,,,No provider selected,51682,1982-10-23
+8,Indiana,Ohio State,False,Reconstructed history,W7,-2.27,Indiana,25,49,-24,incorrect,no_cover,26.27,Evaluated,,,,,,No provider selected,51683,1982-10-23
+8,Oklahoma,Oklahoma State,False,Reconstructed history,W7,-11.49,Oklahoma,27,9,18,correct,cover,6.51,Evaluated,,,,,,No provider selected,51684,1982-10-23
+8,Texas A&M,Rice,False,Reconstructed history,W7,-16.82,Texas A&M,49,7,42,correct,cover,25.18,Evaluated,,,,,,No provider selected,51695,1982-10-23
+8,TCU,Baylor,False,Reconstructed history,W7,0.60,Baylor,38,14,24,incorrect,no_cover,24.60,Evaluated,,,,,,No provider selected,51696,1982-10-23
+8,Tulane,Memphis,False,Reconstructed history,W7,-6.53,Tulane,17,10,7,correct,cover,0.47,Evaluated,,,,,,No provider selected,51698,1982-10-23
+8,Drake,Tulsa,False,Reconstructed history,W7,13.88,Tulsa,18,34,-16,correct,cover,2.12,Evaluated,,,,,,No provider selected,51699,1982-10-23
+8,Wyoming,Utah,False,Reconstructed history,W7,0.21,Utah,16,13,3,incorrect,no_cover,3.21,Evaluated,,,,,,No provider selected,51708,1982-10-23
+8,Virginia,Wake Forest,False,Reconstructed history,W7,9.05,Wake Forest,34,27,7,incorrect,no_cover,16.05,Evaluated,,,,,,No provider selected,51702,1982-10-23
+8,Vanderbilt,Ole Miss,False,Reconstructed history,W7,-1.66,Vanderbilt,19,10,9,correct,cover,7.34,Evaluated,,,,,,No provider selected,51701,1982-10-23
+8,California,UCLA,False,Reconstructed history,W7,6.89,UCLA,31,47,-16,correct,cover,9.11,Evaluated,,,,,,No provider selected,51700,1982-10-23
+8,Toledo,Bowling Green,False,Reconstructed history,W7,5.54,Bowling Green,24,10,14,incorrect,no_cover,19.54,Evaluated,,,,,,No provider selected,51697,1982-10-23
+8,Washington State,Stanford,False,Reconstructed history,W7,8.88,Stanford,26,31,-5,correct,no_cover,3.88,Evaluated,,,,,,No provider selected,51694,1982-10-23
+8,Southern Miss,Louisville,False,Reconstructed history,W7,-6.72,Southern Miss,48,0,48,correct,cover,41.28,Evaluated,,,,,,No provider selected,51693,1982-10-23
+8,Southern Illinois,Indiana State,False,Reconstructed history,W7,0.80,Indiana State,21,9,12,incorrect,no_cover,12.80,Evaluated,,,,,,No provider selected,51691,1982-10-23
+8,Michigan State,Purdue,False,Reconstructed history,W7,1.86,Purdue,21,24,-3,correct,cover,1.14,Evaluated,,,,,,No provider selected,51687,1982-10-23
+8,West Virginia,Penn State,False,Reconstructed history,W7,-1.99,West Virginia,0,24,-24,incorrect,no_cover,25.99,Evaluated,,,,,,No provider selected,51685,1982-10-23
+8,Alabama,Cincinnati,False,Reconstructed history,W7,-6.98,Alabama,21,3,18,correct,cover,11.02,Evaluated,,,,,,No provider selected,51654,1982-10-23
+8,Arizona,Pacific,False,Reconstructed history,W7,-14.16,Arizona,55,7,48,correct,cover,33.84,Evaluated,,,,,,No provider selected,51655,1982-10-23
+8,East Carolina,Illinois State,False,Reconstructed history,W7,-12.58,East Carolina,21,0,21,correct,cover,8.42,Evaluated,,,,,,No provider selected,51663,1982-10-23
+8,Georgia Tech,Tennessee,False,Reconstructed history,W7,3.38,Tennessee,31,21,10,incorrect,no_cover,13.38,Evaluated,,,,,,No provider selected,51666,1982-10-23
+8,LSU,South Carolina,False,Reconstructed history,W7,-13.32,LSU,14,6,8,correct,no_cover,5.32,Evaluated,,,,,,No provider selected,51673,1982-10-23
+9,Wisconsin,Northwestern,False,Reconstructed history,W8,-10.97,Wisconsin,54,20,34,correct,cover,23.03,Evaluated,,,,,,No provider selected,51765,1982-10-30
+9,Virginia Tech,Kentucky,False,Reconstructed history,W8,-19.24,Virginia Tech,29,3,26,correct,cover,6.76,Evaluated,,,,,,No provider selected,51762,1982-10-30
+9,Utah State,BYU,False,Reconstructed history,W8,1.24,BYU,20,17,3,incorrect,no_cover,4.24,Evaluated,,,,,,No provider selected,51760,1982-10-30
+9,Tulane,Baylor,False,Reconstructed history,W8,-0.49,Tulane,30,15,15,correct,cover,14.51,Evaluated,,,,,,No provider selected,51757,1982-10-30
+9,NC State,South Carolina,False,Reconstructed history,W8,-4.41,NC State,33,3,30,correct,cover,25.59,Evaluated,,,,,,No provider selected,51741,1982-10-30
+9,North Texas,New Mexico,False,Reconstructed history,W8,18.65,New Mexico,17,20,-3,correct,no_cover,15.65,Evaluated,,,,,,No provider selected,51739,1982-10-30
+9,Hawai'i,Cal State Fullerton,False,Reconstructed history,W8,-11.86,Hawai'i,9,3,6,correct,no_cover,5.86,Evaluated,,,,,,No provider selected,51728,1982-10-30
+9,Georgia,Memphis,False,Reconstructed history,W8,-29.85,Georgia,34,3,31,correct,cover,1.15,Evaluated,,,,,,No provider selected,51727,1982-10-30
+9,Georgia Tech,Duke,False,Reconstructed history,W8,-4.09,Georgia Tech,21,38,-17,incorrect,no_cover,21.09,Evaluated,,,,,,No provider selected,51722,1982-10-30
+9,Air Force,Wyoming,False,Reconstructed history,W8,-1.70,Air Force,44,34,10,correct,cover,8.30,Evaluated,,,,,,No provider selected,51709,1982-10-30
+9,Western Michigan,Northern Illinois,False,Reconstructed history,W8,-13.03,Western Michigan,27,3,24,correct,cover,10.97,Evaluated,,,,,,No provider selected,51764,1982-10-30
+9,UCLA,Oregon,False,Reconstructed history,W8,-30.07,UCLA,40,12,28,correct,no_cover,2.07,Evaluated,,,,,,No provider selected,51759,1982-10-30
+9,Wichita State,Tulsa,False,Reconstructed history,W8,-1.45,Wichita State,21,30,-9,incorrect,no_cover,10.45,Evaluated,,,,,,No provider selected,51758,1982-10-30
+9,Texas Tech,Texas,False,Reconstructed history,W8,5.38,Texas,0,27,-27,correct,cover,21.62,Evaluated,,,,,,No provider selected,51756,1982-10-30
+9,Stanford,Washington,False,Reconstructed history,W8,8.14,Washington,43,31,12,incorrect,no_cover,20.14,Evaluated,,,,,,No provider selected,51753,1982-10-30
+9,Southern Miss,Louisiana,False,Reconstructed history,W8,-1.64,Southern Miss,36,0,36,correct,cover,34.36,Evaluated,,,,,,No provider selected,51752,1982-10-30
+9,UNLV,San José State,False,Reconstructed history,W8,9.64,San José State,14,48,-34,correct,cover,24.36,Evaluated,,,,,,No provider selected,51750,1982-10-30
+9,San Diego State,Utah,False,Reconstructed history,W8,0.52,Utah,21,17,4,incorrect,no_cover,4.52,Evaluated,,,,,,No provider selected,51749,1982-10-30
+9,Oklahoma State,Missouri,False,Reconstructed history,W8,8.87,Missouri,30,20,10,incorrect,no_cover,18.87,Evaluated,,,,,,No provider selected,51745,1982-10-30
+9,Colorado,Oklahoma,False,Reconstructed history,W8,14.60,Oklahoma,10,45,-35,correct,cover,20.40,Evaluated,,,,,,No provider selected,51744,1982-10-30
+9,Ohio State,Purdue,False,Reconstructed history,W8,-11.90,Ohio State,38,6,32,correct,cover,20.10,Evaluated,,,,,,No provider selected,51743,1982-10-30
+9,Notre Dame,Navy,False,Reconstructed history,W8,-7.22,Notre Dame,27,10,17,correct,cover,9.78,Evaluated,,,,,,No provider selected,51742,1982-10-30
+9,Miami (OH),Toledo,False,Reconstructed history,W8,-5.08,Miami (OH),21,17,4,correct,no_cover,1.08,Evaluated,,,,,,No provider selected,51735,1982-10-30
+9,North Carolina,Maryland,False,Reconstructed history,W8,-5.36,North Carolina,24,31,-7,incorrect,no_cover,12.36,Evaluated,,,,,,No provider selected,51734,1982-10-30
+9,Iowa State,Kansas State,False,Reconstructed history,W8,-2.02,Iowa State,3,9,-6,incorrect,no_cover,8.02,Evaluated,,,,,,No provider selected,51732,1982-10-30
+9,Houston,TCU,False,Reconstructed history,W8,-0.03,Houston,31,27,4,correct,cover,3.97,Evaluated,,,,,,No provider selected,51729,1982-10-30
+9,Florida,Auburn,False,Reconstructed history,W8,1.58,Auburn,19,17,2,incorrect,no_cover,3.58,Evaluated,,,,,,No provider selected,51724,1982-10-30
+9,West Texas A&M,Drake,False,Reconstructed history,W8,-2.07,West Texas A&M,24,31,-7,incorrect,no_cover,9.07,Evaluated,,,,,,No provider selected,51721,1982-10-30
+9,Central Michigan,Ohio,False,Reconstructed history,W8,-3.65,Central Michigan,42,18,24,correct,cover,20.35,Evaluated,,,,,,No provider selected,51718,1982-10-30
+9,Oregon State,California,False,Reconstructed history,W8,13.87,California,14,28,-14,correct,cover,0.13,Evaluated,,,,,,No provider selected,51717,1982-10-30
+9,Kent State,Bowling Green,False,Reconstructed history,W8,18.17,Bowling Green,7,41,-34,correct,cover,15.83,Evaluated,,,,,,No provider selected,51716,1982-10-30
+9,Eastern Michigan,Ball State,False,Reconstructed history,W8,8.46,Ball State,7,16,-9,correct,cover,0.54,Evaluated,,,,,,No provider selected,51715,1982-10-30
+9,Arkansas,Rice,False,Reconstructed history,W8,-30.76,Arkansas,24,6,18,correct,no_cover,12.76,Evaluated,,,,,,No provider selected,51713,1982-10-30
+9,Mississippi State,Alabama,False,Reconstructed history,W8,11.76,Alabama,12,20,-8,correct,no_cover,3.76,Evaluated,,,,,,No provider selected,51710,1982-10-30
+9,West Virginia,East Carolina,False,Reconstructed history,W8,-6.97,West Virginia,30,3,27,correct,cover,20.03,Evaluated,,,,,,No provider selected,51763,1982-10-30
+9,Temple,Cincinnati,False,Reconstructed history,W8,2.27,Cincinnati,41,7,34,incorrect,no_cover,36.27,Evaluated,,,,,,No provider selected,51755,1982-10-30
+9,SMU,Texas A&M,False,Reconstructed history,W8,-12.73,SMU,47,9,38,correct,cover,25.27,Evaluated,,,,,,No provider selected,51751,1982-10-30
+9,Richmond,Rutgers,False,Reconstructed history,W8,12.86,Rutgers,14,20,-6,correct,no_cover,6.86,Evaluated,,,,,,No provider selected,51748,1982-10-30
+9,Pittsburgh,Louisville,False,Reconstructed history,W8,-20.90,Pittsburgh,63,14,49,correct,cover,28.10,Evaluated,,,,,,No provider selected,51747,1982-10-30
+9,Boston College,Penn State,False,Reconstructed history,W8,-0.87,Boston College,17,52,-35,incorrect,no_cover,35.87,Evaluated,,,,,,No provider selected,51746,1982-10-30
+9,Kansas,Nebraska,False,Reconstructed history,W8,18.12,Nebraska,0,52,-52,correct,cover,33.88,Evaluated,,,,,,No provider selected,51738,1982-10-30
+9,Indiana,Michigan State,False,Reconstructed history,W8,-13.62,Indiana,14,22,-8,incorrect,no_cover,21.62,Evaluated,,,,,,No provider selected,51737,1982-10-30
+9,Michigan,Minnesota,False,Reconstructed history,W8,-9.07,Michigan,52,14,38,correct,cover,28.93,Evaluated,,,,,,No provider selected,51736,1982-10-30
+9,LSU,Ole Miss,False,Reconstructed history,W8,-17.52,LSU,45,8,37,correct,cover,19.48,Evaluated,,,,,,No provider selected,51733,1982-10-30
+9,Iowa,Illinois,False,Reconstructed history,W8,4.71,Illinois,14,13,1,incorrect,no_cover,5.71,Evaluated,,,,,,No provider selected,51731,1982-10-30
+9,Indiana State,Illinois State,False,Reconstructed history,W8,-10.58,Indiana State,24,7,17,correct,cover,6.42,Evaluated,,,,,,No provider selected,51730,1982-10-30
+9,Fresno State,Long Beach State,False,Reconstructed history,W8,-16.52,Fresno State,40,22,18,correct,cover,1.48,Evaluated,,,,,,No provider selected,51726,1982-10-30
+9,Miami,Florida State,False,Reconstructed history,W8,1.96,Florida State,7,24,-17,correct,cover,15.04,Evaluated,,,,,,No provider selected,51725,1982-10-30
+9,Colorado State,UTEP,False,Reconstructed history,W8,-10.63,Colorado State,38,13,25,correct,cover,14.37,Evaluated,,,,,,No provider selected,51719,1982-10-30
+9,Arizona State,USC,False,Reconstructed history,W8,-6.02,Arizona State,17,10,7,correct,cover,0.98,Evaluated,,,,,,No provider selected,51712,1982-10-30
+9,Washington State,Arizona,False,Reconstructed history,W8,12.00,Arizona,17,34,-17,correct,cover,5.00,Evaluated,,,,,,No provider selected,51711,1982-10-30
+10,Miami (OH),Central Michigan,False,Reconstructed history,W9,-2.90,Miami (OH),23,0,23,correct,cover,20.10,Evaluated,,,,,,No provider selected,51790,1982-11-06
+10,Missouri,Colorado,False,Reconstructed history,W9,-13.69,Missouri,35,14,21,correct,cover,7.31,Evaluated,,,,,,No provider selected,51793,1982-11-06
+10,UTEP,New Mexico,False,Reconstructed history,W9,20.08,New Mexico,18,31,-13,correct,no_cover,7.08,Evaluated,,,,,,No provider selected,51797,1982-11-06
+10,Ohio State,Minnesota,False,Reconstructed history,W9,-8.27,Ohio State,35,10,25,correct,cover,16.73,Evaluated,,,,,,No provider selected,51802,1982-11-06
+10,Purdue,Iowa,False,Reconstructed history,W9,7.89,Iowa,16,7,9,incorrect,no_cover,16.89,Evaluated,,,,,,No provider selected,51805,1982-11-06
+10,USC,California,False,Reconstructed history,W9,-6.25,USC,42,0,42,correct,cover,35.75,Evaluated,,,,,,No provider selected,51808,1982-11-06
+10,Rice,SMU,False,Reconstructed history,W9,25.49,SMU,14,41,-27,correct,cover,1.51,Evaluated,,,,,,No provider selected,51809,1982-11-06
+10,Army,Air Force,False,Reconstructed history,W9,2.50,Air Force,9,27,-18,correct,cover,15.50,Evaluated,,,,,,No provider selected,51766,1982-11-06
+10,Georgia Tech,Virginia,False,Reconstructed history,W9,-7.29,Georgia Tech,38,32,6,correct,no_cover,1.29,Evaluated,,,,,,No provider selected,51782,1982-11-06
+10,Louisville,Indiana State,False,Reconstructed history,W9,2.61,Indiana State,35,23,12,incorrect,no_cover,14.61,Evaluated,,,,,,No provider selected,51789,1982-11-06
+10,Ole Miss,Tulane,False,Reconstructed history,W9,-2.23,Ole Miss,45,14,31,correct,cover,28.77,Evaluated,,,,,,No provider selected,51792,1982-11-06
+10,Colorado State,UNLV,False,Reconstructed history,W9,-11.76,Colorado State,31,36,-5,incorrect,no_cover,16.76,Evaluated,,,,,,No provider selected,51796,1982-11-06
+10,New Mexico State,North Texas,False,Reconstructed history,W9,-3.87,New Mexico State,30,19,11,correct,cover,7.13,Evaluated,,,,,,No provider selected,51798,1982-11-06
+10,Penn State,NC State,False,Reconstructed history,W9,-9.90,Penn State,54,0,54,correct,cover,44.10,Evaluated,,,,,,No provider selected,51804,1982-11-06
+10,Tennessee,Memphis,False,Reconstructed history,W9,-15.89,Tennessee,29,3,26,correct,cover,10.11,Evaluated,,,,,,No provider selected,51810,1982-11-06
+10,Utah,Utah State,False,Reconstructed history,W9,5.21,Utah State,42,10,32,incorrect,no_cover,37.21,Evaluated,,,,,,No provider selected,51814,1982-11-06
+10,Alabama,LSU,False,Reconstructed history,W9,0.17,LSU,10,20,-10,correct,cover,9.83,Evaluated,,,,,,No provider selected,51788,1982-11-06
+10,Illinois,Michigan,False,Reconstructed history,W9,0.41,Michigan,10,16,-6,correct,cover,5.59,Evaluated,,,,,,No provider selected,51791,1982-11-06
+10,Drake,Wichita State,False,Reconstructed history,W9,11.07,Wichita State,29,38,-9,correct,no_cover,2.07,Evaluated,,,,,,No provider selected,51820,1982-11-06
+10,Washington,UCLA,False,Reconstructed history,W9,0.86,UCLA,10,7,3,incorrect,no_cover,3.86,Evaluated,,,,,,No provider selected,51816,1982-11-06
+10,Toledo,Western Michigan,False,Reconstructed history,W9,1.72,Western Michigan,10,17,-7,correct,cover,5.28,Evaluated,,,,,,No provider selected,51819,1982-11-06
+10,TCU,Texas Tech,False,Reconstructed history,W9,-2.31,TCU,14,16,-2,incorrect,no_cover,4.31,Evaluated,,,,,,No provider selected,51812,1982-11-06
+10,Tulsa,West Texas A&M,False,Reconstructed history,W9,-20.41,Tulsa,59,21,38,correct,cover,17.59,Evaluated,,,,,,No provider selected,51813,1982-11-06
+10,Texas,Houston,False,Reconstructed history,W9,-10.67,Texas,50,0,50,correct,cover,39.33,Evaluated,,,,,,No provider selected,51811,1982-11-06
+10,Hawai'i,San Diego State,False,Reconstructed history,W9,-8.70,Hawai'i,28,31,-3,incorrect,no_cover,11.70,Evaluated,,,,,,No provider selected,51806,1982-11-06
+10,Oklahoma,Kansas State,False,Reconstructed history,W9,-3.00,Oklahoma,24,10,14,correct,cover,11.00,Evaluated,,,,,,No provider selected,51803,1982-11-06
+10,Oregon,Washington State,False,Reconstructed history,W9,1.77,Washington State,3,10,-7,correct,cover,5.23,Evaluated,,,,,,No provider selected,51817,1982-11-06
+10,Temple,West Virginia,False,Reconstructed history,W9,5.00,West Virginia,17,20,-3,correct,no_cover,2.00,Evaluated,,,,,,No provider selected,51818,1982-11-06
+10,Kentucky,Vanderbilt,False,Reconstructed history,W9,13.02,Vanderbilt,10,23,-13,correct,no_cover,0.02,Evaluated,,,,,,No provider selected,51815,1982-11-06
+10,Pittsburgh,Notre Dame,False,Reconstructed history,W9,-7.83,Pittsburgh,16,31,-15,incorrect,no_cover,22.83,Evaluated,,,,,,No provider selected,51801,1982-11-06
+10,Michigan State,Northwestern,False,Reconstructed history,W9,-0.27,Michigan State,24,28,-4,incorrect,no_cover,4.27,Evaluated,,,,,,No provider selected,51800,1982-11-06
+10,Ohio,Northern Illinois,False,Reconstructed history,W9,-9.77,Ohio,0,36,-36,incorrect,no_cover,45.77,Evaluated,,,,,,No provider selected,51799,1982-11-06
+10,Nebraska,Oklahoma State,False,Reconstructed history,W9,-16.69,Nebraska,48,10,38,correct,cover,21.31,Evaluated,,,,,,No provider selected,51795,1982-11-06
+10,Syracuse,Navy,False,Reconstructed history,W9,6.48,Navy,18,20,-2,correct,no_cover,4.48,Evaluated,,,,,,No provider selected,51794,1982-11-06
+10,Wisconsin,Indiana,False,Reconstructed history,W9,-9.31,Wisconsin,17,20,-3,incorrect,no_cover,12.31,Evaluated,,,,,,No provider selected,51784,1982-11-06
+10,Georgia,Florida,False,Reconstructed history,W9,-8.05,Georgia,44,0,44,correct,cover,35.95,Evaluated,,,,,,No provider selected,51781,1982-11-06
+10,Eastern Michigan,Kent State,False,Reconstructed history,W9,-2.31,Eastern Michigan,9,7,2,correct,no_cover,0.31,Evaluated,,,,,,No provider selected,51778,1982-11-06
+10,Duke,Wake Forest,False,Reconstructed history,W9,-6.36,Duke,46,26,20,correct,cover,13.64,Evaluated,,,,,,No provider selected,51776,1982-11-06
+10,Arizona State,Oregon State,False,Reconstructed history,W9,-30.09,Arizona State,30,16,14,correct,no_cover,16.09,Evaluated,,,,,,No provider selected,51768,1982-11-06
+10,Auburn,Rutgers,False,Reconstructed history,W9,-7.60,Auburn,30,7,23,correct,cover,15.40,Evaluated,,,,,,No provider selected,51769,1982-11-06
+10,Stanford,Arizona,False,Reconstructed history,W9,-0.60,Stanford,27,41,-14,incorrect,no_cover,14.60,Evaluated,,,,,,No provider selected,51767,1982-11-06
+10,Baylor,Arkansas,False,Reconstructed history,W9,18.32,Arkansas,24,17,7,incorrect,no_cover,25.32,Evaluated,,,,,,No provider selected,51770,1982-11-06
+10,Bowling Green,Ball State,False,Reconstructed history,W9,-10.42,Bowling Green,28,7,21,correct,cover,10.58,Evaluated,,,,,,No provider selected,51772,1982-11-06
+10,BYU,Wyoming,False,Reconstructed history,W9,-8.76,BYU,23,13,10,correct,cover,1.24,Evaluated,,,,,,No provider selected,51773,1982-11-06
+10,Clemson,North Carolina,False,Reconstructed history,W9,-3.47,Clemson,16,13,3,correct,no_cover,0.47,Evaluated,,,,,,No provider selected,51775,1982-11-06
+10,South Carolina,Florida State,False,Reconstructed history,W9,11.73,Florida State,26,56,-30,correct,cover,18.27,Evaluated,,,,,,No provider selected,51779,1982-11-06
+10,Fresno State,Cal State Fullerton,False,Reconstructed history,W9,-16.95,Fresno State,31,14,17,correct,cover,0.05,Evaluated,,,,,,No provider selected,51780,1982-11-06
+10,Kansas,Iowa State,False,Reconstructed history,W9,11.17,Iowa State,24,17,7,incorrect,no_cover,18.17,Evaluated,,,,,,No provider selected,51785,1982-11-06
+10,Long Beach State,Pacific,False,Reconstructed history,W9,-6.20,Long Beach State,32,31,1,correct,no_cover,5.20,Evaluated,,,,,,No provider selected,51786,1982-11-06
+10,Maryland,Miami,False,Reconstructed history,W9,-5.79,Maryland,18,17,1,correct,no_cover,4.79,Evaluated,,,,,,No provider selected,51821,1982-11-07
+11,Rutgers,West Virginia,False,Reconstructed history,W10,6.77,West Virginia,17,44,-27,correct,cover,20.23,Evaluated,,,,,,No provider selected,51822,1982-11-11
+11,Arizona State,Washington,False,Reconstructed history,W10,-4.40,Arizona State,13,17,-4,incorrect,no_cover,8.40,Evaluated,,,,,,No provider selected,51873,1982-11-13
+11,Arkansas,Texas A&M,False,Reconstructed history,W10,-12.35,Arkansas,35,0,35,correct,cover,22.65,Evaluated,,,,,,No provider selected,51823,1982-11-13
+11,Bowling Green,Eastern Michigan,False,Reconstructed history,W10,-20.98,Bowling Green,24,7,17,correct,no_cover,3.98,Evaluated,,,,,,No provider selected,51827,1982-11-13
+11,Maryland,Clemson,False,Reconstructed history,W10,-0.77,Maryland,22,24,-2,incorrect,no_cover,2.77,Evaluated,,,,,,No provider selected,51832,1982-11-13
+11,Colorado,Kansas,False,Reconstructed history,W10,2.17,Kansas,28,3,25,incorrect,no_cover,27.17,Evaluated,,,,,,No provider selected,51834,1982-11-13
+11,William & Mary,East Carolina,False,Reconstructed history,W10,8.55,East Carolina,27,31,-4,correct,no_cover,4.55,Evaluated,,,,,,No provider selected,51836,1982-11-13
+11,Florida State,Louisville,False,Reconstructed history,W10,-17.46,Florida State,49,14,35,correct,cover,17.54,Evaluated,,,,,,No provider selected,51838,1982-11-13
+11,Long Beach State,UNLV,False,Reconstructed history,W10,-5.01,Long Beach State,24,13,11,correct,cover,5.99,Evaluated,,,,,,No provider selected,51844,1982-11-13
+11,Michigan,Purdue,False,Reconstructed history,W10,-16.64,Michigan,52,21,31,correct,cover,14.36,Evaluated,,,,,,No provider selected,51846,1982-11-13
+11,Minnesota,Michigan State,False,Reconstructed history,W10,-8.17,Minnesota,7,26,-19,incorrect,no_cover,27.17,Evaluated,,,,,,No provider selected,51847,1982-11-13
+11,Iowa State,Nebraska,False,Reconstructed history,W10,8.25,Nebraska,10,48,-38,correct,cover,29.75,Evaluated,,,,,,No provider selected,51849,1982-11-13
+11,New Mexico,Colorado State,False,Reconstructed history,W10,-14.61,New Mexico,29,24,5,correct,no_cover,9.61,Evaluated,,,,,,No provider selected,51850,1982-11-13
+11,North Carolina,Virginia,False,Reconstructed history,W10,-15.57,North Carolina,27,14,13,correct,no_cover,2.57,Evaluated,,,,,,No provider selected,51851,1982-11-13
+11,NC State,Duke,False,Reconstructed history,W10,-0.60,NC State,21,16,5,correct,cover,4.40,Evaluated,,,,,,No provider selected,51852,1982-11-13
+11,Richmond,North Texas,False,Reconstructed history,W10,0.94,North Texas,13,22,-9,correct,cover,8.06,Evaluated,,,,,,No provider selected,51853,1982-11-13
+11,Northern Illinois,Miami (OH),False,Reconstructed history,W10,9.74,Miami (OH),12,7,5,incorrect,no_cover,14.74,Evaluated,,,,,,No provider selected,51854,1982-11-13
+11,Northwestern,Ohio State,False,Reconstructed history,W10,10.76,Ohio State,28,40,-12,correct,cover,1.24,Evaluated,,,,,,No provider selected,51855,1982-11-13
+11,Notre Dame,Penn State,False,Reconstructed history,W10,0.36,Penn State,14,24,-10,correct,cover,9.64,Evaluated,,,,,,No provider selected,51858,1982-11-13
+11,Pacific,San José State,False,Reconstructed history,W10,14.11,San José State,0,31,-31,correct,cover,16.89,Evaluated,,,,,,No provider selected,51860,1982-11-13
+11,South Carolina,Navy,False,Reconstructed history,W10,4.89,Navy,17,14,3,incorrect,no_cover,7.89,Evaluated,,,,,,No provider selected,51861,1982-11-13
+11,Texas Tech,SMU,False,Reconstructed history,W10,13.88,SMU,27,34,-7,correct,no_cover,6.88,Evaluated,,,,,,No provider selected,51864,1982-11-13
+11,Ole Miss,Tennessee,False,Reconstructed history,W10,2.89,Tennessee,17,30,-13,correct,cover,10.11,Evaluated,,,,,,No provider selected,51866,1982-11-13
+11,TCU,Texas,False,Reconstructed history,W10,10.14,Texas,21,38,-17,correct,cover,6.86,Evaluated,,,,,,No provider selected,51867,1982-11-13
+11,Kent State,Toledo,False,Reconstructed history,W10,12.71,Toledo,0,3,-3,correct,no_cover,9.71,Evaluated,,,,,,No provider selected,51868,1982-11-13
+11,Tulsa,Indiana State,False,Reconstructed history,W10,-14.44,Tulsa,48,14,34,correct,cover,19.56,Evaluated,,,,,,No provider selected,51869,1982-11-13
+11,West Texas A&M,New Mexico State,False,Reconstructed history,W10,-0.11,West Texas A&M,30,28,2,correct,cover,1.89,Evaluated,,,,,,No provider selected,51874,1982-11-13
+11,Western Michigan,Ohio,False,Reconstructed history,W10,-9.61,Western Michigan,16,7,9,correct,no_cover,0.61,Evaluated,,,,,,No provider selected,51875,1982-11-13
+11,Wake Forest,Georgia Tech,False,Reconstructed history,W10,3.24,Georgia Tech,7,45,-38,correct,cover,34.76,Evaluated,,,,,,No provider selected,51841,1982-11-13
+11,Alabama,Southern Miss,False,Reconstructed history,W10,-5.10,Alabama,29,38,-9,incorrect,no_cover,14.10,Evaluated,,,,,,No provider selected,51865,1982-11-13
+11,UTEP,Utah,False,Reconstructed history,W10,9.82,Utah,30,45,-15,correct,cover,5.18,Evaluated,,,,,,No provider selected,51871,1982-11-13
+11,UCLA,Stanford,False,Reconstructed history,W10,-10.07,UCLA,38,35,3,correct,no_cover,7.07,Evaluated,,,,,,No provider selected,51870,1982-11-13
+11,Arizona,USC,False,Reconstructed history,W10,-0.72,Arizona,41,48,-7,incorrect,no_cover,7.72,Evaluated,,,,,,No provider selected,51862,1982-11-13
+11,Army,Pittsburgh,False,Reconstructed history,W10,13.50,Pittsburgh,6,24,-18,correct,cover,4.50,Evaluated,,,,,,No provider selected,51859,1982-11-13
+11,Kansas State,Oklahoma State,False,Reconstructed history,W10,-11.67,Kansas State,16,24,-8,incorrect,no_cover,19.67,Evaluated,,,,,,No provider selected,51857,1982-11-13
+11,Oklahoma,Missouri,False,Reconstructed history,W10,-7.49,Oklahoma,41,14,27,correct,cover,19.51,Evaluated,,,,,,No provider selected,51856,1982-11-13
+11,Mississippi State,LSU,False,Reconstructed history,W10,15.86,LSU,27,24,3,incorrect,no_cover,18.86,Evaluated,,,,,,No provider selected,51848,1982-11-13
+11,Iowa,Wisconsin,False,Reconstructed history,W10,-0.24,Iowa,28,14,14,correct,cover,13.76,Evaluated,,,,,,No provider selected,51843,1982-11-13
+11,Indiana,Illinois,False,Reconstructed history,W10,4.25,Illinois,7,48,-41,correct,cover,36.75,Evaluated,,,,,,No provider selected,51842,1982-11-13
+11,Auburn,Georgia,False,Reconstructed history,W10,3.31,Georgia,14,19,-5,correct,cover,1.69,Evaluated,,,,,,No provider selected,51840,1982-11-13
+11,Kentucky,Florida,False,Reconstructed history,W10,16.69,Florida,13,39,-26,correct,cover,9.31,Evaluated,,,,,,No provider selected,51837,1982-11-13
+11,Illinois State,Drake,False,Reconstructed history,W10,0.54,Drake,35,42,-7,correct,cover,6.46,Evaluated,,,,,,No provider selected,51835,1982-11-13
+11,Central Michigan,Ball State,False,Reconstructed history,W10,-8.86,Central Michigan,24,13,11,correct,cover,2.14,Evaluated,,,,,,No provider selected,51830,1982-11-13
+11,California,Washington State,False,Reconstructed history,W10,-10.11,California,34,14,20,correct,cover,9.89,Evaluated,,,,,,No provider selected,51829,1982-11-13
+11,BYU,San Diego State,False,Reconstructed history,W10,-7.82,BYU,58,8,50,correct,cover,42.18,Evaluated,,,,,,No provider selected,51828,1982-11-13
+11,Boston College,Syracuse,False,Reconstructed history,W10,-17.43,Boston College,20,13,7,correct,no_cover,10.43,Evaluated,,,,,,No provider selected,51826,1982-11-13
+11,Rice,Baylor,False,Reconstructed history,W10,7.94,Baylor,13,35,-22,correct,cover,14.06,Evaluated,,,,,,No provider selected,51824,1982-11-13
+11,Vanderbilt,Virginia Tech,False,Reconstructed history,W10,-0.39,Vanderbilt,45,0,45,correct,cover,44.61,Evaluated,,,,,,No provider selected,51872,1982-11-13
+11,Wyoming,Wichita State,False,Reconstructed history,W10,8.43,Wichita State,24,20,4,incorrect,no_cover,12.43,Evaluated,,,,,,No provider selected,51876,1982-11-13
+12,Cincinnati,Miami (OH),False,Reconstructed history,W11,1.72,Miami (OH),20,10,10,incorrect,no_cover,11.72,Evaluated,,,,,,No provider selected,51877,1982-11-18
+12,UNLV,Fresno State,False,Reconstructed history,W11,15.81,Fresno State,28,30,-2,correct,no_cover,13.81,Evaluated,,,,,,No provider selected,51888,1982-11-20
+12,Duke,North Carolina,False,Reconstructed history,W11,3.79,North Carolina,23,17,6,incorrect,no_cover,9.79,Evaluated,,,,,,No provider selected,51885,1982-11-20
+12,California,Stanford,False,Reconstructed history,W11,-1.82,California,25,20,5,correct,cover,3.18,Evaluated,,,,,,No provider selected,51883,1982-11-20
+12,LSU,Florida State,False,Reconstructed history,W11,-0.72,LSU,55,21,34,correct,cover,33.28,Evaluated,,,,,,No provider selected,51895,1982-11-20
+12,North Texas,Tulsa,False,Reconstructed history,W11,17.97,Tulsa,20,38,-18,correct,cover,0.03,Evaluated,,,,,,No provider selected,51918,1982-11-20
+12,Tennessee,Kentucky,False,Reconstructed history,W11,-20.06,Tennessee,28,7,21,correct,cover,0.94,Evaluated,,,,,,No provider selected,51914,1982-11-20
+12,Pittsburgh,Rutgers,False,Reconstructed history,W11,-15.29,Pittsburgh,52,6,46,correct,cover,30.71,Evaluated,,,,,,No provider selected,51910,1982-11-20
+12,Ohio State,Michigan,False,Reconstructed history,W11,0.83,Michigan,24,14,10,incorrect,no_cover,10.83,Evaluated,,,,,,No provider selected,51905,1982-11-20
+12,Ohio,Kent State,False,Reconstructed history,W11,-13.84,Ohio,24,20,4,correct,no_cover,9.84,Evaluated,,,,,,No provider selected,51904,1982-11-20
+12,Northern Illinois,Central Michigan,False,Reconstructed history,W11,4.94,Central Michigan,19,13,6,incorrect,no_cover,10.94,Evaluated,,,,,,No provider selected,51903,1982-11-20
+12,New Mexico,Hawai'i,False,Reconstructed history,W11,-9.21,New Mexico,41,17,24,correct,cover,14.79,Evaluated,,,,,,No provider selected,51902,1982-11-20
+12,Missouri,Kansas,False,Reconstructed history,W11,-10.32,Missouri,16,10,6,correct,no_cover,4.32,Evaluated,,,,,,No provider selected,51901,1982-11-20
+12,Virginia,Maryland,False,Reconstructed history,W11,13.57,Maryland,14,45,-31,correct,cover,17.43,Evaluated,,,,,,No provider selected,51898,1982-11-20
+12,Purdue,Indiana,False,Reconstructed history,W11,0.79,Indiana,7,13,-6,correct,cover,5.21,Evaluated,,,,,,No provider selected,51890,1982-11-20
+12,Kansas State,Colorado,False,Reconstructed history,W11,-13.29,Kansas State,33,10,23,correct,cover,9.71,Evaluated,,,,,,No provider selected,51892,1982-11-20
+12,Texas Tech,Houston,False,Reconstructed history,W11,-2.78,Texas Tech,7,24,-17,incorrect,no_cover,19.78,Evaluated,,,,,,No provider selected,51889,1982-11-20
+12,Temple,East Carolina,False,Reconstructed history,W11,1.77,East Carolina,10,23,-13,correct,cover,11.23,Evaluated,,,,,,No provider selected,51886,1982-11-20
+12,Memphis,Louisville,False,Reconstructed history,W11,7.30,Louisville,19,38,-19,correct,cover,11.70,Evaluated,,,,,,No provider selected,51897,1982-11-20
+12,West Virginia,Syracuse,False,Reconstructed history,W11,-19.84,West Virginia,26,0,26,correct,cover,6.16,Evaluated,,,,,,No provider selected,51923,1982-11-20
+12,Utah,BYU,False,Reconstructed history,W11,3.76,BYU,12,17,-5,correct,cover,1.24,Evaluated,,,,,,No provider selected,51882,1982-11-20
+12,Arkansas,SMU,False,Reconstructed history,W11,-0.16,Arkansas,17,17,0,tie,no_cover,0.16,Evaluated,,,,,,No provider selected,51879,1982-11-20
+12,Air Force,Notre Dame,False,Reconstructed history,W11,2.11,Notre Dame,30,17,13,incorrect,no_cover,15.11,Evaluated,,,,,,No provider selected,51878,1982-11-20
+12,Ball State,Illinois State,False,Reconstructed history,W11,-7.17,Ball State,52,17,35,correct,cover,27.83,Evaluated,,,,,,No provider selected,51880,1982-11-20
+12,Clemson,South Carolina,False,Reconstructed history,W11,-15.99,Clemson,24,6,18,correct,cover,2.01,Evaluated,,,,,,No provider selected,51884,1982-11-20
+12,Tulane,Florida,False,Reconstructed history,W11,9.41,Florida,7,21,-14,correct,cover,4.59,Evaluated,,,,,,No provider selected,51887,1982-11-20
+12,Long Beach State,Bowling Green,False,Reconstructed history,W11,9.68,Bowling Green,24,7,17,incorrect,no_cover,26.68,Evaluated,,,,,,No provider selected,51893,1982-11-20
+12,Richmond,William & Mary,False,Reconstructed history,W11,2.57,William & Mary,17,28,-11,correct,cover,8.43,Evaluated,,,,,,No provider selected,51925,1982-11-20
+12,Washington State,Washington,False,Reconstructed history,W11,17.75,Washington,24,20,4,incorrect,no_cover,21.75,Evaluated,,,,,,No provider selected,51922,1982-11-20
+12,UCLA,USC,False,Reconstructed history,W11,-4.28,UCLA,20,19,1,correct,no_cover,3.28,Evaluated,,,,,,No provider selected,51919,1982-11-20
+12,UTEP,Wyoming,False,Reconstructed history,W11,8.49,Wyoming,39,32,7,incorrect,no_cover,15.49,Evaluated,,,,,,No provider selected,51917,1982-11-20
+12,Texas A&M,TCU,False,Reconstructed history,W11,-5.71,Texas A&M,34,14,20,correct,cover,14.29,Evaluated,,,,,,No provider selected,51916,1982-11-20
+12,Baylor,Texas,False,Reconstructed history,W11,8.43,Texas,23,31,-8,correct,no_cover,0.43,Evaluated,,,,,,No provider selected,51915,1982-11-20
+12,Southern Illinois,West Texas A&M,False,Reconstructed history,W11,-7.74,Southern Illinois,17,13,4,correct,no_cover,3.74,Evaluated,,,,,,No provider selected,51913,1982-11-20
+12,San José State,Utah State,False,Reconstructed history,W11,-7.79,San José State,49,26,23,correct,cover,15.21,Evaluated,,,,,,No provider selected,51912,1982-11-20
+12,San Diego State,Colorado State,False,Reconstructed history,W11,-3.73,San Diego State,38,10,28,correct,cover,24.27,Evaluated,,,,,,No provider selected,51911,1982-11-20
+12,Pacific,Cal State Fullerton,False,Reconstructed history,W11,2.84,Cal State Fullerton,31,0,31,incorrect,no_cover,33.84,Evaluated,,,,,,No provider selected,51909,1982-11-20
+12,Oregon,Arizona,False,Reconstructed history,W11,16.76,Arizona,13,7,6,incorrect,no_cover,22.76,Evaluated,,,,,,No provider selected,51907,1982-11-20
+12,Oklahoma State,Iowa State,False,Reconstructed history,W11,0.63,Iowa State,49,13,36,incorrect,no_cover,36.63,Evaluated,,,,,,No provider selected,51906,1982-11-20
+12,Mississippi State,Ole Miss,False,Reconstructed history,W11,-2.50,Mississippi State,27,10,17,correct,cover,14.50,Evaluated,,,,,,No provider selected,51900,1982-11-20
+12,Michigan State,Iowa,False,Reconstructed history,W11,7.93,Iowa,18,24,-6,correct,no_cover,1.93,Evaluated,,,,,,No provider selected,51891,1982-11-20
+12,Miami,NC State,False,Reconstructed history,W11,-3.33,Miami,41,3,38,correct,cover,34.67,Evaluated,,,,,,No provider selected,51899,1982-11-20
+12,Wisconsin,Minnesota,False,Reconstructed history,W11,-7.84,Wisconsin,24,0,24,correct,cover,16.16,Evaluated,,,,,,No provider selected,51926,1982-11-20
+12,Western Michigan,Eastern Michigan,False,Reconstructed history,W11,-21.00,Western Michigan,3,3,0,tie,no_cover,21.00,Evaluated,,,,,,No provider selected,51924,1982-11-20
+13,Texas,Texas A&M,False,Reconstructed history,W12,-10.51,Texas,53,16,37,correct,cover,26.49,Evaluated,,,,,,No provider selected,51928,1982-11-25
+13,Virginia Tech,Virginia,False,Reconstructed history,W12,-13.95,Virginia Tech,21,14,7,correct,no_cover,6.95,Evaluated,,,,,,No provider selected,51929,1982-11-25
+13,North Carolina,Bowling Green,False,Reconstructed history,W12,-0.62,North Carolina,33,14,19,correct,cover,18.38,Evaluated,,,,,,No provider selected,51927,1982-11-25
+13,Nebraska,Oklahoma,False,Reconstructed history,W12,-5.00,Nebraska,28,24,4,correct,no_cover,1.00,Evaluated,,,,,,No provider selected,51930,1982-11-26
+13,Penn State,Pittsburgh,False,Reconstructed history,W12,-2.42,Penn State,19,10,9,correct,cover,6.58,Evaluated,,,,,,No provider selected,51931,1982-11-26
+13,Georgia,Georgia Tech,False,Reconstructed history,W12,-14.78,Georgia,38,18,20,correct,cover,5.22,Evaluated,,,,,,No provider selected,51935,1982-11-27
+13,Vanderbilt,Tennessee,False,Reconstructed history,W12,-2.55,Vanderbilt,28,21,7,correct,cover,4.45,Evaluated,,,,,,No provider selected,51946,1982-11-27
+13,UNLV,Cal State Fullerton,False,Reconstructed history,W12,-0.60,UNLV,42,23,19,correct,cover,18.40,Evaluated,,,,,,No provider selected,51941,1982-11-27
+13,Miami,Cincinnati,False,Reconstructed history,W12,-2.76,Miami,19,13,6,correct,cover,3.24,Evaluated,,,,,,No provider selected,51940,1982-11-27
+13,Houston,Rice,False,Reconstructed history,W12,-13.17,Houston,28,21,7,correct,no_cover,6.17,Evaluated,,,,,,No provider selected,51937,1982-11-27
+13,Auburn,Alabama,False,Reconstructed history,W12,-1.67,Auburn,23,22,1,correct,no_cover,0.67,Evaluated,,,,,,No provider selected,51933,1982-11-27
+13,Arizona,Arizona State,False,Reconstructed history,W12,5.93,Arizona State,28,18,10,incorrect,no_cover,15.93,Evaluated,,,,,,No provider selected,51932,1982-11-27
+13,Hawai'i,Air Force,False,Reconstructed history,W12,0.98,Air Force,45,21,24,incorrect,no_cover,24.98,Evaluated,,,,,,No provider selected,51936,1982-11-27
+13,Clemson,Wake Forest,False,Reconstructed history,W12,-19.67,Clemson,21,17,4,correct,no_cover,15.67,Evaluated,,,,,,No provider selected,51934,1982-11-27
+13,LSU,Tulane,False,Reconstructed history,W12,-19.23,LSU,28,31,-3,incorrect,no_cover,22.23,Evaluated,,,,,,No provider selected,51945,1982-11-27
+13,USC,Notre Dame,False,Reconstructed history,W12,-3.66,USC,17,13,4,correct,cover,0.34,Evaluated,,,,,,No provider selected,51944,1982-11-27
+13,San Diego State,Oklahoma State,False,Reconstructed history,W12,-1.91,San Diego State,35,6,29,correct,cover,27.09,Evaluated,,,,,,No provider selected,51943,1982-11-27
+13,Oregon State,Oregon,False,Reconstructed history,W12,-1.72,Oregon State,6,7,-1,incorrect,no_cover,2.72,Evaluated,,,,,,No provider selected,51942,1982-11-27
+13,Long Beach State,Utah State,False,Reconstructed history,W12,-2.04,Long Beach State,44,17,27,correct,cover,24.96,Evaluated,,,,,,No provider selected,51938,1982-11-27
+14,Navy,Army,False,Reconstructed history,W13,-7.05,Navy,24,7,17,correct,cover,9.95,Evaluated,,,,,,No provider selected,51948,1982-12-04
+14,Texas,Arkansas,False,Reconstructed history,W13,0.04,Arkansas,33,7,26,incorrect,no_cover,26.04,Evaluated,,,,,,No provider selected,51950,1982-12-04
+14,Florida State,Florida,False,Reconstructed history,W13,-5.20,Florida State,10,13,-3,incorrect,no_cover,8.20,Evaluated,,,,,,No provider selected,51947,1982-12-04
+14,Hawai'i,Nebraska,False,Reconstructed history,W13,7.16,Nebraska,16,37,-21,correct,cover,13.84,Evaluated,,,,,,No provider selected,51949,1982-12-04
+15,Wisconsin,Kansas State,True,Reconstructed history,W14,1.46,Kansas State,14,3,11,incorrect,no_cover,12.46,Evaluated,,,,,,No provider selected,51951,1982-12-11
+16,Ohio State,BYU,True,Reconstructed history,W15,0.63,BYU,47,17,30,incorrect,no_cover,30.63,Evaluated,,,,,,No provider selected,51952,1982-12-17
+16,Auburn,Boston College,True,Reconstructed history,W15,0.98,Boston College,33,26,7,incorrect,no_cover,7.98,Evaluated,,,,,,No provider selected,51953,1982-12-18
+16,Fresno State,Bowling Green,True,Reconstructed history,W15,-4.88,Fresno State,29,28,1,correct,no_cover,3.88,Evaluated,,,,,,No provider selected,51954,1982-12-18
+17,North Carolina,Texas,True,Reconstructed history,W16,3.91,Texas,26,10,16,incorrect,no_cover,19.91,Evaluated,,,,,,No provider selected,51955,1982-12-25
+17,Washington,Maryland,True,Reconstructed history,W16,-1.66,Washington,21,20,1,correct,no_cover,0.66,Evaluated,,,,,,No provider selected,51956,1982-12-25
+18,Alabama,Illinois,True,Reconstructed history,W17,-0.36,Alabama,21,15,6,correct,cover,5.64,Evaluated,,,,,,No provider selected,51957,1982-12-29
+18,Florida State,West Virginia,True,Reconstructed history,W17,1.69,West Virginia,31,12,19,incorrect,no_cover,20.69,Evaluated,,,,,,No provider selected,51958,1982-12-30
+18,Air Force,Vanderbilt,True,Reconstructed history,W17,3.78,Vanderbilt,36,28,8,incorrect,no_cover,11.78,Evaluated,,,,,,No provider selected,51959,1982-12-31
+18,Arkansas,Florida,True,Reconstructed history,W17,-1.73,Arkansas,28,24,4,correct,cover,2.27,Evaluated,,,,,,No provider selected,51960,1982-12-31
+18,Iowa,Tennessee,True,Reconstructed history,W17,0.74,Tennessee,28,22,6,incorrect,no_cover,6.74,Evaluated,,,,,,No provider selected,51961,1982-12-31
+18,Arizona State,Oklahoma,True,Reconstructed history,W17,-1.93,Arizona State,32,21,11,correct,cover,9.07,Evaluated,,,,,,No provider selected,51962,1983-01-01
+18,Nebraska,LSU,True,Reconstructed history,W17,-3.61,Nebraska,21,20,1,correct,no_cover,2.61,Evaluated,,,,,,No provider selected,51963,1983-01-01
+18,Penn State,Georgia,True,Reconstructed history,W17,1.38,Georgia,27,23,4,incorrect,no_cover,5.38,Evaluated,,,,,,No provider selected,51964,1983-01-01
+18,SMU,Pittsburgh,True,Reconstructed history,W17,-3.14,SMU,7,3,4,correct,cover,0.86,Evaluated,,,,,,No provider selected,51965,1983-01-01
+18,UCLA,Michigan,True,Reconstructed history,W17,-4.04,UCLA,24,14,10,correct,cover,5.96,Evaluated,,,,,,No provider selected,51966,1983-01-01

@@ -94,6 +94,15 @@ contract-3 manifests, run dictionaries, public bytes and legacy receipt parsing.
 Those receipts may support historical inspection, but a current preparation
 requires a newly generated contract-4 receipt and its coverage identity.
 
+An explicitly prepared CSV correction additionally binds `historical-correction/v1`
+evidence in both the public manifest and receipt. Local export must validate the
+ordinary private candidate first, then independently validate the reconstructed
+artifact graph against the pinned original site and CSV. Corrected 2025 progression
+uses `ranking-progression/used-coverage/v2`: its original coverage remains retained,
+and its replacement identifies the correction evidence and corrected carryover.
+An ordinary receipt or an unsealed historical preview cannot attest that output.
+The exact receipt/coverage authentication below applies equally to this extension.
+
 Before extracting runtime code, installing dependencies or using credentials,
 the trusted workflow bootstrap verifies authenticated GitHub run provenance,
 package and package-record attestation, the actual candidate commit/tree and
