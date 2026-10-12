@@ -23,8 +23,8 @@ latest complete private request ledger; do not infer either from a filename or
 an old success log. The completed #47 package is dated reference evidence for
 contest preparation; do not rerun its hardcoded Week 7 scripts or payload.
 
-Require injected `CFBD_API` for source acquisition, `CFBD_PRED_API` for the
-contest, an authenticated GitHub session and retained private inputs. Never
+Require T3-injected `CFBD_API` for source acquisition and T3-injected
+`CFBD_PRED_API` for the contest, an authenticated GitHub session and retained private inputs. Never
 print or persist keys. Each destination may continue independently if only the
 other destination's credential is missing.
 

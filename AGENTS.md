@@ -20,8 +20,9 @@ Build CFB/FBS CORS rankings and a permanent static statistical-reference site.
 - Every CFBD request crosses the metered Season Snapshot boundary. Ordinary
   tests and cached rebuilds make zero live calls. Fetch allowances require
   explicit authorization; an old plan is not a fresh allowance.
-- Read credentials only from T3-injected `CFBD_API`; keep values out of source,
-  arguments, fixtures, generated pages, logs, and messages.
+- Read source-data credentials only from T3-injected `CFBD_API` and model-contest
+  credentials only from T3-injected `CFBD_PRED_API`. Keep both values out of
+  source, arguments, fixtures, generated pages, logs, and messages.
 - Owner approval governs consequential product and
   architecture changes, merges, and production publication. Technical acceptance
   does not authorize those actions.
