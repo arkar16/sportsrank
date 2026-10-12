@@ -13,8 +13,9 @@ the primary measure, and performance against the spread (ATS) remains a secondar
 measure so that future changes can be compared on both. ESPN was an example,
 not a required source; use bookmaker lines available through the API. These
 decisions settle the purpose, metric priority and source flexibility. Subsequent
-choices below settle forecast precision and margin-error metrics; market-line
-selection, observation time and implementation remain open.
+choices below settle forecast precision and margin-error metrics. The October 1
+and October 5 decisions below settle the returned line and provider selection;
+the October 11 decision settles Market ATS selection and resumes delivery.
 
 The owner also confirmed on 2026-09-28 that improving accuracy over current CORS
 comes first; outperforming the market is a later goal, not a prerequisite for
@@ -175,18 +176,15 @@ Carry into the initial implementation contract:
   coverage grading and counted separately from a confirmed exact-zero Pick'em;
   do not reconstruct an unrecorded winner and present it as an issued pick.
 
-Resolve for the later bookmaker-comparison delivery:
+Apply the later decisions below to bookmaker-comparison delivery:
 
-- Verify available API lines and bookmaker/provider identities. Choose a
-  reproducible line-selection policy and observation time or type (for example,
-  opening, decision-time or closing), retaining the source and available timing
-  evidence. Do not assume an unlabeled historical line is a closing line or
-  confuse its retrieval time with the time the bookmaker quoted it.
-- Define how the model's predicted margin becomes a pick against that market
-  line, then grade the actual result. Specify home/away signs, neutral sites,
-  pushes, missing lines and canceled games.
-- Compare CORS and market errors on the same eligible games using predictions
-  and lines available before kickoff, with historical evidence limits explicit.
+- Use the selected provider's returned spread and retain response/retrieval
+  provenance. Retrieval time is not a quote timestamp or closing-line claim.
+- Grade every nonzero model advantage against the provider line, with no pick
+  for equal lines and separate pushes, using the October 11 rule below.
+- Compare CORS and market errors on the same eligible games. Preserve issued
+  CORS values; pregame market-line timing is not an eligibility gate under the
+  accepted October 1 rule.
 
 In the later probability work, establish empirical calibration before expressing
 confidence as a win probability; an unsupported rating-ratio percentage is not
@@ -236,3 +234,44 @@ public export. This direction supersedes the earlier local-report-only scope of
 [#33](https://github.com/arkar16/sportsrank/issues/33); task acceptance and
 implementation evidence remain there. It does not authorize model tuning,
 additional live requests, merge or production publication.
+
+## Selected provider benchmark — October 1 and 5, 2026
+
+The owner accepted the API's returned `spread` without quote timestamps or
+closing-line evidence: "whatever the api gives, we use." Opening fields do not
+replace it. Retain Game identity, actual provider and response/retrieval
+provenance. A missing or non-finite selected-provider spread stays unavailable;
+finite zero is a valid line.
+
+The owner selected `teamrankings` for 2013–2020 and `Bovada` from 2021 onward,
+without per-Game provider substitution. No provider is selected before 2013.
+The research and coverage evidence are retained in
+[PR #23](https://github.com/arkar16/sportsrank/pull/23). These choices prioritize a
+reproducible benchmark over maximizing coverage by mixing providers. They
+supersede the earlier open selection/timing questions. Excitement's market
+policy remains separate.
+
+## Market ATS selection — October 11, 2026
+
+The owner resumed forecast/provider comparison as part of publishing the complete
+corrected website, then explicitly accepted grading every nonzero difference
+between CORS and the provider line. There is no minimum edge threshold. If CORS
+predicts Team A by 3 and the provider favors A by 7, select Team B +7. Equal
+lines produce no pick; pushes are counted separately. With home handicaps,
+`provider handicap - CORS handicap` selects home when positive and away when
+negative. Grade against the actual home margin plus provider home handicap,
+reversing its sign for an away selection. Neutral games require no extra
+home-field adjustment after the CORS forecast has been calculated.
+
+Market ATS win rate is wins divided by wins plus losses. Pending/canceled games,
+missing lines/predictions and equal-line no-picks have no graded selection.
+Paired MAE/RMSE include all completed games with both forecasts, including
+equal-line games and pushes, and use the same sample for CORS and the provider.
+Aggregate individual games rather than averages of weekly or season metrics.
+Retrospective forecasts remain labeled and separate from issued CORS forecasts.
+
+The owner also approved API requests if retained survey responses could not be
+found. Fetches remain explicit, metered and privately retained; rebuilds remain
+offline. Request counts and delivery acceptance belong to
+[#37](https://github.com/arkar16/sportsrank/issues/37). This does not change merge
+or protected production approval authority.

@@ -29,6 +29,7 @@ from .ranking_progression import build_progression_outputs
 from .season_snapshot import SeasonSnapshot, _checksum
 from .season_source import SourceGame, SourceTeam
 from .week_calendar import EASTERN, WEEK_ONE_BOUNDARIES
+from .market_lines import MarketLines
 
 POLICY = "historical-reconstruction/v1"
 RESULT_COLUMNS = ("week", "home_team", "home_division", "home_score", "away_team",
@@ -285,7 +286,8 @@ def correction_start(inputs: HistoricalInputs, years: list[int]) -> int:
 
 def rebuild_history(website: Path, games_csv: Path, output: Path, *,
                     from_season: int | None = None,
-                    progress: Callable[[str], None] | None = None) -> dict:
+                    progress: Callable[[str], None] | None = None,
+                    market_lines: MarketLines | None = None) -> dict:
     """Rebuild through the latest available season, atomically into a new directory."""
     website, games_csv, output = website.resolve(), games_csv.resolve(), output.resolve()
     if output.exists() or output.is_relative_to(website) or website.is_relative_to(output) or games_csv.is_relative_to(output):
@@ -423,13 +425,13 @@ def rebuild_history(website: Path, games_csv: Path, output: Path, *,
                    ("year", "school", "conference", "record", "win_pct", "cors", "kind")))
         if progress:
             progress("Generating complete reconstructed performance")
-        for relative, raw in build_performance_files(site, reconstruct_all=True).items():
-            _write(site, relative, raw)
         report = {"schema": POLICY, "purpose": "unsealed_local_review",
                   "source_csv_sha256": inputs.source_sha, "from_season": from_season,
                   "through_season": selected[-1], "seasons": evidence,
                   "added_postseason_games": sum(len(record["added_games"]) for record in evidence)}
         _write(site, "historical-review.json", _json(report))
+        for relative, raw in build_performance_files(site, reconstruct_all=True, market_lines=market_lines).items():
+            _write(site, relative, raw)
         # Ordinary release records/receipts in the inherited tree do not validate
         # this correction. Never promote or hand it to a production publisher.
         site.rename(output)

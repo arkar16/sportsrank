@@ -111,6 +111,54 @@ result inputs and issued-forecast records are preserved.
 For a manual T3 project script, use `uv run --locked python -m
 scripts.backforecast` from the repository root, with automatic execution disabled.
 
+### Provider comparison
+
+The same reports can include provider spreads, Market ATS, and paired CORS/provider
+MAE and RMSE. Upcoming retained forecasts appear on the current-season report,
+linked from the all-season index. Original spread files are preserved. The
+selection policy is teamrankings in 2013–2020 and Bovada from 2021; equal lines
+produce no pick, every nonzero difference selects a side, and pushes are separate.
+Missing quotes remain unavailable; comparisons never substitute another provider.
+
+Reuse a private manifest of retained API responses for both preview and release
+preparation:
+
+```sh
+env -u CFBD_API -u CFBD_API_KEY uv run --locked python -m scripts.backforecast \
+  --market-inputs /private/path/market-inputs.json
+```
+
+`market-inputs/v1` contains `responses`, each with `season`, local `path`
+(relative to the manifest or absolute), exact `sha256`, and timezone-bearing
+`retrieved_at`. Each response is the unchanged CFBD `/lines` JSON array. Raw
+responses stay private; the site contains only selected-line observations and
+safe provenance at `cfb/performance/market-lines.json`. Retrieval time is not a
+claim that the line was quoted then or was the closing line.
+
+Pass the same `--market-inputs` option to `cfb.public_site export` to bind the
+comparison pages and selected observations into the validated manifest/receipt.
+Pass it to `scripts.rebuild_history` to include provider comparison in the
+corrected-history review. To refresh reports on an existing corrected review,
+use `scripts.backforecast --website /path/to/review --reconstruct-history
+--market-inputs /path/to/inputs.json --output /new/preview`. That review remains
+unsealed until historical-correction publication integration is accepted.
+
+Acquisition is a separate, explicitly authorized operation:
+
+```sh
+uv run --locked python -m scripts.fetch_market_lines --seasons 2026 \
+  --meter /private/path/cfbd_requests.sqlite3 --output /private/new-observation
+```
+
+Use the existing accounted request audit, never an empty replacement ledger.
+Each selected season consumes one metered request through the Season Snapshot
+boundary. A new directory is claimed before transport; interrupted/failed
+observations are retained and cannot be replayed by rerunning the same command.
+There is no automatic retry or fetch during reporting/export. An explicit
+`--historical-reserve N` conservatively accounts for known current-month
+historical attempts absent from the selected audit. A previous allowance or
+example command does not authorize another fetch.
+
 ## Postseason calendar repair
 
 Historical Schema 3 snapshots are migrated offline into new Schema 4
