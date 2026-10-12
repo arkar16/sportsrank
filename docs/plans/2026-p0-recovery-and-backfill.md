@@ -448,8 +448,10 @@ the safe reviewed receipt, site and authenticated baseline derivative.
   for authenticated GitHub run/approval and artifact evidence, and deployment
   credentials are available only there. `GITHUB_TOKEN` supplies provenance and
   approval reads; `FIREBASE_ACCESS_TOKEN` is protected to that job and
-  `CFBD_API` is absent. The owner's production approval is required; agents
-  never approve on the owner's behalf.
+  `CFBD_API` is absent. The owner's production approval is required. Agents
+  may submit it only within the routine weekly standing delegation in
+  [ADR-0025](../adr/0025-authorize-routine-weekly-publication.md); all other
+  releases retain the human-approval boundary.
 - Workflow summaries expose sanitized target, operation, state, and digest
   identity. Raw provider actor/auth evidence, `baseline.tar.gz`, raw source
   snapshots, the original-prepared archive, and any Git bundle/history that

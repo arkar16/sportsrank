@@ -244,7 +244,10 @@ owner decision; completing the new path does not erase historical exposure.
 
 The workflow guard requires the fixed repository, `refs/heads/main`, manual
 `workflow_dispatch`, and run attempt `1`. Production jobs require the owner's
-`production` approval. Agents never submit approval. `GITHUB_TOKEN` supplies
+`production` approval. Agents submit approval only for the routine weekly
+standing delegation in [ADR-0025](../adr/0025-authorize-routine-weekly-publication.md),
+following the [Monday procedure](monday-automation.md). Other releases, including
+the #39 historical correction, retain human approval. `GITHUB_TOKEN` supplies
 provenance/archive/approval access; Firebase credentials are available only
 inside the protected job, and `CFBD_API` is absent.
 

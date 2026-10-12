@@ -23,7 +23,10 @@ and ADR-0012 exact-artifact publication continue to apply.
 Production requires approval by the owner's existing account, including runs
 that account initiated. Disable approval bypass, restrict publication to the
 `main` workflow branch, and make deployment credentials available exclusively
-behind the production gate. Agents never approve on the owner's behalf. This
+behind the production gate. Agents never approve on the owner's behalf outside
+the routine weekly standing delegation in [ADR-0025](0025-authorize-routine-weekly-publication.md). That
+October 12 amendment preserves the technical gate and requires explicit
+automated-approval attribution. This
 uses account-based enforcement plus an operational human-approval boundary;
 separating agent and owner identities is deferred.
 

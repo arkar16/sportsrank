@@ -29,3 +29,4 @@ consult architecture/current work before treating it as implemented.
 | [0022](0022-import-legacy-history-with-explicit-provenance.md) | Proposed legacy-history import with explicit provenance |
 | [0023](0023-reuse-versioned-inputs-and-ranking-results.md) | Proposed versioned input and ranking-result reuse |
 | [0024](0024-reconstruct-history-with-archived-membership.md) | Historical postseason reconstruction with archived team membership |
+| [0025](0025-authorize-routine-weekly-publication.md) | Standing authority for Monday grading, forecasts and publication |
