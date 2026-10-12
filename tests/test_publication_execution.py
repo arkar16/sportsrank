@@ -35,6 +35,7 @@ from cfb.publication import (
 )
 from cfb.publication_authorization import (
     FakeGitHubApprovalReader,
+    GitHubApprovalReader,
     GitHubRuntimeContext,
     ProtectedExecutionEvidence,
     PublicationAuthorizationError,
@@ -266,6 +267,46 @@ def coordinator(
 
 
 class PublicationExecutionTests(unittest.TestCase):
+    def test_concrete_approval_reads_omit_pr_expansion_and_preserve_owner_gate(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fx = fixture(Path(directory))
+            run_url = "https://api.github.com/repos/owner/repository/actions/runs/123"
+            for approved in (True, False):
+                with self.subTest(approved=approved):
+                    evidence, runtime = approval(fx.package.candidate_commit, approved=approved)
+                    requests = []
+
+                    def respond(request, timeout):
+                        requests.append(request.full_url)
+                        # Reproduce the observed GitHub 502 on unused PR expansion.
+                        if request.full_url == run_url:
+                            raise HTTPError(run_url, 502, "Bad Gateway", {}, None)
+                        if request.full_url == run_url + "?exclude_pull_requests=true":
+                            body = evidence.run_value
+                        elif request.full_url == run_url + "/approvals":
+                            body = evidence.approval_values
+                        else:
+                            self.fail(f"Unexpected authorization request: {request.full_url}")
+                        return StubHttpResponse(200, request.full_url, json.dumps(body).encode())
+
+                    with patch("cfb.publication_authorization.urlopen", side_effect=respond):
+                        reader = GitHubApprovalReader(lambda: "offline-token")
+                        if approved:
+                            result = authorize_protected_execution(
+                                fx.package, runtime=runtime, github=reader,
+                                expected_repository="owner/repository",
+                            )
+                            self.assertEqual(result.candidate_commit, fx.package.candidate_commit)
+                        else:
+                            with self.assertRaises(PublicationAuthorizationError):
+                                authorize_protected_execution(
+                                    fx.package, runtime=runtime, github=reader,
+                                    expected_repository="owner/repository",
+                                )
+                    self.assertEqual(requests, [
+                        run_url + "?exclude_pull_requests=true", run_url + "/approvals",
+                    ])
+
     def test_finalize_uses_the_documented_camel_case_update_mask(self):
         backend = FirebaseRestPublicationBackend(lambda: "offline-token")
         requests = []

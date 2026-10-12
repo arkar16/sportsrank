@@ -105,7 +105,7 @@ def _run_fixture(tmp_path: Path, **run_overrides: object) -> subprocess.Complete
             #!/usr/bin/env bash
             set -euo pipefail
             if [[ "$1" == "api" ]]; then
-              test "$2" = "repos/arkar16/sportsrank/actions/runs/$EXPECTED_RUN_ID"
+              test "$2" = "repos/arkar16/sportsrank/actions/runs/$EXPECTED_RUN_ID?exclude_pull_requests=true"
               printf '%s\\n' "$RUN_FIXTURE"
               exit 0
             fi
@@ -166,6 +166,7 @@ class PublicationWorkflowCliTests(unittest.TestCase):
         self.assertEqual(
             source.count('gh api "repos/arkar16/sportsrank/actions/runs/$'), 3
         )
+        self.assertEqual(source.count('?exclude_pull_requests=true"'), 3)
         for field in (
             ".id",
             ".path",

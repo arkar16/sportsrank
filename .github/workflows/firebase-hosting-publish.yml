@@ -302,7 +302,7 @@ jobs:
           set -euo pipefail
           [[ "$PREPARATION_RUN_ID" =~ ^[1-9][0-9]*$ ]]
           [[ "$PREPARATION_ARTIFACT_NAME" =~ ^[A-Za-z0-9_.-]+$ ]]
-          run_json="$(gh api "repos/arkar16/sportsrank/actions/runs/$PREPARATION_RUN_ID")"
+          run_json="$(gh api "repos/arkar16/sportsrank/actions/runs/$PREPARATION_RUN_ID?exclude_pull_requests=true")"
           jq -e \
             --arg run_id "$PREPARATION_RUN_ID" \
             '.id == ($run_id | tonumber) and .path == ".github/workflows/firebase-hosting-publish.yml" and .event == "workflow_dispatch" and .head_branch == "main" and .run_attempt == 1 and .status == "completed" and .conclusion == "success"' \
@@ -326,7 +326,7 @@ jobs:
             --arg origin_head_sha "$origin_head_sha" \
             '.schema_version == 1 and .record_type == "publication_preparation_origin" and .repository == $repository and .workflow_path == $workflow_path and .event == "workflow_dispatch" and .ref == "refs/heads/main" and .run_id == $origin_run_id and .run_attempt == "1" and .head_sha == $origin_head_sha' \
             "$origin_file" > /dev/null
-          origin_json="$(gh api "repos/arkar16/sportsrank/actions/runs/$origin_run_id")"
+          origin_json="$(gh api "repos/arkar16/sportsrank/actions/runs/$origin_run_id?exclude_pull_requests=true")"
           jq -e \
             --arg run_id "$origin_run_id" \
             --arg head_sha "$origin_head_sha" \
@@ -583,7 +583,7 @@ jobs:
           origin_run_id="$(jq -r '.run_id' "$RUNNER_TEMP/durable/preparation-origin.json")"
           origin_sha="$(jq -r '.head_sha' "$RUNNER_TEMP/durable/preparation-origin.json")"
           [[ "$origin_run_id" =~ ^[1-9][0-9]*$ && "$origin_sha" = "$candidate" ]]
-          origin_json="$(gh api "repos/arkar16/sportsrank/actions/runs/$origin_run_id")"
+          origin_json="$(gh api "repos/arkar16/sportsrank/actions/runs/$origin_run_id?exclude_pull_requests=true")"
           jq -e --arg run_id "$origin_run_id" --arg head_sha "$candidate" \
             '.id == ($run_id | tonumber) and .path == ".github/workflows/firebase-hosting-publish.yml" and .event == "workflow_dispatch" and .head_branch == "main" and .head_sha == $head_sha and .run_attempt == 1 and .status == "completed" and .conclusion == "success"' \
             <<< "$origin_json" >/dev/null

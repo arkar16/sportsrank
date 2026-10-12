@@ -102,7 +102,11 @@ class GitHubApprovalReader:
             ) from exc
 
     def run(self, repository: str, run_id: str) -> Mapping[str, Any]:
-        value = self._get(f"repos/{repository}/actions/runs/{run_id}")
+        # Authorization uses run identity, never associated pull requests.
+        # Avoid GitHub's PR expansion, which can fail for large merged trees.
+        value = self._get(
+            f"repos/{repository}/actions/runs/{run_id}?exclude_pull_requests=true"
+        )
         if not isinstance(value, Mapping):
             raise PublicationAuthorizationError("GitHub run evidence is invalid")
         return value
