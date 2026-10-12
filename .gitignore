@@ -92,6 +92,10 @@ node_modules/
 firebase-debug.log
 .sportsrank/
 
+# Local operational evidence and legacy runtime log; retain privately, never stage
+/.scratch/
+/error.log
+
 # Python
 __pycache__/
 *.py[cod]
