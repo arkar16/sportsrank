@@ -456,7 +456,7 @@ class PublicationRehydrationTests(unittest.TestCase):
             self.assertEqual(len(transport.commands), 1)
             self.assertEqual(
                 transport.urls,
-                [f"https://api.github.com/repos/{REPOSITORY}/actions/runs/101"],
+                [f"https://api.github.com/repos/{REPOSITORY}/actions/runs/101?exclude_pull_requests=true"],
             )
             command = transport.commands[0]
             self.assertIn("--deny-self-hosted-runners", command)
