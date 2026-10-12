@@ -1,0 +1,499 @@
+week,home,away,neutral_site,prediction_source,rating_checkpoint,home_handicap,predicted_winner,home_score,away_score,actual_home_margin,straight_up,cors_line_coverage,absolute_error,status
+1,Virginia Tech,William & Mary,False,Saved spread,,-18.0,Virginia Tech,20,6,14,correct,no_cover,4.0,Evaluated
+1,West Virginia,Richmond,False,Saved spread,,6.5,Richmond,26,35,-9,correct,cover,2.5,Evaluated
+1,Montana,Wyoming,False,Saved spread,,10.0,Wyoming,0,29,-29,correct,cover,19.0,Evaluated
+1,Utah,Colorado State,False,Saved spread,,-22.0,Utah,40,0,40,correct,cover,18.0,Evaluated
+1,Miami,Pittsburgh,False,Saved spread,,5.5,Pittsburgh,7,10,-3,correct,no_cover,2.5,Evaluated
+1,Utah State,UTEP,False,Saved spread,,-15.0,Utah State,21,6,15,correct,push,0.0,Evaluated
+1,Tulsa,Hardin-Simmons,False,Saved spread,,-11.0,Tulsa,27,0,27,correct,cover,16.0,Evaluated
+1,BYU,San José State,False,Saved spread,,7.0,San José State,13,14,-1,correct,no_cover,6.0,Evaluated
+1,Memphis,The Citadel,False,Saved spread,,-4.0,Memphis,40,0,40,correct,cover,36.0,Evaluated
+1,Florida State,George Washington,False,Saved spread,,5.5,George Washington,15,7,8,incorrect,no_cover,13.5,Evaluated
+1,Cincinnati,Dayton,False,Saved spread,,-8.5,Cincinnati,16,12,4,correct,no_cover,4.5,Evaluated
+2,USC,Georgia Tech,False,Saved spread,,3.0,Georgia Tech,7,27,-20,correct,cover,17.0,Evaluated
+2,San José State,Pacific,False,Saved spread,,-7.5,San José State,16,0,16,correct,cover,8.5,Evaluated
+2,Utah State,Montana,False,Saved spread,,-35.5,Utah State,54,6,48,correct,cover,12.5,Evaluated
+2,Penn State,Navy,False,Saved spread,,-0.5,Penn State,20,10,10,correct,cover,9.5,Evaluated
+2,Oregon,Idaho,False,Saved spread,,-13.0,Oregon,51,0,51,correct,cover,38.0,Evaluated
+2,Iowa State,Oklahoma State,False,Saved spread,,-27.0,Iowa State,14,7,7,correct,no_cover,20.0,Evaluated
+2,The Citadel,George Washington,False,Saved spread,,-2.5,The Citadel,13,17,-4,incorrect,no_cover,6.5,Evaluated
+2,Georgia,Alabama,False,Saved spread,,1.5,Alabama,6,32,-26,correct,cover,24.5,Evaluated
+2,Wyoming,NC State,False,Saved spread,,-29.0,Wyoming,15,14,1,correct,no_cover,28.0,Evaluated
+2,Wisconsin,Utah,False,Saved spread,,27.0,Utah,7,0,7,incorrect,no_cover,34.0,Evaluated
+2,West Texas A&M,BYU,False,Saved spread,,-5.0,West Texas A&M,55,8,47,correct,cover,42.0,Evaluated
+2,Virginia,William & Mary,False,Saved spread,,-2.5,Virginia,21,6,15,correct,cover,12.5,Evaluated
+2,Villanova,VMI,False,Saved spread,,7.5,VMI,22,0,22,incorrect,no_cover,29.5,Evaluated
+2,Vanderbilt,West Virginia,False,Saved spread,,-5.5,Vanderbilt,16,6,10,correct,cover,4.5,Evaluated
+2,Air Force,UCLA,False,Saved spread,,5.0,UCLA,6,19,-13,correct,cover,8.0,Evaluated
+2,TCU,Kansas,False,Saved spread,,4.0,Kansas,17,16,1,incorrect,no_cover,5.0,Evaluated
+2,California,Texas,False,Saved spread,,7.0,Texas,3,28,-25,correct,cover,18.0,Evaluated
+2,Stanford,Tulane,False,Saved spread,,3.0,Tulane,9,7,2,incorrect,no_cover,5.0,Evaluated
+2,Rice,LSU,False,Saved spread,,-3.0,Rice,16,3,13,correct,cover,10.0,Evaluated
+2,Washington,Purdue,False,Saved spread,,-5.0,Washington,6,13,-7,incorrect,no_cover,12.0,Evaluated
+2,Hardin-Simmons,North Texas,False,Saved spread,,3.0,North Texas,7,9,-2,correct,no_cover,1.0,Evaluated
+2,New Mexico,New Mexico State,False,Saved spread,,22.5,New Mexico State,41,7,34,incorrect,no_cover,56.5,Evaluated
+2,Missouri,Washington State,False,Saved spread,,-6.0,Missouri,28,6,22,correct,cover,16.0,Evaluated
+2,Mississippi State,Texas Tech,False,Saved spread,,-2.0,Mississippi State,6,0,6,correct,cover,4.0,Evaluated
+2,Ole Miss,Arkansas,False,Saved spread,,-4.5,Ole Miss,16,0,16,correct,cover,11.5,Evaluated
+2,Kentucky,Miami,False,Saved spread,,-7.0,Kentucky,7,14,-7,incorrect,no_cover,14.0,Evaluated
+2,Tulsa,Memphis,False,Saved spread,,10.0,Memphis,12,48,-36,correct,cover,26.0,Evaluated
+2,SMU,Maryland,False,Saved spread,,5.5,Maryland,6,14,-8,correct,cover,2.5,Evaluated
+2,Kansas State,Indiana,False,Saved spread,,-1.5,Kansas State,14,8,6,correct,cover,4.5,Evaluated
+2,Houston,Texas A&M,False,Saved spread,,-5.0,Houston,7,7,0,tie,no_cover,5.0,Evaluated
+2,Boston College,Cincinnati,False,Saved spread,,17.0,Cincinnati,23,0,23,incorrect,no_cover,40.0,Evaluated
+2,Baylor,Wake Forest,False,Saved spread,,-11.5,Baylor,31,0,31,correct,cover,19.5,Evaluated
+2,Army,Richmond,False,Saved spread,,11.0,Richmond,24,6,18,incorrect,no_cover,29.0,Evaluated
+2,Arizona State,Wichita State,False,Saved spread,,16.0,Wichita State,21,7,14,incorrect,no_cover,30.0,Evaluated
+2,Arizona,Colorado State,False,Saved spread,,-14.0,Arizona,28,6,22,correct,cover,8.0,Evaluated
+2,Oregon State,Syracuse,False,Saved spread,,0.0,Unknown (zero line),8,19,-11,ungraded,ungraded,11.0,Evaluated
+2,Florida,Clemson,False,Saved spread,,-3.5,Florida,21,17,4,correct,cover,0.5,Evaluated
+2,Furman,Davidson,False,Saved spread,,-4.0,Furman,45,19,26,correct,cover,22.0,Evaluated
+2,South Carolina,Duke,False,Saved spread,,4.5,Duke,6,7,-1,correct,no_cover,3.5,Evaluated
+3,Detroit Mercy,Xavier,False,Saved spread,,-8.0,Detroit Mercy,34,8,26,correct,cover,18.0,Evaluated
+3,Miami,Penn State,False,Saved spread,,10.0,Penn State,25,8,17,incorrect,no_cover,27.0,Evaluated
+3,Richmond,VMI,False,Saved spread,,2.0,VMI,6,8,-2,correct,push,0.0,Evaluated
+3,USC,SMU,False,Saved spread,,-2.5,USC,21,16,5,correct,cover,2.5,Evaluated
+3,Montana,New Mexico,False,Saved spread,,31.5,New Mexico,40,8,32,incorrect,no_cover,63.5,Evaluated
+3,Wisconsin,Michigan State,False,Saved spread,,-28.0,Wisconsin,0,20,-20,incorrect,no_cover,48.0,Evaluated
+3,Clemson,Maryland,False,Saved spread,,20.0,Maryland,21,24,-3,correct,no_cover,17.0,Evaluated
+3,Idaho,San José State,False,Saved spread,,31.0,San José State,27,18,9,incorrect,no_cover,40.0,Evaluated
+3,Furman,George Washington,False,Saved spread,,-19.5,Furman,13,9,4,correct,no_cover,15.5,Evaluated
+3,Brown,Columbia,False,Saved spread,,-1.5,Brown,0,50,-50,incorrect,no_cover,51.5,Evaluated
+3,Colorado,Oklahoma State,False,Saved spread,,-4.5,Colorado,24,0,24,correct,cover,19.5,Evaluated
+3,The Citadel,Davidson,False,Saved spread,,13.5,Davidson,20,12,8,incorrect,no_cover,21.5,Evaluated
+3,Tennessee,Auburn,False,Saved spread,,-2.5,Tennessee,21,24,-3,incorrect,no_cover,5.5,Evaluated
+3,Wichita State,Cincinnati,False,Saved spread,,-3.0,Wichita State,21,13,8,correct,cover,5.0,Evaluated
+3,Wake Forest,South Carolina,False,Saved spread,,0.5,South Carolina,7,10,-3,correct,cover,2.5,Evaluated
+3,Kentucky,Ole Miss,False,Saved spread,,24.0,Ole Miss,6,20,-14,correct,no_cover,10.0,Evaluated
+3,Virginia,Duke,False,Saved spread,,-0.5,Virginia,0,42,-42,incorrect,no_cover,42.5,Evaluated
+3,Army,Boston University,False,Saved spread,,-32.0,Army,31,7,24,correct,no_cover,8.0,Evaluated
+3,Alabama,Tulane,False,Saved spread,,-28.5,Alabama,9,0,9,correct,no_cover,19.5,Evaluated
+3,Wyoming,Kansas,False,Saved spread,,-31.5,Wyoming,6,6,0,tie,no_cover,31.5,Evaluated
+3,Illinois,Washington,False,Saved spread,,-2.5,Illinois,7,20,-13,incorrect,no_cover,15.5,Evaluated
+3,Washington State,Utah State,False,Saved spread,,30.5,Utah State,14,34,-20,correct,no_cover,10.5,Evaluated
+3,Utah,Oregon,False,Saved spread,,3.0,Oregon,14,6,8,incorrect,no_cover,11.0,Evaluated
+3,TCU,Ohio State,False,Saved spread,,-23.5,TCU,7,7,0,tie,no_cover,23.5,Evaluated
+3,Syracuse,West Virginia,False,Saved spread,,-30.5,Syracuse,29,14,15,correct,no_cover,15.5,Evaluated
+3,Oregon State,Stanford,False,Saved spread,,19.5,Stanford,0,34,-34,correct,cover,14.5,Evaluated
+3,Princeton,Rutgers,False,Saved spread,,-2.0,Princeton,13,16,-3,incorrect,no_cover,5.0,Evaluated
+3,Notre Dame,Oklahoma,False,Saved spread,,-1.5,Notre Dame,19,6,13,correct,cover,11.5,Evaluated
+3,Northwestern,Boston College,False,Saved spread,,24.5,Boston College,45,0,45,incorrect,no_cover,69.5,Evaluated
+3,North Texas,BYU,False,Saved spread,,-25.0,North Texas,41,30,11,correct,no_cover,14.0,Evaluated
+3,Navy,William & Mary,False,Saved spread,,-5.5,Navy,44,6,38,correct,cover,32.5,Evaluated
+3,Minnesota,Missouri,False,Saved spread,,22.0,Missouri,0,6,-6,correct,no_cover,16.0,Evaluated
+3,Houston,Mississippi State,False,Saved spread,,19.5,Mississippi State,7,10,-3,correct,no_cover,16.5,Evaluated
+3,Michigan,UCLA,False,Saved spread,,21.0,UCLA,29,6,23,incorrect,no_cover,44.0,Evaluated
+3,Memphis,Hardin-Simmons,False,Saved spread,,-40.0,Memphis,56,0,56,correct,cover,16.0,Evaluated
+3,LSU,Texas A&M,False,Saved spread,,-2.0,LSU,16,7,9,correct,cover,7.0,Evaluated
+3,Air Force,Kansas State,False,Saved spread,,20.0,Kansas State,12,14,-2,correct,no_cover,18.0,Evaluated
+3,Iowa,California,False,Saved spread,,-7.0,Iowa,28,7,21,correct,cover,14.0,Evaluated
+3,Georgia Tech,Rice,False,Saved spread,,0.0,Unknown (zero line),24,0,24,ungraded,ungraded,24.0,Evaluated
+3,Florida State,Florida,False,Saved spread,,-6.5,Florida State,3,3,0,tie,no_cover,6.5,Evaluated
+3,UTEP,West Texas A&M,False,Saved spread,,23.5,West Texas A&M,27,56,-29,correct,cover,5.5,Evaluated
+3,Pittsburgh,Baylor,False,Saved spread,,-7.5,Pittsburgh,13,16,-3,incorrect,no_cover,10.5,Evaluated
+3,Arkansas,Tulsa,False,Saved spread,,14.0,Tulsa,6,0,6,incorrect,no_cover,20.0,Evaluated
+3,Colorado State,Arizona State,False,Saved spread,,31.0,Arizona State,6,14,-8,correct,no_cover,23.0,Evaluated
+3,Arizona,Nebraska,False,Saved spread,,-5.0,Arizona,14,14,0,tie,no_cover,5.0,Evaluated
+3,Cornell,Colgate,False,Saved spread,,-2.0,Cornell,34,0,34,correct,cover,32.0,Evaluated
+3,Holy Cross,Villanova,False,Saved spread,,25.5,Villanova,6,20,-14,correct,no_cover,11.5,Evaluated
+3,Georgia,Vanderbilt,False,Saved spread,,19.5,Vanderbilt,0,21,-21,correct,cover,1.5,Evaluated
+3,Texas,Texas Tech,False,Saved spread,,-27.5,Texas,42,14,28,correct,cover,0.5,Evaluated
+3,North Carolina,NC State,False,Saved spread,,-1.0,North Carolina,27,22,5,correct,cover,4.0,Evaluated
+4,Tulane,Florida,False,Saved spread,,27.5,Florida,3,14,-11,correct,no_cover,16.5,Evaluated
+4,Boston University,Penn State,False,Saved spread,,14.5,Penn State,0,32,-32,correct,cover,17.5,Evaluated
+4,Miami,Navy,False,Saved spread,,-8.5,Miami,6,17,-11,incorrect,no_cover,19.5,Evaluated
+4,West Virginia,Virginia Tech,False,Saved spread,,27.0,Virginia Tech,28,0,28,incorrect,no_cover,55.0,Evaluated
+4,Utah State,Wyoming,False,Saved spread,,-2.5,Utah State,6,6,0,tie,no_cover,2.5,Evaluated
+4,Illinois,Northwestern,False,Saved spread,,28.0,Northwestern,7,28,-21,correct,no_cover,7.0,Evaluated
+4,Virginia,NC State,False,Saved spread,,-15.5,Virginia,14,21,-7,incorrect,no_cover,22.5,Evaluated
+4,Kansas State,Nebraska,False,Saved spread,,0.5,Nebraska,0,24,-24,correct,cover,23.5,Evaluated
+4,LSU,Georgia Tech,False,Saved spread,,16.0,Georgia Tech,10,0,10,incorrect,no_cover,26.0,Evaluated
+4,Oklahoma,Iowa State,False,Saved spread,,25.0,Iowa State,15,21,-6,correct,no_cover,19.0,Evaluated
+4,Pennsylvania,Dartmouth,False,Saved spread,,-1.0,Pennsylvania,0,30,-30,incorrect,no_cover,31.0,Evaluated
+4,BYU,Montana,False,Saved spread,,6.5,Montana,7,6,1,incorrect,no_cover,7.5,Evaluated
+4,Vanderbilt,Alabama,False,Saved spread,,-0.5,Vanderbilt,6,35,-29,incorrect,no_cover,29.5,Evaluated
+4,Texas Tech,Texas A&M,False,Saved spread,,-0.5,Texas Tech,7,38,-31,incorrect,no_cover,31.5,Evaluated
+4,Tennessee,Mississippi State,False,Saved spread,,23.5,Mississippi State,17,3,14,incorrect,no_cover,37.5,Evaluated
+4,Columbia,Princeton,False,Saved spread,,-25.5,Columbia,20,30,-10,incorrect,no_cover,35.5,Evaluated
+4,Oregon State,Idaho,False,Saved spread,,10.0,Idaho,44,6,38,incorrect,no_cover,48.0,Evaluated
+4,Auburn,Kentucky,False,Saved spread,,-26.0,Auburn,12,14,-2,incorrect,no_cover,28.0,Evaluated
+4,Houston,Boston College,False,Saved spread,,12.0,Boston College,21,0,21,incorrect,no_cover,33.0,Evaluated
+4,Harvard,Cornell,False,Saved spread,,21.5,Cornell,14,0,14,incorrect,no_cover,35.5,Evaluated
+4,George Washington,VMI,False,Saved spread,,8.0,VMI,30,6,24,incorrect,no_cover,32.0,Evaluated
+4,Duke,Wake Forest,False,Saved spread,,-32.5,Duke,23,3,20,correct,no_cover,12.5,Evaluated
+4,Colorado,Kansas,False,Saved spread,,-24.5,Colorado,20,19,1,correct,no_cover,23.5,Evaluated
+4,North Carolina,Clemson,False,Saved spread,,-25.0,North Carolina,0,27,-27,incorrect,no_cover,52.0,Evaluated
+4,The Citadel,Richmond,False,Saved spread,,1.5,Richmond,24,6,18,incorrect,no_cover,19.5,Evaluated
+4,Arkansas,TCU,False,Saved spread,,12.0,TCU,28,3,25,incorrect,no_cover,37.0,Evaluated
+4,Cincinnati,Xavier,False,Saved spread,,-2.0,Cincinnati,12,17,-5,incorrect,no_cover,7.0,Evaluated
+4,West Texas A&M,Wichita State,False,Saved spread,,-11.0,West Texas A&M,34,41,-7,incorrect,no_cover,18.0,Evaluated
+4,Washington,Pittsburgh,False,Saved spread,,2.5,Pittsburgh,22,17,5,incorrect,no_cover,7.5,Evaluated
+4,Arizona State,Utah,False,Saved spread,,-9.0,Arizona State,26,28,-2,incorrect,no_cover,11.0,Evaluated
+4,Texas,Washington State,False,Saved spread,,-31.0,Texas,41,8,33,correct,cover,2.0,Evaluated
+4,SMU,Air Force,False,Saved spread,,-2.0,SMU,9,7,2,correct,push,0.0,Evaluated
+4,San José State,Colorado State,False,Saved spread,,-25.0,San José State,14,0,14,correct,no_cover,11.0,Evaluated
+4,Oklahoma State,Tulsa,False,Saved spread,,9.0,Tulsa,26,0,26,incorrect,no_cover,35.0,Evaluated
+4,Ohio State,UCLA,False,Saved spread,,10.5,UCLA,13,3,10,incorrect,no_cover,20.5,Evaluated
+4,Purdue,Notre Dame,False,Saved spread,,-6.0,Purdue,20,22,-2,incorrect,no_cover,8.0,Evaluated
+4,New Mexico State,North Texas,False,Saved spread,,3.5,North Texas,14,14,0,tie,no_cover,3.5,Evaluated
+4,New Mexico,UTEP,False,Saved spread,,-21.5,New Mexico,7,6,1,correct,no_cover,20.5,Evaluated
+4,Ole Miss,Florida State,False,Saved spread,,1.0,Florida State,33,0,33,incorrect,no_cover,34.0,Evaluated
+4,Minnesota,Oregon,False,Saved spread,,16.5,Oregon,14,7,7,incorrect,no_cover,23.5,Evaluated
+4,Michigan State,Stanford,False,Saved spread,,-4.5,Michigan State,31,3,28,correct,cover,23.5,Evaluated
+4,Michigan,Army,False,Saved spread,,-1.0,Michigan,38,8,30,correct,cover,29.0,Evaluated
+4,Maryland,Syracuse,False,Saved spread,,-1.0,Maryland,22,21,1,correct,push,0.0,Evaluated
+4,USC,Iowa,False,Saved spread,,11.0,Iowa,34,35,-1,correct,no_cover,10.0,Evaluated
+4,Georgia,South Carolina,False,Saved spread,,12.0,South Carolina,17,14,3,incorrect,no_cover,15.0,Evaluated
+4,California,Missouri,False,Saved spread,,27.5,Missouri,14,14,0,tie,no_cover,27.5,Evaluated
+4,Yale,Brown,False,Saved spread,,-25.5,Yale,14,3,11,correct,no_cover,14.5,Evaluated
+4,Arizona,Hardin-Simmons,False,Saved spread,,-32.5,Arizona,53,7,46,correct,cover,13.5,Evaluated
+4,Indiana,Wisconsin,False,Saved spread,,14.0,Wisconsin,3,6,-3,correct,no_cover,11.0,Evaluated
+4,William & Mary,Furman,False,Saved spread,,29.0,Furman,19,6,13,incorrect,no_cover,42.0,Evaluated
+5,Detroit Mercy,Boston College,False,Saved spread,,-20.0,Detroit Mercy,20,3,17,correct,no_cover,3.0,Evaluated
+5,Miami,Colorado,False,Saved spread,,8.0,Colorado,7,9,-2,correct,no_cover,6.0,Evaluated
+5,Utah,BYU,False,Saved spread,,-20.0,Utah,21,20,1,correct,no_cover,19.0,Evaluated
+5,Texas Tech,TCU,False,Saved spread,,12.5,TCU,10,0,10,incorrect,no_cover,22.5,Evaluated
+5,Princeton,Pennsylvania,False,Saved spread,,-4.0,Princeton,9,3,6,correct,cover,2.0,Evaluated
+5,Maryland,North Carolina,False,Saved spread,,-17.0,Maryland,8,14,-6,incorrect,no_cover,23.0,Evaluated
+5,Northwestern,Minnesota,False,Saved spread,,-17.0,Northwestern,3,10,-7,incorrect,no_cover,24.0,Evaluated
+5,Michigan,Michigan State,False,Saved spread,,-2.0,Michigan,0,28,-28,incorrect,no_cover,30.0,Evaluated
+5,Kansas,Iowa State,False,Saved spread,,22.5,Iowa State,21,7,14,incorrect,no_cover,36.5,Evaluated
+5,Baylor,Arkansas,False,Saved spread,,-10.5,Baylor,13,23,-10,incorrect,no_cover,20.5,Evaluated
+5,Washington State,Idaho,False,Saved spread,,7.0,Idaho,34,0,34,incorrect,no_cover,41.0,Evaluated
+5,Clemson,Wake Forest,False,Saved spread,,-14.5,Clemson,13,17,-4,incorrect,no_cover,18.5,Evaluated
+5,Utah State,New Mexico,False,Saved spread,,-12.0,Utah State,41,7,34,correct,cover,22.0,Evaluated
+5,Richmond,George Washington,False,Saved spread,,7.0,George Washington,16,15,1,incorrect,no_cover,8.0,Evaluated
+5,Ohio State,Illinois,False,Saved spread,,-29.5,Ohio State,44,0,44,correct,cover,14.5,Evaluated
+5,Oklahoma State,Missouri,False,Saved spread,,16.0,Missouri,0,10,-10,correct,no_cover,6.0,Evaluated
+5,Iowa,Indiana,False,Saved spread,,-28.5,Iowa,27,8,19,correct,no_cover,9.5,Evaluated
+5,Boston University,Holy Cross,False,Saved spread,,10.5,Holy Cross,7,20,-13,correct,cover,2.5,Evaluated
+5,Dartmouth,Brown,False,Saved spread,,-31.0,Dartmouth,34,0,34,correct,cover,3.0,Evaluated
+5,Yale,Columbia,False,Saved spread,,-10.5,Yale,0,11,-11,incorrect,no_cover,21.5,Evaluated
+5,William & Mary,The Citadel,False,Saved spread,,5.0,The Citadel,8,10,-2,correct,no_cover,3.0,Evaluated
+5,California,Washington,False,Saved spread,,18.5,Washington,21,14,7,incorrect,no_cover,25.5,Evaluated
+5,Penn State,Army,False,Saved spread,,-0.5,Penn State,6,10,-4,incorrect,no_cover,4.5,Evaluated
+5,West Texas A&M,Arizona State,False,Saved spread,,-1.5,West Texas A&M,11,28,-17,incorrect,no_cover,18.5,Evaluated
+5,Oregon,Arizona,False,Saved spread,,13.5,Arizona,6,15,-9,correct,no_cover,4.5,Evaluated
+5,Wisconsin,Oregon State,False,Saved spread,,-11.5,Wisconsin,23,20,3,correct,no_cover,8.5,Evaluated
+5,Pittsburgh,West Virginia,False,Saved spread,,-6.0,Pittsburgh,6,20,-14,incorrect,no_cover,20.0,Evaluated
+5,Virginia,VMI,False,Saved spread,,3.0,VMI,14,7,7,incorrect,no_cover,10.0,Evaluated
+5,UCLA,Vanderbilt,False,Saved spread,,8.5,Vanderbilt,28,21,7,incorrect,no_cover,15.5,Evaluated
+5,Tulane,Virginia Tech,False,Saved spread,,11.5,Virginia Tech,27,14,13,incorrect,no_cover,24.5,Evaluated
+5,Texas,Oklahoma,False,Saved spread,,-29.5,Texas,28,7,21,correct,no_cover,8.5,Evaluated
+5,Tennessee,Tulsa,False,Saved spread,,-11.0,Tennessee,52,6,46,correct,cover,35.0,Evaluated
+5,Nebraska,Syracuse,False,Saved spread,,-11.0,Nebraska,6,28,-22,incorrect,no_cover,33.0,Evaluated
+5,Stanford,San José State,False,Saved spread,,-1.0,Stanford,17,6,11,correct,cover,10.0,Evaluated
+5,Rice,Florida,False,Saved spread,,12.5,Florida,19,10,9,incorrect,no_cover,21.5,Evaluated
+5,Notre Dame,USC,False,Saved spread,,-21.5,Notre Dame,30,0,30,correct,cover,8.5,Evaluated
+5,New Mexico State,Pacific,False,Saved spread,,-7.0,New Mexico State,70,19,51,correct,cover,44.0,Evaluated
+5,Cornell,Navy,False,Saved spread,,2.0,Navy,7,31,-24,correct,cover,22.0,Evaluated
+5,Ole Miss,Houston,False,Saved spread,,-17.5,Ole Miss,47,7,40,correct,cover,22.5,Evaluated
+5,South Carolina,LSU,False,Saved spread,,7.0,LSU,0,42,-42,correct,cover,35.0,Evaluated
+5,Kentucky,Kansas State,False,Saved spread,,8.0,Kansas State,21,8,13,incorrect,no_cover,21.0,Evaluated
+5,Georgia Tech,Duke,False,Saved spread,,5.0,Duke,21,0,21,incorrect,no_cover,26.0,Evaluated
+5,Wyoming,Colorado State,False,Saved spread,,-31.5,Wyoming,18,7,11,correct,no_cover,20.5,Evaluated
+5,Harvard,Colgate,False,Saved spread,,-5.0,Harvard,0,15,-15,incorrect,no_cover,20.0,Evaluated
+5,Alabama,NC State,False,Saved spread,,-21.0,Alabama,26,7,19,correct,no_cover,2.0,Evaluated
+5,Cincinnati,Air Force,False,Saved spread,,-8.5,Cincinnati,6,8,-2,incorrect,no_cover,10.5,Evaluated
+5,Florida State,Georgia,False,Saved spread,,-10.5,Florida State,3,0,3,correct,no_cover,7.5,Evaluated
+5,North Texas,Wichita State,False,Saved spread,,-7.5,North Texas,14,26,-12,incorrect,no_cover,19.5,Evaluated
+6,George Washington,William & Mary,False,Saved spread,,-10.5,George Washington,49,12,37,correct,cover,26.5,Evaluated
+6,Detroit Mercy,Navy,False,Saved spread,,-6.5,Detroit Mercy,19,37,-18,incorrect,no_cover,24.5,Evaluated
+6,Washington,Stanford,False,Saved spread,,5.5,Stanford,13,0,13,incorrect,no_cover,18.5,Evaluated
+6,Montana,Utah,False,Saved spread,,15.0,Utah,12,24,-12,correct,no_cover,3.0,Evaluated
+6,Arkansas,Texas,False,Saved spread,,1.5,Texas,7,33,-26,correct,cover,24.5,Evaluated
+6,California,USC,False,Saved spread,,-3.0,California,14,28,-14,incorrect,no_cover,17.0,Evaluated
+6,Pennsylvania,Brown,False,Saved spread,,-11.5,Pennsylvania,7,0,7,correct,no_cover,4.5,Evaluated
+6,Penn State,Syracuse,False,Saved spread,,5.0,Syracuse,14,0,14,incorrect,no_cover,19.0,Evaluated
+6,Oregon,San José State,False,Saved spread,,5.0,San José State,21,6,15,incorrect,no_cover,20.0,Evaluated
+6,Oklahoma State,Nebraska,False,Saved spread,,12.5,Nebraska,14,6,8,incorrect,no_cover,20.5,Evaluated
+6,Northwestern,Ohio State,False,Saved spread,,4.5,Ohio State,0,10,-10,correct,cover,5.5,Evaluated
+6,North Texas,Tulsa,False,Saved spread,,-16.5,North Texas,23,12,11,correct,no_cover,5.5,Evaluated
+6,South Carolina,North Carolina,False,Saved spread,,8.5,North Carolina,0,17,-17,correct,cover,8.5,Evaluated
+6,Ole Miss,Tulane,False,Saved spread,,-25.0,Ole Miss,41,0,41,correct,cover,16.0,Evaluated
+6,Illinois,Minnesota,False,Saved spread,,19.0,Minnesota,0,33,-33,correct,cover,14.0,Evaluated
+6,LSU,Kentucky,False,Saved spread,,-11.0,LSU,24,14,10,correct,no_cover,1.0,Evaluated
+6,Iowa,Wisconsin,False,Saved spread,,-9.0,Iowa,47,15,32,correct,cover,23.0,Evaluated
+6,Vanderbilt,Florida,False,Saved spread,,3.5,Florida,0,7,-7,correct,cover,3.5,Evaluated
+6,The Citadel,Furman,False,Saved spread,,4.5,Furman,9,8,1,incorrect,no_cover,5.5,Evaluated
+6,Alabama,Tennessee,False,Saved spread,,-10.0,Alabama,34,3,31,correct,cover,21.0,Evaluated
+6,Cornell,Yale,False,Saved spread,,7.0,Yale,0,12,-12,correct,cover,5.0,Evaluated
+6,Wyoming,BYU,False,Saved spread,,-24.5,Wyoming,36,8,28,correct,cover,3.5,Evaluated
+6,Davidson,VMI,False,Saved spread,,-3.5,Davidson,0,13,-13,incorrect,no_cover,16.5,Evaluated
+6,Colorado State,Utah State,False,Saved spread,,27.5,Utah State,3,49,-46,correct,cover,18.5,Evaluated
+6,Texas Tech,Baylor,False,Saved spread,,13.5,Baylor,19,17,2,incorrect,no_cover,15.5,Evaluated
+6,TCU,Texas A&M,False,Saved spread,,8.5,Texas A&M,15,14,1,incorrect,no_cover,9.5,Evaluated
+6,Rice,SMU,False,Saved spread,,-12.0,Rice,10,0,10,correct,no_cover,2.0,Evaluated
+6,NC State,Wake Forest,False,Saved spread,,-4.0,NC State,7,0,7,correct,cover,3.0,Evaluated
+6,Iowa State,Missouri,False,Saved spread,,4.0,Missouri,7,13,-6,correct,cover,2.0,Evaluated
+6,Michigan,Purdue,False,Saved spread,,-4.5,Michigan,16,14,2,correct,no_cover,2.5,Evaluated
+6,Oklahoma,Kansas,False,Saved spread,,9.5,Kansas,0,10,-10,correct,cover,0.5,Evaluated
+6,Georgia Tech,Auburn,False,Saved spread,,-6.5,Georgia Tech,7,6,1,correct,no_cover,5.5,Evaluated
+6,Georgia,Mississippi State,False,Saved spread,,12.5,Mississippi State,10,7,3,incorrect,no_cover,15.5,Evaluated
+6,Harvard,Columbia,False,Saved spread,,9.0,Columbia,14,26,-12,correct,cover,3.0,Evaluated
+6,Kansas State,Colorado,False,Saved spread,,12.5,Colorado,0,13,-13,correct,cover,0.5,Evaluated
+6,Duke,Clemson,False,Saved spread,,-14.5,Duke,7,17,-10,incorrect,no_cover,24.5,Evaluated
+6,Boston College,Villanova,False,Saved spread,,18.0,Villanova,22,6,16,incorrect,no_cover,34.0,Evaluated
+6,Army,Idaho,False,Saved spread,,-18.5,Army,51,7,44,correct,cover,25.5,Evaluated
+6,Wichita State,New Mexico State,False,Saved spread,,-3.0,Wichita State,42,27,15,correct,cover,12.0,Evaluated
+6,Virginia Tech,Virginia,False,Saved spread,,2.0,Virginia,20,0,20,incorrect,no_cover,22.0,Evaluated
+6,UCLA,Pittsburgh,False,Saved spread,,-8.0,UCLA,20,6,14,correct,cover,6.0,Evaluated
+6,Michigan State,Notre Dame,False,Saved spread,,-5.5,Michigan State,17,7,10,correct,cover,4.5,Evaluated
+6,Air Force,Maryland,False,Saved spread,,13.5,Maryland,0,21,-21,correct,cover,7.5,Evaluated
+6,Indiana,Washington State,False,Saved spread,,3.5,Washington State,33,7,26,incorrect,no_cover,29.5,Evaluated
+6,Cincinnati,Houston,False,Saved spread,,2.0,Houston,7,13,-6,correct,cover,4.0,Evaluated
+6,Holy Cross,Dartmouth,False,Saved spread,,7.0,Dartmouth,17,13,4,incorrect,no_cover,11.0,Evaluated
+6,Florida State,Richmond,False,Saved spread,,-9.5,Florida State,13,7,6,correct,no_cover,3.5,Evaluated
+6,Princeton,Colgate,False,Saved spread,,-6.0,Princeton,0,15,-15,incorrect,no_cover,21.0,Evaluated
+6,Boston University,West Virginia,False,Saved spread,,10.5,West Virginia,12,6,6,incorrect,no_cover,16.5,Evaluated
+6,Arizona State,Oregon State,False,Saved spread,,-17.5,Arizona State,24,23,1,correct,no_cover,16.5,Evaluated
+6,Dayton,Xavier,False,Saved spread,,8.0,Xavier,0,14,-14,correct,cover,6.0,Evaluated
+6,Arizona,New Mexico,False,Saved spread,,-17.5,Arizona,22,21,1,correct,no_cover,16.5,Evaluated
+6,West Texas A&M,Hardin-Simmons,False,Saved spread,,-20.0,West Texas A&M,42,0,42,correct,cover,22.0,Evaluated
+7,Miami,North Carolina,False,Saved spread,,5.0,North Carolina,10,0,10,incorrect,no_cover,15.0,Evaluated
+7,George Washington,Boston University,False,Saved spread,,-13.5,George Washington,6,20,-14,incorrect,no_cover,27.5,Evaluated
+7,William & Mary,VMI,False,Saved spread,,7.0,VMI,7,14,-7,correct,push,0.0,Evaluated
+7,Texas A&M,Baylor,False,Saved spread,,-2.5,Texas A&M,23,0,23,correct,cover,20.5,Evaluated
+7,Texas,Rice,False,Saved spread,,-8.0,Texas,34,7,27,correct,cover,19.0,Evaluated
+7,Syracuse,Holy Cross,False,Saved spread,,0.0,Unknown (zero line),34,6,28,ungraded,ungraded,28.0,Evaluated
+7,South Carolina,Maryland,False,Saved spread,,15.5,Maryland,20,10,10,incorrect,no_cover,25.5,Evaluated
+7,Richmond,Davidson,False,Saved spread,,-0.5,Richmond,20,0,20,correct,cover,19.5,Evaluated
+7,Pittsburgh,Navy,False,Saved spread,,16.5,Navy,28,14,14,incorrect,no_cover,30.5,Evaluated
+7,Wisconsin,Ohio State,False,Saved spread,,10.5,Ohio State,21,30,-9,correct,no_cover,1.5,Evaluated
+7,Montana,Colorado State,False,Saved spread,,-8.0,Montana,22,19,3,correct,no_cover,5.0,Evaluated
+7,Ole Miss,Vanderbilt,False,Saved spread,,-20.0,Ole Miss,47,0,47,correct,cover,27.0,Evaluated
+7,Florida,LSU,False,Saved spread,,0.5,LSU,0,23,-23,correct,cover,22.5,Evaluated
+7,Harvard,Dartmouth,False,Saved spread,,13.0,Dartmouth,21,15,6,incorrect,no_cover,19.0,Evaluated
+7,Wichita State,Tulsa,False,Saved spread,,-21.5,Wichita State,9,7,2,correct,no_cover,19.5,Evaluated
+7,Stanford,UCLA,False,Saved spread,,-3.0,Stanford,0,20,-20,incorrect,no_cover,23.0,Evaluated
+7,SMU,Texas Tech,False,Saved spread,,1.0,Texas Tech,8,7,1,incorrect,no_cover,2.0,Evaluated
+7,Washington State,San José State,False,Saved spread,,7.0,San José State,19,21,-2,correct,no_cover,5.0,Evaluated
+7,Purdue,Iowa,False,Saved spread,,9.5,Iowa,9,0,9,incorrect,no_cover,18.5,Evaluated
+7,Princeton,Cornell,False,Saved spread,,-9.5,Princeton,30,25,5,correct,no_cover,4.5,Evaluated
+7,UTEP,New Mexico State,False,Saved spread,,7.0,New Mexico State,6,42,-36,correct,cover,29.0,Evaluated
+7,Missouri,Nebraska,False,Saved spread,,-13.5,Missouri,10,0,10,correct,no_cover,3.5,Evaluated
+7,Minnesota,Michigan,False,Saved spread,,-1.0,Minnesota,23,20,3,correct,cover,2.0,Evaluated
+7,Michigan State,Indiana,False,Saved spread,,-25.5,Michigan State,35,0,35,correct,cover,9.5,Evaluated
+7,Kansas,Oklahoma State,False,Saved spread,,-6.5,Kansas,42,8,34,correct,cover,27.5,Evaluated
+7,Iowa State,Kansas State,False,Saved spread,,-9.0,Iowa State,31,7,24,correct,cover,15.0,Evaluated
+7,Tulane,Georgia Tech,False,Saved spread,,17.0,Georgia Tech,0,35,-35,correct,cover,18.0,Evaluated
+7,Georgia,Kentucky,False,Saved spread,,-0.5,Georgia,16,15,1,correct,cover,0.5,Evaluated
+7,NC State,Duke,False,Saved spread,,5.5,Duke,6,17,-11,correct,cover,5.5,Evaluated
+7,Dayton,Detroit Mercy,False,Saved spread,,15.5,Detroit Mercy,12,41,-29,correct,cover,13.5,Evaluated
+7,Oklahoma,Colorado,False,Saved spread,,26.0,Colorado,14,22,-8,correct,no_cover,18.0,Evaluated
+7,Cincinnati,North Texas,False,Saved spread,,14.0,North Texas,21,9,12,incorrect,no_cover,26.0,Evaluated
+7,Arizona State,Hardin-Simmons,False,Saved spread,,-26.0,Arizona State,47,0,47,correct,cover,21.0,Evaluated
+7,Army,West Virginia,False,Saved spread,,-14.5,Army,3,7,-4,incorrect,no_cover,18.5,Evaluated
+7,West Texas A&M,Arizona,False,Saved spread,,7.0,Arizona,27,23,4,incorrect,no_cover,11.0,Evaluated
+7,Virginia Tech,Florida State,False,Saved spread,,4.5,Florida State,10,7,3,incorrect,no_cover,7.5,Evaluated
+7,Utah State,Idaho,False,Saved spread,,-26.0,Utah State,69,0,69,correct,cover,43.0,Evaluated
+7,USC,Illinois,False,Saved spread,,-13.0,USC,14,10,4,correct,no_cover,9.0,Evaluated
+7,Pennsylvania,Rutgers,False,Saved spread,,11.5,Rutgers,6,20,-14,correct,cover,2.5,Evaluated
+7,Penn State,California,False,Saved spread,,-14.0,Penn State,33,16,17,correct,cover,3.0,Evaluated
+7,Oregon,Washington,False,Saved spread,,1.5,Washington,7,6,1,incorrect,no_cover,2.5,Evaluated
+7,Notre Dame,Northwestern,False,Saved spread,,-8.0,Notre Dame,10,12,-2,incorrect,no_cover,10.0,Evaluated
+7,New Mexico,Air Force,False,Saved spread,,-7.5,New Mexico,21,6,15,correct,cover,7.5,Evaluated
+7,Memphis,Mississippi State,False,Saved spread,,-10.5,Memphis,16,23,-7,incorrect,no_cover,17.5,Evaluated
+7,Utah,Wyoming,False,Saved spread,,2.0,Wyoming,6,13,-7,correct,cover,5.0,Evaluated
+7,Yale,Colgate,False,Saved spread,,-2.5,Yale,8,14,-6,incorrect,no_cover,8.5,Evaluated
+7,Xavier,The Citadel,False,Saved spread,,-1.5,Xavier,6,7,-1,incorrect,no_cover,2.5,Evaluated
+7,Auburn,Clemson,False,Saved spread,,-4.5,Auburn,24,14,10,correct,cover,5.5,Evaluated
+7,Houston,Alabama,False,Saved spread,,13.5,Alabama,0,17,-17,correct,cover,3.5,Evaluated
+7,Wake Forest,Virginia,False,Saved spread,,3.0,Virginia,21,15,6,incorrect,no_cover,9.0,Evaluated
+8,Miami,Georgia,False,Saved spread,,-5.0,Miami,32,7,25,correct,cover,20.0,Evaluated
+8,Tulsa,Cincinnati,False,Saved spread,,2.0,Cincinnati,19,0,19,incorrect,no_cover,21.0,Evaluated
+8,Syracuse,Pittsburgh,False,Saved spread,,-13.5,Syracuse,28,9,19,correct,cover,5.5,Evaluated
+8,Richmond,Virginia Tech,False,Saved spread,,2.0,Virginia Tech,11,0,11,incorrect,no_cover,13.0,Evaluated
+8,Texas Tech,Rice,False,Saved spread,,6.0,Rice,7,42,-35,correct,cover,29.0,Evaluated
+8,Illinois,Purdue,False,Saved spread,,16.5,Purdue,9,23,-14,correct,no_cover,2.5,Evaluated
+8,Brown,Princeton,False,Saved spread,,15.5,Princeton,0,52,-52,correct,cover,36.5,Evaluated
+8,Minnesota,Michigan State,False,Saved spread,,4.0,Michigan State,13,0,13,incorrect,no_cover,17.0,Evaluated
+8,LSU,Ole Miss,False,Saved spread,,2.0,Ole Miss,10,7,3,incorrect,no_cover,5.0,Evaluated
+8,Pennsylvania,Harvard,False,Saved spread,,-1.5,Pennsylvania,6,37,-31,incorrect,no_cover,32.5,Evaluated
+8,Georgia Tech,Florida,False,Saved spread,,-10.5,Georgia Tech,20,0,20,correct,cover,9.5,Evaluated
+8,William & Mary,Davidson,False,Saved spread,,2.5,Davidson,30,31,-1,correct,no_cover,1.5,Evaluated
+8,Alabama,Mississippi State,False,Saved spread,,-10.5,Alabama,24,0,24,correct,cover,13.5,Evaluated
+8,George Washington,West Virginia,False,Saved spread,,-3.5,George Washington,7,12,-5,incorrect,no_cover,8.5,Evaluated
+8,BYU,Utah State,False,Saved spread,,22.0,Utah State,8,31,-23,correct,cover,1.0,Evaluated
+8,UCLA,California,False,Saved spread,,-16.0,UCLA,35,15,20,correct,cover,4.0,Evaluated
+8,Hardin-Simmons,UTEP,False,Saved spread,,6.5,UTEP,7,35,-28,correct,cover,21.5,Evaluated
+8,SMU,Texas,False,Saved spread,,15.5,Texas,0,27,-27,correct,cover,11.5,Evaluated
+8,USC,Washington,False,Saved spread,,0.5,Washington,0,0,0,tie,no_cover,0.5,Evaluated
+8,Idaho,Pacific,False,Saved spread,,8.0,Pacific,2,27,-25,correct,cover,17.0,Evaluated
+8,Oregon State,Washington State,False,Saved spread,,-4.0,Oregon State,14,6,8,correct,cover,4.0,Evaluated
+8,Kansas State,Oklahoma,False,Saved spread,,-10.0,Kansas State,6,17,-11,incorrect,no_cover,21.0,Evaluated
+8,Ohio State,Iowa,False,Saved spread,,-6.5,Ohio State,29,13,16,correct,cover,9.5,Evaluated
+8,Northwestern,Indiana,False,Saved spread,,-15.0,Northwestern,14,8,6,correct,no_cover,9.0,Evaluated
+8,New Mexico,Utah,False,Saved spread,,6.0,Utah,21,16,5,incorrect,no_cover,11.0,Evaluated
+8,Notre Dame,Navy,False,Saved spread,,-0.5,Notre Dame,10,13,-3,incorrect,no_cover,3.5,Evaluated
+8,Nebraska,Kansas,False,Saved spread,,3.5,Kansas,6,28,-22,correct,cover,18.5,Evaluated
+8,Holy Cross,Dayton,False,Saved spread,,-14.5,Holy Cross,28,0,28,correct,cover,13.5,Evaluated
+8,Yale,Dartmouth,False,Saved spread,,-1.5,Yale,8,24,-16,incorrect,no_cover,17.5,Evaluated
+8,Cornell,Columbia,False,Saved spread,,10.0,Columbia,7,35,-28,correct,cover,18.0,Evaluated
+8,Colorado,Missouri,False,Saved spread,,-1.5,Colorado,7,6,1,correct,no_cover,0.5,Evaluated
+8,VMI,The Citadel,False,Saved spread,,1.5,The Citadel,8,14,-6,correct,cover,4.5,Evaluated
+8,Baylor,TCU,False,Saved spread,,-1.0,Baylor,28,14,14,correct,cover,13.0,Evaluated
+8,Army,Detroit Mercy,False,Saved spread,,0.5,Detroit Mercy,34,7,27,incorrect,no_cover,27.5,Evaluated
+8,Arkansas,Texas A&M,False,Saved spread,,-3.0,Arkansas,15,8,7,correct,cover,4.0,Evaluated
+8,Wichita State,Oklahoma State,False,Saved spread,,-17.0,Wichita State,25,13,12,correct,no_cover,5.0,Evaluated
+8,San José State,Arizona State,False,Saved spread,,7.0,Arizona State,32,26,6,incorrect,no_cover,13.0,Evaluated
+8,Stanford,Oregon,False,Saved spread,,0.5,Oregon,7,19,-12,correct,cover,11.5,Evaluated
+8,North Carolina,Tennessee,False,Saved spread,,0.0,Unknown (zero line),22,21,1,ungraded,ungraded,1.0,Evaluated
+8,Michigan,Duke,False,Saved spread,,-2.0,Michigan,28,14,14,correct,cover,12.0,Evaluated
+8,Maryland,Penn State,False,Saved spread,,-1.0,Maryland,21,17,4,correct,cover,3.0,Evaluated
+8,Kentucky,Florida State,False,Saved spread,,4.5,Florida State,20,0,20,incorrect,no_cover,24.5,Evaluated
+8,Memphis,Furman,False,Saved spread,,-6.0,Memphis,6,7,-1,incorrect,no_cover,7.0,Evaluated
+8,Virginia,South Carolina,False,Saved spread,,-2.0,Virginia,28,20,8,correct,cover,6.0,Evaluated
+8,Boston College,Iowa State,False,Saved spread,,7.0,Iowa State,14,10,4,incorrect,no_cover,11.0,Evaluated
+8,Auburn,Wake Forest,False,Saved spread,,-12.0,Auburn,21,7,14,correct,cover,2.0,Evaluated
+8,Arizona,Wyoming,False,Saved spread,,2.5,Wyoming,20,15,5,incorrect,no_cover,7.5,Evaluated
+8,Air Force,Colorado State,False,Saved spread,,-7.0,Air Force,14,9,5,correct,no_cover,2.0,Evaluated
+8,Clemson,Tulane,False,Saved spread,,-9.5,Clemson,21,6,15,correct,cover,5.5,Evaluated
+9,Detroit Mercy,Villanova,False,Saved spread,,1.5,Villanova,20,6,14,incorrect,no_cover,15.5,Evaluated
+9,UCLA,TCU,False,Saved spread,,-12.0,UCLA,28,7,21,correct,cover,9.0,Evaluated
+9,Texas,Baylor,False,Saved spread,,-15.0,Texas,33,7,26,correct,cover,11.0,Evaluated
+9,USC,Stanford,False,Saved spread,,-3.5,USC,30,15,15,correct,cover,11.5,Evaluated
+9,Pacific,San José State,False,Saved spread,,-1.5,Pacific,26,29,-3,incorrect,no_cover,4.5,Evaluated
+9,Purdue,Michigan State,False,Saved spread,,3.5,Michigan State,7,6,1,incorrect,no_cover,4.5,Evaluated
+9,Iowa State,Nebraska,False,Saved spread,,-9.0,Iowa State,13,16,-3,incorrect,no_cover,12.0,Evaluated
+9,Illinois,Michigan,False,Saved spread,,19.0,Michigan,6,38,-32,correct,cover,13.0,Evaluated
+9,Harvard,Princeton,False,Saved spread,,3.0,Princeton,9,7,2,incorrect,no_cover,5.0,Evaluated
+9,Florida,Georgia,False,Saved spread,,-4.5,Florida,21,14,7,correct,cover,2.5,Evaluated
+9,Columbia,Dartmouth,False,Saved spread,,-2.0,Columbia,35,14,21,correct,cover,19.0,Evaluated
+9,UTEP,Arizona State,False,Saved spread,,8.5,Arizona State,28,48,-20,correct,cover,11.5,Evaluated
+9,Pennsylvania,Yale,False,Saved spread,,4.5,Yale,0,23,-23,correct,cover,18.5,Evaluated
+9,New Mexico,Wyoming,False,Saved spread,,7.0,Wyoming,7,33,-26,correct,cover,19.0,Evaluated
+9,Washington State,Oregon,False,Saved spread,,12.0,Oregon,22,21,1,incorrect,no_cover,13.0,Evaluated
+9,Tennessee,Georgia Tech,False,Saved spread,,7.5,Georgia Tech,10,6,4,incorrect,no_cover,11.5,Evaluated
+9,Syracuse,Colgate,False,Saved spread,,-5.0,Syracuse,51,8,43,correct,cover,38.0,Evaluated
+9,South Carolina,Clemson,False,Saved spread,,4.5,Clemson,21,14,7,incorrect,no_cover,11.5,Evaluated
+9,Missouri,Oklahoma,False,Saved spread,,-21.5,Missouri,0,7,-7,incorrect,no_cover,28.5,Evaluated
+9,Indiana,Ohio State,False,Saved spread,,21.5,Ohio State,7,16,-9,correct,no_cover,12.5,Evaluated
+9,Pittsburgh,Notre Dame,False,Saved spread,,6.0,Notre Dame,20,26,-6,correct,push,0.0,Evaluated
+9,Auburn,Mississippi State,False,Saved spread,,-4.5,Auburn,10,11,-1,incorrect,no_cover,5.5,Evaluated
+9,Iowa,Minnesota,False,Saved spread,,2.5,Minnesota,9,16,-7,correct,cover,4.5,Evaluated
+9,Maryland,NC State,False,Saved spread,,-11.0,Maryland,10,7,3,correct,no_cover,8.0,Evaluated
+9,Vanderbilt,Kentucky,False,Saved spread,,2.5,Kentucky,3,16,-13,correct,cover,10.5,Evaluated
+9,Kansas,Kansas State,False,Saved spread,,-15.0,Kansas,34,0,34,correct,cover,19.0,Evaluated
+9,Cornell,Brown,False,Saved spread,,-7.0,Cornell,25,0,25,correct,cover,18.0,Evaluated
+9,BYU,Colorado State,False,Saved spread,,-5.5,BYU,30,16,14,correct,cover,8.5,Evaluated
+9,Rice,Arkansas,False,Saved spread,,-1.0,Rice,0,10,-10,incorrect,no_cover,11.0,Evaluated
+9,Idaho,Arizona,False,Saved spread,,19.0,Arizona,7,43,-36,correct,cover,17.0,Evaluated
+9,Wake Forest,Virginia Tech,False,Saved spread,,3.5,Virginia Tech,24,15,9,incorrect,no_cover,12.5,Evaluated
+9,Colorado,Utah,False,Saved spread,,-11.0,Colorado,12,21,-9,incorrect,no_cover,20.0,Evaluated
+9,Texas Tech,Boston College,False,Saved spread,,3.5,Boston College,14,6,8,incorrect,no_cover,11.5,Evaluated
+9,West Virginia,Penn State,False,Saved spread,,1.0,Penn State,6,20,-14,correct,cover,13.0,Evaluated
+9,Washington,Oregon State,False,Saved spread,,-7.0,Washington,0,3,-3,incorrect,no_cover,10.0,Evaluated
+9,Tulane,Miami,False,Saved spread,,12.0,Miami,0,6,-6,correct,no_cover,6.0,Evaluated
+9,Memphis,North Texas,False,Saved spread,,-5.5,Memphis,41,0,41,correct,cover,35.5,Evaluated
+9,North Carolina,LSU,False,Saved spread,,6.0,LSU,0,30,-30,correct,cover,24.0,Evaluated
+9,Tulsa,Houston,False,Saved spread,,2.5,Houston,2,14,-12,correct,cover,9.5,Evaluated
+9,Northwestern,Wisconsin,False,Saved spread,,-9.0,Northwestern,10,29,-19,incorrect,no_cover,28.0,Evaluated
+9,Duke,Navy,False,Saved spread,,2.0,Navy,30,9,21,incorrect,no_cover,23.0,Evaluated
+9,Army,William & Mary,False,Saved spread,,-20.0,Army,48,13,35,correct,cover,15.0,Evaluated
+9,Alabama,Richmond,False,Saved spread,,-16.0,Alabama,66,0,66,correct,cover,50.0,Evaluated
+9,California,Air Force,False,Saved spread,,1.0,Air Force,14,15,-1,correct,push,0.0,Evaluated
+9,Florida State,The Citadel,False,Saved spread,,4.5,The Citadel,44,8,36,incorrect,no_cover,40.5,Evaluated
+9,Texas A&M,SMU,False,Saved spread,,-9.5,Texas A&M,25,12,13,correct,cover,3.5,Evaluated
+10,Virginia Tech,George Washington,False,Saved spread,,-0.5,Virginia Tech,14,3,11,correct,cover,10.5,Evaluated
+10,Tulane,Vanderbilt,False,Saved spread,,2.5,Vanderbilt,17,14,3,incorrect,no_cover,5.5,Evaluated
+10,UCLA,Washington,False,Saved spread,,-10.5,UCLA,13,17,-4,incorrect,no_cover,14.5,Evaluated
+10,Colgate,Rutgers,False,Saved spread,,9.0,Rutgers,6,26,-20,correct,cover,11.0,Evaluated
+10,Princeton,Yale,False,Saved spread,,-3.0,Princeton,26,16,10,correct,cover,7.0,Evaluated
+10,Penn State,Holy Cross,False,Saved spread,,-1.0,Penn State,34,14,20,correct,cover,19.0,Evaluated
+10,NC State,South Carolina,False,Saved spread,,-2.5,NC State,38,14,24,correct,cover,21.5,Evaluated
+10,Colorado State,New Mexico,False,Saved spread,,11.0,New Mexico,8,20,-12,correct,cover,1.0,Evaluated
+10,Michigan State,Northwestern,False,Saved spread,,-6.5,Michigan State,21,13,8,correct,cover,1.5,Evaluated
+10,Michigan,Iowa,False,Saved spread,,-6.0,Michigan,23,14,9,correct,cover,3.0,Evaluated
+10,Maryland,Wake Forest,False,Saved spread,,-13.5,Maryland,10,7,3,correct,no_cover,10.5,Evaluated
+10,LSU,Mississippi State,False,Saved spread,,-10.0,LSU,14,6,8,correct,no_cover,2.0,Evaluated
+10,Harvard,Brown,False,Saved spread,,-18.5,Harvard,21,6,15,correct,no_cover,3.5,Evaluated
+10,Georgia,Auburn,False,Saved spread,,6.0,Auburn,7,10,-3,correct,no_cover,3.0,Evaluated
+10,SMU,Arkansas,False,Saved spread,,12.0,Arkansas,7,21,-14,correct,cover,2.0,Evaluated
+10,Utah,Utah State,False,Saved spread,,5.5,Utah State,6,17,-11,correct,cover,5.5,Evaluated
+10,Texas,TCU,False,Saved spread,,-21.0,Texas,0,6,-6,incorrect,no_cover,27.0,Evaluated
+10,Rice,Texas A&M,False,Saved spread,,-1.5,Rice,21,7,14,correct,cover,12.5,Evaluated
+10,Notre Dame,Syracuse,False,Saved spread,,3.0,Syracuse,17,15,2,incorrect,no_cover,5.0,Evaluated
+10,Missouri,Kansas State,False,Saved spread,,-16.5,Missouri,27,9,18,correct,cover,1.5,Evaluated
+10,Ole Miss,Tennessee,False,Saved spread,,-10.0,Ole Miss,24,10,14,correct,cover,4.0,Evaluated
+10,Minnesota,Purdue,False,Saved spread,,-7.0,Minnesota,10,7,3,correct,no_cover,4.0,Evaluated
+10,Duke,North Carolina,False,Saved spread,,-6.0,Duke,6,3,3,correct,no_cover,3.0,Evaluated
+10,Dartmouth,Cornell,False,Saved spread,,-11.5,Dartmouth,15,14,1,correct,no_cover,10.5,Evaluated
+10,Columbia,Pennsylvania,False,Saved spread,,-15.5,Columbia,37,6,31,correct,cover,15.5,Evaluated
+10,Nebraska,Colorado,False,Saved spread,,10.0,Colorado,0,7,-7,correct,no_cover,3.0,Evaluated
+10,Boston University,Boston College,False,Saved spread,,-3.0,Boston University,7,10,-3,incorrect,no_cover,6.0,Evaluated
+10,Alabama,Georgia Tech,False,Saved spread,,-7.5,Alabama,10,0,10,correct,cover,2.5,Evaluated
+10,Stanford,Washington State,False,Saved spread,,-5.5,Stanford,0,30,-30,incorrect,no_cover,35.5,Evaluated
+10,Pittsburgh,USC,False,Saved spread,,6.0,USC,10,9,1,incorrect,no_cover,7.0,Evaluated
+10,Oregon State,BYU,False,Saved spread,,-8.0,Oregon State,35,0,35,correct,cover,27.0,Evaluated
+10,Oklahoma State,Houston,False,Saved spread,,3.5,Houston,28,24,4,incorrect,no_cover,7.5,Evaluated
+10,Army,Oklahoma,False,Saved spread,,-16.0,Army,8,14,-6,incorrect,no_cover,22.0,Evaluated
+10,Ohio State,Oregon,False,Saved spread,,-14.0,Ohio State,22,12,10,correct,no_cover,4.0,Evaluated
+10,Navy,Virginia,False,Saved spread,,-10.0,Navy,13,3,10,correct,push,0.0,Evaluated
+10,Kentucky,Xavier,False,Saved spread,,0.0,Unknown (zero line),9,0,9,ungraded,ungraded,9.0,Evaluated
+10,California,Kansas,False,Saved spread,,15.5,Kansas,7,53,-46,correct,cover,30.5,Evaluated
+10,Tulsa,Iowa State,False,Saved spread,,7.5,Iowa State,6,27,-21,correct,cover,13.5,Evaluated
+10,West Virginia,Indiana,False,Saved spread,,-10.5,West Virginia,9,17,-8,incorrect,no_cover,18.5,Evaluated
+10,Montana,Idaho,False,Saved spread,,-7.0,Montana,14,16,-2,incorrect,no_cover,9.0,Evaluated
+10,Dayton,Wichita State,False,Saved spread,,19.5,Wichita State,23,12,11,incorrect,no_cover,30.5,Evaluated
+10,Clemson,Furman,False,Saved spread,,6.5,Furman,35,6,29,incorrect,no_cover,35.5,Evaluated
+10,Baylor,Air Force,False,Saved spread,,-4.5,Baylor,31,7,24,correct,cover,19.5,Evaluated
+10,Arizona State,Detroit Mercy,False,Saved spread,,-3.5,Arizona State,40,6,34,correct,cover,30.5,Evaluated
+10,Wisconsin,Illinois,False,Saved spread,,-17.0,Wisconsin,55,7,48,correct,cover,31.0,Evaluated
+10,Arizona,UTEP,False,Saved spread,,-17.0,Arizona,48,15,33,correct,cover,16.0,Evaluated
+10,New Mexico State,West Texas A&M,False,Saved spread,,-1.0,New Mexico State,22,35,-13,incorrect,no_cover,14.0,Evaluated
+11,Texas A&M,Texas,False,Saved spread,,7.5,Texas,0,25,-25,correct,cover,17.5,Evaluated
+11,VMI,Virginia Tech,False,Saved spread,,-5.0,VMI,6,0,6,correct,cover,1.0,Evaluated
+11,Richmond,William & Mary,False,Saved spread,,-10.5,Richmond,36,18,18,correct,cover,7.5,Evaluated
+11,Brown,Colgate,False,Saved spread,,10.5,Colgate,6,30,-24,correct,cover,13.5,Evaluated
+11,Miami,Northwestern,False,Saved spread,,-5.0,Miami,10,6,4,correct,no_cover,1.0,Evaluated
+11,TCU,Rice,False,Saved spread,,5.5,Rice,16,35,-19,correct,cover,13.5,Evaluated
+11,Indiana,Purdue,False,Saved spread,,9.5,Purdue,12,34,-22,correct,cover,12.5,Evaluated
+11,Oklahoma State,Kansas State,False,Saved spread,,-6.5,Oklahoma State,45,0,45,correct,cover,38.5,Evaluated
+11,Michigan,Ohio State,False,Saved spread,,3.0,Ohio State,20,50,-30,correct,cover,27.0,Evaluated
+11,New Mexico State,Hardin-Simmons,False,Saved spread,,-18.0,New Mexico State,54,8,46,correct,cover,28.0,Evaluated
+11,Kansas,Missouri,False,Saved spread,,-2.5,Kansas,7,10,-3,incorrect,no_cover,5.5,Evaluated
+11,Michigan State,Illinois,False,Saved spread,,-24.5,Michigan State,34,7,27,correct,cover,2.5,Evaluated
+11,LSU,Tulane,False,Saved spread,,-22.5,LSU,62,0,62,correct,cover,39.5,Evaluated
+11,Pennsylvania,Cornell,False,Saved spread,,-1.0,Pennsylvania,0,31,-31,incorrect,no_cover,32.0,Evaluated
+11,Clemson,NC State,False,Saved spread,,-3.5,Clemson,20,0,20,correct,cover,16.5,Evaluated
+11,Baylor,SMU,False,Saved spread,,-10.0,Baylor,31,6,25,correct,cover,15.0,Evaluated
+11,Arkansas,Texas Tech,False,Saved spread,,-14.5,Arkansas,28,0,28,correct,cover,13.5,Evaluated
+11,Minnesota,Wisconsin,False,Saved spread,,-9.5,Minnesota,21,23,-2,incorrect,no_cover,11.5,Evaluated
+11,Pittsburgh,Penn State,False,Saved spread,,9.5,Penn State,26,47,-21,correct,cover,11.5,Evaluated
+11,Oregon,Oregon State,False,Saved spread,,-1.5,Oregon,2,6,-4,incorrect,no_cover,5.5,Evaluated
+11,Nebraska,Oklahoma,False,Saved spread,,-2.5,Nebraska,14,21,-7,incorrect,no_cover,9.5,Evaluated
+11,New Mexico,BYU,False,Saved spread,,-11.0,New Mexico,34,6,28,correct,cover,17.0,Evaluated
+11,Houston,Florida State,False,Saved spread,,0.0,Unknown (zero line),28,8,20,ungraded,ungraded,20.0,Evaluated
+11,Yale,Harvard,False,Saved spread,,1.0,Harvard,0,27,-27,correct,cover,26.0,Evaluated
+11,Princeton,Dartmouth,False,Saved spread,,-2.5,Princeton,6,24,-18,incorrect,no_cover,20.5,Evaluated
+11,Colorado,Iowa State,False,Saved spread,,-10.0,Colorado,34,0,34,correct,cover,24.0,Evaluated
+11,Auburn,Florida,False,Saved spread,,-5.5,Auburn,32,15,17,correct,cover,11.5,Evaluated
+11,Washington,Washington State,False,Saved spread,,-8.0,Washington,21,17,4,correct,no_cover,4.0,Evaluated
+11,Vanderbilt,South Carolina,False,Saved spread,,0.0,Unknown (zero line),7,23,-16,ungraded,ungraded,16.0,Evaluated
+11,Rutgers,Columbia,False,Saved spread,,-5.5,Rutgers,32,19,13,correct,cover,7.5,Evaluated
+11,UTEP,North Texas,False,Saved spread,,2.0,North Texas,14,24,-10,correct,cover,8.0,Evaluated
+11,Iowa,Notre Dame,False,Saved spread,,1.0,Notre Dame,42,21,21,incorrect,no_cover,22.0,Evaluated
+11,Wake Forest,North Carolina,False,Saved spread,,2.5,North Carolina,17,14,3,incorrect,no_cover,5.5,Evaluated
+11,Cincinnati,Detroit Mercy,False,Saved spread,,10.0,Detroit Mercy,19,13,6,incorrect,no_cover,16.0,Evaluated
+11,Arizona State,Arizona,False,Saved spread,,0.0,Unknown (zero line),13,22,-9,ungraded,ungraded,9.0,Evaluated
+11,Virginia,Maryland,False,Saved spread,,10.0,Maryland,28,16,12,incorrect,no_cover,22.0,Evaluated
+11,USC,UCLA,False,Saved spread,,4.5,UCLA,7,10,-3,correct,no_cover,1.5,Evaluated
+11,Kentucky,Tennessee,False,Saved spread,,-3.0,Kentucky,16,26,-10,incorrect,no_cover,13.0,Evaluated
+11,Boston College,Syracuse,False,Saved spread,,6.0,Syracuse,13,28,-15,correct,cover,9.0,Evaluated
+11,Stanford,California,False,Saved spread,,-7.5,Stanford,20,7,13,correct,cover,5.5,Evaluated
+12,Tennessee,Vanderbilt,False,Saved spread,,-13.0,Tennessee,41,7,34,correct,cover,21.0,Evaluated
+12,Mississippi State,Ole Miss,False,Saved spread,,7.5,Ole Miss,7,37,-30,correct,cover,22.5,Evaluated
+12,Houston,Oregon State,False,Saved spread,,1.0,Oregon State,23,12,11,incorrect,no_cover,12.0,Evaluated
+12,SMU,TCU,False,Saved spread,,2.0,TCU,28,28,0,tie,no_cover,2.0,Evaluated
+12,Rice,Baylor,False,Saved spread,,-5.0,Rice,26,14,12,correct,cover,7.0,Evaluated
+12,Oklahoma,Oklahoma State,False,Saved spread,,-1.5,Oklahoma,21,13,8,correct,cover,6.5,Evaluated
+12,North Carolina,Virginia,False,Saved spread,,-2.5,North Carolina,24,0,24,correct,cover,21.5,Evaluated
+12,Navy,Army,False,Saved spread,,-1.5,Navy,13,7,6,correct,cover,4.5,Evaluated
+12,Holy Cross,Boston College,False,Saved spread,,-9.5,Holy Cross,38,26,12,correct,cover,2.5,Evaluated
+12,Georgia Tech,Georgia,False,Saved spread,,-14.0,Georgia Tech,22,7,15,correct,cover,1.0,Evaluated
+12,Alabama,Auburn,False,Saved spread,,-10.5,Alabama,34,0,34,correct,cover,23.5,Evaluated
+12,Texas Tech,West Texas A&M,False,Saved spread,,9.0,West Texas A&M,16,14,2,incorrect,no_cover,11.0,Evaluated
+12,Florida,Miami,False,Saved spread,,4.5,Miami,6,15,-9,correct,cover,4.5,Evaluated
+12,Duke,Notre Dame,False,Saved spread,,-5.0,Duke,37,13,24,correct,cover,19.0,Evaluated
+12,Colorado,Air Force,False,Saved spread,,-19.0,Colorado,29,12,17,correct,no_cover,2.0,Evaluated

@@ -1162,6 +1162,12 @@ def validate_public_output(site: str | Path, *, expected_receipt: "LocalValidati
                     )
         elif has_2025_fbs_source:
             _validate_public_progression_feature(root)
+        performance = expected_receipt.transform.get("performance") if expected_receipt else None
+        if performance is not None or (root / "cfb/performance/index.html").exists():
+            from .performance import validate_performance
+            paths = list(validate_performance(root))
+            if performance is not None and performance != {"schema": "cors-performance/v1", "paths": paths}:
+                raise PublicSiteValidationError("performance export binding differs")
         if expected_receipt is not None and actual_inventory != expected_receipt.public_site_inventory:
             raise PublicSiteValidationError("public site inventory does not match receipt")
         return PublicOutputReport(True, (), actual_inventory)
@@ -1520,10 +1526,23 @@ def _validate_receipt_nested(value: Mapping[str, Any]) -> None:
         raise PublicSiteError("legacy receipt cannot carry current used coverage")
 
     transform = value.get("transform")
-    if set(transform) != {
+    transform_fields = {
         "format", "public_manifest_path", "public_release_path", "snapshot_paths",
         "replaced_snapshot_count", "private_manifest_retained_for_validation",
-    }:
+    }
+    if "performance" in transform:
+        transform_fields.add("performance")
+        performance = transform["performance"]
+        if not isinstance(performance, dict) or set(performance) != {"schema", "paths"} or performance["schema"] != "cors-performance/v1":
+            raise PublicSiteError("performance transform schema is invalid")
+        paths = performance["paths"]
+        if not isinstance(paths, list) or not all(isinstance(path, str) for path in paths) or paths != sorted(set(paths)):
+            raise PublicSiteError("performance transform paths are invalid")
+        for path in paths:
+            _safe_relative(path, "performance transform path")
+            if path != "cfb/cfb.html" and not path.startswith("cfb/performance/"):
+                raise PublicSiteError("performance transform exceeds its owned paths")
+    if set(transform) != transform_fields:
         raise PublicSiteError("receipt transform fields do not match its schema")
     if transform["format"] != "public-export-v1" or transform["public_manifest_path"] != "manifest.json" or transform["public_release_path"] != "release.json" or transform["private_manifest_retained_for_validation"] is not True:
         raise PublicSiteError("receipt transform binding is invalid")
@@ -1678,6 +1697,13 @@ def validate_and_export(
                 }
             )
 
+        # Derived reader-facing reports use only the saved static pages. They
+        # do not requalify historical sources or modify issued forecasts.
+        from .performance import write_performance, validate_performance
+        performance_paths = write_performance(temporary_directory)
+        if validate_performance(temporary_directory) != performance_paths:
+            raise LocalValidationError("performance export paths differ")
+
         manifest_inventory = tuple(
             item
             for item in _inventory(temporary_directory, "public export")
@@ -1725,7 +1751,7 @@ def validate_and_export(
             # report.checked_artifacts is independently derived, not the
             # candidate manifest's asserted ownership. Public provenance and
             # export metadata are the only additional export-owned paths.
-            owned = set(report.checked_artifacts) | {"manifest.json", "release.json"} | {item["path"] for item in snapshot_provenance_bindings}
+            owned = set(report.checked_artifacts) | {"manifest.json", "release.json"} | {item["path"] for item in snapshot_provenance_bindings} | set(performance_paths)
             try:
                 assert_successor_overlay(successor, temporary_directory, owned)
             except ValueError as exc:
@@ -1760,6 +1786,7 @@ def validate_and_export(
             "snapshot_paths": sorted(item["path"] for item in snapshot_provenance_bindings),
             "replaced_snapshot_count": len(snapshot_provenance_bindings),
             "private_manifest_retained_for_validation": True,
+            "performance": {"schema": "cors-performance/v1", "paths": list(performance_paths)},
         }
         receipt_value = _receipt_value(
             inventory=inventory,

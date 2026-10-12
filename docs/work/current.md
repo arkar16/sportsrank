@@ -1,17 +1,17 @@
 # Current work
 
-The owner’s active outcome is the October 7 CORS publication: completed 2026
-Week 5 rankings/results and the Week 6 slate, with existing forecasts preserved.
-The weekly output is merged in [#26](https://github.com/arkar16/sportsrank/pull/26).
-The approved successor-baseline repair and remaining publication acceptance live
-in [#27](https://github.com/arkar16/sportsrank/issues/27). The baseline repair is
-merged in [#30](https://github.com/arkar16/sportsrank/pull/30); hosted preparation
-passed, but the approved seal failed before deployment. The validation-evidence
-repair is tracked in [#31](https://github.com/arkar16/sportsrank/issues/31).
-Its PR owns implementation checks and recovery instructions. Owner merge,
-actual-merge preparation and fresh separate seal/execute approvals remain
-required; the merged weekly output must not be described as live before full
-public verification.
+The active outcome is site-wide CORS model performance from retained predictions
+and results, including prior-rating reconstruction where predictions are missing.
+[#33](https://github.com/arkar16/sportsrank/issues/33) owns scope and acceptance;
+[PR #34](https://github.com/arkar16/sportsrank/pull/34) owns implementation and
+review. The owner clarified that recreational performance does not require
+historical-source qualification or proof of pregame publication. Preserve the
+CORS model and existing forecast records; see ADR-0019's October 9 clarification.
+
+The Week 5 rankings/results and Week 6 slate were deployed October 8 and passed
+[full immutable verification](https://github.com/arkar16/sportsrank/releases/tag/run-37822116361-verification).
+The owner accepted [#27](https://github.com/arkar16/sportsrank/issues/27) on
+October 9; it is closed. Its prerequisite repairs #30 and #32 are merged.
 
 ## Merged prerequisites and parked work
 
@@ -36,7 +36,7 @@ cached teams and completed successfully; subsequent builds are offline. Retain
 the original source versions and new snapshot privately on the owner’s computer.
 The full historical chain is reconstructed under the expanded source bundle,
 as required by the current-season extension procedure. Preserve issued forecasts;
-never backfill missing pregame forecasts from retrospective calculations.
+reconstructed performance values do not overwrite authenticated pregame forecasts.
 
 The owner explicitly selected T3-injected `CFBD_API` for this continuation and
 prohibited BB CLI/Tasks use. Keep task evidence in the delivery PR/local fallback;
