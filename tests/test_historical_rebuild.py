@@ -133,6 +133,17 @@ class HistoricalRebuildTests(unittest.TestCase):
         self.assertIn('not the original issued forecasts', (corrected / 'cfb/performance/1901/index.html').read_text())
         self.assertIn('reconstructed/1901_W16_FBS_spread.html',
                       (corrected / 'cfb/years/1901/1901_CFB.html').read_text())
+        navigation = (corrected / 'cfb/years/1901/1901_CFB.html').read_text()
+        self.assertNotIn('Reconstructed historical checkpoints', navigation)
+        self.assertNotIn('href="history/reconstruction.html"', navigation)
+        self.assertIn('<h2>Forecasts</h2>', navigation)
+        for week in range(17):
+            directory = 'spread' if week == 1 else 'reconstructed'
+            self.assertIn(f'href="{directory}/1901_W{week}_FBS_spread.html"', navigation)
+        self.assertNotIn('href="reconstructed/1901_W1_FBS_spread.html"', navigation)
+        # Keep the permanent old URL usable without exposing implementation jargon.
+        archive = (corrected / 'cfb/years/1901/history/reconstruction.html').read_text()
+        self.assertIn('<h1>1901 Forecasts</h1>', archive)
 
     def test_missing_returning_team_never_gets_entrant_fallback(self):
         with self.assertRaisesRegex(ValueError, 'missing or mismatches'):

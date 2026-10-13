@@ -255,10 +255,23 @@ def _write(root: Path, relative: str, raw: bytes) -> None:
     path.write_bytes(raw.replace(b"__CORS_HOME__", href.encode()))
 
 
-def _data_page(title: str, rows: list[dict], columns: tuple[str, ...]) -> bytes:
+def _data_page(title: str, rows: list[dict], columns: tuple[str, ...], *, note: str | None = None) -> bytes:
+    if note is None:
+        note = 'Historical reconstruction · original issued forecasts remain separate.'
     return _page(title, f'<p>Last updated: {datetime.now(timezone.utc).isoformat()}</p>'
-                 + '<p>Historical reconstruction · original issued forecasts remain separate.</p>'
+                 + f'<p>{note}</p>'
                  + _row_table(rows, columns), '<a href="__CORS_HOME__">CORS home</a>')
+
+
+def season_forecast_links(year: int, through_week: int, saved_weeks: set[int]) -> bytes:
+    """Expose historical forecasts directly on the permanent season page."""
+    links = []
+    for week in range(through_week + 1):
+        directory = "spread" if week in saved_weeks else "reconstructed"
+        links.append(f'<li><a href="{directory}/{year}_W{week}_FBS_spread.html">Week {week} forecasts</a></li>')
+    return (f'\n<section id="forecasts"><h2>Forecasts</h2>'
+            f'<p><a href="../../performance/{year}/index.html">Forecast results and model performance</a></p>'
+            f'<ul>{"".join(links)}</ul></section>\n').encode()
 
 
 def game_identity(year: int, game: SourceGame) -> str:
@@ -369,8 +382,9 @@ def rebuild_history(website: Path, games_csv: Path, output: Path, *,
                                   tuple(key for key in RESULT_COLUMNS if not key.endswith("score"))))
                 predictions = spreads_for_week(snapshot, week, pre if week == 0 else rankings[week - 1])
                 _write(site, f"{prefix}/reconstructed/{year}_W{week}_FBS_spread.html",
-                       _data_page(f"{year} Week {week} reconstructed predictions", predictions,
-                                  ("week", "home_team", "away_team", "neutral_site", "home_cors", "away_cors", "spread", "home_margin", "home_handicap", "predicted_winner")))
+                       _data_page(f"{year} Week {week} forecasts", predictions,
+                                  ("week", "home_team", "away_team", "neutral_site", "home_cors", "away_cors", "spread", "home_margin", "home_handicap", "predicted_winner"),
+                                  note="Calculated from prior-week CORS ratings."))
                 records = records_for_week(snapshot, week)
                 _write(site, f"{prefix}/data/records/{year}_W{week}_FBS_records.html",
                        _data_page(f"{year} Week {week} records", records, tuple(records[0])))
@@ -385,10 +399,10 @@ def rebuild_history(website: Path, games_csv: Path, output: Path, *,
                 _write(site, history_path + ".json", serialized.encode())
             links = ''.join(f'<li>Week {week}: <a href="../rankings/{year}_W{week}_FBS_cors.html">Rankings</a> · '
                             f'<a href="../data/results/weekly_results/{year}_W{week}_FBS_results.html">Results</a> · '
-                            f'<a href="../reconstructed/{year}_W{week}_FBS_spread.html">Reconstructed predictions</a></li>'
+                            f'<a href="../reconstructed/{year}_W{week}_FBS_spread.html">Forecasts</a></li>'
                             for week in range(target + 1))
-            _write(site, f"{prefix}/history/reconstruction.html", _page(f"{year} reconstructed checkpoints",
-                   f'<p>{len(record["added_games"])} postseason games restored.</p><ul>{links}</ul>',
+            _write(site, f"{prefix}/history/reconstruction.html", _page(f"{year} Forecasts",
+                   f'<ul>{links}</ul>',
                    f'<a href="../../../performance/{year}/index.html">Model performance</a>'))
             year_page = site / prefix / f"{year}_CFB.html"
             if year_page.exists():
@@ -398,7 +412,9 @@ def rebuild_history(website: Path, games_csv: Path, output: Path, *,
                     if not (year_page.parent / missing).exists():
                         replacement = f"reconstructed/{year}_W{week}_FBS_spread.html"
                         raw = raw.replace(missing.encode(), replacement.encode())
-                link = b'\n<p><a href="history/reconstruction.html">Reconstructed historical checkpoints</a></p>\n'
+                saved_weeks = {week for week in range(target + 1)
+                               if (year_page.parent / f"spread/{year}_W{week}_FBS_spread.html").exists()}
+                link = season_forecast_links(year, target, saved_weeks)
                 if b"</body>" in raw:
                     raw = raw.replace(b"</body>", link + b"</body>", 1)
                 else:

@@ -200,7 +200,15 @@ def validate_reconstruction(original: Path, corrected: Path, request: Correction
                 missing = f"spread/{year}_W{week}_FBS_spread.html"
                 if f"{prefix}/{missing}" not in before:
                     raw = raw.replace(missing.encode(), f"reconstructed/{year}_W{week}_FBS_spread.html".encode())
-            addition = b'\n<p><a href="history/reconstruction.html">Reconstructed historical checkpoints</a></p>\n'
+            # Independently derive the complete direct forecast navigation; do
+            # not use the renderer as its own acceptance oracle.
+            forecast_links = ''
+            for week in range(target + 1):
+                directory = "spread" if f"{prefix}/spread/{year}_W{week}_FBS_spread.html" in before else "reconstructed"
+                forecast_links += f'<li><a href="{directory}/{year}_W{week}_FBS_spread.html">Week {week} forecasts</a></li>'
+            addition = (f'\n<section id="forecasts"><h2>Forecasts</h2>'
+                        f'<p><a href="../../performance/{year}/index.html">Forecast results and model performance</a></p>'
+                        f'<ul>{forecast_links}</ul></section>\n').encode()
             raw = raw.replace(b"</body>", addition + b"</body>", 1) if b"</body>" in raw else raw + addition
             if (corrected / year_page).read_bytes() != raw:
                 raise ValueError("correction changed unrelated season navigation")

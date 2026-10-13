@@ -83,6 +83,17 @@ class CorrectionTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'preserved bytes'):
             validate_reconstruction(self.original, self.output, self.request)
 
+    def test_missing_direct_weekly_forecast_link_is_rejected(self):
+        (self.original / 'cfb/years/1901/1901_CFB.html').write_text('<html><body></body></html>')
+        self.rebuild()
+        path = self.output / 'cfb/years/1901/1901_CFB.html'
+        raw = path.read_text()
+        self.assertIn('Week 16 forecasts', raw)
+        path.write_text(raw.replace(
+            '<li><a href="reconstructed/1901_W16_FBS_spread.html">Week 16 forecasts</a></li>', ''))
+        with self.assertRaisesRegex(ValueError, 'unrelated season navigation'):
+            validate_reconstruction(self.original, self.output, self.request)
+
     def test_progression_html_and_json_are_both_numerically_checked(self):
         self.rebuild()
         base = self.output / 'cfb/years/1901/history/1901_FBS_progression'
