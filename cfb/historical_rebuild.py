@@ -13,6 +13,7 @@ from decimal import Decimal
 import hashlib
 import json
 import posixpath
+import re
 from pathlib import Path
 import shutil
 import tempfile
@@ -263,15 +264,59 @@ def _data_page(title: str, rows: list[dict], columns: tuple[str, ...], *, note: 
                  + _row_table(rows, columns), '<a href="__CORS_HOME__">CORS home</a>')
 
 
-def season_forecast_links(year: int, through_week: int, saved_weeks: set[int]) -> bytes:
-    """Expose historical forecasts directly on the permanent season page."""
+def season_weekly_navigation(raw: bytes, year: int, through_week: int, available: set[str]) -> bytes:
+    """Keep plain season links together in week order, preserving saved spreads."""
+    raw = re.sub(rb'\n<section id="forecasts">.*?</section>\n', b'', raw, flags=re.S)
+    raw = raw.replace(b'\n<p><a href="history/reconstruction.html">Reconstructed historical checkpoints</a></p>\n', b'')
+    week_pattern = re.compile(fr'{year}_W(\d+)_FBS_'.encode())
+    anchor_pattern = re.compile(rb'<a\b[^>]*href="([^"]+)"[^>]*>.*?</a>(?:\s*<br\s*/?>)?', re.S)
+    original = {}
+    insertion = b'__SPORTSRANK_WEEKLY_NAVIGATION__'
+    inserted = False
+
+    def remove_weekly(match):
+        nonlocal inserted
+        week = week_pattern.search(match[1])
+        if week is None:
+            return match[0]
+        original.setdefault(int(week[1]), {})[match[1].decode()] = match[0].split(b'</a>', 1)[0] + b'</a>'
+        if not inserted:
+            inserted = True
+            return insertion
+        return b''
+
+    cleaned = anchor_pattern.sub(remove_weekly, raw)
+    if not inserted:
+        cleaned = cleaned.replace(b'</body>', insertion + b'</body>', 1) if b'</body>' in cleaned else cleaned + insertion
+    legacy_labels = b'Link to ' in raw
     links = []
-    for week in range(through_week + 1):
-        directory = "spread" if week in saved_weeks else "reconstructed"
-        links.append(f'<li><a href="{directory}/{year}_W{week}_FBS_spread.html">Week {week} forecasts</a></li>')
-    return (f'\n<section id="forecasts"><h2>Forecasts</h2>'
-            f'<p><a href="../../performance/{year}/index.html">Forecast results and model performance</a></p>'
-            f'<ul>{"".join(links)}</ul></section>\n').encode()
+    for week in sorted(set(range(through_week + 1)) | set(original)):
+        stem = f'{year}_W{week}_FBS'
+        spread_directory = 'spread' if f'spread/{stem}_spread.html' in available else 'reconstructed'
+        ordered = [
+            (f'rankings/{stem}_cors.html', 'ranking', 'rankings'),
+            (f'data/records/{stem}_records.html', 'records', 'records'),
+            (f'data/results/weekly_results/{stem}_results.html', 'results', 'results'),
+            (f'data/slate/weekly_slate/{stem}_slate.html', 'slate', 'slate'),
+            (f'{spread_directory}/{stem}_spread.html', 'spread', 'spread'),
+            (f'spread/{stem}_spread_results.html', 'spread results', 'spread results'),
+        ]
+        existing = original.get(week, {})
+        emitted = set()
+        for href, label, legacy_label in ordered:
+            if href not in existing and (week > through_week or href not in available):
+                continue
+            text = f'Link to {year} W{week} FBS CFB {legacy_label}' if legacy_labels else f'W{week} {label}'
+            anchor = existing.get(href, f'<a href="{href}">{text}</a>'.encode())
+            links.append(anchor + b'<br>\n')
+            emitted.add(href)
+        links.extend(anchor + b'<br>\n' for href, anchor in existing.items() if href not in emitted)
+    # Legacy files placed their links after </html>; keep the same visible
+    # presentation while bringing the ordered navigation inside the body.
+    body_end = cleaned.find(b'</body>')
+    if body_end >= 0 and body_end < cleaned.index(insertion):
+        cleaned = re.sub(rb'</(?:body|html)>', b'', cleaned) + b'\n</body>\n</html>\n'
+    return cleaned.replace(insertion, b''.join(links), 1)
 
 
 def game_identity(year: int, game: SourceGame) -> str:
@@ -412,14 +457,9 @@ def rebuild_history(website: Path, games_csv: Path, output: Path, *,
                     if not (year_page.parent / missing).exists():
                         replacement = f"reconstructed/{year}_W{week}_FBS_spread.html"
                         raw = raw.replace(missing.encode(), replacement.encode())
-                saved_weeks = {week for week in range(target + 1)
-                               if (year_page.parent / f"spread/{year}_W{week}_FBS_spread.html").exists()}
-                link = season_forecast_links(year, target, saved_weeks)
-                if b"</body>" in raw:
-                    raw = raw.replace(b"</body>", link + b"</body>", 1)
-                else:
-                    raw += link
-                year_page.write_bytes(raw)
+                available = {path.relative_to(year_page.parent).as_posix()
+                             for path in year_page.parent.rglob('*.html')}
+                year_page.write_bytes(season_weekly_navigation(raw, year, target, available))
             record["through_week"] = target
             record["final"] = has_final
             record["final_sha256"] = _sha(_json(rankings[target])) if has_final else None

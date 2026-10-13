@@ -136,11 +136,23 @@ class HistoricalRebuildTests(unittest.TestCase):
         navigation = (corrected / 'cfb/years/1901/1901_CFB.html').read_text()
         self.assertNotIn('Reconstructed historical checkpoints', navigation)
         self.assertNotIn('href="history/reconstruction.html"', navigation)
-        self.assertIn('<h2>Forecasts</h2>', navigation)
+        self.assertNotIn('<h2>Forecasts</h2>', navigation)
+        self.assertNotIn('<section', navigation)
         for week in range(17):
             directory = 'spread' if week == 1 else 'reconstructed'
             self.assertIn(f'href="{directory}/1901_W{week}_FBS_spread.html"', navigation)
         self.assertNotIn('href="reconstructed/1901_W1_FBS_spread.html"', navigation)
+        from bs4 import BeautifulSoup
+        import re
+        links = BeautifulSoup(navigation, 'html.parser').select('a[href]')
+        weeks = [int(match.group(1)) for link in links
+                 if (match := re.search(r'1901_W(\d+)_FBS_', link['href']))]
+        self.assertEqual(weeks, sorted(weeks))
+        w1 = [link['href'] for link in links if '1901_W1_FBS_' in link['href']]
+        self.assertEqual(w1, [
+            'rankings/1901_W1_FBS_cors.html', 'data/records/1901_W1_FBS_records.html',
+            'data/results/weekly_results/1901_W1_FBS_results.html',
+            'data/slate/weekly_slate/1901_W1_FBS_slate.html', 'spread/1901_W1_FBS_spread.html'])
         # Keep the permanent old URL usable without exposing implementation jargon.
         archive = (corrected / 'cfb/years/1901/history/reconstruction.html').read_text()
         self.assertIn('<h1>1901 Forecasts</h1>', archive)
@@ -149,6 +161,31 @@ class HistoricalRebuildTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'missing or mismatches'):
             historical_carryover(1902, PreviousFinal({'A': 2}, {}, 1901, 'FBS'),
                                  {'A', 'B'}, {'A', 'B', 'C'})
+
+    def test_weekly_navigation_preserves_labels_and_pending_week_without_duplicates(self):
+        from bs4 import BeautifulSoup
+        from cfb.historical_rebuild import season_weekly_navigation
+        raw = (b'<html><head><title>Season</title></head><body><h1>Season</h1>'
+               b'<a href="home.html">Home</a><br>'
+               b'<a href="data/slate/weekly_slate/1901_W0_FBS_slate.html">W0 slate</a><br>'
+               b'<a href="rankings/1901_W1_FBS_cors.html">W1 ranking</a><br>'
+               b'<a href="data/slate/weekly_slate/1901_W0_FBS_slate.html">W0 slate</a><br>'
+               b'<a href="spread/1901_W2_FBS_spread.html">Next week spread</a><br>'
+               b'</body></html>')
+        available = {'data/slate/weekly_slate/1901_W0_FBS_slate.html',
+                     'rankings/1901_W0_FBS_cors.html', 'rankings/1901_W1_FBS_cors.html',
+                     'spread/1901_W0_FBS_spread.html', 'spread/1901_W1_FBS_spread.html',
+                     'spread/1901_W2_FBS_spread.html', 'rankings/1901_W2_FBS_cors.html'}
+        rendered = season_weekly_navigation(raw, 1901, 1, available)
+        links = [(a['href'], a.get_text()) for a in BeautifulSoup(rendered, 'html.parser').select('a')]
+        self.assertEqual(links, [
+            ('home.html', 'Home'), ('rankings/1901_W0_FBS_cors.html', 'W0 ranking'),
+            ('data/slate/weekly_slate/1901_W0_FBS_slate.html', 'W0 slate'),
+            ('spread/1901_W0_FBS_spread.html', 'W0 spread'),
+            ('rankings/1901_W1_FBS_cors.html', 'W1 ranking'),
+            ('spread/1901_W1_FBS_spread.html', 'W1 spread'),
+            ('spread/1901_W2_FBS_spread.html', 'Next week spread')])
+        self.assertNotIn(b'<section', rendered)
 
     def test_modern_unregistered_entrants_still_fail_engine_validation(self):
         from cfb.ranking_engine import preseason_ranking, RankingContractError
