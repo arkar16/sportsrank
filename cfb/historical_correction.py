@@ -14,7 +14,7 @@ import json
 from pathlib import Path, PurePosixPath
 import re
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Comment, NavigableString, Tag
 
 from .historical_rebuild import (
     HistoricalInputs, POLICY, RESULT_COLUMNS, _bool, _school, historical_carryover,
@@ -29,6 +29,48 @@ PUBLIC_PATH = "historical-correction.json"
 RANK_COLUMNS = ("rank", "school", "conference", "record", "win_pct", "cors", "mov", "sos", "expected_wins", "wins_vs_expected")
 SPREAD_COLUMNS = ("week", "home_team", "away_team", "neutral_site", "home_cors", "away_cors", "spread", "home_margin", "home_handicap", "predicted_winner")
 SLATE_COLUMNS = tuple(key for key in RESULT_COLUMNS if not key.endswith("score"))
+
+
+def _season_navigation_structure(original: bytes, year: int, *, legacy_tail: bool = False) -> tuple:
+    """Retain the DOM outside the authorized weekly navigation replacement."""
+    raw = re.sub(rb'\n<section id="forecasts">.*?</section>\n', b'', original, flags=re.S)
+    raw = raw.replace(b'\n<p><a href="history/reconstruction.html">Reconstructed historical checkpoints</a></p>\n', b'')
+    soup = BeautifulSoup(raw, 'html.parser')
+    pattern = re.compile(fr'{year}_W(\d+)_FBS_')
+    weekly = [anchor for anchor in soup.select('a[href]') if pattern.search(anchor['href'])]
+    # Old documents closed body/html before the navigation. The accepted
+    # transformation brings that trailing content inside the existing body.
+    if legacy_tail and weekly and soup.body and soup.body not in weekly[0].parents:
+        for node in list(soup.body.next_siblings):
+            soup.body.append(node.extract())
+        if soup.html:
+            for node in list(soup.html.next_siblings):
+                soup.body.append(node.extract())
+    marker = soup.new_tag('sportsrank-weekly-navigation')
+    if weekly:
+        weekly[0].insert_before(marker)
+    else:
+        (soup.body or soup).append(marker)
+    for anchor in weekly:
+        following = anchor.next_sibling
+        while isinstance(following, NavigableString) and not following.strip():
+            following = following.next_sibling
+        if isinstance(following, Tag) and following.name == 'br' and not following.attrs:
+            following.decompose()
+        anchor.decompose()
+
+    def structure(node):
+        if isinstance(node, Comment):
+            return ('comment', str(node))
+        if isinstance(node, Tag):
+            attributes = tuple(sorted((key, tuple(value) if isinstance(value, list) else value)
+                                      for key, value in node.attrs.items()))
+            return (node.name, attributes, tuple(value for child in node.children
+                                                if (value := structure(child)) is not None))
+        text = ' '.join(str(node).split())
+        return ('text', text) if text else None
+
+    return structure(soup)
 
 
 def _validate_season_navigation(original: bytes, page: Path, year: int, through_week: int,
@@ -79,6 +121,8 @@ def _validate_season_navigation(original: bytes, page: Path, year: int, through_
             anchor.decompose()
     if ' '.join(before.stripped_strings) != ' '.join(after.stripped_strings):
         raise ValueError('correction changed unrelated season text')
+    if _season_navigation_structure(original, year, legacy_tail=True) != _season_navigation_structure(page.read_bytes(), year):
+        raise ValueError('correction changed unrelated season structure')
 
 
 def canonical(value) -> bytes:
