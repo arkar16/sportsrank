@@ -1,5 +1,11 @@
 # Current work
 
+Monday grading, upcoming forecasts and unattended website/contest publication
+are tracked in [#48](https://github.com/arkar16/sportsrank/issues/48).
+[ADR-0025](../adr/0025-authorize-routine-weekly-publication.md) scopes the owner’s
+standing weekly authorization; the [Monday runbook](../operations/monday-automation.md)
+owns operation. The schedule depends on a verified corrected live baseline from #39.
+
 The owner’s October 11 outcome is one published corrected website with CORS
 forecasts, selected provider lines and model performance. The provider/Market ATS
 integration is resumed in [#37](https://github.com/arkar16/sportsrank/issues/37).
@@ -64,7 +70,8 @@ allowance from completed acquisition evidence.
 The owner explicitly selected T3-injected `CFBD_API` for this continuation and
 prohibited BB CLI/Tasks use. Keep task evidence in the delivery PR/local fallback;
 do not infer live tracker status from historical exports. GitHub’s protected
-production approvals remain human actions.
+production approvals remain human actions outside ADR-0025’s routine weekly
+standing delegation.
 
 ## Operational and historical sources
 
