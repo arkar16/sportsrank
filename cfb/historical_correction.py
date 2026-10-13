@@ -31,6 +31,56 @@ SPREAD_COLUMNS = ("week", "home_team", "away_team", "neutral_site", "home_cors",
 SLATE_COLUMNS = tuple(key for key in RESULT_COLUMNS if not key.endswith("score"))
 
 
+def _validate_season_navigation(original: bytes, page: Path, year: int, through_week: int,
+                                available: set[str]) -> None:
+    """Accept week order and preserved links/text without consulting the renderer."""
+    original = re.sub(rb'\n<section id="forecasts">.*?</section>\n', b'', original, flags=re.S)
+    original = original.replace(b'\n<p><a href="history/reconstruction.html">Reconstructed historical checkpoints</a></p>\n', b'')
+    before, after = BeautifulSoup(original, 'html.parser'), BeautifulSoup(page.read_bytes(), 'html.parser')
+    week_pattern = re.compile(fr'{year}_W(\d+)_FBS_')
+    retained = {}
+    for anchor in before.select('a[href]'):
+        match = week_pattern.search(anchor['href'])
+        if match:
+            retained.setdefault(int(match[1]), {})[anchor['href']] = anchor.get_text()
+    expected = []
+    legacy = b'Link to ' in original
+    for week in sorted(set(range(through_week + 1)) | set(retained)):
+        stem = f'{year}_W{week}_FBS'
+        directory = 'spread' if f'spread/{stem}_spread.html' in available else 'reconstructed'
+        required = [
+            (f'rankings/{stem}_cors.html', 'ranking', 'rankings'),
+            (f'data/records/{stem}_records.html', 'records', 'records'),
+            (f'data/results/weekly_results/{stem}_results.html', 'results', 'results'),
+            (f'data/slate/weekly_slate/{stem}_slate.html', 'slate', 'slate'),
+            (f'{directory}/{stem}_spread.html', 'spread', 'spread'),
+            (f'spread/{stem}_spread_results.html', 'spread results', 'spread results'),
+        ]
+        existing = retained.get(week, {})
+        selected = []
+        for href, label, old_label in required:
+            if href in existing or (week <= through_week and href in available):
+                default = f'Link to {year} W{week} FBS CFB {old_label}' if legacy else f'W{week} {label}'
+                selected.append((href, existing.get(href, default)))
+        expected.extend(selected)
+        expected.extend((href, label) for href, label in existing.items()
+                        if href not in {link for link, _ in selected})
+    actual = [(anchor['href'], anchor.get_text()) for anchor in after.select('a[href]')
+              if week_pattern.search(anchor['href'])]
+    if actual != expected or after.select('section#forecasts'):
+        raise ValueError('corrected weekly season navigation differs')
+    def nonweekly(soup):
+        return [(anchor['href'], anchor.get_text()) for anchor in soup.select('a[href]')
+                if not week_pattern.search(anchor['href'])]
+    if nonweekly(before) != nonweekly(after):
+        raise ValueError('correction changed unrelated season navigation')
+    for soup in (before, after):
+        for anchor in soup.select('a'):
+            anchor.decompose()
+    if ' '.join(before.stripped_strings) != ' '.join(after.stripped_strings):
+        raise ValueError('correction changed unrelated season text')
+
+
 def canonical(value) -> bytes:
     return (json.dumps(value, sort_keys=True, indent=2, ensure_ascii=False) + "\n").encode()
 
@@ -200,10 +250,9 @@ def validate_reconstruction(original: Path, corrected: Path, request: Correction
                 missing = f"spread/{year}_W{week}_FBS_spread.html"
                 if f"{prefix}/{missing}" not in before:
                     raw = raw.replace(missing.encode(), f"reconstructed/{year}_W{week}_FBS_spread.html".encode())
-            addition = b'\n<p><a href="history/reconstruction.html">Reconstructed historical checkpoints</a></p>\n'
-            raw = raw.replace(b"</body>", addition + b"</body>", 1) if b"</body>" in raw else raw + addition
-            if (corrected / year_page).read_bytes() != raw:
-                raise ValueError("correction changed unrelated season navigation")
+            available = {path.removeprefix(prefix + '/') for path in set(before) | owned
+                         if path.startswith(prefix + '/')}
+            _validate_season_navigation(raw, corrected / year_page, year, target, available)
             owned.add(year_page)
         evidence.update(through_week=target, final=final,
                         final_sha256=digest(canonical(ranks[target])) if final else None)

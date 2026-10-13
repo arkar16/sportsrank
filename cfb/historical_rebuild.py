@@ -13,6 +13,7 @@ from decimal import Decimal
 import hashlib
 import json
 import posixpath
+import re
 from pathlib import Path
 import shutil
 import tempfile
@@ -255,10 +256,67 @@ def _write(root: Path, relative: str, raw: bytes) -> None:
     path.write_bytes(raw.replace(b"__CORS_HOME__", href.encode()))
 
 
-def _data_page(title: str, rows: list[dict], columns: tuple[str, ...]) -> bytes:
+def _data_page(title: str, rows: list[dict], columns: tuple[str, ...], *, note: str | None = None) -> bytes:
+    if note is None:
+        note = 'Historical reconstruction · original issued forecasts remain separate.'
     return _page(title, f'<p>Last updated: {datetime.now(timezone.utc).isoformat()}</p>'
-                 + '<p>Historical reconstruction · original issued forecasts remain separate.</p>'
+                 + f'<p>{note}</p>'
                  + _row_table(rows, columns), '<a href="__CORS_HOME__">CORS home</a>')
+
+
+def season_weekly_navigation(raw: bytes, year: int, through_week: int, available: set[str]) -> bytes:
+    """Keep plain season links together in week order, preserving saved spreads."""
+    raw = re.sub(rb'\n<section id="forecasts">.*?</section>\n', b'', raw, flags=re.S)
+    raw = raw.replace(b'\n<p><a href="history/reconstruction.html">Reconstructed historical checkpoints</a></p>\n', b'')
+    week_pattern = re.compile(fr'{year}_W(\d+)_FBS_'.encode())
+    anchor_pattern = re.compile(rb'<a\b[^>]*href="([^"]+)"[^>]*>.*?</a>(?:\s*<br\s*/?>)?', re.S)
+    original = {}
+    insertion = b'__SPORTSRANK_WEEKLY_NAVIGATION__'
+    inserted = False
+
+    def remove_weekly(match):
+        nonlocal inserted
+        week = week_pattern.search(match[1])
+        if week is None:
+            return match[0]
+        original.setdefault(int(week[1]), {})[match[1].decode()] = match[0].split(b'</a>', 1)[0] + b'</a>'
+        if not inserted:
+            inserted = True
+            return insertion
+        return b''
+
+    cleaned = anchor_pattern.sub(remove_weekly, raw)
+    if not inserted:
+        cleaned = cleaned.replace(b'</body>', insertion + b'</body>', 1) if b'</body>' in cleaned else cleaned + insertion
+    legacy_labels = b'Link to ' in raw
+    links = []
+    for week in sorted(set(range(through_week + 1)) | set(original)):
+        stem = f'{year}_W{week}_FBS'
+        spread_directory = 'spread' if f'spread/{stem}_spread.html' in available else 'reconstructed'
+        ordered = [
+            (f'rankings/{stem}_cors.html', 'ranking', 'rankings'),
+            (f'data/records/{stem}_records.html', 'records', 'records'),
+            (f'data/results/weekly_results/{stem}_results.html', 'results', 'results'),
+            (f'data/slate/weekly_slate/{stem}_slate.html', 'slate', 'slate'),
+            (f'{spread_directory}/{stem}_spread.html', 'spread', 'spread'),
+            (f'spread/{stem}_spread_results.html', 'spread results', 'spread results'),
+        ]
+        existing = original.get(week, {})
+        emitted = set()
+        for href, label, legacy_label in ordered:
+            if href not in existing and (week > through_week or href not in available):
+                continue
+            text = f'Link to {year} W{week} FBS CFB {legacy_label}' if legacy_labels else f'W{week} {label}'
+            anchor = existing.get(href, f'<a href="{href}">{text}</a>'.encode())
+            links.append(anchor + b'<br>\n')
+            emitted.add(href)
+        links.extend(anchor + b'<br>\n' for href, anchor in existing.items() if href not in emitted)
+    # Legacy files placed their links after </html>; keep the same visible
+    # presentation while bringing the ordered navigation inside the body.
+    body_end = cleaned.find(b'</body>')
+    if body_end >= 0 and body_end < cleaned.index(insertion):
+        cleaned = re.sub(rb'</(?:body|html)>', b'', cleaned) + b'\n</body>\n</html>\n'
+    return cleaned.replace(insertion, b''.join(links), 1)
 
 
 def game_identity(year: int, game: SourceGame) -> str:
@@ -369,8 +427,9 @@ def rebuild_history(website: Path, games_csv: Path, output: Path, *,
                                   tuple(key for key in RESULT_COLUMNS if not key.endswith("score"))))
                 predictions = spreads_for_week(snapshot, week, pre if week == 0 else rankings[week - 1])
                 _write(site, f"{prefix}/reconstructed/{year}_W{week}_FBS_spread.html",
-                       _data_page(f"{year} Week {week} reconstructed predictions", predictions,
-                                  ("week", "home_team", "away_team", "neutral_site", "home_cors", "away_cors", "spread", "home_margin", "home_handicap", "predicted_winner")))
+                       _data_page(f"{year} Week {week} forecasts", predictions,
+                                  ("week", "home_team", "away_team", "neutral_site", "home_cors", "away_cors", "spread", "home_margin", "home_handicap", "predicted_winner"),
+                                  note="Calculated from prior-week CORS ratings."))
                 records = records_for_week(snapshot, week)
                 _write(site, f"{prefix}/data/records/{year}_W{week}_FBS_records.html",
                        _data_page(f"{year} Week {week} records", records, tuple(records[0])))
@@ -385,10 +444,10 @@ def rebuild_history(website: Path, games_csv: Path, output: Path, *,
                 _write(site, history_path + ".json", serialized.encode())
             links = ''.join(f'<li>Week {week}: <a href="../rankings/{year}_W{week}_FBS_cors.html">Rankings</a> · '
                             f'<a href="../data/results/weekly_results/{year}_W{week}_FBS_results.html">Results</a> · '
-                            f'<a href="../reconstructed/{year}_W{week}_FBS_spread.html">Reconstructed predictions</a></li>'
+                            f'<a href="../reconstructed/{year}_W{week}_FBS_spread.html">Forecasts</a></li>'
                             for week in range(target + 1))
-            _write(site, f"{prefix}/history/reconstruction.html", _page(f"{year} reconstructed checkpoints",
-                   f'<p>{len(record["added_games"])} postseason games restored.</p><ul>{links}</ul>',
+            _write(site, f"{prefix}/history/reconstruction.html", _page(f"{year} Forecasts",
+                   f'<ul>{links}</ul>',
                    f'<a href="../../../performance/{year}/index.html">Model performance</a>'))
             year_page = site / prefix / f"{year}_CFB.html"
             if year_page.exists():
@@ -398,12 +457,9 @@ def rebuild_history(website: Path, games_csv: Path, output: Path, *,
                     if not (year_page.parent / missing).exists():
                         replacement = f"reconstructed/{year}_W{week}_FBS_spread.html"
                         raw = raw.replace(missing.encode(), replacement.encode())
-                link = b'\n<p><a href="history/reconstruction.html">Reconstructed historical checkpoints</a></p>\n'
-                if b"</body>" in raw:
-                    raw = raw.replace(b"</body>", link + b"</body>", 1)
-                else:
-                    raw += link
-                year_page.write_bytes(raw)
+                available = {path.relative_to(year_page.parent).as_posix()
+                             for path in year_page.parent.rglob('*.html')}
+                year_page.write_bytes(season_weekly_navigation(raw, year, target, available))
             record["through_week"] = target
             record["final"] = has_final
             record["final_sha256"] = _sha(_json(rankings[target])) if has_final else None

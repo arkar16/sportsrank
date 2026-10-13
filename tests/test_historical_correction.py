@@ -83,6 +83,34 @@ class CorrectionTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'preserved bytes'):
             validate_reconstruction(self.original, self.output, self.request)
 
+    def test_missing_direct_weekly_forecast_link_is_rejected(self):
+        (self.original / 'cfb/years/1901/1901_CFB.html').write_text('<html><body></body></html>')
+        self.rebuild()
+        path = self.output / 'cfb/years/1901/1901_CFB.html'
+        raw = path.read_text()
+        self.assertIn('W16 spread', raw)
+        path.write_text(raw.replace(
+            '<a href="reconstructed/1901_W16_FBS_spread.html">W16 spread</a><br>', ''))
+        with self.assertRaisesRegex(ValueError, 'weekly season navigation'):
+            validate_reconstruction(self.original, self.output, self.request)
+
+    def test_week_order_and_unrelated_season_text_are_independently_checked(self):
+        (self.original / 'cfb/years/1901/1901_CFB.html').write_text(
+            '<html><body><h1>Season</h1><a href="home.html">Home</a></body></html>')
+        self.rebuild()
+        path = self.output / 'cfb/years/1901/1901_CFB.html'
+        raw = path.read_text()
+        first = '<a href="rankings/1901_W0_FBS_cors.html">W0 ranking</a><br>\n'
+        path.write_text(raw.replace(first, '').replace('</body>', first + '</body>'))
+        with self.assertRaisesRegex(ValueError, 'weekly season navigation'):
+            validate_reconstruction(self.original, self.output, self.request)
+        path.write_text(raw.replace('href="home.html"', 'href="other.html"'))
+        with self.assertRaisesRegex(ValueError, 'unrelated season navigation'):
+            validate_reconstruction(self.original, self.output, self.request)
+        path.write_text(raw.replace('<h1>Season</h1>', '<h1>Changed</h1>'))
+        with self.assertRaisesRegex(ValueError, 'unrelated season text'):
+            validate_reconstruction(self.original, self.output, self.request)
+
     def test_progression_html_and_json_are_both_numerically_checked(self):
         self.rebuild()
         base = self.output / 'cfb/years/1901/history/1901_FBS_progression'
