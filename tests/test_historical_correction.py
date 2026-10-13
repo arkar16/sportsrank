@@ -111,6 +111,49 @@ class CorrectionTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'unrelated season text'):
             validate_reconstruction(self.original, self.output, self.request)
 
+    def test_unrelated_season_structure_is_preserved(self):
+        (self.original / 'cfb/years/1901/1901_CFB.html').write_text(
+            '<html><body><h1 id="season">Season</h1>'
+            '<section id="intro"><p>Before <a href="home.html">Home</a> after.</p></section>'
+            '<section id="footer"><p>Footer</p></section></body></html>')
+        self.rebuild()
+        path = self.output / 'cfb/years/1901/1901_CFB.html'
+        raw = path.read_text()
+        validate_reconstruction(self.original, self.output, self.request)
+        for index, changed in enumerate([
+            raw.replace('<h1 id="season">Season</h1>', '<h2 id="season">Season</h2>'),
+            raw.replace('id="season"', 'id="changed"'),
+            raw.replace('<a href="home.html">Home</a>', '')
+               .replace('Before  after.', 'Before after.')
+               .replace('<p>Footer</p>', '<a href="home.html">Home</a><p>Footer</p>'),
+            raw.replace('Before <a href="home.html">Home</a> after.',
+                        'Before after.<a href="home.html">Home</a>'),
+            raw.replace('<section id="intro">', '<div id="intro">')
+               .replace('</p></section>', '</p></div>', 1),
+        ]):
+            with self.subTest(index=index):
+                path.write_text(changed)
+                with self.assertRaisesRegex(ValueError, 'unrelated season structure'):
+                    validate_reconstruction(self.original, self.output, self.request)
+        path.write_text(raw)
+
+    def test_legacy_trailing_navigation_is_normalized_only_on_input(self):
+        page = self.original / 'cfb/years/1901/1901_CFB.html'
+        page.write_text('<html><body><h1>Season</h1></body></html>'
+                        '<a href="rankings/1901_W1_FBS_cors.html">Link to week 1</a><br>'
+                        '<a href="home.html">Home</a><br>')
+        self.rebuild()
+        path = self.output / 'cfb/years/1901/1901_CFB.html'
+        raw = path.read_text()
+        validate_reconstruction(self.original, self.output, self.request)
+        # Flat link/text order is unchanged, but moving the navigation back
+        # outside the body is not part of the accepted output transformation.
+        first = raw.index('<a href="rankings/1901_W0')
+        path.write_text(raw[:first] + '</body></html>' + raw[first:]
+                        .replace('</body>', '').replace('</html>', ''))
+        with self.assertRaisesRegex(ValueError, 'unrelated season structure'):
+            validate_reconstruction(self.original, self.output, self.request)
+
     def test_progression_html_and_json_are_both_numerically_checked(self):
         self.rebuild()
         base = self.output / 'cfb/years/1901/history/1901_FBS_progression'
