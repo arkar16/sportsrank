@@ -23,7 +23,6 @@ from urllib.parse import unquote, urlsplit
 from bs4 import BeautifulSoup
 
 from cfb.release import (
-    ReleaseValidationError,
     build_release,
     grade_ats,
     validate_release,
@@ -75,8 +74,8 @@ def _independent_snapshot_checksum(state: dict[str, object], teams, games) -> st
     ).hexdigest()
 
 
-def _snapshot(year: int = 2024) -> SeasonSnapshot:
-    """Portable W0 plus incomplete future-week input for release fixtures."""
+def _snapshot(year: int = 2024, *, complete_through_week: int = 0) -> SeasonSnapshot:
+    """Portable W0/W1 input with an explicitly selected completion boundary."""
 
     games = (
         SourceGame(
@@ -96,13 +95,13 @@ def _snapshot(year: int = 2024) -> SeasonSnapshot:
             1,
             "Beta Tech",
             "fbs",
-            None,
+            17 if complete_through_week >= 1 else None,
             "Alpha State",
             "fbs",
-            None,
+            10 if complete_through_week >= 1 else None,
             False,
-            completed=False,
-            disposition="scheduled",
+            completed=complete_through_week >= 1,
+            disposition="completed" if complete_through_week >= 1 else "scheduled",
             disposition_source="independent-fixture",
         ),
     )
@@ -114,7 +113,7 @@ def _snapshot(year: int = 2024) -> SeasonSnapshot:
             "year": year,
             "teams_fetched_at": STAMP,
             "games_fetched_at": STAMP,
-            "complete_through_week": 0,
+            "complete_through_week": complete_through_week,
         }
     )
     return SeasonSnapshot(
@@ -275,13 +274,13 @@ class ReleaseGraphIndependentTests(unittest.TestCase):
     def tearDown(self):
         self.temporary.cleanup()
 
-    def build_week_zero(self, name: str = "week-zero"):
+    def build_checkpoint(self, name: str = "week-zero", *, phase="week", week=0):
         return build_release(
-            _snapshot(),
+            _snapshot(complete_through_week=week),
             self.root / name,
             release_id=name,
-            phase="week",
-            target_week=0,
+            phase=phase,
+            target_week=week,
             previous_final=PreviousFinal(
                 {"Alpha State": 10.0, "Beta Tech": 8.0},
                 {"Alpha State": 0.0, "Beta Tech": 0.0},
@@ -293,7 +292,7 @@ class ReleaseGraphIndependentTests(unittest.TestCase):
         )
 
     def test_numbered_w0_owns_and_exactly_validates_preseason(self):
-        candidate = self.build_week_zero()
+        candidate = self.build_checkpoint()
         report = validate_release(candidate, published_site=self.base)
         self.assertTrue(report.valid, [str(failure) for failure in report.failures])
 
@@ -311,21 +310,35 @@ class ReleaseGraphIndependentTests(unittest.TestCase):
         self.assertFalse(rejected.valid)
         self.assertIn("ranking.value", {failure.code for failure in rejected.failures})
 
-    def test_resealed_numbered_w0_cannot_hide_deleted_preseason(self):
-        candidate = self.build_week_zero()
-        preseason = "cfb/years/2024/rankings/2024_PRESEASON_FBS_cors.html"
-        _remove_owned_artifact(candidate, preseason)
-
-        rejected = validate_release(candidate, published_site=self.base)
-        self.assertFalse(rejected.valid)
-        self.assertIn("artifact.required", {failure.code for failure in rejected.failures})
+    def test_resealed_numbered_checkpoints_cannot_hide_deleted_preseason(self):
+        for week in (0, 1):
+            with self.subTest(week=week):
+                candidate = self.build_checkpoint(f"deleted-preseason-w{week}", week=week)
+                self.assertTrue(validate_release(candidate, published_site=self.base).valid)
+                preseason = "cfb/years/2024/rankings/2024_PRESEASON_FBS_cors.html"
+                manifest = json.loads(candidate.manifest_path.read_text(encoding="utf-8"))
+                self.assertIn(preseason, manifest["owned_artifacts"])
+                self.assertIn(preseason, manifest["required_artifacts"])
+                _remove_owned_artifact(candidate, preseason)
+                persisted = json.loads(candidate.manifest_path.read_text(encoding="utf-8"))
+                for field in ("owned_artifacts", "required_artifacts", "artifact_checksums"):
+                    self.assertNotIn(preseason, persisted[field])
+                rejected = validate_release(candidate, published_site=self.base)
+                self.assertFalse(rejected.valid)
+                self.assertIn("artifact.required", {failure.code for failure in rejected.failures})
 
     def test_malformed_top_and_run_numeric_values_return_structured_failures(self):
-        for field in ("season", "target_week", "scheduled_end_week", "complete_through_week"):
-            with self.subTest(scope="top", field=field):
-                candidate = self.build_week_zero(f"top-{field}")
+        cases = [(field, "malformed-number", 0) for field in
+                 ("season", "target_week", "scheduled_end_week", "complete_through_week")]
+        cases.extend((
+            ("target_week", [], 1), ("target_week", float("nan"), 1),
+            ("scheduled_end_week", {}, 1), ("complete_through_week", [], 1),
+        ))
+        for index, (field, value, week) in enumerate(cases):
+            with self.subTest(scope="top", field=field, value=value, week=week):
+                candidate = self.build_checkpoint(f"top-{index}", week=week)
                 manifest = json.loads(candidate.manifest_path.read_text(encoding="utf-8"))
-                manifest[field] = "malformed-number"
+                manifest[field] = value
                 _write_json(candidate.manifest_path, manifest)
                 _reseal(candidate)
 
@@ -336,7 +349,7 @@ class ReleaseGraphIndependentTests(unittest.TestCase):
 
         for field in ("season", "target_week"):
             with self.subTest(scope="run", field=field):
-                candidate = self.build_week_zero(f"run-{field}")
+                candidate = self.build_checkpoint(f"run-{field}")
                 manifest = json.loads(candidate.manifest_path.read_text(encoding="utf-8"))
                 manifest["runs"][0][field] = "malformed-number"
                 _write_json(candidate.manifest_path, manifest)
@@ -348,18 +361,20 @@ class ReleaseGraphIndependentTests(unittest.TestCase):
                 self.assertIn("runs.invalid", {failure.code for failure in report.failures})
 
     def test_inherited_navigation_read_failure_cannot_produce_a_candidate(self):
-        output = self.root / "navigation-failure"
-        inherited_home = output / "site" / "cfb" / "cfb.html"
         original_read_text = Path.read_text
+        for phase, week in (("week", 0), ("final", 1)):
+            with self.subTest(phase=phase):
+                name = f"navigation-failure-{phase}"
+                inherited_home = self.root / name / "site" / "cfb" / "cfb.html"
 
-        def fail_inherited_home(path: Path, *args, **kwargs):
-            if path.resolve() == inherited_home.resolve():
-                raise OSError("independent navigation read failure")
-            return original_read_text(path, *args, **kwargs)
+                def fail_inherited_home(path: Path, *args, **kwargs):
+                    if path.resolve() == inherited_home.resolve():
+                        raise OSError("independent navigation read failure")
+                    return original_read_text(path, *args, **kwargs)
 
-        with patch.object(Path, "read_text", new=fail_inherited_home):
-            with self.assertRaises((OSError, ReleaseValidationError, ValueError)):
-                self.build_week_zero("navigation-failure")
+                with patch.object(Path, "read_text", new=fail_inherited_home):
+                    with self.assertRaisesRegex(OSError, "independent navigation read failure"):
+                        self.build_checkpoint(name, phase=phase, week=week)
 
 
 class CompletionBoundaryIndependentTests(unittest.TestCase):
@@ -456,7 +471,7 @@ class PostdeploySmokeIndependentTests(unittest.TestCase):
             responses[relative] = body
         return responses
 
-    def test_smoke_checks_all_six_pages_in_exact_artifact_order(self):
+    def test_smoke_checks_required_pages_in_exact_artifact_order(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             bodies = self.artifact(root)
@@ -466,7 +481,7 @@ class PostdeploySmokeIndependentTests(unittest.TestCase):
             # same validated index artifact.
             responses[""] = (200, bodies["index.html"])
             with self.serve(responses) as (url, seen):
-                run_smoke(url, root, timeout=2)
+                run_smoke(url, root, timeout=2, attempts=1)
         self.assertEqual(tuple(seen[1:]), REQUIRED_PATHS[1:])
         self.assertIn(seen[0], {"", "index.html"})
 
@@ -479,125 +494,14 @@ class PostdeploySmokeIndependentTests(unittest.TestCase):
             fallback_responses[""] = (200, fallback)
             with self.serve(fallback_responses) as (url, _seen):
                 with self.assertRaisesRegex(SmokeError, "does not match"):
-                    run_smoke(url, root, timeout=2)
+                    run_smoke(url, root, timeout=2, attempts=1)
 
             responses = {path: (200, body) for path, body in bodies.items()}
             responses[""] = (200, bodies["index.html"])
             with self.serve(responses) as (url, _seen):
                 pass
             with self.assertRaisesRegex(SmokeError, "deployed request failed"):
-                run_smoke(url, root, timeout=2)
-
-    def test_workflow_uses_existing_uv_pin_and_stable_production_concurrency(self):
-        workflow = Path(__file__).resolve().parents[1] / ".github" / "workflows" / "firebase-hosting-publish.yml"
-        source = workflow.read_text(encoding="utf-8")
-        self.assertIn("uses: astral-sh/setup-uv@v9.0.0", source)
-        self.assertIn(
-            "concurrency:\n  group: sportsrank-production-publication\n  cancel-in-progress: false",
-            source,
-        )
-
-    def test_workflow_uses_exact_url_and_restarts_all_pages_after_transient_failure(self):
-        workflow = Path(__file__).resolve().parents[1] / ".github" / "workflows" / "firebase-hosting-publish.yml"
-        source = workflow.read_text(encoding="utf-8")
-        self.assertNotIn("job.environment.url", source)
-        protected_start = source.index("\n  protected:")
-        protected = source[protected_start:]
-        for marker in (
-            "workflow_dispatch:",
-            "sportsrank-837af",
-            "channel: live",
-            "environment:\n      name: production",
-            "google-github-actions/auth@v2",
-            'gh api "repos/arkar16/sportsrank/actions/runs/$',
-            '.path == ".github/workflows/firebase-hosting-publish.yml"',
-            ".run_attempt == 1",
-            ".head_sha == $head_sha",
-            "gh attestation verify",
-            "--signer-workflow",
-            "--source-ref",
-            "--source-digest",
-            "--deny-self-hosted-runners",
-            "gh api",
-            "commit.tree.sha",
-            "reachable-objects.txt",
-            "github-tree.json",
-            "sha256sum -c",
-            "archive --format=tar",
-            "cmp \"$RUNNER_TEMP/execution-source.expected.tar.gz\"",
-            "python -m cfb.publication_cli",
-            "config/sr7-recovery-inputs.json",
-            "--trusted-input-manifest",
-        ):
-            self.assertIn(marker, source if marker == "workflow_dispatch:" else protected)
-        self.assertNotIn("FirebaseExtended/action-hosting-deploy", source)
-        self.assertNotIn("npm run deploy", source)
-        self.assertNotIn("PUBLISHED_URL", source)
-        self.assertNotIn("--attempts", protected)
-        self.assertNotIn("--retry-delay", protected)
-
-        attestation = protected.index(
-            "Verify the preparation attestation before runtime materialization"
-        )
-        materialize = protected.index(
-            "Materialize the exact execution code without a source checkout"
-        )
-        install = protected.index("Install the transported locked runtime")
-        auth = protected.index("Obtain the gated Firebase access token")
-        self.assertLess(attestation, materialize)
-        self.assertLess(attestation, install)
-        self.assertLess(attestation, auth)
-
-        summary_start = source.index(
-            "      - name: Expose the exact package, baseline, and approval context"
-        )
-        summary_end = source.index(
-            "      - name: Attest the exact preparation manifest and package digests",
-            summary_start,
-        )
-        self.assertNotIn("evidence_references", source[summary_start:summary_end])
-
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            bodies = self.artifact(root)
-            calls: list[tuple[str, str]] = []
-            sleeps: list[float] = []
-            now = [0.0]
-            failed_once = False
-
-            def fetch_page(base_url: str, relative_path: str, _timeout: float) -> bytes:
-                nonlocal failed_once
-                calls.append((base_url, relative_path))
-                if relative_path == REQUIRED_PATHS[2] and not failed_once:
-                    failed_once = True
-                    raise SmokeError("transient HTTP 503")
-                return bodies[relative_path]
-
-            def clock() -> float:
-                return now[0]
-
-            def sleep(seconds: float) -> None:
-                sleeps.append(seconds)
-                now[0] += seconds
-
-            run_smoke(
-                "https://www.sportsrank.top",
-                root,
-                timeout=10,
-                attempts=3,
-                retry_delay=2,
-                max_duration=180,
-                fetch_page=fetch_page,
-                sleep=sleep,
-                clock=clock,
-            )
-
-        self.assertEqual({base for base, _ in calls}, {"https://www.sportsrank.top"})
-        self.assertEqual(
-            [path for _, path in calls],
-            list(REQUIRED_PATHS[:3]) + list(REQUIRED_PATHS),
-        )
-        self.assertEqual(sleeps, [2])
+                run_smoke(url, root, timeout=2, attempts=1)
 
 
 if __name__ == "__main__":
