@@ -2,10 +2,15 @@ name: Portable offline checks
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   checks:
@@ -14,22 +19,28 @@ jobs:
     env:
       CFBD_API: ""
       CFBD_API_KEY: ""
+      CFBD_PRED_API: ""
     steps:
       - name: Check out the submitted tree
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Configure runner-local package caches
         shell: bash
         run: |
           set -euo pipefail
           echo "UV_CACHE_DIR=$RUNNER_TEMP/sportsrank-uv-cache" >> "$GITHUB_ENV"
-          echo "npm_config_cache=$RUNNER_TEMP/sportsrank-npm-cache" >> "$GITHUB_ENV"
-          mkdir -p "$RUNNER_TEMP/sportsrank-uv-cache" "$RUNNER_TEMP/sportsrank-npm-cache"
+          mkdir -p "$RUNNER_TEMP/sportsrank-uv-cache"
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+
+      - name: Determine release-readiness scope
+        id: scope
+        run: python -m scripts.ci_scope >> "$GITHUB_OUTPUT"
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v9.0.0
@@ -43,9 +54,10 @@ jobs:
         run: uv run --locked python -m unittest discover -s tests -v
 
       - name: Compile the Python source
-        run: uv run --locked python -m compileall -q cfb tools tests
+        run: uv run --locked python -m compileall -q cfb tools scripts tests
 
       - name: Verify the reviewed local validation receipt and public site
+        if: steps.scope.outputs.release_readiness == 'true'
         run: >-
           uv run --locked python -m cfb.public_site verify
           --receipt config/sr7-local-validation-receipt.json
@@ -54,14 +66,5 @@ jobs:
           --source-root .
           --trusted-input-manifest config/sr7-recovery-inputs.json
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: "22"
-          cache: npm
-
-      - name: Install locked hosting dependencies
-        run: npm ci
-
       - name: Check static hosting tree
-        run: npm run build
+        run: test -f website/index.html && test -f website/404.html

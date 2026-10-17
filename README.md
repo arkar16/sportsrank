@@ -42,12 +42,20 @@ their contents. Preserve evidence needed by active tasks and publication.
 Python 3.12 and the locked dependencies are required:
 
 ```sh
-env -u CFBD_API -u CFBD_API_KEY uv sync --locked
-env -u CFBD_API -u CFBD_API_KEY uv run --locked python -m unittest discover -s tests -v
-env -u CFBD_API -u CFBD_API_KEY uv run --locked python -m compileall -q cfb tools scripts tests
-env -u CFBD_API -u CFBD_API_KEY npm ci
-env -u CFBD_API -u CFBD_API_KEY npm run build
+env -u CFBD_API -u CFBD_API_KEY -u CFBD_PRED_API uv sync --locked
+env -u CFBD_API -u CFBD_API_KEY -u CFBD_PRED_API uv run --locked python -m unittest discover -s tests -v
+env -u CFBD_API -u CFBD_API_KEY -u CFBD_PRED_API uv run --locked python -m compileall -q cfb tools scripts tests
+test -f website/index.html && test -f website/404.html
 ```
+
+Portable CI runs these checks on every pull request and main push. Superseded
+CI runs are cancelled. It also verifies the committed release receipt when the
+change touches `website/`, `config/`, or `firebase.json`, including deletions
+and moves. Code-only changes may make the previous release receipt stale;
+they still run the complete offline behavioral suite. Publication preparation
+always checks the receipt against the exact current source, configuration,
+input pins and site, independently of this CI routing. Node dependencies are
+needed for the local Firebase emulator, not for these static file checks.
 
 These commands do not require a CFBD key and must not publish. Ordinary
 verification uses portable Schema 2/3 fixtures and does not depend on private
