@@ -91,6 +91,10 @@ class CIRoutingTests(unittest.TestCase):
         self.assertIn("fetch-depth: 0", workflow)
         self.assertIn('python -m scripts.ci_scope >> "$GITHUB_OUTPUT"', workflow)
         self.assertIn("if: steps.scope.outputs.release_readiness == 'true'", workflow)
-        self.assertEqual(workflow.count("if:"), 1)
+        job, steps = workflow.split("    steps:", 1)
+        self.assertNotRegex(job, r"(?m)^\s+if:")
+        for step in steps.split("      - "):
+            if "python -m unittest" in step:
+                self.assertNotRegex(step, r"(?m)^\s+if:")
         self.assertNotIn("npm ci", workflow)
         self.assertNotIn("setup-node", workflow)

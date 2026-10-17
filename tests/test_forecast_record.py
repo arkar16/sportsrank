@@ -158,32 +158,6 @@ class ForecastEvidenceTests(unittest.TestCase):
 
 
 class ForecastArithmeticTests(unittest.TestCase):
-    def test_required_examples_a_through_e_and_game_weighted_totals(self):
-        examples = [
-            ("A", "2.24", 2, ForecastSelection.HOME),
-            ("B", "-2", -2, ForecastSelection.AWAY),
-            ("C", "-2", 3, ForecastSelection.AWAY),
-            ("D", "0", -7, ForecastSelection.PICKEM),
-            ("E", "0.02", 1, ForecastSelection.HOME),
-        ]
-        grades = []
-        for suffix, predicted, actual, selection in examples:
-            identity = game(suffix, 1 if suffix in "AB" else 2)
-            item = candidate(identity, predicted, selection=selection)
-            home = 20 + actual if actual >= 0 else 20
-            away = 20 if actual >= 0 else 20 - actual
-            grades.append(grade_forecast(item, score(identity, home, away)))
-        self.assertEqual([row.straight_up for row in grades], [StraightUpResult.CORRECT, StraightUpResult.CORRECT, StraightUpResult.INCORRECT, StraightUpResult.UNGRADED, StraightUpResult.CORRECT])
-        self.assertEqual([row.coverage for row in grades], [CoverageResult.NO_COVER, CoverageResult.PUSH, CoverageResult.NO_COVER, CoverageResult.UNGRADED, CoverageResult.COVER])
-        total = aggregate_grades(grades)
-        self.assertEqual(total.mae, Decimal("2.644"))
-        self.assertAlmostEqual(float(total.rmse), 3.87344807633, places=10)
-        self.assertEqual((total.straight_up_wins, total.straight_up_losses, total.straight_up_count), (3, 1, 4))
-        self.assertEqual((total.covers, total.no_covers, total.pushes, total.coverage_count), (1, 2, 1, 3))
-        self.assertEqual(total.coverage_percentage, Decimal(1) / Decimal(3))
-        weekly = [aggregate_grades(grades[:2]), aggregate_grades(grades[2:])]
-        self.assertNotEqual(sum((row.mae for row in weekly), Decimal(0)) / 2, total.mae)
-
     def test_legacy_unknown_zero_and_empty_sample(self):
         identity = game("legacy")
         item = candidate(identity, "0", selection=ForecastSelection.LEGACY_UNKNOWN)

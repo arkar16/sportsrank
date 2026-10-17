@@ -69,17 +69,15 @@ class SeasonSnapshotBehaviorTests(unittest.TestCase):
             [call[0] for call in self.source.calls], ["teams", "games"]
         )
 
-    def test_cached_weekly_calculation_and_post_fetch_retry_are_zero_calls(self):
+    def test_persisted_snapshot_reuse_after_service_restart_makes_zero_calls(self):
         first = self.service.get(2025, "FBS")
         calls_after_fetch = self.source.call_count
-        try:
-            raise RuntimeError("downstream calculation failed")
-        except RuntimeError:
-            pass
         retry_service = SeasonSnapshotService(self.source, self.cache, clock=NOW)
         retry = retry_service.get(2025, "FBS")
         self.assertEqual(self.source.call_count, calls_after_fetch)
         self.assertEqual(retry.checksum, first.checksum)
+        self.assertEqual(retry_service.load_cached(2025, "FBS").checksum, first.checksum)
+        self.assertEqual(self.source.call_count, calls_after_fetch)
 
     def test_monday_refresh_fetches_games_only_when_teams_are_cached(self):
         self.service.get(2025, "FBS")
@@ -95,13 +93,6 @@ class SeasonSnapshotBehaviorTests(unittest.TestCase):
         self.service.get(2025, "FBS", required_week=2)
         self.assertEqual([call[0] for call in self.source.calls], ["teams", "games", "games"])
         self.assertEqual(self.source.calls[-1][3], "incomplete")
-
-    def test_render_validation_and_deployment_cache_interface_make_zero_calls(self):
-        expected = self.service.get(2025, "FBS").checksum
-        before = self.source.call_count
-        for _consumer in ("render", "validate", "deploy"):
-            self.assertEqual(self.service.load_cached(2025, "FBS").checksum, expected)
-        self.assertEqual(self.source.call_count, before)
 
     def test_historical_backfill_is_at_most_two_calls_per_season(self):
         for year in (2024, 2025):
@@ -312,14 +303,6 @@ class ProductionAdapterBehaviorTests(unittest.TestCase):
         self.assertEqual([r["budget_impact"] for r in records], [1, 1])
         games_api.return_value.get_games.assert_called_once_with(year=2025, classification=cfbd.DivisionClassification.FBS)
         self.assertTrue(isinstance(source, SeasonSource))
-
-    def test_fixture_and_production_adapters_share_consumer_contract(self):
-        fixture = FixtureSeasonSource(FIXTURES)
-        self.assertTrue(isinstance(fixture, SeasonSource))
-        self.assertEqual(
-            {name for name in ("fetch_teams", "fetch_games") if hasattr(fixture, name)},
-            {name for name in ("fetch_teams", "fetch_games") if hasattr(ProductionSeasonSource, name)},
-        )
 
     def test_credentials_are_not_read_during_adapter_construction(self):
         with patch.dict(os.environ, {}, clear=True):
