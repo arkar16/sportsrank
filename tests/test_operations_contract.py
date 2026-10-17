@@ -321,7 +321,7 @@ class OperationsContractTests(unittest.TestCase):
         self.assertIn('CFBD_API: ""', portable)
         self.assertIn('CFBD_API_KEY: ""', portable)
         self.assertIn("uv run --locked python -m unittest", portable)
-        self.assertIn("npm run build", portable)
+        self.assertIn("test -f website/index.html && test -f website/404.html", portable)
         self.assertNotIn("FirebaseExtended/action-hosting-deploy", portable)
         self.assertNotIn("firebase deploy", portable)
 
@@ -335,14 +335,11 @@ class OperationsContractTests(unittest.TestCase):
         configure = portable.index("      - name: Configure runner-local package caches")
         setup_python = portable.index("      - name: Set up Python 3.12")
         setup_uv = portable.index("      - name: Set up uv")
-        setup_node = portable.index("      - name: Set up Node.js")
         self.assertLess(configure, setup_python)
         self.assertLess(configure, setup_uv)
-        self.assertLess(configure, setup_node)
         configure_step = portable[configure:setup_python]
         self.assertIn('echo "UV_CACHE_DIR=$RUNNER_TEMP/sportsrank-uv-cache" >> "$GITHUB_ENV"', configure_step)
-        self.assertIn('echo "npm_config_cache=$RUNNER_TEMP/sportsrank-npm-cache" >> "$GITHUB_ENV"', configure_step)
-        self.assertIn('mkdir -p "$RUNNER_TEMP/sportsrank-uv-cache" "$RUNNER_TEMP/sportsrank-npm-cache"', configure_step)
+        self.assertIn('mkdir -p "$RUNNER_TEMP/sportsrank-uv-cache"', configure_step)
 
     def test_workflow_requires_main_and_exact_immutable_candidate_in_prepare(self):
         source = (WORKFLOW_ROOT / "firebase-hosting-publish.yml").read_text(encoding="utf-8")
