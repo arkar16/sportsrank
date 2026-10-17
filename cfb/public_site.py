@@ -15,7 +15,7 @@ empty) so an export can be discarded and recreated without an implicit delete.
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import hashlib
 import json
 import os
@@ -1246,6 +1246,36 @@ def _receipt_value(
     }
 
 
+_OUTPUT_VALIDATION_TOKEN = object()
+
+
+@dataclass(frozen=True, init=False)
+class ValidatedPublicOutput:
+    """Process-local semantic proof; reuse still checks every current byte.
+
+    It is never serialized or accepted from a receipt/package record. Receipt
+    identity includes coverage and transforms, so changing either invalidates
+    the proof even when public bytes have not changed.
+    """
+
+    receipt_sha256: str
+    inventory_sha256: str
+
+    def __init__(
+        self, receipt_sha256: str, inventory_sha256: str, *, _token: object | None = None
+    ) -> None:
+        if _token is not _OUTPUT_VALIDATION_TOKEN:
+            raise PublicSiteError("public validation evidence requires fresh validation")
+        object.__setattr__(self, "receipt_sha256", receipt_sha256)
+        object.__setattr__(self, "inventory_sha256", inventory_sha256)
+
+    def assert_current(self, site: str | Path, receipt: "LocalValidationReceipt") -> None:
+        if receipt.digest != self.receipt_sha256:
+            raise PublicSiteError("receipt changed after public validation")
+        if _inventory_hash(_inventory(Path(site), "public site")) != self.inventory_sha256:
+            raise PublicSiteError("public bytes changed after public validation")
+
+
 @dataclass(frozen=True)
 class LocalValidationReceipt:
     """Strict, path-free receipt for one locally validated public export."""
@@ -1262,6 +1292,22 @@ class LocalValidationReceipt:
     used_coverage: Mapping[str, Any] | None = None
     schema_version: int = SCHEMA_VERSION
     record_type: str = RECORD_TYPE
+    _validated_output: ValidatedPublicOutput | None = field(
+        default=None, init=False, repr=False, compare=False
+    )
+
+    def validate_output(self, site: str | Path) -> ValidatedPublicOutput:
+        """Validate semantics once, retaining only exact in-memory identities."""
+        proof = self._validated_output
+        if proof is None:
+            report = validate_public_output(site, expected_receipt=self)
+            report.raise_for_failure()
+            proof = ValidatedPublicOutput(
+                self.digest, _inventory_hash(report.inventory), _token=_OUTPUT_VALIDATION_TOKEN
+            )
+            object.__setattr__(self, "_validated_output", proof)
+        proof.assert_current(site, self)
+        return proof
 
     def to_dict(self) -> dict[str, Any]:
         result = {
@@ -2032,6 +2078,11 @@ def verify_local_receipt(
             raise PublicSiteError("public snapshot provenance does not match trusted source identity")
     if _inventory_hash(output_report.inventory) != receipt.public_site_inventory_sha256:
         raise PublicSiteError("public inventory digest does not match receipt")
+    proof = ValidatedPublicOutput(
+        receipt.digest, _inventory_hash(output_report.inventory), _token=_OUTPUT_VALIDATION_TOKEN
+    )
+    proof.assert_current(site_path, receipt)
+    object.__setattr__(receipt, "_validated_output", proof)
     _ = repository, trusted_pins
     return receipt
 

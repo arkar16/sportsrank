@@ -1083,9 +1083,12 @@ class PublicationExecutionTests(unittest.TestCase):
                     fx.baseline.digest, fx.prepared.retained_inputs_sha256,
                 ), fx.prepared.site, fx.prepared.firebase_json,
             )
-            package = bind_merged_candidate(
-                prepared, candidate_commit=commit, reader=fx.reader
-            )
+            with patch("subprocess.run", wraps=subprocess.run) as processes:
+                package = bind_merged_candidate(
+                    prepared, candidate_commit=commit, reader=fx.reader
+                )
+            # Exact complete-file proof must not start one Git process per path.
+            self.assertLessEqual(processes.call_count, 12)
             artifact = FirebaseDeployArtifact.from_archive(package_path, package)
             backend = FakeFirebasePublicationBackend(
                 TARGET, package.expected_predecessor,

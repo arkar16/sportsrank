@@ -23,9 +23,12 @@ from typing import Any, Callable, Mapping, Protocol, Sequence, TYPE_CHECKING
 if TYPE_CHECKING:
     from .forecast_publication import VerifiedForecastPublication
     from .forecast_record import GameTimingEvidence
+    from .public_site import ValidatedPublicOutput
 
 from .baseline import BaselineValidationError, VerifiedBaseline
-from .candidate_tree import CandidateTreeError, materialize_candidate_tree_archive
+from .candidate_tree import (
+    CandidateTreeError, materialize_candidate_tree_archive, _read_objects,
+)
 from .firebase import (
     FirebaseDeployArtifact,
     FirebasePublicationError,
@@ -204,6 +207,7 @@ class PreparedPackage:
     firebase_json: Path
     local_validation_receipt_sha256: str | None
     used_coverage_sha256: str | None
+    public_output_validation: ValidatedPublicOutput | None
 
     def __init__(
         self, archive: Path, bundle_sha256: str, inventory_sha256: str,
@@ -212,6 +216,7 @@ class PreparedPackage:
         validation_sha256: str, site: Path, firebase_json: Path, *,
         local_validation_receipt_sha256: str | None = None,
         used_coverage_sha256: str | None = None,
+        public_output_validation: ValidatedPublicOutput | None = None,
         _token: object | None = None,
     ) -> None:
         if _token is not _PREPARED_PACKAGE_TOKEN:
@@ -303,7 +308,6 @@ def prepare_reviewed_package(
     from .public_site import (
         CURRENT_RELEASE_CONTRACT,
         LocalValidationReceipt,
-        validate_public_output,
     )
     if not isinstance(local_validation_receipt, LocalValidationReceipt):
         raise PublicationPreparationError(
@@ -319,7 +323,7 @@ def prepare_reviewed_package(
     if manifest.get("schema_version") != 2 or manifest.get("artifact_contract") != CURRENT_RELEASE_CONTRACT:
         raise PublicationPreparationError("current preparation requires the current public artifact contract")
     try:
-        validate_public_output(site, expected_receipt=receipt).raise_for_failure()
+        output_validation = receipt.validate_output(site)
     except ValueError as exc:
         raise PublicationPreparationError(
             "candidate website differs from validated receipt coverage"
@@ -378,6 +382,7 @@ def prepare_reviewed_package(
         expected_validation, site, config_path,
         local_validation_receipt_sha256=receipt.digest,
         used_coverage_sha256=coverage_sha,
+        public_output_validation=output_validation,
     )
     prepared.assert_current()
     return prepared
@@ -387,6 +392,7 @@ class CommitTreeReader(Protocol):
     def require_commit(self, commit: str) -> None: ...
     def list_files(self, commit: str, prefix: str) -> tuple[str, ...]: ...
     def read_file(self, commit: str, path: str) -> bytes: ...
+    def file_inventory(self, commit: str, prefix: str) -> tuple[tuple[str, str, int], ...]: ...
 
 
 class GitCommitTreeReader:
@@ -423,6 +429,33 @@ class GitCommitTreeReader:
             raise PublicationPreparationError("commit path is unsafe")
         return self._run("show", f"{commit}:{path}")
 
+    def file_inventory(self, commit: str, prefix: str) -> tuple[tuple[str, str, int], ...]:
+        """Hash complete blob contents in bounded batches, never one process per file."""
+        raw = self._run("ls-tree", "-r", "-z", commit, "--", prefix)
+        files: list[tuple[str, str]] = []
+        try:
+            for entry in raw.split(b"\0"):
+                if not entry:
+                    continue
+                metadata, path_bytes = entry.split(b"\t", 1)
+                mode, kind, oid = metadata.decode("ascii").split(" ")
+                path = path_bytes.decode("utf-8")
+                if kind != "blob" or mode not in {"100644", "100755"}:
+                    raise ValueError("candidate path is not a regular file")
+                files.append((path, oid))
+            result = []
+            for start in range(0, len(files), 256):
+                batch = files[start:start + 256]
+                objects = _read_objects(self.repository, [oid for _path, oid in batch])
+                for path, oid in batch:
+                    kind, value = objects[oid]
+                    if kind != "blob":
+                        raise ValueError("candidate file object is not a blob")
+                    result.append((path, _sha256_bytes(value), len(value)))
+            return tuple(sorted(result))
+        except (ValueError, UnicodeDecodeError) as exc:
+            raise PublicationPreparationError("could not read complete candidate file inventory") from exc
+
 
 class FakeCommitTreeReader:
     def __init__(self, commits: Mapping[str, Mapping[str, bytes]]) -> None:
@@ -442,6 +475,13 @@ class FakeCommitTreeReader:
             return self.commits[commit][path]
         except KeyError as exc:
             raise PublicationPreparationError("candidate commit is missing a packaged path") from exc
+
+    def file_inventory(self, commit: str, prefix: str) -> tuple[tuple[str, str, int], ...]:
+        return tuple(
+            (path, _sha256_bytes(value), len(value))
+            for path in self.list_files(commit, prefix)
+            for value in (self.read_file(commit, path),)
+        )
 
 
 _LOCAL_VALIDATION_RECEIPT_PATH = "config/sr7-local-validation-receipt.json"
@@ -472,7 +512,7 @@ def bind_merged_candidate(
                 "current candidate binding requires authenticated receipt identities"
             )
         try:
-            from .public_site import LocalValidationReceipt, validate_public_output
+            from .public_site import LocalValidationReceipt
             receipt_bytes = reader.read_file(
                 candidate_commit, _LOCAL_VALIDATION_RECEIPT_PATH
             )
@@ -492,9 +532,10 @@ def bind_merged_candidate(
                 "candidate receipt identities differ from reviewed coverage"
             )
         try:
-            validate_public_output(
-                prepared.site, expected_receipt=receipt
-            ).raise_for_failure()
+            if prepared.public_output_validation is None:
+                receipt.validate_output(prepared.site)
+            else:
+                prepared.public_output_validation.assert_current(prepared.site, receipt)
         except ValueError as exc:
             raise PublicationPreparationError(
                 "candidate website differs from committed receipt coverage"
@@ -514,13 +555,12 @@ def bind_merged_candidate(
                 "candidate receipt is not bound by package validation evidence"
             )
     expected = _inventory(prepared.site)
-    committed_paths = reader.list_files(candidate_commit, "website")
-    if committed_paths != tuple(path for path, _digest, _size in expected):
+    committed = reader.file_inventory(candidate_commit, "website")
+    if tuple(path for path, _digest, _size in committed) != tuple(path for path, _digest, _size in expected):
         raise PublicationPreparationError("merged candidate inventory differs from reviewed bytes")
-    for path, digest, size in expected:
-        value = reader.read_file(candidate_commit, path)
-        if len(value) != size or _sha256_bytes(value) != digest:
-            raise PublicationPreparationError(f"merged candidate substituted {path}")
+    for actual, reviewed in zip(committed, expected):
+        if actual != reviewed:
+            raise PublicationPreparationError(f"merged candidate substituted {reviewed[0]}")
     if reader.read_file(candidate_commit, "firebase.json") != prepared.firebase_json.read_bytes():
         raise PublicationPreparationError("merged serving configuration differs from reviewed bytes")
     return ValidatedPackageRecord.create(

@@ -106,12 +106,16 @@ class PublicationTreeBindingIndependentTests(unittest.TestCase):
         )
 
     def test_final_binding_accepts_the_exact_committed_receipt_blob(self):
-        prepared = self._prepare(self.repository / "website", self.repository / "firebase.json", self.receipt)
-        bound = bind_merged_candidate(
-            prepared,
-            candidate_commit=self.commit,
-            reader=GitCommitTreeReader(self.repository),
-        )
+        from cfb.public_site import validate_public_output, verify_local_receipt
+        with patch("cfb.public_site.validate_public_output", wraps=validate_public_output) as semantic:
+            receipt = verify_local_receipt(
+                self.receipt_path, self.site, self.firebase, public_contract.REPOSITORY, self.trust
+            )
+            prepared = self._prepare(self.repository / "website", self.repository / "firebase.json", receipt)
+            bound = bind_merged_candidate(
+                prepared, candidate_commit=self.commit, reader=GitCommitTreeReader(self.repository),
+            )
+        self.assertEqual(semantic.call_count, 1)
         self.assertEqual(bound.candidate_commit, self.commit)
         self.assertEqual(
             GitCommitTreeReader(self.repository).read_file(
@@ -119,6 +123,39 @@ class PublicationTreeBindingIndependentTests(unittest.TestCase):
             ),
             self.receipt.to_bytes(),
         )
+
+    def test_validation_reuse_rejects_mutation_and_is_not_serialized(self):
+        from cfb.public_site import LocalValidationReceipt, validate_public_output
+        receipt = LocalValidationReceipt.from_bytes(self.receipt.to_bytes())
+        site = self.repository / "website"
+        firebase = self.repository / "firebase.json"
+        prepared = self._prepare(site, firebase, receipt)
+        original = (site / "index.html").read_bytes()
+        for mutation in ("changed", "missing", "added"):
+            with self.subTest(mutation=mutation):
+                if mutation == "changed":
+                    (site / "index.html").write_bytes(original + b"changed")
+                elif mutation == "missing":
+                    (site / "index.html").unlink()
+                else:
+                    (site / "new.html").write_bytes(b"added")
+                with self.assertRaises(PublicationPreparationError):
+                    self._prepare(site, firebase, receipt)
+                with self.assertRaises(PublicationPreparationError):
+                    bind_merged_candidate(prepared, candidate_commit=self.commit,
+                                          reader=GitCommitTreeReader(self.repository))
+                (site / "index.html").write_bytes(original)
+                (site / "new.html").unlink(missing_ok=True)
+        # Nested receipt dictionaries remain mutable despite the frozen record.
+        # Reuse must compare canonical identity, not object identity.
+        receipt.transform["unexpected"] = "changed"
+        with self.assertRaises(PublicationPreparationError):
+            self._prepare(site, firebase, receipt)
+        del receipt.transform["unexpected"]
+        fresh = LocalValidationReceipt.from_bytes(receipt.to_bytes())
+        with patch("cfb.public_site.validate_public_output", wraps=validate_public_output) as semantic:
+            self._prepare(site, firebase, fresh)
+        self.assertEqual(semantic.call_count, 1)
 
     def _seal_current_package(self):
         prepared = self._prepare(
