@@ -603,6 +603,7 @@ class FirebasePublicationBackend(Protocol):
 
 
 _MAX_PARALLEL_UPLOADS = 64
+_MAX_PARALLEL_PUBLIC_READS = 16
 _MAX_FINALIZED_VERSION_READS = 7
 _FINALIZED_VERSION_RETRY_DELAYS = (10, 20, 30, 60, 60, 60)
 
@@ -1169,12 +1170,7 @@ class FirebasePublicationAdapter:
             if dict(inventory) != dict(artifact.provider_hashes):
                 raise FirebasePublicationError("complete provider inventory differs")
 
-            for relative, expected in artifact.files.items():
-                resource = self._public(f"/{relative}")
-                if resource.body != expected:
-                    raise FirebasePublicationError(
-                        f"public application bytes differ: /{relative}"
-                    )
+            self._verify_public_files(artifact.files)
             inventory_sha = artifact.package.inventory_sha256
 
             identities: list[Mapping[str, str]] = []
@@ -1232,6 +1228,36 @@ class FirebasePublicationAdapter:
             outcome, observed, inventory_sha, configuration_sha,
             managed_findings, public_findings, tuple(findings), source,
         )
+
+    def _verify_public_files(self, files: Mapping[str, bytes]) -> None:
+        """Compare every public body with bounded work and no surviving reads."""
+        remaining = iter(files.items())
+        pending: set[Future[None]] = set()
+
+        def verify_file(relative: str, expected: bytes) -> None:
+            if self._public(f"/{relative}").body != expected:
+                raise FirebasePublicationError(f"public application bytes differ: /{relative}")
+
+        executor = ThreadPoolExecutor(max_workers=_MAX_PARALLEL_PUBLIC_READS)
+        try:
+            def submit_next() -> None:
+                item = next(remaining, None)
+                if item is not None:
+                    pending.add(executor.submit(verify_file, *item))
+
+            for _ in range(min(_MAX_PARALLEL_PUBLIC_READS, len(files))):
+                submit_next()
+            while pending:
+                completed, pending = wait(pending, return_when=FIRST_COMPLETED)
+                # Inspect the whole completed group before scheduling more.
+                for future in completed:
+                    future.result()
+                for _ in completed:
+                    submit_next()
+        finally:
+            # On failure, cancel queued work and let running HTTP requests finish
+            # under the backend's existing timeout before reporting an outcome.
+            executor.shutdown(wait=True, cancel_futures=True)
 
     def _public(self, path: str) -> PublicResource:
         resource = self.backend.public_resource(self.target, path)
