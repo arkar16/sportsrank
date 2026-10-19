@@ -418,7 +418,10 @@ class OperationsContractTests(unittest.TestCase):
         self.assertNotIn('git -C "$trusted_repo" fetch', protected)
         self.assertIn('cat-file -t "$candidate"', protected)
         self.assertIn('rev-parse "$candidate^{tree}"', protected)
-        self.assertIn("FIREBASE_ACCESS_TOKEN", protected)
+        self.assertIn("FIREBASE_CREDENTIALS_FILE: ${{ steps.firebase-auth.outputs.credentials_file_path }}", protected)
+        self.assertIn("create_credentials_file: true", protected)
+        self.assertIn("export_environment_variables: false", protected)
+        self.assertNotIn("FIREBASE_ACCESS_TOKEN:", protected)
         self.assertIn("google-github-actions/auth@v2", protected)
         attestation = protected.index(
             "Verify the preparation attestation before runtime materialization"
@@ -780,7 +783,7 @@ class OperationsContractTests(unittest.TestCase):
                 dependency.split(">", 1)[0].split("<", 1)[0].split("=", 1)[0]
                 for dependency in project["project"]["dependencies"]
             },
-            {"beautifulsoup4", "cfbd", "html5lib", "lxml", "numpy", "pandas"},
+            {"beautifulsoup4", "cfbd", "google-auth[requests]", "html5lib", "lxml", "numpy", "pandas"},
         )
 
     def test_unsafe_morning_handoff_is_blocked_by_authoritative_plan(self):

@@ -62,6 +62,20 @@ attempt; it must still verify the package and equal the receipt's predecessor.
 Execution still rejects stale live identity after acquiring its single-use claim.
 An archived audit alone does not establish current live state or allow replay.
 
+## Renewable protected credentials — 2026-10-19
+
+The owner approved the credential-renewal repair and a fresh recovery attempt
+in [#66](https://github.com/arkar16/sportsrank/issues/66), following #64's
+reconciled prewrite interruption. Full verification exceeded the one-hour
+credential lifetime. Use Google's authentication client to renew credentials
+from the same protected auth action's private service-account file before
+authenticated Firebase requests, retaining the existing identity and scope.
+Serialize refresh across concurrent callers and stop on refresh failure without
+falling back to an expired token. The publication runbook owns the exact handoff.
+Complete verification, fresh live-identity checks, separate seal/execute gates
+and single-use claims remain required. #66 owns this recovery authorization;
+ADR-0025 continues to define routine weekly authority.
+
 The owner approved this narrow repair in
 [#27](https://github.com/arkar16/sportsrank/issues/27). New capture transports,
 credential paths, retention policies, CORS changes, merges and production
