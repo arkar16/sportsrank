@@ -935,14 +935,14 @@ jobs:
           )
           PY
 
-      - name: Obtain the gated Firebase access token for observation or execution
+      - name: Obtain the gated Firebase credentials for observation or execution
         if: inputs.operation == 'execute' || inputs.operation == 'reconcile' || inputs.operation == 'verify-only' || (inputs.operation == 'seal-only' && inputs.prior_reference != '')
         id: firebase-auth
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SPORTSRANK_837AF }}
-          token_format: access_token
-          access_token_scopes: https://www.googleapis.com/auth/cloud-platform
+          create_credentials_file: true
+          export_environment_variables: false
 
       - name: Run the selected two-dispatch operation through the coordinator
         working-directory: ${{ runner.temp }}/execution
@@ -952,7 +952,7 @@ jobs:
           INITIAL_BASELINE: ${{ inputs.initial_baseline }}
           GITHUB_TOKEN: ${{ github.token }}
           GH_TOKEN: ${{ github.token }}
-          FIREBASE_ACCESS_TOKEN: ${{ steps.firebase-auth.outputs.access_token }}
+          FIREBASE_CREDENTIALS_FILE: ${{ steps.firebase-auth.outputs.credentials_file_path }}
           CFBD_API: ""
           CFBD_API_KEY: ""
           PRIOR_REFERENCE: ${{ inputs.prior_reference }}

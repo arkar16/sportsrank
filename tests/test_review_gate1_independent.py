@@ -543,7 +543,7 @@ class PostdeploySmokeIndependentTests(unittest.TestCase):
             "Materialize the exact execution code without a source checkout"
         )
         install = protected.index("Install the transported locked runtime")
-        auth = protected.index("Obtain the gated Firebase access token")
+        auth = protected.index("Obtain the gated Firebase credentials")
         self.assertLess(attestation, materialize)
         self.assertLess(attestation, install)
         self.assertLess(attestation, auth)

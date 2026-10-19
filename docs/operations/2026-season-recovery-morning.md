@@ -251,6 +251,18 @@ the #39 historical correction, retain human approval. `GITHUB_TOKEN` supplies
 provenance/archive/approval access; Firebase credentials are available only
 inside the protected job, and `CFBD_API` is absent.
 
+The protected Google-auth action creates a private credential file from the
+existing Firebase service account and removes it during cleanup. Pass its exact
+`credentials_file_path` output as `FIREBASE_CREDENTIALS_FILE`; do not export a
+fixed one-hour access token for the complete operation. The Firebase token
+provider loads only that file with the existing cloud-platform scope and uses
+Google's credential freshness/refresh logic before authenticated requests.
+Both Firebase adapters share it, and concurrent upload callers serialize
+refresh. Credential failures stop before the provider request and expose only
+sanitized errors. The file is outside all tracked package/source transports.
+Local explicit `FIREBASE_ACCESS_TOKEN` callers remain supported when no gated
+file is selected; they must manage that token's lifetime themselves.
+
 1. Select the exact validated preparation, expected baseline and purpose.
    Normal successors, rollback and correction need freshly reconciled verified
    predecessor evidence. Only the explicitly unknown-historical first baseline
