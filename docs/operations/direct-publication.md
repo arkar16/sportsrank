@@ -15,9 +15,10 @@ gh workflow run firebase-hosting-publish.yml --ref main
 
 The single job checks out the triggering SHA, installs the locked Firebase CLI,
 checks the hosting entry files and deploys only Hosting to `sportsrank-837af`.
-The existing production environment retains its main-only policy and credential
-protection. Use its ordinary approval mechanism under applicable owner authority;
-record delegated approvals honestly. Do not disable or bypass protection.
+The production environment retains its main-only policy and private deployment
+secret. The owner explicitly removed the required reviewer: main deployments
+proceed automatically without a pending-deployment approval call. Administrator
+bypass remains disabled.
 Broad portable CI is independent and does not gate deployment.
 
 After publication the job compares five current pages against the committed
