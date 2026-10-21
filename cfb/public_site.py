@@ -1629,7 +1629,8 @@ def _validate_receipt_nested(value: Mapping[str, Any]) -> None:
             raise PublicSiteError("performance transform paths are invalid")
         for path in paths:
             _safe_relative(path, "performance transform path")
-            if path != "cfb/cfb.html" and not path.startswith("cfb/performance/"):
+            weekly_result = re.fullmatch(r"cfb/years/(\d{4})/spread/\1_(?:W\d+_FBS_spread_results|FBS_forecast_results)\.html", path)
+            if path != "cfb/cfb.html" and not path.startswith("cfb/performance/") and not weekly_result:
                 raise PublicSiteError("performance transform exceeds its owned paths")
     if set(transform) != transform_fields:
         raise PublicSiteError("receipt transform fields do not match its schema")
