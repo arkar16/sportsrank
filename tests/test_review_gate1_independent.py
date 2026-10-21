@@ -23,7 +23,6 @@ from urllib.parse import unquote, urlsplit
 from bs4 import BeautifulSoup
 
 from cfb.release import (
-    ReleaseValidationError,
     build_release,
     grade_ats,
     validate_release,
@@ -75,8 +74,8 @@ def _independent_snapshot_checksum(state: dict[str, object], teams, games) -> st
     ).hexdigest()
 
 
-def _snapshot(year: int = 2024) -> SeasonSnapshot:
-    """Portable W0 plus incomplete future-week input for release fixtures."""
+def _snapshot(year: int = 2024, *, complete_through_week: int = 0) -> SeasonSnapshot:
+    """Portable W0/W1 input with an explicitly selected completion boundary."""
 
     games = (
         SourceGame(
@@ -96,13 +95,13 @@ def _snapshot(year: int = 2024) -> SeasonSnapshot:
             1,
             "Beta Tech",
             "fbs",
-            None,
+            17 if complete_through_week >= 1 else None,
             "Alpha State",
             "fbs",
-            None,
+            10 if complete_through_week >= 1 else None,
             False,
-            completed=False,
-            disposition="scheduled",
+            completed=complete_through_week >= 1,
+            disposition="completed" if complete_through_week >= 1 else "scheduled",
             disposition_source="independent-fixture",
         ),
     )
@@ -114,7 +113,7 @@ def _snapshot(year: int = 2024) -> SeasonSnapshot:
             "year": year,
             "teams_fetched_at": STAMP,
             "games_fetched_at": STAMP,
-            "complete_through_week": 0,
+            "complete_through_week": complete_through_week,
         }
     )
     return SeasonSnapshot(
@@ -275,13 +274,13 @@ class ReleaseGraphIndependentTests(unittest.TestCase):
     def tearDown(self):
         self.temporary.cleanup()
 
-    def build_week_zero(self, name: str = "week-zero"):
+    def build_checkpoint(self, name: str = "week-zero", *, phase="week", week=0):
         return build_release(
-            _snapshot(),
+            _snapshot(complete_through_week=week),
             self.root / name,
             release_id=name,
-            phase="week",
-            target_week=0,
+            phase=phase,
+            target_week=week,
             previous_final=PreviousFinal(
                 {"Alpha State": 10.0, "Beta Tech": 8.0},
                 {"Alpha State": 0.0, "Beta Tech": 0.0},
@@ -293,7 +292,7 @@ class ReleaseGraphIndependentTests(unittest.TestCase):
         )
 
     def test_numbered_w0_owns_and_exactly_validates_preseason(self):
-        candidate = self.build_week_zero()
+        candidate = self.build_checkpoint()
         report = validate_release(candidate, published_site=self.base)
         self.assertTrue(report.valid, [str(failure) for failure in report.failures])
 
@@ -311,21 +310,35 @@ class ReleaseGraphIndependentTests(unittest.TestCase):
         self.assertFalse(rejected.valid)
         self.assertIn("ranking.value", {failure.code for failure in rejected.failures})
 
-    def test_resealed_numbered_w0_cannot_hide_deleted_preseason(self):
-        candidate = self.build_week_zero()
-        preseason = "cfb/years/2024/rankings/2024_PRESEASON_FBS_cors.html"
-        _remove_owned_artifact(candidate, preseason)
-
-        rejected = validate_release(candidate, published_site=self.base)
-        self.assertFalse(rejected.valid)
-        self.assertIn("artifact.required", {failure.code for failure in rejected.failures})
+    def test_resealed_numbered_checkpoints_cannot_hide_deleted_preseason(self):
+        for week in (0, 1):
+            with self.subTest(week=week):
+                candidate = self.build_checkpoint(f"deleted-preseason-w{week}", week=week)
+                self.assertTrue(validate_release(candidate, published_site=self.base).valid)
+                preseason = "cfb/years/2024/rankings/2024_PRESEASON_FBS_cors.html"
+                manifest = json.loads(candidate.manifest_path.read_text(encoding="utf-8"))
+                self.assertIn(preseason, manifest["owned_artifacts"])
+                self.assertIn(preseason, manifest["required_artifacts"])
+                _remove_owned_artifact(candidate, preseason)
+                persisted = json.loads(candidate.manifest_path.read_text(encoding="utf-8"))
+                for field in ("owned_artifacts", "required_artifacts", "artifact_checksums"):
+                    self.assertNotIn(preseason, persisted[field])
+                rejected = validate_release(candidate, published_site=self.base)
+                self.assertFalse(rejected.valid)
+                self.assertIn("artifact.required", {failure.code for failure in rejected.failures})
 
     def test_malformed_top_and_run_numeric_values_return_structured_failures(self):
-        for field in ("season", "target_week", "scheduled_end_week", "complete_through_week"):
-            with self.subTest(scope="top", field=field):
-                candidate = self.build_week_zero(f"top-{field}")
+        cases = [(field, "malformed-number", 0) for field in
+                 ("season", "target_week", "scheduled_end_week", "complete_through_week")]
+        cases.extend((
+            ("target_week", [], 1), ("target_week", float("nan"), 1),
+            ("scheduled_end_week", {}, 1), ("complete_through_week", [], 1),
+        ))
+        for index, (field, value, week) in enumerate(cases):
+            with self.subTest(scope="top", field=field, value=value, week=week):
+                candidate = self.build_checkpoint(f"top-{index}", week=week)
                 manifest = json.loads(candidate.manifest_path.read_text(encoding="utf-8"))
-                manifest[field] = "malformed-number"
+                manifest[field] = value
                 _write_json(candidate.manifest_path, manifest)
                 _reseal(candidate)
 
@@ -336,7 +349,7 @@ class ReleaseGraphIndependentTests(unittest.TestCase):
 
         for field in ("season", "target_week"):
             with self.subTest(scope="run", field=field):
-                candidate = self.build_week_zero(f"run-{field}")
+                candidate = self.build_checkpoint(f"run-{field}")
                 manifest = json.loads(candidate.manifest_path.read_text(encoding="utf-8"))
                 manifest["runs"][0][field] = "malformed-number"
                 _write_json(candidate.manifest_path, manifest)
@@ -348,18 +361,20 @@ class ReleaseGraphIndependentTests(unittest.TestCase):
                 self.assertIn("runs.invalid", {failure.code for failure in report.failures})
 
     def test_inherited_navigation_read_failure_cannot_produce_a_candidate(self):
-        output = self.root / "navigation-failure"
-        inherited_home = output / "site" / "cfb" / "cfb.html"
         original_read_text = Path.read_text
+        for phase, week in (("week", 0), ("final", 1)):
+            with self.subTest(phase=phase):
+                name = f"navigation-failure-{phase}"
+                inherited_home = self.root / name / "site" / "cfb" / "cfb.html"
 
-        def fail_inherited_home(path: Path, *args, **kwargs):
-            if path.resolve() == inherited_home.resolve():
-                raise OSError("independent navigation read failure")
-            return original_read_text(path, *args, **kwargs)
+                def fail_inherited_home(path: Path, *args, **kwargs):
+                    if path.resolve() == inherited_home.resolve():
+                        raise OSError("independent navigation read failure")
+                    return original_read_text(path, *args, **kwargs)
 
-        with patch.object(Path, "read_text", new=fail_inherited_home):
-            with self.assertRaises((OSError, ReleaseValidationError, ValueError)):
-                self.build_week_zero("navigation-failure")
+                with patch.object(Path, "read_text", new=fail_inherited_home):
+                    with self.assertRaisesRegex(OSError, "independent navigation read failure"):
+                        self.build_checkpoint(name, phase=phase, week=week)
 
 
 class CompletionBoundaryIndependentTests(unittest.TestCase):
@@ -456,7 +471,7 @@ class PostdeploySmokeIndependentTests(unittest.TestCase):
             responses[relative] = body
         return responses
 
-    def test_smoke_checks_all_six_pages_in_exact_artifact_order(self):
+    def test_smoke_checks_required_pages_in_exact_artifact_order(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             bodies = self.artifact(root)
@@ -466,7 +481,7 @@ class PostdeploySmokeIndependentTests(unittest.TestCase):
             # same validated index artifact.
             responses[""] = (200, bodies["index.html"])
             with self.serve(responses) as (url, seen):
-                run_smoke(url, root, timeout=2)
+                run_smoke(url, root, timeout=2, attempts=1)
         self.assertEqual(tuple(seen[1:]), REQUIRED_PATHS[1:])
         self.assertIn(seen[0], {"", "index.html"})
 
@@ -479,16 +494,14 @@ class PostdeploySmokeIndependentTests(unittest.TestCase):
             fallback_responses[""] = (200, fallback)
             with self.serve(fallback_responses) as (url, _seen):
                 with self.assertRaisesRegex(SmokeError, "does not match"):
-                    run_smoke(url, root, timeout=2)
+                    run_smoke(url, root, timeout=2, attempts=1)
 
             responses = {path: (200, body) for path, body in bodies.items()}
             responses[""] = (200, bodies["index.html"])
             with self.serve(responses) as (url, _seen):
                 pass
             with self.assertRaisesRegex(SmokeError, "deployed request failed"):
-                run_smoke(url, root, timeout=2)
-
-
+                run_smoke(url, root, timeout=2, attempts=1)
 
 
 if __name__ == "__main__":

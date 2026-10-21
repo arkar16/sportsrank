@@ -81,7 +81,7 @@ class MarketArithmeticTests(unittest.TestCase):
         self.assertIsNone(summarize([])["market_ats_percentage"])
 
 
-class MarketInputTests(unittest.TestCase):
+class MarketInputFixture:
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
@@ -104,6 +104,8 @@ class MarketInputTests(unittest.TestCase):
                           {"provider": "Bovada", "spread": -2},
                           {"provider": "DraftKings", "spread": -4}]}
 
+
+class MarketInputTests(MarketInputFixture, unittest.TestCase):
     def test_exact_provider_switch_null_zero_nonfinite_and_no_fallback(self):
         for year, expected in ((2012, None), (2013, "-7"), (2020, "-7"), (2021, "-2"), (2026, "-2")):
             with patch("socket.socket", side_effect=AssertionError("network forbidden")):
@@ -221,7 +223,7 @@ class MarketPerformanceIntegrationTests(unittest.TestCase):
             self.assertFalse(validate_public_output(export, expected_receipt=receipt).ok)
 
 
-class MarketAcquisitionTests(MarketInputTests):
+class MarketAcquisitionTests(MarketInputFixture, unittest.TestCase):
     def test_cli_rejects_raw_output_under_real_website_from_another_directory(self):
         from contextlib import chdir, redirect_stderr
         from io import StringIO
