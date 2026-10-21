@@ -257,10 +257,8 @@ def _write(root: Path, relative: str, raw: bytes) -> None:
 
 
 def _data_page(title: str, rows: list[dict], columns: tuple[str, ...], *, note: str | None = None) -> bytes:
-    if note is None:
-        note = 'Historical reconstruction · original issued forecasts remain separate.'
     return _page(title, f'<p>Last updated: {datetime.now(timezone.utc).isoformat()}</p>'
-                 + f'<p>{note}</p>'
+                 + (f'<p>{note}</p>' if note else '')
                  + _row_table(rows, columns), '<a href="__CORS_HOME__">CORS home</a>')
 
 
