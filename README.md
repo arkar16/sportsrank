@@ -216,62 +216,21 @@ fails closed.
 
 ## Publication
 
-The remote publication entry point is the manually dispatched
-`Publish validated static site to Firebase Hosting` workflow after review and
-merge. It provides `prepare`, `seal-only`, `execute`, `reconcile`, and
-`verify-only`. `normal`, `rollback`, and `correction` are sealed purposes;
-each provider write follows the same two-dispatch procedure.
+Push reviewed generated `website/` changes to `main` to publish directly to
+Firebase Hosting. The workflow deploys the triggering commit and checks five
+current public pages against committed bytes. It can also be dispatched manually
+on `main` to publish the existing website. Broad offline CI runs independently;
+full-site receipt regeneration, immutable packaging, sealing and exhaustive live
+inventory verification are not routine publication gates.
 
-Local preparation independently validates the complete provider-backed baseline
-and privately retained recovery inputs, then exports safe public pages and a
-reviewed hash receipt. GitHub-hosted preparation verifies that receipt against
-the committed site/code/configuration and input pins, packages `website/` plus
-`firebase.json`, and binds those exact bytes to the actual merged commit. The protected `seal-only`
-dispatch retains the package, provenance and attempt intent in immutable GitHub
-releases and returns the exact canonical sealed reference. A separate fresh
-owner-approved `execute` dispatch consumes that reference once, rechecks the
-live predecessor, and sends the exact package to Firebase. Any existing
-execution claim blocks replay, including after a timeout or lost runner.
+Keep raw CFBD inputs and credentials private. Preserve historical public URLs,
+the CORS model and originally issued forecasts. The existing production
+credential environment remains protected. This publishes files already generated
+and committed; unattended weekly generation remains separate work.
 
-The workflow requires the fixed repository, `refs/heads/main`, manual dispatch,
-and run attempt `1`. Deployment credentials are available only behind the
-owner-reviewed `production` environment. Authenticated GitHub commit/tree and
-attestation checks precede runtime extraction, installation and secret use.
-The protected job never rebuilds the site. Agents never supply production
-approval. A staged package with `candidate_commit` absent or `null` cannot be
-published; repeat preparation against the actual merged SHA after owner merge.
-
-Retain the exact sealed reference, including its canonical final newline.
-`reconcile` and `verify-only` retrieve immutable evidence through this reference
-and observe Firebase without deploying, even when an execution failed before
-uploading state. Actions artifacts are optional transport, not recovery
-authority. A consumed or uncertain attempt requires reconciliation and a newly
-sealed, separately approved attempt for any further write. Failed verification
-pauses ordinary publication; there is no automatic rollback.
-
-The committed `config/sr7-recovery-inputs.json` records trusted input
-identities; it does not make raw bytes public or replace private retrieval.
-Public releases and artifacts are limited to intended generated static output
-and safe hashes/provenance. Raw CFBD source snapshots, the original-prepared
-archive containing them and provider actor/auth metadata remain in private
-local storage. New transport excludes raw Actions inputs and Git ancestry.
-Historical public copies remain subject to a separate cleanup decision.
-The owner selected this computer for private retention;
-local source validation with a reviewed hash receipt is approved; implementation
-and acceptance are tracked in SR-7. See the
-[ADR-0018 retention gate](docs/adr/0018-retain-publication-evidence-in-github-releases.md)
-and [publication runbook](docs/operations/2026-season-recovery-morning.md).
-Concrete operational commands may read or write GitHub/Firebase; offline tests
-use fakes and no CFBD key. Local hosting commands are emulator-only.
-
-See the [publication runbook](docs/operations/2026-season-recovery-morning.md)
-for exact transport, approval and recovery steps, and run
-`uv run --locked python -m cfb.publication_cli --help` for current arguments.
-Setup evidence belongs to SR-15 and final acceptance to SR-16; implementation,
-review, merge, production approval, deployment and verification are separate
-states. [ADR-0016](docs/adr/0016-bind-publication-to-verified-live-content.md)
-and [ADR-0018](docs/adr/0018-retain-publication-evidence-in-github-releases.md)
-record the accepted behavior and retention limits.
+See [the current runbook](docs/operations/direct-publication.md) and
+[ADR-0026](docs/adr/0026-restore-direct-static-publication.md). The recovery CLI
+and old evidence remain available for historical inspection, not routine release.
 
 ## Working with agents
 

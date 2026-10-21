@@ -1,13 +1,9 @@
 # Monday SportsRank operation
 
-The T3 schedule runs Mondays at 08:00 in the host's Eastern timezone
-(`America/Indiana/Indianapolis`), posting into the existing project thread.
-[#48](https://github.com/arkar16/sportsrank/issues/48) owns the scheduler ID,
-next-run evidence, delivery acceptance and first-run results.
-[ADR-0025](../adr/0025-authorize-routine-weekly-publication.md) records the owner's
-standing authority and its limits. This is an agent task using existing tools,
-not a standalone weekly executable or an always-on hosted service. Keep the T3
-host available and verify the next run if its timezone changes.
+The T3 Monday timer was deleted October 18; there is no active recurring writer.
+[#54](https://github.com/arkar16/sportsrank/issues/54) owns the unactivated hosted
+replacement. This document retains grading/contest guidance; publication uses
+[the direct runbook](direct-publication.md) under ADR-0026.
 
 ## Start or resume a cycle
 
@@ -16,12 +12,6 @@ one cycle in flight, keyed by season and upcoming slate, with private output
 under `.sportsrank/weekly/<cycle>/`. A timer firing again is not permission to
 repeat a completed upload or deployment. Resume from retained attempt journals
 and authoritative remote state. Never replace a pinned source or package.
-
-The initial corrected site in #39 must be fully published and verified before a
-new weekly website successor. Acquire the current authenticated predecessor and
-latest complete private request ledger; do not infer either from a filename or
-an old success log. The completed #47 package is dated reference evidence for
-contest preparation; do not rerun its hardcoded Week 7 scripts or payload.
 
 Require T3-injected `CFBD_API` for source acquisition and T3-injected
 `CFBD_PRED_API` for the contest, an authenticated GitHub session and retained private inputs. Never
@@ -53,28 +43,11 @@ other destination's credential is missing.
 
 ## Publish the website
 
-Use the existing full-site preparation/export procedure and independent source,
-model, forecast-preservation and URL checks. Follow
-[the publication runbook](2026-season-recovery-morning.md) for exact transport,
-immutable reference handling and verification. Make one generated-data PR per
-weekly publication, with receipt and necessary source-pin updates. Run the
-required checks, register the PR in T3, and merge only when the diff is within
-this scope. Source/model/workflow edits require separate owner review.
-
-Prepare the actual merged SHA, then seal and execute in separate fresh runs.
-Before each production approval, verify the repository, workflow, main branch,
-first attempt, operation/purpose, candidate/package hashes, current predecessor
-and the cycle's scope. Approve only that run's pending `production` environment
-through the owner's authenticated GitHub account using the ordinary pending-
-deployment review API. Include an approval comment identifying the weekly cycle,
-#48 and automated approval under ADR-0025. Do not change environment protection,
-use an administrative bypass, or imply that the owner manually clicked.
-
-Retain the actual emitted sealed reference including its newline. Never guess
-an intent tag, rerun a consumed attempt or deploy from a mutable branch. After
-execution, require complete inventory/configuration and managed-resource
-verification plus representative public result/ranking/forecast/performance
-pages. A job conclusion alone does not establish website success.
+Review the changed output and use [direct publication](direct-publication.md).
+Commit the generated website through a scoped PR, then publish from main and
+check the updated pages. No seal/execute, source-bound receipt regeneration or
+full live inventory is required. Preserve model/forecast/URL and private-input
+boundaries. New source/model changes remain separately reviewable.
 
 ## Submit the model contest
 

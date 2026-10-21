@@ -1,40 +1,26 @@
 # Current work
 
-Monday grading, upcoming forecasts and unattended website/contest publication
-are tracked in [#48](https://github.com/arkar16/sportsrank/issues/48).
-[ADR-0025](../adr/0025-authorize-routine-weekly-publication.md) scopes the owner’s
-standing weekly authorization; the [Monday runbook](../operations/monday-automation.md)
-owns operation. The schedule depends on a verified corrected live baseline from #39.
+Direct Firebase publication and publishing the retained Week 7/8 website are
+tracked in [#68](https://github.com/arkar16/sportsrank/issues/68), under
+[ADR-0026](../adr/0026-restore-direct-static-publication.md). Use the
+[current publication runbook](../operations/direct-publication.md). The old
+prepare/seal/execute release procedure is retired. Publication evidence belongs
+to #68 and parent #64/#66; do not infer live success from a prepared package.
 
-The owner’s October 11 outcome is one published corrected website with CORS
-forecasts, selected provider lines and model performance. The provider/Market ATS
-integration is resumed in [#37](https://github.com/arkar16/sportsrank/issues/37).
-ADR-0019 records the selected providers and every-nonzero-difference pick rule.
-The provider implementation is [PR #38](https://github.com/arkar16/sportsrank/pull/38).
-Historical correction release integration is active in
-[#39](https://github.com/arkar16/sportsrank/issues/39); a successful preview is not
-publication. Its delivery extends ADR-0024 to independently validated public export.
+The T3 Monday timer was deleted October 18. There is no active recurring writer;
+hosted generation in #54 remains separate. The retained October 18 data contains
+Week 7 results/ratings and all 56 Week 8 forecasts; the last contest readback
+verified 55/56. Publishing those files requires no additional source requests.
 
-The active outcome is site-wide CORS model performance from retained predictions
-and results, including prior-rating reconstruction where predictions are missing.
-[#33](https://github.com/arkar16/sportsrank/issues/33) owns scope and acceptance;
-[PR #34](https://github.com/arkar16/sportsrank/pull/34) owns implementation and
-review. The owner clarified that recreational performance does not require
-historical-source qualification or proof of pregame publication. Preserve the
-CORS model and existing forecast records; see ADR-0019's October 9 clarification.
+## Earlier work references
 
-Historical completeness is separate: [#35](https://github.com/arkar16/sportsrank/issues/35)
-owns missing postseason restoration and reconstruction through later-season
-carryover, based on #34's reporting layer. The owner approved archived historical
-team lists and the bounded entrant baseline in [ADR-0024](../adr/0024-reconstruct-history-with-archived-membership.md).
-Prepare corrections offline in an isolated review tree; original forecasts and
-production release authority remain intact. Saved-record grading alone does
-not establish that every historical game is present.
-
-The Week 5 rankings/results and Week 6 slate were deployed October 8 and passed
-[full immutable verification](https://github.com/arkar16/sportsrank/releases/tag/run-37822116361-verification).
-The owner accepted [#27](https://github.com/arkar16/sportsrank/issues/27) on
-October 9; it is closed. Its prerequisite repairs #30 and #32 are merged.
+- Weekly data/publication: [#64](https://github.com/arkar16/sportsrank/issues/64),
+  merged #65; credential repair [#66](https://github.com/arkar16/sportsrank/issues/66),
+  merged #67. #68 replaces the pending sealed recovery with direct publication.
+- Accepted season-page layout: #50 / merged #51; live acceptance follows #68.
+- Weekly generation/contest: #48. Hosted migration: #54, not activated.
+- Corrected historical baseline, performance and provider reporting: merged
+  #34/#36/#38/#40; preserve those accepted values and original forecasts.
 
 ## Merged prerequisites and parked work
 
@@ -69,9 +55,8 @@ allowance from completed acquisition evidence.
 
 The owner explicitly selected T3-injected `CFBD_API` for this continuation and
 prohibited BB CLI/Tasks use. Keep task evidence in the delivery PR/local fallback;
-do not infer live tracker status from historical exports. GitHub’s protected
-production approvals remain human actions outside ADR-0025’s routine weekly
-standing delegation.
+do not infer live tracker status from historical exports. Production approvals follow ADR-0026 and the explicit authority
+recorded in each delivery.
 
 ## Operational and historical sources
 

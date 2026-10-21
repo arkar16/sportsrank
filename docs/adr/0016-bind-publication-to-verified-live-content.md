@@ -4,6 +4,11 @@ status: accepted
 
 # Bind publication to verified live content
 
+October 20 publication update: [ADR-0026](0026-restore-direct-static-publication.md) supersedes the routine
+release procedure below. Historical evidence and unrelated domain/private-input
+constraints remain; use the direct-publication runbook for new deployments.
+
+
 The first recovery Publication may use a complete verified capture of the
 current Firebase live release/version, files and serving configuration as its
 base even when the original source commit is unknown. Record that uncertainty
