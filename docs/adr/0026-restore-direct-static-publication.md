@@ -15,9 +15,10 @@ This supersedes ADR-0012's separate artifact/approval gates and ADR-0016/0018's
 sealed predecessor, two-dispatch, immutable claim/archive and full live-inventory
 requirements for routine publishing and this authorized recovery. Broad offline
 CI remains independent of deployment; receipt regeneration is not a deployment
-or CI prerequisite. Existing production environment protections and secret
-isolation remain. An agent may approve this deployment under the owner's explicit
-instruction and ordinary generated weekly updates under ADR-0025. Code changes,
+or CI prerequisite. The owner subsequently explicitly approved permanently removing GitHub's
+required production reviewer so future main deployments run without an approval
+prompt. The production environment retains its main-only branch restriction,
+private deployment secret and disabled administrator bypass. Code changes,
 unrelated merges and future exceptional recovery still require owner authority.
 
 Preserve the CORS model, public URLs, original forecasts and private source data.
