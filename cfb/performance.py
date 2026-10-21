@@ -412,6 +412,58 @@ def report_files(report: dict, *, site_links: bool = False) -> dict[str, bytes]:
             "weekly.csv": _csv(report["weekly"], week_columns).encode()}
 
 
+def weekly_result_files(website: Path, report: dict) -> dict[str, bytes]:
+    """Render modern forecast-result URLs from the model-performance evaluation.
+
+    The ledger remains the authenticated publication history. Reader-facing
+    results follow ADR-0019's recreational policy, independently of receipts.
+    Legacy seasons keep their existing result-page format.
+    """
+    year = report["season"]
+    root = website / f"cfb/years/{year}"
+    if not (root / "forecasts/ledger.json").is_file():
+        return {}
+    base = f"cfb/years/{year}/spread"
+    navigation = (f'<a href="../{year}_CFB.html">Season</a> · '
+                  f'<a href="../../../performance/{year}/index.html">Model performance</a>')
+    columns = tuple(c for c in GAME_COLUMNS if c not in {"prediction_source", "rating_checkpoint"})
+    if "market_policy" in report:
+        columns += MARKET_GAME_COLUMNS
+    output = {}
+
+    def page(relative: str, title: str, summary: dict, games: list[dict], links: str = "") -> None:
+        # Preserve each published artifact's data timestamp across this display
+        # correction. New pages inherit the season's retained data timestamp.
+        path = website / relative
+        timestamp = None
+        if path.exists():
+            match = re.search(r'<p>Last updated: ([^<]*)</p>', path.read_text(encoding="utf-8"))
+            timestamp = match.group(1) if match else None
+        metadata = root / "metadata.json"
+        if timestamp is None and metadata.exists():
+            timestamp = json.loads(metadata.read_bytes()).get("last_updated")
+        stamp = f'<p>Last updated: {escape(timestamp)}</p>' if timestamp else ""
+        body = stamp + _metrics(summary)
+        if "market_policy" in report:
+            body += _market_metrics(summary)
+        body += (f'<p>{summary["non_fbs_games"]} non-FBS games excluded · '
+                 f'{summary["missing_scores"]} pending scores · '
+                 f'{summary["missing_predictions"]} unavailable predictions</p>')
+        output[relative] = _page(title, body + links + '<h2>Game results</h2>' + _table(games, columns), navigation)
+
+    links = []
+    for summary in report["weekly"]:
+        week = summary["week"]
+        filename = f"{year}_W{week}_FBS_spread_results.html"
+        games = [game for game in report["games"] if game["week"] == week]
+        page(f"{base}/{filename}", f"{year} W{week} Forecast Results - FBS CFB", summary, games)
+        links.append(f'<a href="{filename}">Week {week}</a>')
+    page(f"{base}/{year}_FBS_forecast_results.html", f"{year} Forecast Results - FBS CFB",
+         report["summary"], report["games"], '<p>' + ' · '.join(links) + '</p>')
+    return output
+
+
+
 def build_performance_files(website: Path, *, reconstruct_all: bool = False,
                             market_lines: MarketLines | None = None) -> dict[str, bytes]:
     output, summaries, grades, market_games = {}, [], [], []
@@ -428,6 +480,7 @@ def build_performance_files(website: Path, *, reconstruct_all: bool = False,
         summaries.append({"season": year, **report["summary"]})
         for name, raw in report_files(report, site_links=True).items():
             output[f"{PREFIX}/{year}/{name}"] = raw
+        output.update(weekly_result_files(website, report))
     totals = {**_summary(grades), **{k: sum(s[k] for s in summaries) for k in COUNTS}}
     body = '<p>CORS model performance across seasons.</p>'+_metrics(totals)
     if market is not None:
@@ -463,7 +516,7 @@ def validate_performance(website: Path, *, reconstruct_all: bool = False) -> tup
     if NAVIGATION in expected and (website / NAVIGATION).read_bytes().count(NAV_LINK) != 1:
         raise ValueError("CORS home must link performance exactly once")
     actual_paths = {p.relative_to(website).as_posix() for p in (website / PREFIX).rglob("*") if p.is_file()}
-    if actual_paths != set(expected) - {NAVIGATION}:
+    if actual_paths != {path for path in expected if path.startswith(PREFIX + "/")}:
         raise ValueError("performance report paths differ from available seasons")
     for relative, raw in expected.items():
         path = website / relative

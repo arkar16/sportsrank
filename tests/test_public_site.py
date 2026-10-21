@@ -22,8 +22,8 @@ from cfb.public_site import (
 from cfb.recovery_inputs import RecoveryInputBundle, RecoveryInputError
 from cfb.public_safety import assert_public_bytes
 from cfb.release import build_release
-from cfb.season_snapshot import SeasonSnapshot, _checksum
-from cfb.season_source import SourceTeam
+from cfb.season_snapshot import SeasonSnapshot, _checksum, _complete_through, _game_payload
+from cfb.season_source import SourceGame, SourceTeam
 
 
 REPOSITORY = Path(__file__).resolve().parents[1]
@@ -33,7 +33,7 @@ def _canonical(value: object) -> bytes:
     return (json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n").encode()
 
 
-def _fixture(root: Path) -> tuple[Path, Path, RecoveryInputBundle, Path, Path]:
+def _fixture(root: Path, *, year: int = 1897, games: tuple[SourceGame, ...] = ()) -> tuple[Path, Path, RecoveryInputBundle, Path, Path]:
     """Build one tiny complete private candidate and its trusted input bundle."""
 
     teams = (SourceTeam("Alpha", "Test"), SourceTeam("Beta", "Test"))
@@ -41,25 +41,25 @@ def _fixture(root: Path) -> tuple[Path, Path, RecoveryInputBundle, Path, Path]:
         "schema_version": 3,
         "sport": "cfb",
         "classification": "FBS",
-        "year": 1897,
+        "year": year,
         "teams_fetched_at": "2026-09-01T00:00:00+00:00",
         "games_fetched_at": "2026-09-01T00:00:00+00:00",
-        "complete_through_week": -1,
+        "complete_through_week": _complete_through(games),
         "teams": teams,
-        "games": (),
+        "games": games,
     }
-    checksum = _checksum(state, teams, ())
+    checksum = _checksum(state, teams, games)
     snapshot = SeasonSnapshot(
         "cfb",
         "FBS",
-        1897,
+        year,
         teams,
-        (),
+        games,
         {
             "schema_version": 3,
             "teams_fetched_at": state["teams_fetched_at"],
             "games_fetched_at": state["games_fetched_at"],
-            "complete_through_week": -1,
+            "complete_through_week": state["complete_through_week"],
         },
         checksum,
     )
@@ -67,6 +67,12 @@ def _fixture(root: Path) -> tuple[Path, Path, RecoveryInputBundle, Path, Path]:
     baseline = root / "baseline"
     baseline.mkdir()
     (baseline / "index.html").write_text("retained baseline", encoding="utf-8")
+    if year > 1897:
+        prior = baseline / f"cfb/years/{year-1}/rankings/{year-1}_FINAL_FBS_cors.html"
+        prior.parent.mkdir(parents=True)
+        prior.write_text('<table><thead><tr><th>school</th><th>cors</th><th>wins_vs_expected</th></tr></thead>'
+                         '<tbody><tr><td>Alpha</td><td>0</td><td>0</td></tr>'
+                         '<tr><td>Beta</td><td>0</td><td>0</td></tr></tbody></table>')
 
     source = root / "source-inputs"
     (source / "snapshots").mkdir(parents=True)
@@ -74,23 +80,24 @@ def _fixture(root: Path) -> tuple[Path, Path, RecoveryInputBundle, Path, Path]:
         "schema_version": 3,
         "sport": "cfb",
         "classification": "FBS",
-        "year": 1897,
+        "year": year,
         "teams_fetched_at": state["teams_fetched_at"],
         "games_fetched_at": state["games_fetched_at"],
-        "complete_through_week": -1,
+        "complete_through_week": state["complete_through_week"],
         "teams": [{"school": team.school, "conference": team.conference} for team in teams],
-        "games": [],
+        "games": [_game_payload(game, schema_version=3) for game in games],
         "checksum": checksum,
     }
     source_bytes = _canonical(raw)
-    source_file = source / "snapshots/cfb-fbs-1897.json"
+    source_relative = f"snapshots/cfb-fbs-{year}.json"
+    source_file = source / source_relative
     source_file.write_bytes(source_bytes)
     source_sha = hashlib.sha256(source_bytes).hexdigest()
     input_manifest = {
         "purpose": "test source inputs",
         "files": [
             {
-                "path": "snapshots/cfb-fbs-1897.json",
+                "path": source_relative,
                 "sha256": source_sha,
                 "bytes": len(source_bytes),
             }
@@ -102,15 +109,17 @@ def _fixture(root: Path) -> tuple[Path, Path, RecoveryInputBundle, Path, Path]:
     manifest_path.write_bytes(_canonical(input_manifest))
     source_inputs = RecoveryInputBundle.from_directory(
         source,
-        trusted_file_sha256={"snapshots/cfb-fbs-1897.json": source_sha},
+        trusted_file_sha256={source_relative: source_sha},
     )
 
     candidate = build_release(
         snapshot,
         root / "candidate",
         release_id="candidate",
-        phase="preseason",
+        phase="week" if games else "preseason",
+        target_week=state["complete_through_week"] if games else None,
         published_site=baseline,
+        previous_final={"Alpha": 0.0, "Beta": 0.0} if year > 1897 else None,
         source_inputs=source_inputs,
         timestamp="2026-09-01T00:00:00+00:00",
     )
