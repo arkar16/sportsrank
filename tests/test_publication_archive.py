@@ -95,9 +95,10 @@ class PublicationArchiveTests(unittest.TestCase):
             site = repository / "website"
             site.mkdir()
             (site / "index.html").write_bytes(b"reviewed")
+            (site / "space ü\n\t.bin").write_bytes(b"\x00\xffbinary\n")
             config = repository / "firebase.json"
             config.write_bytes(b'{"hosting":{"public":"website"}}')
-            git("add", "website/index.html", "firebase.json")
+            git("add", "website", "firebase.json")
             git(
                 "-c", "user.name=SportsRank Test",
                 "-c", "user.email=sportsrank@example.invalid",
@@ -117,6 +118,7 @@ class PublicationArchiveTests(unittest.TestCase):
             package_path.write_bytes(b"package")
             committed = {
                 "website/index.html": b"reviewed",
+                "website/space ü\n\t.bin": b"\x00\xffbinary\n",
                 "firebase.json": config.read_bytes(),
             }
             target = ProviderTarget("fixture-project", "fixture-site", "live")
