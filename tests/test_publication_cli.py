@@ -36,6 +36,7 @@ from cfb.publication_cli import (
     prepare_reviewed_operation,
 )
 from cfb.public_site import LocalValidationReceipt
+from cfb.successor import SuccessorBaselineRecord, preservation_baseline
 from cfb.publication_records import (
     AttemptIntentRecord,
     ArchiveReference,
@@ -67,7 +68,15 @@ class CommittedRecoveryTrustTests(unittest.TestCase):
         repo = Path(__file__).resolve().parents[1]
         receipt_path = repo / "config/sr7-local-validation-receipt.json"
         receipt = LocalValidationReceipt.from_bytes(receipt_path.read_bytes())
-        self.assertIsInstance(receipt.baseline_record, BaselineRecord)
+        self.assertIsInstance(preservation_baseline(receipt.baseline_record), BaselineRecord)
+        if isinstance(receipt.baseline_record, SuccessorBaselineRecord):
+            self.assertNotEqual(receipt.expected_baseline_sha256, receipt.baseline["record_sha256"])
+            self.assertEqual(receipt.expected_predecessor, receipt.baseline_record.observed)
+
+        def authenticate_fixture(record, **kwargs):
+            # Replace only immutable retrieval/authentication in this hosted
+            # packaging seam test. Real proof is exercised by successor tests.
+            Path(kwargs["destination"]).mkdir(parents=True)
 
         class ReachedPackaging(Exception):
             pass
@@ -88,7 +97,7 @@ class CommittedRecoveryTrustTests(unittest.TestCase):
             )
             with patch.dict(os.environ, {"GITHUB_SHA": "a" * 40}), patch(
                 "cfb.publication_cli._verify_candidate_tree"
-            ), patch(
+            ) as tree_check, patch(
                 "cfb.publication_cli.verify_local_receipt", return_value=receipt
             ), patch(
                 "cfb.publication_cli.import_sanitized_baseline",
@@ -97,12 +106,24 @@ class CommittedRecoveryTrustTests(unittest.TestCase):
                 "cfb.publication_cli.RecoveryInputBundle.from_directory",
                 side_effect=AssertionError("hosted preparation opened raw inputs"),
             ), patch(
+                "cfb.publication_cli.authenticate_successor",
+                side_effect=authenticate_fixture,
+            ) as successor_authentication, patch(
                 "cfb.publication_cli.prepare_reviewed_package",
                 side_effect=ReachedPackaging,
             ) as package:
+                tree_check.return_value.__enter__.return_value.read_file.return_value = (
+                    receipt_path.read_bytes()
+                )
                 with self.assertRaises(ReachedPackaging):
                     prepare_reviewed_operation(args)
-                self.assertEqual(package.call_args.kwargs["expected_predecessor"], receipt.expected_predecessor)
+                self.assertIs(
+                    package.call_args.kwargs["local_validation_receipt"], receipt
+                )
+                if isinstance(receipt.baseline_record, SuccessorBaselineRecord):
+                    self.assertEqual(successor_authentication.call_args.args[0], receipt.baseline_record)
+                else:
+                    successor_authentication.assert_not_called()
 
     def test_trusted_manifest_accepts_native_schema_four_path_and_rejects_mismatch(self):
         repository = Path(__file__).resolve().parents[1]

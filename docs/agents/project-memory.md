@@ -10,11 +10,11 @@ repeat; policies, acceptance criteria, and evolving status should not.
 | What do domain terms mean? | Root `CONTEXT.md`, glossary only |
 | Why did we choose this? | Accepted `docs/adr/` records |
 | How is the current implementation organized? | `docs/architecture/overview.md`; code owns exact interfaces |
-| What should this task deliver? | Its BB task and linked canonical spec/plan; GitHub issue when using the tracker fallback |
+| What should this task deliver? | Its GitHub issue and linked canonical spec/plan; see [tracker configuration](issue-tracker.md) |
 | What is active and what happens next? | `docs/work/current.md`, a short pointer to active work |
 | What proves a completed result? | Task/PR evidence and `docs/evidence/` references |
 | What happened in the old workflow? | Frozen `docs/archive/codex-workflow/2026-09-10/` |
-| Where is the execution running? | BB threads and environments |
+| Where is the execution running? | T3 threads and workspaces |
 
 ## Design, then execution
 
@@ -28,11 +28,11 @@ Each ticket names its canonical spec, relevant ADRs, scope, owned files or
 boundaries, acceptance evidence, and unresolved decisions. A small task may
 stay in the design conversation without producing tickets.
 
-Start a fresh Astra orchestration thread when the build contract is ready.
-Supply the ticket/spec rather than the complete design transcript. The agent
-reads relevant primary documents and follows the delegation policy in
-`AGENTS.md`. BB manages execution; the linked task remains the portable scope
-and acceptance record. A script is optional for a repeatable BB pipeline.
+Continue the current T3 thread as the build contract becomes ready. Create a
+separate top-level thread only when the owner requests one. For authorized
+delegation, supply the ticket/spec and bounded handoff rather than the complete
+design transcript; use T3's native orchestration and the shared policy linked
+from `AGENTS.md`. The linked issue remains the portable scope and acceptance record.
 
 ## Updating and resuming
 
@@ -54,9 +54,9 @@ Avoid loading archives or creating workers merely to maintain the process.
 
 ## Migration boundary
 
-ADR-0015 replaces SportsRank's Codex Workflow requirement. SportsRank and
-International Cricket Sim now have independent project-local roles and no
-managed workflow entry points or local workflow state. The shared global
-installation remains installed separately; neither migrated repo depends on it.
-SportsRank's `.codex/agents/` files own its worker behavior/model/reasoning and
-override same-named global roles. They carry no workflow ownership markers.
+ADR-0015 replaces SportsRank's Codex Workflow requirement. The repository has
+no managed workflow entry points or local workflow state. Its 2026-10-08
+amendment moves worker definitions to the user's shared `~/.codex/agents/`;
+read `~/.codex/coding-policy.md` for the current routing and dispatch policy. This shares Codex roles without
+restoring workflow routes or lifecycle requirements. Task briefs supply the
+project-specific constraints and acceptance criteria.

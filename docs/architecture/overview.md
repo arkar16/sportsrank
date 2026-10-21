@@ -10,6 +10,13 @@ JavaScript progressively enhances the published content.
   `request_meter.py` form the CFBD v2 source boundary. Explicit fetch/refresh
   operations create shared snapshots; calculation and release operations reuse
   them. SQLite currently holds the local request audit.
+- `cfb/market_lines.py` projects selected provider quotes from privately retained
+  seasonal line responses, applies the season-based provider policy, and grades
+  Market ATS and paired margin error. Explicit acquisition goes through
+  `SeasonSnapshotService.fetch_market_snapshot` and the metered source adapter;
+  ordinary calculation/export never acquires data. `cfb/performance.py` adds the
+  comparison and pending retained forecasts to the static reports. Public export
+  binds selected observations and derived reports into its existing receipt.
 - `cfb/week_calendar.py` normalizes provider weeks using source-backed season
   calendars. `postseason_registry.py` holds the bounded historical correction
   registry; it is not an allowlist for future games. Schema 4 retains provider
@@ -24,10 +31,28 @@ JavaScript progressively enhances the published content.
   carries the reviewed package through separate sealing and execution dispatches;
   ADR-0016's live predecessor and separate deployment/verification states are
   implemented. Current operational acceptance belongs to the linked task records.
+- `cfb/successor.py` authenticates existing immutable sealed package/audit evidence
+  into a distinct successor baseline without reading Firebase. Local export keeps
+  the historical capture as independent preservation authority and binds both in
+  the reviewed receipt. Fresh protected reconciliation and execution remain in
+  the publication coordinator.
 
 Use [CFB CLI documentation](../../cfb/README.md) for commands and
 [ADRs](../adr/README.md) for the reasoning and domain contracts. Current approval
 and continuation state belongs in [current work](../work/current.md).
+
+`cfb/historical_rebuild.py` is a separate offline archive adapter and reconstruction
+runner under ADR-0024. It combines retained regular scores/membership with a
+supplied historical games CSV into Season Snapshots, calls the existing ranking
+engine, and writes an isolated retrospective review site. It does not fetch,
+promote, create publication receipts, or weaken production carryover/Release
+validation. Corrected-history performance is an explicit optional policy;
+ordinary saved-forecast reporting is unchanged. `cfb/historical_correction.py`
+independently checks that reconstruction against original inputs and the ranking
+engine before public export may bind it as a correction. Original source
+provenance remains intact; versioned coverage identifies corrected progression.
+`scripts/prepare_site.py` composes the existing export boundary from one private
+path/hash configuration, without adding a fetch or publication action.
 
 ## Compatibility and deferred architecture
 

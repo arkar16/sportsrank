@@ -1,0 +1,723 @@
+week,home,away,neutral_site,prediction_source,rating_checkpoint,home_handicap,predicted_winner,home_score,away_score,actual_home_margin,straight_up,cors_line_coverage,absolute_error,status,provider,market_home_handicap,market_pick,market_ats,market_absolute_error,market_status,game_id,game_date
+1,Temple,Penn State,False,Reconstructed history,W0,11.90,Penn State,7,10,-3,correct,no_cover,8.90,Evaluated,,,,,,No provider selected,48019,1978-09-01
+1,Western Carolina,East Carolina,False,Reconstructed history,W0,0.70,East Carolina,6,14,-8,correct,cover,7.30,Evaluated,,,,,,No provider selected,48022,1978-09-02
+1,Mississippi State,West Texas A&M,False,Reconstructed history,W0,7.58,West Texas A&M,28,0,28,incorrect,no_cover,35.58,Evaluated,,,,,,No provider selected,48023,1978-09-02
+1,North Texas,UTEP,False,Reconstructed history,W0,-23.17,North Texas,49,0,49,correct,cover,25.83,Evaluated,,,,,,No provider selected,48024,1978-09-02
+1,Tulsa,Arkansas State,False,Reconstructed history,W0,5.24,Arkansas State,21,20,1,incorrect,no_cover,6.24,Evaluated,,,,,,No provider selected,48027,1978-09-02
+1,Drake,Texas-Arlington,False,Reconstructed history,W0,6.71,Texas-Arlington,25,23,2,incorrect,no_cover,8.71,Evaluated,,,,,,No provider selected,48021,1978-09-02
+1,Alabama,Nebraska,False,Reconstructed history,W0,-6.32,Alabama,20,3,17,correct,cover,10.68,Evaluated,,,,,,No provider selected,48020,1978-09-02
+1,Richmond,Southern Miss,False,Reconstructed history,W0,5.30,Southern Miss,7,10,-3,correct,no_cover,2.30,Evaluated,,,,,,No provider selected,48026,1978-09-02
+2,Arizona,Kansas State,False,Reconstructed history,W1,-7.56,Arizona,31,0,31,correct,cover,23.44,Evaluated,,,,,,No provider selected,48031,1978-09-09
+2,Arizona State,Pacific,False,Reconstructed history,W1,-4.07,Arizona State,42,7,35,correct,cover,30.93,Evaluated,,,,,,No provider selected,48032,1978-09-09
+2,Oregon State,BYU,False,Reconstructed history,W1,7.77,BYU,6,10,-4,correct,no_cover,3.77,Evaluated,,,,,,No provider selected,48035,1978-09-09
+2,Stanford,Oklahoma,False,Reconstructed history,W1,2.24,Oklahoma,29,35,-6,correct,cover,3.76,Evaluated,,,,,,No provider selected,48061,1978-09-09
+2,South Carolina,Furman,False,Reconstructed history,W1,-0.98,South Carolina,45,10,35,correct,cover,34.02,Evaluated,,,,,,No provider selected,48064,1978-09-09
+2,USC,Texas Tech,False,Reconstructed history,W1,-4.77,USC,17,9,8,correct,cover,3.23,Evaluated,,,,,,No provider selected,48065,1978-09-09
+2,Arkansas State,Southern Miss,False,Reconstructed history,W1,19.53,Southern Miss,6,21,-15,correct,no_cover,4.53,Evaluated,,,,,,No provider selected,48067,1978-09-09
+2,Kansas,Texas A&M,False,Reconstructed history,W1,4.09,Texas A&M,10,37,-27,correct,cover,22.91,Evaluated,,,,,,No provider selected,48069,1978-09-09
+2,Virginia Tech,Tulsa,False,Reconstructed history,W1,16.79,Tulsa,33,35,-2,correct,no_cover,14.79,Evaluated,,,,,,No provider selected,48070,1978-09-09
+2,Villanova,Bowling Green,False,Reconstructed history,W1,-2.11,Villanova,35,28,7,correct,cover,4.89,Evaluated,,,,,,No provider selected,48073,1978-09-09
+2,Washington State,UNLV,False,Reconstructed history,W1,-13.84,Washington State,34,7,27,correct,cover,13.16,Evaluated,,,,,,No provider selected,48075,1978-09-09
+2,Texas-Arlington,West Texas A&M,False,Reconstructed history,W1,-0.47,Texas-Arlington,10,18,-8,incorrect,no_cover,8.47,Evaluated,,,,,,No provider selected,48076,1978-09-09
+2,Western Michigan,Illinois State,False,Reconstructed history,W1,-4.57,Western Michigan,27,17,10,correct,cover,5.43,Evaluated,,,,,,No provider selected,48078,1978-09-09
+2,Wichita State,Oklahoma State,False,Reconstructed history,W1,-2.93,Wichita State,20,10,10,correct,cover,7.07,Evaluated,,,,,,No provider selected,48079,1978-09-09
+2,Northwestern State,Lamar,False,Reconstructed history,W1,-6.73,Northwestern State,21,17,4,correct,no_cover,2.73,Evaluated,,,,,,No provider selected,48059,1978-09-09
+2,Colorado,Oregon,False,Reconstructed history,W1,-11.46,Colorado,24,7,17,correct,cover,5.54,Evaluated,,,,,,No provider selected,48039,1978-09-09
+2,Duke,Georgia Tech,False,Reconstructed history,W1,-2.22,Duke,28,10,18,correct,cover,15.78,Evaluated,,,,,,No provider selected,48041,1978-09-09
+2,Hawai'i,New Mexico,False,Reconstructed history,W1,-4.07,Hawai'i,22,16,6,correct,cover,1.93,Evaluated,,,,,,No provider selected,48043,1978-09-09
+2,Rice,Iowa State,False,Reconstructed history,W1,6.96,Iowa State,19,23,-4,correct,no_cover,2.96,Evaluated,,,,,,No provider selected,48045,1978-09-09
+2,Louisiana,Long Beach State,False,Reconstructed history,W1,-6.53,Louisiana,0,10,-10,incorrect,no_cover,16.53,Evaluated,,,,,,No provider selected,48046,1978-09-09
+2,Maryland,Tulane,False,Reconstructed history,W1,-8.73,Maryland,31,7,24,correct,cover,15.27,Evaluated,,,,,,No provider selected,48050,1978-09-09
+2,William & Mary,VMI,False,Reconstructed history,W1,0.34,VMI,10,3,7,incorrect,no_cover,7.34,Evaluated,,,,,,No provider selected,48080,1978-09-09
+2,McNeese,Fresno State,False,Reconstructed history,W1,2.63,Fresno State,21,16,5,incorrect,no_cover,7.63,Evaluated,,,,,,No provider selected,48051,1978-09-09
+2,Ole Miss,Memphis,False,Reconstructed history,W1,-0.97,Ole Miss,14,7,7,correct,cover,6.03,Evaluated,,,,,,No provider selected,48052,1978-09-09
+2,Northwestern,Illinois,False,Reconstructed history,W1,-0.61,Northwestern,0,0,0,tie,no_cover,0.61,Evaluated,,,,,,No provider selected,48058,1978-09-09
+2,Central Michigan,Kent State,False,Reconstructed history,W1,-8.16,Central Michigan,41,0,41,correct,cover,32.84,Evaluated,,,,,,No provider selected,48036,1978-09-09
+2,North Texas,Mississippi State,False,Reconstructed history,W1,-4.54,North Texas,5,17,-12,incorrect,no_cover,16.54,Evaluated,,,,,,No provider selected,48053,1978-09-09
+2,Notre Dame,Missouri,False,Reconstructed history,W1,-7.79,Notre Dame,0,3,-3,incorrect,no_cover,10.79,Evaluated,,,,,,No provider selected,48054,1978-09-09
+2,Nebraska,California,False,Reconstructed history,W1,-0.45,Nebraska,36,26,10,correct,cover,9.55,Evaluated,,,,,,No provider selected,48055,1978-09-09
+2,NC State,East Carolina,False,Reconstructed history,W1,23.46,East Carolina,29,13,16,incorrect,no_cover,39.46,Evaluated,,,,,,No provider selected,48057,1978-09-09
+2,West Virginia,Richmond,False,Reconstructed history,W1,-7.17,West Virginia,14,12,2,correct,no_cover,5.17,Evaluated,,,,,,No provider selected,48077,1978-09-09
+2,Ohio,Eastern Michigan,False,Reconstructed history,W1,1.48,Eastern Michigan,23,22,1,incorrect,no_cover,2.48,Evaluated,,,,,,No provider selected,48060,1978-09-09
+2,SMU,TCU,False,Reconstructed history,W1,-4.54,SMU,45,14,31,correct,cover,26.46,Evaluated,,,,,,No provider selected,48066,1978-09-09
+2,Ball State,Miami (OH),False,Reconstructed history,W1,-3.53,Ball State,38,14,24,correct,cover,20.47,Evaluated,,,,,,No provider selected,48033,1978-09-09
+2,Toledo,Marshall,False,Reconstructed history,W1,-0.71,Toledo,0,17,-17,incorrect,no_cover,17.71,Evaluated,,,,,,No provider selected,48049,1978-09-09
+2,Drake,Southern Illinois,False,Reconstructed history,W1,-25.75,Drake,38,14,24,correct,no_cover,1.75,Evaluated,,,,,,No provider selected,48040,1978-09-09
+2,Syracuse,Florida State,False,Reconstructed history,W1,3.09,Florida State,0,28,-28,correct,cover,24.91,Evaluated,,,,,,No provider selected,48042,1978-09-09
+2,Indiana State,New Mexico State,False,Reconstructed history,W1,-0.22,Indiana State,9,14,-5,incorrect,no_cover,5.22,Evaluated,,,,,,No provider selected,48056,1978-09-09
+2,Penn State,Rutgers,False,Reconstructed history,W1,-26.69,Penn State,26,10,16,correct,no_cover,10.69,Evaluated,,,,,,No provider selected,48062,1978-09-09
+2,Washington,UCLA,False,Reconstructed history,W1,-3.57,Washington,7,10,-3,incorrect,no_cover,6.57,Evaluated,,,,,,No provider selected,48071,1978-09-09
+2,Wake Forest,Virginia,False,Reconstructed history,W1,-2.89,Wake Forest,14,0,14,correct,cover,11.11,Evaluated,,,,,,No provider selected,48074,1978-09-09
+2,UTEP,Air Force,False,Reconstructed history,W1,2.05,Air Force,25,34,-9,correct,cover,6.95,Evaluated,,,,,,No provider selected,48029,1978-09-09
+3,Kansas State,Auburn,False,Reconstructed history,W2,1.44,Auburn,32,45,-13,correct,cover,11.56,Evaluated,,,,,,No provider selected,48088,1978-09-16
+3,Georgia Tech,California,False,Reconstructed history,W2,-0.93,Georgia Tech,22,34,-12,incorrect,no_cover,12.93,Evaluated,,,,,,No provider selected,48093,1978-09-16
+3,UL Monroe,Arkansas State,False,Reconstructed history,W2,-22.06,UL Monroe,21,13,8,correct,no_cover,14.06,Evaluated,,,,,,No provider selected,48111,1978-09-16
+3,Louisiana Tech,Chattanooga,False,Reconstructed history,W2,17.79,Chattanooga,7,12,-5,correct,no_cover,12.79,Evaluated,,,,,,No provider selected,48096,1978-09-16
+3,North Carolina,East Carolina,False,Reconstructed history,W2,13.14,East Carolina,14,10,4,incorrect,no_cover,17.14,Evaluated,,,,,,No provider selected,48122,1978-09-16
+3,Wisconsin,Richmond,False,Reconstructed history,W2,-3.74,Wisconsin,7,6,1,correct,no_cover,2.74,Evaluated,,,,,,No provider selected,48147,1978-09-16
+3,Washington,Kansas,False,Reconstructed history,W2,-5.61,Washington,31,2,29,correct,cover,23.39,Evaluated,,,,,,No provider selected,48142,1978-09-16
+3,Wake Forest,Virginia Tech,False,Reconstructed history,W2,-23.71,Wake Forest,6,28,-22,incorrect,no_cover,45.71,Evaluated,,,,,,No provider selected,48141,1978-09-16
+3,Colorado State,Utah State,False,Reconstructed history,W2,21.01,Utah State,20,21,-1,correct,no_cover,20.01,Evaluated,,,,,,No provider selected,48138,1978-09-16
+3,Tennessee,UCLA,False,Reconstructed history,W2,21.55,UCLA,0,13,-13,correct,no_cover,8.55,Evaluated,,,,,,No provider selected,48137,1978-09-16
+3,Tulsa,Louisiana,False,Reconstructed history,W2,-28.48,Tulsa,10,3,7,correct,no_cover,21.48,Evaluated,,,,,,No provider selected,48136,1978-09-16
+3,Drake,Temple,False,Reconstructed history,W2,-30.89,Drake,29,36,-7,incorrect,no_cover,37.89,Evaluated,,,,,,No provider selected,48134,1978-09-16
+3,Stanford,San José State,False,Reconstructed history,W2,18.83,San José State,38,9,29,incorrect,no_cover,47.83,Evaluated,,,,,,No provider selected,48133,1978-09-16
+3,Florida,SMU,False,Reconstructed history,W2,19.34,SMU,25,35,-10,correct,no_cover,9.34,Evaluated,,,,,,No provider selected,48132,1978-09-16
+3,Lamar,Southern Illinois,False,Reconstructed history,W2,-3.78,Lamar,20,22,-2,incorrect,no_cover,5.78,Evaluated,,,,,,No provider selected,48131,1978-09-16
+3,Ohio State,Penn State,False,Reconstructed history,W2,26.28,Penn State,0,19,-19,correct,no_cover,7.28,Evaluated,,,,,,No provider selected,48127,1978-09-16
+3,Oklahoma,West Virginia,False,Reconstructed history,W2,-5.23,Oklahoma,52,10,42,correct,cover,36.77,Evaluated,,,,,,No provider selected,48126,1978-09-16
+3,North Texas,Texas-Arlington,False,Reconstructed history,W2,-23.76,North Texas,28,23,5,correct,no_cover,18.76,Evaluated,,,,,,No provider selected,48124,1978-09-16
+3,NC State,Syracuse,False,Reconstructed history,W2,-34.03,NC State,27,19,8,correct,no_cover,26.03,Evaluated,,,,,,No provider selected,48123,1978-09-16
+3,Northern Illinois,Western Michigan,False,Reconstructed history,W2,21.62,Western Michigan,30,44,-14,correct,no_cover,7.62,Evaluated,,,,,,No provider selected,48145,1978-09-16
+3,Rice,Texas,False,Reconstructed history,W2,2.29,Texas,0,34,-34,correct,cover,31.71,Evaluated,,,,,,No provider selected,48135,1978-09-16
+3,Purdue,Michigan State,False,Reconstructed history,W2,-0.72,Purdue,21,14,7,correct,cover,6.28,Evaluated,,,,,,No provider selected,48129,1978-09-16
+3,Michigan,Illinois,False,Reconstructed history,W2,-4.66,Michigan,31,0,31,correct,cover,26.34,Evaluated,,,,,,No provider selected,48115,1978-09-16
+3,Colgate,Holy Cross,False,Reconstructed history,W2,15.27,Holy Cross,14,27,-13,correct,no_cover,2.27,Evaluated,,,,,,No provider selected,48105,1978-09-16
+3,Cincinnati,Southern Miss,False,Reconstructed history,W2,23.51,Southern Miss,26,14,12,incorrect,no_cover,35.51,Evaluated,,,,,,No provider selected,48097,1978-09-16
+3,Miami (OH),Central Michigan,False,Reconstructed history,W2,24.17,Central Michigan,18,37,-19,correct,no_cover,5.17,Evaluated,,,,,,No provider selected,48095,1978-09-16
+3,Marshall,App State,False,Reconstructed history,W2,-3.82,Marshall,7,28,-21,incorrect,no_cover,24.82,Evaluated,,,,,,No provider selected,48083,1978-09-16
+3,Boston College,Air Force,False,Reconstructed history,W2,17.83,Air Force,7,18,-11,correct,no_cover,6.83,Evaluated,,,,,,No provider selected,48081,1978-09-16
+3,New Mexico State,UTEP,False,Reconstructed history,W2,-28.18,New Mexico State,35,32,3,correct,no_cover,25.18,Evaluated,,,,,,No provider selected,48121,1978-09-16
+3,Wichita State,New Mexico,False,Reconstructed history,W2,-26.13,Wichita State,14,16,-2,incorrect,no_cover,28.13,Evaluated,,,,,,No provider selected,48120,1978-09-16
+3,Nebraska,Hawai'i,False,Reconstructed history,W2,9.13,Hawai'i,56,10,46,incorrect,no_cover,55.13,Evaluated,,,,,,No provider selected,48118,1978-09-16
+3,Virginia,Navy,False,Reconstructed history,W2,1.44,Navy,0,32,-32,correct,cover,30.56,Evaluated,,,,,,No provider selected,48117,1978-09-16
+3,Minnesota,Toledo,False,Reconstructed history,W2,-5.30,Minnesota,38,12,26,correct,cover,20.70,Evaluated,,,,,,No provider selected,48116,1978-09-16
+3,Memphis,Houston,False,Reconstructed history,W2,-0.58,Memphis,17,3,14,correct,cover,13.42,Evaluated,,,,,,No provider selected,48114,1978-09-16
+3,Arizona,Oregon State,False,Reconstructed history,W2,-26.87,Arizona,21,7,14,correct,no_cover,12.87,Evaluated,,,,,,No provider selected,48084,1978-09-16
+3,Ball State,Kent State,False,Reconstructed history,W2,-30.43,Ball State,27,3,24,correct,no_cover,6.43,Evaluated,,,,,,No provider selected,48089,1978-09-16
+3,Eastern Michigan,Bowling Green,False,Reconstructed history,W2,-1.84,Eastern Michigan,6,43,-37,incorrect,no_cover,38.84,Evaluated,,,,,,No provider selected,48091,1978-09-16
+3,Iowa,Northwestern,False,Reconstructed history,W2,-2.92,Iowa,20,3,17,correct,cover,14.08,Evaluated,,,,,,No provider selected,48107,1978-09-16
+3,Tulane,Pittsburgh,False,Reconstructed history,W2,3.11,Pittsburgh,6,24,-18,correct,cover,14.89,Evaluated,,,,,,No provider selected,48128,1978-09-16
+3,Oregon,USC,False,Reconstructed history,W2,25.42,USC,10,37,-27,correct,cover,1.58,Evaluated,,,,,,No provider selected,48130,1978-09-16
+3,West Texas A&M,McNeese,False,Reconstructed history,W2,11.25,McNeese,13,45,-32,correct,cover,20.75,Evaluated,,,,,,No provider selected,48113,1978-09-16
+3,Louisville,Maryland,False,Reconstructed history,W2,-0.29,Louisville,17,24,-7,incorrect,no_cover,7.29,Evaluated,,,,,,No provider selected,48112,1978-09-16
+3,Clemson,The Citadel,False,Reconstructed history,W2,16.45,The Citadel,58,3,55,incorrect,no_cover,71.45,Evaluated,,,,,,No provider selected,48098,1978-09-16
+3,Colorado,Miami,False,Reconstructed history,W2,-26.22,Colorado,17,7,10,correct,no_cover,16.22,Evaluated,,,,,,No provider selected,48099,1978-09-16
+3,Florida State,Oklahoma State,False,Reconstructed history,W2,-28.57,Florida State,38,20,18,correct,no_cover,10.57,Evaluated,,,,,,No provider selected,48101,1978-09-16
+3,Georgia,Baylor,False,Reconstructed history,W2,-1.47,Georgia,16,14,2,correct,cover,0.53,Evaluated,,,,,,No provider selected,48104,1978-09-16
+3,Iowa State,San Diego State,False,Reconstructed history,W2,-22.49,Iowa State,14,13,1,correct,no_cover,21.49,Evaluated,,,,,,No provider selected,48108,1978-09-16
+3,Kentucky,South Carolina,False,Reconstructed history,W2,20.77,South Carolina,14,14,0,tie,no_cover,20.77,Evaluated,,,,,,No provider selected,48109,1978-09-16
+3,LSU,Indiana,False,Reconstructed history,W2,-3.20,LSU,24,17,7,correct,cover,3.80,Evaluated,,,,,,No provider selected,48110,1978-09-16
+3,Missouri,Alabama,False,Reconstructed history,W2,5.95,Alabama,20,38,-18,correct,cover,12.05,Evaluated,,,,,,No provider selected,48082,1978-09-16
+3,Arizona State,BYU,False,Reconstructed history,W2,-4.59,Arizona State,24,17,7,correct,cover,2.41,Evaluated,,,,,,No provider selected,48085,1978-09-16
+3,Arkansas,Vanderbilt,False,Reconstructed history,W2,-4.78,Arkansas,48,17,31,correct,cover,26.22,Evaluated,,,,,,No provider selected,48086,1978-09-16
+4,Memphis,Mississippi State,False,Reconstructed history,W3,16.50,Mississippi State,14,44,-30,correct,cover,13.50,Evaluated,,,,,,No provider selected,48187,1978-09-23
+4,Notre Dame,Michigan,False,Reconstructed history,W3,21.77,Michigan,14,28,-14,correct,no_cover,7.77,Evaluated,,,,,,No provider selected,48185,1978-09-23
+4,Army,Virginia,False,Reconstructed history,W3,-24.85,Army,17,21,-4,incorrect,no_cover,28.85,Evaluated,,,,,,No provider selected,48213,1978-09-23
+4,Vanderbilt,Furman,False,Reconstructed history,W3,9.27,Furman,17,10,7,incorrect,no_cover,16.27,Evaluated,,,,,,No provider selected,48212,1978-09-23
+4,Tulsa,Kansas State,False,Reconstructed history,W3,-30.33,Tulsa,24,14,10,correct,no_cover,20.33,Evaluated,,,,,,No provider selected,48210,1978-09-23
+4,Brown,Yale,False,Reconstructed history,W3,-1.98,Brown,0,21,-21,incorrect,no_cover,22.98,Evaluated,,,,,,No provider selected,48219,1978-09-23
+4,Northwestern,Wisconsin,False,Reconstructed history,W3,19.98,Wisconsin,7,28,-21,correct,cover,1.02,Evaluated,,,,,,No provider selected,48218,1978-09-23
+4,Ball State,Toledo,False,Reconstructed history,W3,-31.20,Ball State,20,0,20,correct,no_cover,11.20,Evaluated,,,,,,No provider selected,48154,1978-09-23
+4,BYU,Colorado State,False,Reconstructed history,W3,-16.63,BYU,32,6,26,correct,cover,9.37,Evaluated,,,,,,No provider selected,48156,1978-09-23
+4,Georgia Tech,Tulane,False,Reconstructed history,W3,-2.48,Georgia Tech,27,17,10,correct,cover,7.52,Evaluated,,,,,,No provider selected,48169,1978-09-23
+4,Texas-Arlington,Louisiana Tech,False,Reconstructed history,W3,-1.49,Texas-Arlington,21,28,-7,incorrect,no_cover,8.49,Evaluated,,,,,,No provider selected,48180,1978-09-23
+4,Miami (OH),Western Michigan,False,Reconstructed history,W3,26.42,Western Michigan,7,3,4,incorrect,no_cover,30.42,Evaluated,,,,,,No provider selected,48184,1978-09-23
+4,Southern Illinois,West Texas A&M,False,Reconstructed history,W3,-3.62,Southern Illinois,17,3,14,correct,cover,10.38,Evaluated,,,,,,No provider selected,48203,1978-09-23
+4,Washington State,Arizona State,False,Reconstructed history,W3,2.05,Arizona State,51,26,25,incorrect,no_cover,27.05,Evaluated,,,,,,No provider selected,48214,1978-09-23
+4,Villanova,William & Mary,False,Reconstructed history,W3,-1.15,Villanova,17,21,-4,incorrect,no_cover,5.15,Evaluated,,,,,,No provider selected,48217,1978-09-23
+4,Texas Tech,Arizona,False,Reconstructed history,W3,25.71,Arizona,41,26,15,incorrect,no_cover,40.71,Evaluated,,,,,,No provider selected,48208,1978-09-23
+4,Oregon,TCU,False,Reconstructed history,W3,-2.29,Oregon,10,14,-4,incorrect,no_cover,6.29,Evaluated,,,,,,No provider selected,48207,1978-09-23
+4,Boston College,Texas A&M,False,Reconstructed history,W3,25.81,Texas A&M,2,37,-35,correct,cover,9.19,Evaluated,,,,,,No provider selected,48206,1978-09-23
+4,Texas,Wyoming,False,Reconstructed history,W3,-4.45,Texas,17,3,14,correct,cover,9.55,Evaluated,,,,,,No provider selected,48205,1978-09-23
+4,Illinois,Stanford,False,Reconstructed history,W3,14.07,Stanford,10,35,-25,correct,cover,10.93,Evaluated,,,,,,No provider selected,48204,1978-09-23
+4,Alabama,USC,False,Reconstructed history,W3,-7.01,Alabama,14,24,-10,incorrect,no_cover,17.01,Evaluated,,,,,,No provider selected,48202,1978-09-23
+4,Purdue,Ohio,False,Reconstructed history,W3,-0.07,Purdue,24,0,24,correct,cover,23.93,Evaluated,,,,,,No provider selected,48200,1978-09-23
+4,UL Monroe,Northern Illinois,False,Reconstructed history,W3,-27.70,UL Monroe,27,10,17,correct,no_cover,10.70,Evaluated,,,,,,No provider selected,48181,1978-09-23
+4,LSU,Wake Forest,False,Reconstructed history,W3,-11.66,LSU,13,11,2,correct,no_cover,9.66,Evaluated,,,,,,No provider selected,48179,1978-09-23
+4,Kentucky,Baylor,False,Reconstructed history,W3,-2.98,Kentucky,25,21,4,correct,cover,1.02,Evaluated,,,,,,No provider selected,48176,1978-09-23
+4,Kent State,Illinois State,False,Reconstructed history,W3,-0.93,Kent State,34,3,31,correct,cover,30.07,Evaluated,,,,,,No provider selected,48175,1978-09-23
+4,Kansas,UCLA,False,Reconstructed history,W3,26.90,UCLA,28,24,4,incorrect,no_cover,30.90,Evaluated,,,,,,No provider selected,48174,1978-09-23
+4,Iowa,Iowa State,False,Reconstructed history,W3,0.74,Iowa State,0,31,-31,correct,cover,30.26,Evaluated,,,,,,No provider selected,48173,1978-09-23
+4,Indiana,Washington,False,Reconstructed history,W3,12.52,Washington,14,7,7,incorrect,no_cover,19.52,Evaluated,,,,,,No provider selected,48172,1978-09-23
+4,Houston,Utah,False,Reconstructed history,W3,23.94,Utah,42,25,17,incorrect,no_cover,40.94,Evaluated,,,,,,No provider selected,48171,1978-09-23
+4,Georgia,Clemson,False,Reconstructed history,W3,4.12,Clemson,12,0,12,incorrect,no_cover,16.12,Evaluated,,,,,,No provider selected,48168,1978-09-23
+4,Eastern Michigan,Indiana State,False,Reconstructed history,W3,11.75,Indiana State,27,8,19,incorrect,no_cover,30.75,Evaluated,,,,,,No provider selected,48166,1978-09-23
+4,Louisiana,East Carolina,False,Reconstructed history,W3,8.86,East Carolina,9,38,-29,correct,cover,20.14,Evaluated,,,,,,No provider selected,48165,1978-09-23
+4,Duke,South Carolina,False,Reconstructed history,W3,-1.56,Duke,16,12,4,correct,cover,2.44,Evaluated,,,,,,No provider selected,48164,1978-09-23
+4,Colorado,San José State,False,Reconstructed history,W3,-16.02,Colorado,22,7,15,correct,no_cover,1.02,Evaluated,,,,,,No provider selected,48161,1978-09-23
+4,California,Pacific,False,Reconstructed history,W3,-15.65,California,24,6,18,correct,cover,2.35,Evaluated,,,,,,No provider selected,48158,1978-09-23
+4,Virginia Tech,Auburn,False,Reconstructed history,W3,5.36,Auburn,7,18,-11,correct,cover,5.64,Evaluated,,,,,,No provider selected,48153,1978-09-23
+4,Arkansas State,Drake,False,Reconstructed history,W3,19.39,Drake,10,0,10,incorrect,no_cover,29.39,Evaluated,,,,,,No provider selected,48152,1978-09-23
+4,Oklahoma State,Arkansas,False,Reconstructed history,W3,23.36,Arkansas,7,19,-12,correct,no_cover,11.36,Evaluated,,,,,,No provider selected,48151,1978-09-23
+4,App State,Richmond,False,Reconstructed history,W3,-29.83,App State,24,19,5,correct,no_cover,24.83,Evaluated,,,,,,No provider selected,48150,1978-09-23
+4,Penn State,SMU,False,Reconstructed history,W3,-3.22,Penn State,26,21,5,correct,cover,1.78,Evaluated,,,,,,No provider selected,48197,1978-09-23
+4,Oregon State,Tennessee,False,Reconstructed history,W3,-1.92,Oregon State,13,13,0,tie,no_cover,1.92,Evaluated,,,,,,No provider selected,48196,1978-09-23
+4,Oklahoma,Rice,False,Reconstructed history,W3,-33.09,Oklahoma,66,7,59,correct,cover,25.91,Evaluated,,,,,,No provider selected,48195,1978-09-23
+4,Northwestern State,McNeese,False,Reconstructed history,W3,1.23,McNeese,10,7,3,incorrect,no_cover,4.23,Evaluated,,,,,,No provider selected,48193,1978-09-23
+4,New Mexico State,North Texas,False,Reconstructed history,W3,-6.26,New Mexico State,21,22,-1,incorrect,no_cover,7.26,Evaluated,,,,,,No provider selected,48192,1978-09-23
+4,NC State,West Virginia,False,Reconstructed history,W3,-18.15,NC State,29,15,14,correct,no_cover,4.15,Evaluated,,,,,,No provider selected,48191,1978-09-23
+4,New Mexico,UNLV,False,Reconstructed history,W3,-15.86,New Mexico,24,0,24,correct,cover,8.14,Evaluated,,,,,,No provider selected,48190,1978-09-23
+4,Missouri,Ole Miss,False,Reconstructed history,W3,9.63,Ole Miss,45,14,31,incorrect,no_cover,40.63,Evaluated,,,,,,No provider selected,48188,1978-09-23
+4,Utah State,Fresno State,False,Reconstructed history,W3,-13.81,Utah State,45,22,23,correct,cover,9.19,Evaluated,,,,,,No provider selected,48211,1978-09-23
+4,UTEP,San Diego State,False,Reconstructed history,W3,1.00,San Diego State,31,24,7,incorrect,no_cover,8.00,Evaluated,,,,,,No provider selected,48209,1978-09-23
+4,Princeton,Cornell,False,Reconstructed history,W3,-2.18,Princeton,14,14,0,tie,no_cover,2.18,Evaluated,,,,,,No provider selected,48199,1978-09-23
+4,Pittsburgh,Temple,False,Reconstructed history,W3,-10.72,Pittsburgh,20,12,8,correct,no_cover,2.72,Evaluated,,,,,,No provider selected,48198,1978-09-23
+4,Minnesota,Ohio State,False,Reconstructed history,W3,-26.29,Minnesota,10,27,-17,incorrect,no_cover,43.29,Evaluated,,,,,,No provider selected,48194,1978-09-23
+4,North Carolina,Maryland,False,Reconstructed history,W3,1.17,Maryland,20,21,-1,correct,no_cover,0.17,Evaluated,,,,,,No provider selected,48183,1978-09-23
+4,Cincinnati,Louisville,False,Reconstructed history,W3,-12.89,Cincinnati,14,28,-14,incorrect,no_cover,26.89,Evaluated,,,,,,No provider selected,48182,1978-09-23
+4,Air Force,Holy Cross,False,Reconstructed history,W3,-2.79,Air Force,18,35,-17,incorrect,no_cover,19.79,Evaluated,,,,,,No provider selected,48170,1978-09-23
+4,Miami,Florida State,False,Reconstructed history,W3,26.31,Florida State,21,31,-10,correct,no_cover,16.31,Evaluated,,,,,,No provider selected,48167,1978-09-23
+4,Dartmouth,Pennsylvania,False,Reconstructed history,W3,-2.08,Dartmouth,31,21,10,correct,cover,7.92,Evaluated,,,,,,No provider selected,48163,1978-09-23
+4,Harvard,Columbia,False,Reconstructed history,W3,-2.09,Harvard,19,21,-2,incorrect,no_cover,4.09,Evaluated,,,,,,No provider selected,48162,1978-09-23
+4,The Citadel,VMI,False,Reconstructed history,W3,-1.49,The Citadel,14,3,11,correct,cover,9.51,Evaluated,,,,,,No provider selected,48160,1978-09-23
+4,Marshall,Chattanooga,False,Reconstructed history,W3,9.38,Chattanooga,23,27,-4,correct,no_cover,5.38,Evaluated,,,,,,No provider selected,48159,1978-09-23
+4,Michigan State,Syracuse,False,Reconstructed history,W3,-3.72,Michigan State,49,21,28,correct,cover,24.28,Evaluated,,,,,,No provider selected,48186,1978-09-23
+5,USC,Michigan State,False,Reconstructed history,W4,-16.30,USC,30,9,21,correct,cover,4.70,Evaluated,,,,,,No provider selected,48221,1978-09-29
+5,Virginia Tech,William & Mary,False,Reconstructed history,W4,13.89,William & Mary,22,19,3,incorrect,no_cover,16.89,Evaluated,,,,,,No provider selected,48284,1978-09-30
+5,Pittsburgh,North Carolina,False,Reconstructed history,W4,-12.16,Pittsburgh,20,16,4,correct,no_cover,8.16,Evaluated,,,,,,No provider selected,48269,1978-09-30
+5,Penn State,TCU,False,Reconstructed history,W4,-20.20,Penn State,58,0,58,correct,cover,37.80,Evaluated,,,,,,No provider selected,48268,1978-09-30
+5,Ohio State,Baylor,False,Reconstructed history,W4,-14.42,Ohio State,34,28,6,correct,no_cover,8.42,Evaluated,,,,,,No provider selected,48265,1978-09-30
+5,Notre Dame,Purdue,False,Reconstructed history,W4,26.84,Purdue,10,6,4,incorrect,no_cover,30.84,Evaluated,,,,,,No provider selected,48264,1978-09-30
+5,Northern Illinois,Illinois State,False,Reconstructed history,W4,-1.86,Northern Illinois,49,21,28,correct,cover,26.14,Evaluated,,,,,,No provider selected,48263,1978-09-30
+5,North Texas,Oklahoma State,False,Reconstructed history,W4,-25.59,North Texas,12,7,5,correct,no_cover,20.59,Evaluated,,,,,,No provider selected,48262,1978-09-30
+5,Indiana,Nebraska,False,Reconstructed history,W4,6.74,Nebraska,17,69,-52,correct,cover,45.26,Evaluated,,,,,,No provider selected,48260,1978-09-30
+5,Ole Miss,Southern Miss,False,Reconstructed history,W4,3.18,Southern Miss,16,13,3,incorrect,no_cover,6.18,Evaluated,,,,,,No provider selected,48258,1978-09-30
+5,Michigan,Duke,False,Reconstructed history,W4,0.49,Duke,52,0,52,incorrect,no_cover,52.49,Evaluated,,,,,,No provider selected,48257,1978-09-30
+5,Kansas,Miami,False,Reconstructed history,W4,-9.37,Kansas,6,38,-32,incorrect,no_cover,41.37,Evaluated,,,,,,No provider selected,48256,1978-09-30
+5,Maryland,Kentucky,False,Reconstructed history,W4,-6.50,Maryland,20,3,17,correct,cover,10.50,Evaluated,,,,,,No provider selected,48255,1978-09-30
+5,Louisville,Indiana State,False,Reconstructed history,W4,-14.54,Louisville,31,12,19,correct,cover,4.46,Evaluated,,,,,,No provider selected,48254,1978-09-30
+5,Northwestern State,UL Monroe,False,Reconstructed history,W4,-3.56,Northwestern State,0,46,-46,incorrect,no_cover,49.56,Evaluated,,,,,,No provider selected,48253,1978-09-30
+5,Louisiana Tech,McNeese,False,Reconstructed history,W4,7.08,McNeese,34,20,14,incorrect,no_cover,21.08,Evaluated,,,,,,No provider selected,48252,1978-09-30
+5,Louisiana,Lamar,False,Reconstructed history,W4,6.71,Lamar,23,16,7,incorrect,no_cover,13.71,Evaluated,,,,,,No provider selected,48250,1978-09-30
+5,Florida,Mississippi State,False,Reconstructed history,W4,28.91,Mississippi State,34,0,34,incorrect,no_cover,62.91,Evaluated,,,,,,No provider selected,48239,1978-09-30
+5,New Mexico,BYU,False,Reconstructed history,W4,-1.40,New Mexico,23,27,-4,incorrect,no_cover,5.40,Evaluated,,,,,,No provider selected,48228,1978-09-30
+5,Boston College,Navy,False,Reconstructed history,W4,24.87,Navy,8,19,-11,correct,no_cover,13.87,Evaluated,,,,,,No provider selected,48259,1978-09-30
+5,Pacific,Long Beach State,False,Reconstructed history,W4,12.74,Long Beach State,14,0,14,incorrect,no_cover,26.74,Evaluated,,,,,,No provider selected,48267,1978-09-30
+5,Richmond,Cincinnati,False,Reconstructed history,W4,13.67,Cincinnati,51,28,23,incorrect,no_cover,36.67,Evaluated,,,,,,No provider selected,48271,1978-09-30
+5,Southern Illinois,New Mexico State,False,Reconstructed history,W4,1.95,New Mexico State,43,39,4,incorrect,no_cover,5.95,Evaluated,,,,,,No provider selected,48275,1978-09-30
+5,Utah,Colorado State,False,Reconstructed history,W4,-18.73,Utah,30,6,24,correct,cover,5.27,Evaluated,,,,,,No provider selected,48281,1978-09-30
+5,Oregon State,Washington,False,Reconstructed history,W4,9.91,Washington,0,34,-34,correct,cover,24.09,Evaluated,,,,,,No provider selected,48285,1978-09-30
+5,Western Carolina,Marshall,False,Reconstructed history,W4,2.29,Marshall,21,14,7,incorrect,no_cover,9.29,Evaluated,,,,,,No provider selected,48287,1978-09-30
+5,Texas Tech,Texas,False,Reconstructed history,W4,11.48,Texas,7,24,-17,correct,cover,5.52,Evaluated,,,,,,No provider selected,48278,1978-09-30
+5,Oklahoma,Missouri,False,Reconstructed history,W4,-10.83,Oklahoma,45,23,22,correct,cover,11.17,Evaluated,,,,,,No provider selected,48266,1978-09-30
+5,Wake Forest,NC State,False,Reconstructed history,W4,16.88,NC State,10,34,-24,correct,cover,7.12,Evaluated,,,,,,No provider selected,48261,1978-09-30
+5,Kent State,Ohio,False,Reconstructed history,W4,4.80,Ohio,20,14,6,incorrect,no_cover,10.80,Evaluated,,,,,,No provider selected,48249,1978-09-30
+5,App State,Furman,False,Reconstructed history,W4,-21.11,App State,34,52,-18,incorrect,no_cover,39.11,Evaluated,,,,,,No provider selected,48240,1978-09-30
+5,Toledo,Eastern Michigan,False,Reconstructed history,W4,4.11,Eastern Michigan,12,17,-5,correct,cover,0.89,Evaluated,,,,,,No provider selected,48238,1978-09-30
+5,Central Michigan,Ball State,False,Reconstructed history,W4,4.93,Ball State,0,27,-27,correct,cover,22.07,Evaluated,,,,,,No provider selected,48227,1978-09-30
+5,Auburn,Tennessee,False,Reconstructed history,W4,-29.35,Auburn,29,10,19,correct,no_cover,10.35,Evaluated,,,,,,No provider selected,48226,1978-09-30
+5,Alabama,Vanderbilt,False,Reconstructed history,W4,-14.38,Alabama,51,28,23,correct,cover,8.62,Evaluated,,,,,,No provider selected,48222,1978-09-30
+5,Western Michigan,Bowling Green,False,Reconstructed history,W4,-1.87,Western Michigan,24,20,4,correct,cover,2.13,Evaluated,,,,,,No provider selected,48288,1978-09-30
+5,West Texas A&M,Wichita State,False,Reconstructed history,W4,10.54,Wichita State,37,38,-1,correct,no_cover,9.54,Evaluated,,,,,,No provider selected,48289,1978-09-30
+5,Rice,LSU,False,Reconstructed history,W4,26.27,LSU,7,37,-30,correct,cover,3.73,Evaluated,,,,,,No provider selected,48251,1978-09-30
+5,Kansas State,Air Force,False,Reconstructed history,W4,18.60,Air Force,34,21,13,incorrect,no_cover,31.60,Evaluated,,,,,,No provider selected,48248,1978-09-30
+5,Iowa State,Drake,False,Reconstructed history,W4,-14.43,Iowa State,35,7,28,correct,cover,13.57,Evaluated,,,,,,No provider selected,48247,1978-09-30
+5,Syracuse,Illinois,False,Reconstructed history,W4,-1.69,Syracuse,14,28,-14,incorrect,no_cover,15.69,Evaluated,,,,,,No provider selected,48246,1978-09-30
+5,Florida State,Houston,False,Reconstructed history,W4,-14.76,Florida State,21,27,-6,incorrect,no_cover,20.76,Evaluated,,,,,,No provider selected,48245,1978-09-30
+5,Holy Cross,Dartmouth,False,Reconstructed history,W4,-5.85,Holy Cross,35,0,35,correct,cover,29.15,Evaluated,,,,,,No provider selected,48244,1978-09-30
+5,Hawai'i,Cal State Fullerton,False,Reconstructed history,W4,-7.01,Hawai'i,42,33,9,correct,cover,1.99,Evaluated,,,,,,No provider selected,48243,1978-09-30
+5,Georgia Tech,The Citadel,False,Reconstructed history,W4,6.61,The Citadel,28,0,28,incorrect,no_cover,34.61,Evaluated,,,,,,No provider selected,48241,1978-09-30
+5,Texas-Arlington,East Carolina,False,Reconstructed history,W4,13.13,East Carolina,17,23,-6,correct,no_cover,7.13,Evaluated,,,,,,No provider selected,48237,1978-09-30
+5,Colgate,Cornell,False,Reconstructed history,W4,0.53,Cornell,12,21,-9,correct,cover,8.47,Evaluated,,,,,,No provider selected,48235,1978-09-30
+5,Colorado,Northwestern,False,Reconstructed history,W4,-29.76,Colorado,55,7,48,correct,cover,18.24,Evaluated,,,,,,No provider selected,48233,1978-09-30
+5,Clemson,Villanova,False,Reconstructed history,W4,-0.85,Clemson,31,0,31,correct,cover,30.15,Evaluated,,,,,,No provider selected,48232,1978-09-30
+5,West Virginia,California,False,Reconstructed history,W4,8.01,California,21,28,-7,correct,no_cover,1.01,Evaluated,,,,,,No provider selected,48230,1978-09-30
+5,Arkansas,Tulsa,False,Reconstructed history,W4,-1.78,Arkansas,21,13,8,correct,cover,6.22,Evaluated,,,,,,No provider selected,48225,1978-09-30
+5,Arizona State,UTEP,False,Reconstructed history,W4,-18.67,Arizona State,27,0,27,correct,cover,8.33,Evaluated,,,,,,No provider selected,48224,1978-09-30
+5,Arizona,Iowa,False,Reconstructed history,W4,-7.81,Arizona,23,3,20,correct,cover,12.19,Evaluated,,,,,,No provider selected,48223,1978-09-30
+5,Wisconsin,Oregon,False,Reconstructed history,W4,-28.64,Wisconsin,22,19,3,correct,no_cover,25.64,Evaluated,,,,,,No provider selected,48290,1978-09-30
+5,Washington State,Army,False,Reconstructed history,W4,-15.60,Washington State,21,21,0,tie,no_cover,15.60,Evaluated,,,,,,No provider selected,48286,1978-09-30
+5,Virginia,VMI,False,Reconstructed history,W4,0.52,VMI,9,17,-8,correct,cover,7.48,Evaluated,,,,,,No provider selected,48283,1978-09-30
+5,Wyoming,Utah State,False,Reconstructed history,W4,9.02,Utah State,13,20,-7,correct,no_cover,2.02,Evaluated,,,,,,No provider selected,48282,1978-09-30
+5,UCLA,Minnesota,False,Reconstructed history,W4,-6.40,UCLA,17,3,14,correct,cover,7.60,Evaluated,,,,,,No provider selected,48280,1978-09-30
+5,Texas A&M,Memphis,False,Reconstructed history,W4,-19.72,Texas A&M,58,0,58,correct,cover,38.28,Evaluated,,,,,,No provider selected,48279,1978-09-30
+5,Stanford,Tulane,False,Reconstructed history,W4,-23.50,Stanford,17,14,3,correct,no_cover,20.50,Evaluated,,,,,,No provider selected,48276,1978-09-30
+5,South Carolina,Georgia,False,Reconstructed history,W4,8.41,Georgia,27,10,17,incorrect,no_cover,25.41,Evaluated,,,,,,No provider selected,48274,1978-09-30
+5,Rutgers,Princeton,False,Reconstructed history,W4,-11.89,Rutgers,24,0,24,correct,cover,12.11,Evaluated,,,,,,No provider selected,48272,1978-09-30
+6,Vanderbilt,Tulane,False,Reconstructed history,W5,-10.71,Vanderbilt,3,38,-35,incorrect,no_cover,45.71,Evaluated,,,,,,No provider selected,48353,1978-10-07
+6,New Mexico State,Texas-Arlington,False,Reconstructed history,W5,-16.90,New Mexico State,17,28,-11,incorrect,no_cover,27.90,Evaluated,,,,,,No provider selected,48352,1978-10-07
+6,Tennessee,Army,False,Reconstructed history,W5,12.83,Army,31,13,18,incorrect,no_cover,30.83,Evaluated,,,,,,No provider selected,48350,1978-10-07
+6,Southern Miss,Mississippi State,False,Reconstructed history,W5,5.75,Mississippi State,22,17,5,incorrect,no_cover,10.75,Evaluated,,,,,,No provider selected,48347,1978-10-07
+6,SMU,Ohio State,False,Reconstructed history,W5,-3.86,SMU,35,35,0,tie,no_cover,3.86,Evaluated,,,,,,No provider selected,48346,1978-10-07
+6,Illinois State,Southern Illinois,False,Reconstructed history,W5,17.83,Southern Illinois,0,26,-26,correct,cover,8.17,Evaluated,,,,,,No provider selected,48345,1978-10-07
+6,San Diego State,Fresno State,False,Reconstructed history,W5,5.87,Fresno State,31,14,17,incorrect,no_cover,22.87,Evaluated,,,,,,No provider selected,48344,1978-10-07
+6,Yale,Rutgers,False,Reconstructed history,W5,-8.50,Yale,27,28,-1,incorrect,no_cover,9.50,Evaluated,,,,,,No provider selected,48343,1978-10-07
+6,Purdue,Wake Forest,False,Reconstructed history,W5,-15.97,Purdue,14,7,7,correct,no_cover,8.97,Evaluated,,,,,,No provider selected,48342,1978-10-07
+6,Kentucky,Penn State,False,Reconstructed history,W5,12.78,Penn State,0,30,-30,correct,cover,17.22,Evaluated,,,,,,No provider selected,48339,1978-10-07
+6,Minnesota,Oregon State,False,Reconstructed history,W5,-11.94,Minnesota,14,17,-3,incorrect,no_cover,14.94,Evaluated,,,,,,No provider selected,48337,1978-10-07
+6,Oklahoma,Texas,False,Reconstructed history,W5,-2.82,Oklahoma,31,10,21,correct,cover,18.18,Evaluated,,,,,,No provider selected,48336,1978-10-07
+6,Michigan State,Notre Dame,False,Reconstructed history,W5,-4.48,Michigan State,25,29,-4,incorrect,no_cover,8.48,Evaluated,,,,,,No provider selected,48335,1978-10-07
+6,West Texas A&M,North Texas,False,Reconstructed history,W5,16.30,North Texas,0,35,-35,correct,cover,18.70,Evaluated,,,,,,No provider selected,48334,1978-10-07
+6,Ball State,Indiana State,False,Reconstructed history,W5,-23.56,Ball State,7,0,7,correct,no_cover,16.56,Evaluated,,,,,,No provider selected,48296,1978-10-07
+6,Clemson,Virginia Tech,False,Reconstructed history,W5,-8.02,Clemson,38,7,31,correct,cover,22.98,Evaluated,,,,,,No provider selected,48304,1978-10-07
+6,VMI,East Carolina,False,Reconstructed history,W5,1.81,East Carolina,6,19,-13,correct,cover,11.19,Evaluated,,,,,,No provider selected,48310,1978-10-07
+6,Harvard,Colgate,False,Reconstructed history,W5,-15.95,Harvard,24,21,3,correct,no_cover,12.95,Evaluated,,,,,,No provider selected,48316,1978-10-07
+6,Washington,Alabama,False,Reconstructed history,W5,5.96,Alabama,17,20,-3,correct,no_cover,2.96,Evaluated,,,,,,No provider selected,48292,1978-10-07
+6,Kent State,Western Michigan,False,Reconstructed history,W5,6.73,Western Michigan,0,14,-14,correct,cover,7.27,Evaluated,,,,,,No provider selected,48359,1978-10-07
+6,Villanova,Richmond,False,Reconstructed history,W5,-7.99,Villanova,17,14,3,correct,no_cover,4.99,Evaluated,,,,,,No provider selected,48358,1978-10-07
+6,UCLA,Stanford,False,Reconstructed history,W5,-1.40,UCLA,27,26,1,correct,no_cover,0.40,Evaluated,,,,,,No provider selected,48355,1978-10-07
+6,Boston College,Pittsburgh,False,Reconstructed history,W5,26.38,Pittsburgh,15,32,-17,correct,no_cover,9.38,Evaluated,,,,,,No provider selected,48341,1978-10-07
+6,Missouri,Illinois,False,Reconstructed history,W5,-9.40,Missouri,45,3,42,correct,cover,32.60,Evaluated,,,,,,No provider selected,48329,1978-10-07
+6,Michigan,Arizona,False,Reconstructed history,W5,-9.03,Michigan,21,17,4,correct,no_cover,5.03,Evaluated,,,,,,No provider selected,48328,1978-10-07
+6,North Carolina,Miami (OH),False,Reconstructed history,W5,-5.15,North Carolina,3,7,-4,incorrect,no_cover,9.15,Evaluated,,,,,,No provider selected,48327,1978-10-07
+6,Auburn,Miami,False,Reconstructed history,W5,-18.10,Auburn,15,17,-2,incorrect,no_cover,20.10,Evaluated,,,,,,No provider selected,48326,1978-10-07
+6,UL Monroe,Lamar,False,Reconstructed history,W5,-22.30,UL Monroe,17,17,0,tie,no_cover,22.30,Evaluated,,,,,,No provider selected,48323,1978-10-07
+6,Long Beach State,Northern Illinois,False,Reconstructed history,W5,-1.99,Long Beach State,24,19,5,correct,cover,3.01,Evaluated,,,,,,No provider selected,48320,1978-10-07
+6,Hawai'i,San José State,False,Reconstructed history,W5,-6.22,Hawai'i,25,11,14,correct,cover,7.78,Evaluated,,,,,,No provider selected,48317,1978-10-07
+6,Iowa State,Nebraska,False,Reconstructed history,W5,-6.13,Iowa State,0,23,-23,incorrect,no_cover,29.13,Evaluated,,,,,,No provider selected,48331,1978-10-07
+6,Louisiana,Louisiana Tech,False,Reconstructed history,W5,12.19,Louisiana Tech,24,6,18,incorrect,no_cover,30.19,Evaluated,,,,,,No provider selected,48321,1978-10-07
+6,Kansas State,Oklahoma State,False,Reconstructed history,W5,-7.98,Kansas State,18,7,11,correct,cover,3.02,Evaluated,,,,,,No provider selected,48319,1978-10-07
+6,Baylor,Houston,False,Reconstructed history,W5,16.97,Houston,18,20,-2,correct,no_cover,14.97,Evaluated,,,,,,No provider selected,48318,1978-10-07
+6,Georgia Tech,South Carolina,False,Reconstructed history,W5,4.96,South Carolina,6,3,3,incorrect,no_cover,7.96,Evaluated,,,,,,No provider selected,48315,1978-10-07
+6,Georgia,Ole Miss,False,Reconstructed history,W5,-4.08,Georgia,42,3,39,correct,cover,34.92,Evaluated,,,,,,No provider selected,48314,1978-10-07
+6,Colorado State,UTEP,False,Reconstructed history,W5,3.18,UTEP,39,29,10,incorrect,no_cover,13.18,Evaluated,,,,,,No provider selected,48306,1978-10-07
+6,Colorado,Kansas,False,Reconstructed history,W5,-23.06,Colorado,17,7,10,correct,no_cover,13.06,Evaluated,,,,,,No provider selected,48305,1978-10-07
+6,The Citadel,Marshall,False,Reconstructed history,W5,-6.64,The Citadel,41,0,41,correct,cover,34.36,Evaluated,,,,,,No provider selected,48303,1978-10-07
+6,Ohio,Central Michigan,False,Reconstructed history,W5,5.16,Central Michigan,3,17,-14,correct,cover,8.84,Evaluated,,,,,,No provider selected,48301,1978-10-07
+6,Arkansas,TCU,False,Reconstructed history,W5,-22.83,Arkansas,42,3,39,correct,cover,16.17,Evaluated,,,,,,No provider selected,48294,1978-10-07
+6,Toledo,Bowling Green,False,Reconstructed history,W5,15.13,Bowling Green,27,45,-18,correct,cover,2.87,Evaluated,,,,,,No provider selected,48298,1978-10-07
+6,Princeton,Brown,False,Reconstructed history,W5,-2.49,Princeton,16,44,-28,incorrect,no_cover,30.49,Evaluated,,,,,,No provider selected,48299,1978-10-07
+6,California,Oregon,False,Reconstructed history,W5,-23.59,California,21,18,3,correct,no_cover,20.59,Evaluated,,,,,,No provider selected,48300,1978-10-07
+6,Chattanooga,App State,False,Reconstructed history,W5,-6.95,Chattanooga,72,14,58,correct,cover,51.05,Evaluated,,,,,,No provider selected,48302,1978-10-07
+6,Drake,Wichita State,False,Reconstructed history,W5,7.62,Wichita State,48,22,26,incorrect,no_cover,33.62,Evaluated,,,,,,No provider selected,48308,1978-10-07
+6,Duke,Virginia,False,Reconstructed history,W5,-13.98,Duke,20,13,7,correct,no_cover,6.98,Evaluated,,,,,,No provider selected,48309,1978-10-07
+6,Florida State,Cincinnati,False,Reconstructed history,W5,-14.44,Florida State,26,21,5,correct,no_cover,9.44,Evaluated,,,,,,No provider selected,48312,1978-10-07
+6,Florida,LSU,False,Reconstructed history,W5,9.31,LSU,21,34,-13,correct,cover,3.69,Evaluated,,,,,,No provider selected,48322,1978-10-07
+6,Maryland,NC State,False,Reconstructed history,W5,-3.40,Maryland,31,7,24,correct,cover,20.60,Evaluated,,,,,,No provider selected,48324,1978-10-07
+6,Air Force,Navy,False,Reconstructed history,W5,10.76,Navy,8,37,-29,correct,cover,18.24,Evaluated,,,,,,No provider selected,48330,1978-10-07
+6,Wyoming,New Mexico,False,Reconstructed history,W5,3.47,New Mexico,15,19,-4,correct,cover,0.53,Evaluated,,,,,,No provider selected,48333,1978-10-07
+6,Pacific,Cal State Fullerton,False,Reconstructed history,W5,-1.34,Pacific,35,17,18,correct,cover,16.66,Evaluated,,,,,,No provider selected,48338,1978-10-07
+6,Pennsylvania,Columbia,False,Reconstructed history,W5,10.97,Columbia,31,19,12,incorrect,no_cover,22.97,Evaluated,,,,,,No provider selected,48340,1978-10-07
+6,West Virginia,Syracuse,False,Reconstructed history,W5,-8.87,West Virginia,15,31,-16,incorrect,no_cover,24.87,Evaluated,,,,,,No provider selected,48348,1978-10-07
+6,Temple,William & Mary,False,Reconstructed history,W5,4.44,William & Mary,22,22,0,tie,no_cover,4.44,Evaluated,,,,,,No provider selected,48349,1978-10-07
+6,Texas A&M,Texas Tech,False,Reconstructed history,W5,-19.65,Texas A&M,38,9,29,correct,cover,9.35,Evaluated,,,,,,No provider selected,48351,1978-10-07
+6,Wisconsin,Indiana,False,Reconstructed history,W5,-19.11,Wisconsin,34,7,27,correct,cover,7.89,Evaluated,,,,,,No provider selected,48360,1978-10-07
+6,Northwestern,Arizona State,False,Reconstructed history,W5,21.03,Arizona State,14,56,-42,correct,cover,20.97,Evaluated,,,,,,No provider selected,48293,1978-10-07
+6,Arkansas State,Northwestern State,False,Reconstructed history,W5,10.10,Northwestern State,23,14,9,incorrect,no_cover,19.10,Evaluated,,,,,,No provider selected,48295,1978-10-07
+6,BYU,Utah State,False,Reconstructed history,W5,3.36,Utah State,7,24,-17,correct,cover,13.64,Evaluated,,,,,,No provider selected,48357,1978-10-07
+6,Iowa,Utah,False,Reconstructed history,W5,8.33,Utah,9,13,-4,correct,no_cover,4.33,Evaluated,,,,,,No provider selected,48356,1978-10-07
+6,Tulsa,Louisville,False,Reconstructed history,W5,-1.86,Tulsa,24,7,17,correct,cover,15.14,Evaluated,,,,,,No provider selected,48354,1978-10-07
+7,Virginia,Clemson,False,Reconstructed history,W6,16.08,Clemson,14,30,-16,correct,no_cover,0.08,Evaluated,,,,,,No provider selected,48373,1978-10-14
+7,Indiana State,Drake,False,Reconstructed history,W6,7.39,Drake,13,0,13,incorrect,no_cover,20.39,Evaluated,,,,,,No provider selected,48385,1978-10-14
+7,Dartmouth,Yale,False,Reconstructed history,W6,8.97,Yale,10,3,7,incorrect,no_cover,15.97,Evaluated,,,,,,No provider selected,48378,1978-10-14
+7,Army,Holy Cross,False,Reconstructed history,W6,15.76,Holy Cross,0,31,-31,correct,cover,15.24,Evaluated,,,,,,No provider selected,48382,1978-10-14
+7,Indiana,Northwestern,False,Reconstructed history,W6,-8.78,Indiana,38,10,28,correct,cover,19.22,Evaluated,,,,,,No provider selected,48384,1978-10-14
+7,Ole Miss,Kentucky,False,Reconstructed history,W6,-5.44,Ole Miss,17,24,-7,incorrect,no_cover,12.44,Evaluated,,,,,,No provider selected,48386,1978-10-14
+7,Utah State,Long Beach State,False,Reconstructed history,W6,-16.60,Utah State,17,33,-16,incorrect,no_cover,32.60,Evaluated,,,,,,No provider selected,48387,1978-10-14
+7,Louisville,Northwestern State,False,Reconstructed history,W6,-6.00,Louisville,51,7,44,correct,cover,38.00,Evaluated,,,,,,No provider selected,48389,1978-10-14
+7,Michigan,Michigan State,False,Reconstructed history,W6,-23.01,Michigan,15,24,-9,incorrect,no_cover,32.01,Evaluated,,,,,,No provider selected,48394,1978-10-14
+7,Missouri,Iowa State,False,Reconstructed history,W6,2.40,Iowa State,26,13,13,incorrect,no_cover,15.40,Evaluated,,,,,,No provider selected,48397,1978-10-14
+7,UNLV,Hawai'i,False,Reconstructed history,W6,10.85,Hawai'i,30,20,10,incorrect,no_cover,20.85,Evaluated,,,,,,No provider selected,48401,1978-10-14
+7,Wake Forest,North Carolina,False,Reconstructed history,W6,0.69,North Carolina,29,34,-5,correct,cover,4.31,Evaluated,,,,,,No provider selected,48403,1978-10-14
+7,Notre Dame,Pittsburgh,False,Reconstructed history,W6,11.70,Pittsburgh,26,17,9,incorrect,no_cover,20.70,Evaluated,,,,,,No provider selected,48405,1978-10-14
+7,Purdue,Ohio State,False,Reconstructed history,W6,-4.23,Purdue,27,16,11,correct,cover,6.77,Evaluated,,,,,,No provider selected,48409,1978-10-14
+7,Baylor,SMU,False,Reconstructed history,W6,17.94,SMU,21,28,-7,correct,no_cover,10.94,Evaluated,,,,,,No provider selected,48413,1978-10-14
+7,Temple,Cincinnati,False,Reconstructed history,W6,-11.30,Temple,16,13,3,correct,no_cover,8.30,Evaluated,,,,,,No provider selected,48415,1978-10-14
+7,Texas-Arlington,Louisiana,False,Reconstructed history,W6,3.31,Louisiana,24,3,21,incorrect,no_cover,24.31,Evaluated,,,,,,No provider selected,48418,1978-10-14
+7,UCLA,Washington State,False,Reconstructed history,W6,3.06,Washington State,45,31,14,incorrect,no_cover,17.06,Evaluated,,,,,,No provider selected,48420,1978-10-14
+7,Wisconsin,Illinois,False,Reconstructed history,W6,-22.42,Wisconsin,20,20,0,tie,no_cover,22.42,Evaluated,,,,,,No provider selected,48429,1978-10-14
+7,Wyoming,San Diego State,False,Reconstructed history,W6,0.62,San Diego State,31,22,9,incorrect,no_cover,9.62,Evaluated,,,,,,No provider selected,48430,1978-10-14
+7,Fresno State,Pacific,False,Reconstructed history,W6,1.58,Pacific,7,27,-20,correct,cover,18.42,Evaluated,,,,,,No provider selected,48408,1978-10-14
+7,Oklahoma State,Colorado,False,Reconstructed history,W6,25.05,Colorado,24,20,4,incorrect,no_cover,29.05,Evaluated,,,,,,No provider selected,48407,1978-10-14
+7,Kansas,Oklahoma,False,Reconstructed history,W6,22.45,Oklahoma,16,17,-1,correct,no_cover,21.45,Evaluated,,,,,,No provider selected,48406,1978-10-14
+7,New Mexico State,Tulsa,False,Reconstructed history,W6,10.42,Tulsa,23,20,3,incorrect,no_cover,13.42,Evaluated,,,,,,No provider selected,48402,1978-10-14
+7,TCU,Rice,False,Reconstructed history,W6,-8.71,TCU,14,21,-7,incorrect,no_cover,15.71,Evaluated,,,,,,No provider selected,48410,1978-10-14
+7,Southern Miss,East Carolina,False,Reconstructed history,W6,0.36,East Carolina,17,16,1,incorrect,no_cover,1.36,Evaluated,,,,,,No provider selected,48414,1978-10-14
+7,Tulane,Boston College,False,Reconstructed history,W6,-7.83,Tulane,9,3,6,correct,no_cover,1.83,Evaluated,,,,,,No provider selected,48419,1978-10-14
+7,Virginia Tech,West Virginia,False,Reconstructed history,W6,-8.49,Virginia Tech,16,3,13,correct,cover,4.51,Evaluated,,,,,,No provider selected,48423,1978-10-14
+7,Stanford,Washington,False,Reconstructed history,W6,-7.10,Stanford,31,34,-3,incorrect,no_cover,10.10,Evaluated,,,,,,No provider selected,48424,1978-10-14
+7,Western Carolina,The Citadel,False,Reconstructed history,W6,1.89,The Citadel,38,24,14,incorrect,no_cover,15.89,Evaluated,,,,,,No provider selected,48426,1978-10-14
+7,Western Michigan,Toledo,False,Reconstructed history,W6,-24.56,Western Michigan,17,7,10,correct,no_cover,14.56,Evaluated,,,,,,No provider selected,48427,1978-10-14
+7,Nebraska,Kansas State,False,Reconstructed history,W6,-16.96,Nebraska,48,14,34,correct,cover,17.04,Evaluated,,,,,,No provider selected,48399,1978-10-14
+7,West Texas A&M,Lamar,False,Reconstructed history,W6,1.18,Lamar,55,16,39,incorrect,no_cover,40.18,Evaluated,,,,,,No provider selected,48425,1978-10-14
+7,Richmond,VMI,False,Reconstructed history,W6,1.67,VMI,6,23,-17,correct,cover,15.33,Evaluated,,,,,,No provider selected,48422,1978-10-14
+7,New Mexico,Texas Tech,False,Reconstructed history,W6,-12.87,New Mexico,23,36,-13,incorrect,no_cover,25.87,Evaluated,,,,,,No provider selected,48417,1978-10-14
+7,Texas,North Texas,False,Reconstructed history,W6,-1.21,Texas,26,16,10,correct,cover,8.79,Evaluated,,,,,,No provider selected,48416,1978-10-14
+7,South Carolina,Ohio,False,Reconstructed history,W6,-12.42,South Carolina,24,7,17,correct,cover,4.58,Evaluated,,,,,,No provider selected,48412,1978-10-14
+7,Navy,Duke,False,Reconstructed history,W6,-9.54,Navy,31,8,23,correct,cover,13.46,Evaluated,,,,,,No provider selected,48398,1978-10-14
+7,Mississippi State,Florida State,False,Reconstructed history,W6,1.86,Florida State,55,27,28,incorrect,no_cover,29.86,Evaluated,,,,,,No provider selected,48396,1978-10-14
+7,Marshall,Miami (OH),False,Reconstructed history,W6,4.99,Miami (OH),3,29,-26,correct,cover,21.01,Evaluated,,,,,,No provider selected,48393,1978-10-14
+7,Memphis,Wichita State,False,Reconstructed history,W6,8.61,Wichita State,26,13,13,incorrect,no_cover,21.61,Evaluated,,,,,,No provider selected,48392,1978-10-14
+7,McNeese,UL Monroe,False,Reconstructed history,W6,7.30,UL Monroe,31,10,21,incorrect,no_cover,28.30,Evaluated,,,,,,No provider selected,48391,1978-10-14
+7,Syracuse,Maryland,False,Reconstructed history,W6,22.46,Maryland,9,24,-15,correct,no_cover,7.46,Evaluated,,,,,,No provider selected,48390,1978-10-14
+7,Louisiana Tech,Ball State,False,Reconstructed history,W6,11.46,Ball State,17,7,10,incorrect,no_cover,21.46,Evaluated,,,,,,No provider selected,48388,1978-10-14
+7,Air Force,Colorado State,False,Reconstructed history,W6,-6.47,Air Force,13,31,-18,incorrect,no_cover,24.47,Evaluated,,,,,,No provider selected,48375,1978-10-14
+7,Central Michigan,Illinois State,False,Reconstructed history,W6,-20.17,Central Michigan,45,7,38,correct,cover,17.83,Evaluated,,,,,,No provider selected,48371,1978-10-14
+7,Oregon,BYU,False,Reconstructed history,W6,15.81,BYU,16,17,-1,correct,no_cover,14.81,Evaluated,,,,,,No provider selected,48368,1978-10-14
+7,Southern Illinois,Arkansas State,False,Reconstructed history,W6,-12.39,Southern Illinois,24,26,-2,incorrect,no_cover,14.39,Evaluated,,,,,,No provider selected,48364,1978-10-14
+7,Minnesota,Iowa,False,Reconstructed history,W6,-2.81,Minnesota,22,20,2,correct,no_cover,0.81,Evaluated,,,,,,No provider selected,48395,1978-10-14
+7,Columbia,Princeton,False,Reconstructed history,W6,-21.23,Columbia,14,10,4,correct,no_cover,17.23,Evaluated,,,,,,No provider selected,48376,1978-10-14
+7,Houston,Texas A&M,False,Reconstructed history,W6,4.58,Texas A&M,33,0,33,incorrect,no_cover,37.58,Evaluated,,,,,,No provider selected,48383,1978-10-14
+7,Georgia Tech,Miami,False,Reconstructed history,W6,-3.72,Georgia Tech,24,19,5,correct,cover,1.28,Evaluated,,,,,,No provider selected,48381,1978-10-14
+7,LSU,Georgia,False,Reconstructed history,W6,-7.07,LSU,17,24,-7,incorrect,no_cover,14.07,Evaluated,,,,,,No provider selected,48380,1978-10-14
+7,Harvard,Cornell,False,Reconstructed history,W6,4.69,Cornell,20,25,-5,correct,cover,0.31,Evaluated,,,,,,No provider selected,48377,1978-10-14
+7,Villanova,Colgate,False,Reconstructed history,W6,-17.05,Villanova,14,20,-6,incorrect,no_cover,23.05,Evaluated,,,,,,No provider selected,48374,1978-10-14
+7,Vanderbilt,Auburn,False,Reconstructed history,W6,13.90,Auburn,7,49,-42,correct,cover,28.10,Evaluated,,,,,,No provider selected,48365,1978-10-14
+7,Alabama,Florida,False,Reconstructed history,W6,-13.70,Alabama,23,12,11,correct,no_cover,2.70,Evaluated,,,,,,No provider selected,48361,1978-10-14
+7,Arizona State,USC,False,Reconstructed history,W6,2.73,USC,20,7,13,incorrect,no_cover,15.73,Evaluated,,,,,,No provider selected,48363,1978-10-14
+7,Bowling Green,Kent State,False,Reconstructed history,W6,-9.88,Bowling Green,28,20,8,correct,no_cover,1.88,Evaluated,,,,,,No provider selected,48367,1978-10-14
+7,Brown,Pennsylvania,False,Reconstructed history,W6,8.49,Pennsylvania,14,0,14,incorrect,no_cover,22.49,Evaluated,,,,,,No provider selected,48369,1978-10-14
+7,Arizona,California,False,Reconstructed history,W6,1.89,California,20,33,-13,correct,cover,11.11,Evaluated,,,,,,No provider selected,48370,1978-10-14
+8,Penn State,Syracuse,False,Reconstructed history,W7,-26.73,Penn State,45,15,30,correct,cover,3.27,Evaluated,,,,,,No provider selected,48470,1978-10-21
+8,Wyoming,Utah,False,Reconstructed history,W7,8.02,Utah,34,21,13,incorrect,no_cover,21.02,Evaluated,,,,,,No provider selected,48496,1978-10-21
+8,Washington,Oregon,False,Reconstructed history,W7,-17.62,Washington,20,14,6,correct,no_cover,11.62,Evaluated,,,,,,No provider selected,48491,1978-10-21
+8,California,UCLA,False,Reconstructed history,W7,-1.89,California,0,45,-45,incorrect,no_cover,46.89,Evaluated,,,,,,No provider selected,48489,1978-10-21
+8,Lamar,Texas-Arlington,False,Reconstructed history,W7,1.92,Texas-Arlington,17,37,-20,correct,cover,18.08,Evaluated,,,,,,No provider selected,48486,1978-10-21
+8,Rice,Texas Tech,False,Reconstructed history,W7,4.46,Texas Tech,28,42,-14,correct,cover,9.54,Evaluated,,,,,,No provider selected,48485,1978-10-21
+8,Texas,Arkansas,False,Reconstructed history,W7,2.44,Arkansas,28,21,7,incorrect,no_cover,9.44,Evaluated,,,,,,No provider selected,48483,1978-10-21
+8,Oklahoma State,Kansas,False,Reconstructed history,W7,-2.09,Oklahoma State,21,7,14,correct,cover,11.91,Evaluated,,,,,,No provider selected,48469,1978-10-21
+8,Iowa State,Oklahoma,False,Reconstructed history,W7,6.61,Oklahoma,6,34,-28,correct,cover,21.39,Evaluated,,,,,,No provider selected,48468,1978-10-21
+8,Northwestern,Minnesota,False,Reconstructed history,W7,9.14,Minnesota,14,38,-24,correct,cover,14.86,Evaluated,,,,,,No provider selected,48459,1978-10-21
+8,Kentucky,LSU,False,Reconstructed history,W7,8.27,LSU,0,21,-21,correct,cover,12.73,Evaluated,,,,,,No provider selected,48451,1978-10-21
+8,Georgia,Vanderbilt,False,Reconstructed history,W7,-20.86,Georgia,31,10,21,correct,cover,0.14,Evaluated,,,,,,No provider selected,48444,1978-10-21
+8,Clemson,Duke,False,Reconstructed history,W7,-10.44,Clemson,28,8,20,correct,cover,9.56,Evaluated,,,,,,No provider selected,48441,1978-10-21
+8,Furman,Chattanooga,False,Reconstructed history,W7,5.87,Chattanooga,9,13,-4,correct,no_cover,1.87,Evaluated,,,,,,No provider selected,48440,1978-10-21
+8,Central Michigan,Northern Illinois,False,Reconstructed history,W7,-10.59,Central Michigan,34,7,27,correct,cover,16.41,Evaluated,,,,,,No provider selected,48439,1978-10-21
+8,Long Beach State,Cal State Fullerton,False,Reconstructed history,W7,-14.61,Long Beach State,9,34,-25,incorrect,no_cover,39.61,Evaluated,,,,,,No provider selected,48438,1978-10-21
+8,Cornell,Brown,False,Reconstructed history,W7,-13.69,Cornell,13,21,-8,incorrect,no_cover,21.69,Evaluated,,,,,,No provider selected,48437,1978-10-21
+8,BYU,UTEP,False,Reconstructed history,W7,-16.85,BYU,44,0,44,correct,cover,27.15,Evaluated,,,,,,No provider selected,48436,1978-10-21
+8,Texas A&M,Baylor,False,Reconstructed history,W7,-24.28,Texas A&M,6,24,-18,incorrect,no_cover,42.28,Evaluated,,,,,,No provider selected,48435,1978-10-21
+8,Virginia,Virginia Tech,False,Reconstructed history,W7,7.38,Virginia Tech,17,7,10,incorrect,no_cover,17.38,Evaluated,,,,,,No provider selected,48490,1978-10-21
+8,Cincinnati,Tulsa,False,Reconstructed history,W7,13.20,Tulsa,26,27,-1,correct,no_cover,12.20,Evaluated,,,,,,No provider selected,48488,1978-10-21
+8,Tulane,TCU,False,Reconstructed history,W7,-6.55,Tulane,7,13,-6,incorrect,no_cover,12.55,Evaluated,,,,,,No provider selected,48484,1978-10-21
+8,South Carolina,Ole Miss,False,Reconstructed history,W7,-10.75,South Carolina,18,17,1,correct,no_cover,9.75,Evaluated,,,,,,No provider selected,48477,1978-10-21
+8,San Diego State,Pacific,False,Reconstructed history,W7,2.25,Pacific,31,28,3,incorrect,no_cover,5.25,Evaluated,,,,,,No provider selected,48475,1978-10-21
+8,Princeton,Colgate,False,Reconstructed history,W7,2.76,Colgate,13,12,1,incorrect,no_cover,3.76,Evaluated,,,,,,No provider selected,48472,1978-10-21
+8,New Mexico,New Mexico State,False,Reconstructed history,W7,-3.39,New Mexico,35,20,15,correct,cover,11.61,Evaluated,,,,,,No provider selected,48464,1978-10-21
+8,Colorado State,UNLV,False,Reconstructed history,W7,-1.96,Colorado State,6,33,-27,incorrect,no_cover,28.96,Evaluated,,,,,,No provider selected,48463,1978-10-21
+8,Miami,Utah State,False,Reconstructed history,W7,7.61,Utah State,17,16,1,incorrect,no_cover,8.61,Evaluated,,,,,,No provider selected,48455,1978-10-21
+8,Northwestern State,Louisiana Tech,False,Reconstructed history,W7,3.48,Louisiana Tech,20,45,-25,correct,cover,21.52,Evaluated,,,,,,No provider selected,48452,1978-10-21
+8,Kent State,Marshall,False,Reconstructed history,W7,-6.31,Kent State,20,17,3,correct,no_cover,3.31,Evaluated,,,,,,No provider selected,48448,1978-10-21
+8,Auburn,Georgia Tech,False,Reconstructed history,W7,-5.58,Auburn,10,24,-14,incorrect,no_cover,19.58,Evaluated,,,,,,No provider selected,48445,1978-10-21
+8,Florida,Army,False,Reconstructed history,W7,-4.41,Florida,31,7,24,correct,cover,19.59,Evaluated,,,,,,No provider selected,48443,1978-10-21
+8,Illinois State,Ball State,False,Reconstructed history,W7,22.28,Ball State,7,14,-7,correct,no_cover,15.28,Evaluated,,,,,,No provider selected,48434,1978-10-21
+8,SMU,Houston,False,Reconstructed history,W7,-0.56,SMU,28,42,-14,incorrect,no_cover,14.56,Evaluated,,,,,,No provider selected,48447,1978-10-21
+8,Ohio State,Iowa,False,Reconstructed history,W7,-10.68,Ohio State,31,7,24,correct,cover,13.32,Evaluated,,,,,,No provider selected,48467,1978-10-21
+8,Air Force,Notre Dame,False,Reconstructed history,W7,6.76,Notre Dame,15,38,-23,correct,cover,16.24,Evaluated,,,,,,No provider selected,48466,1978-10-21
+8,North Carolina,NC State,False,Reconstructed history,W7,9.03,NC State,7,34,-27,correct,cover,17.97,Evaluated,,,,,,No provider selected,48465,1978-10-21
+8,Colorado,Nebraska,False,Reconstructed history,W7,0.19,Nebraska,14,52,-38,correct,cover,37.81,Evaluated,,,,,,No provider selected,48462,1978-10-21
+8,Navy,William & Mary,False,Reconstructed history,W7,-6.96,Navy,9,0,9,correct,cover,2.04,Evaluated,,,,,,No provider selected,48461,1978-10-21
+8,Kansas State,Missouri,False,Reconstructed history,W7,10.10,Missouri,14,56,-42,correct,cover,31.90,Evaluated,,,,,,No provider selected,48460,1978-10-21
+8,Michigan State,Indiana,False,Reconstructed history,W7,-4.65,Michigan State,49,14,35,correct,cover,30.35,Evaluated,,,,,,No provider selected,48458,1978-10-21
+8,Wisconsin,Michigan,False,Reconstructed history,W7,-4.04,Wisconsin,0,42,-42,incorrect,no_cover,46.04,Evaluated,,,,,,No provider selected,48457,1978-10-21
+8,Miami (OH),Bowling Green,False,Reconstructed history,W7,2.29,Bowling Green,18,7,11,incorrect,no_cover,13.29,Evaluated,,,,,,No provider selected,48456,1978-10-21
+8,Maryland,Wake Forest,False,Reconstructed history,W7,-25.24,Maryland,39,0,39,correct,cover,13.76,Evaluated,,,,,,No provider selected,48454,1978-10-21
+8,Harvard,Dartmouth,False,Reconstructed history,W7,-4.30,Harvard,24,19,5,correct,cover,0.70,Evaluated,,,,,,No provider selected,48446,1978-10-21
+8,Columbia,Yale,False,Reconstructed history,W7,-6.80,Columbia,3,3,0,tie,no_cover,6.80,Evaluated,,,,,,No provider selected,48442,1978-10-21
+8,Arkansas State,McNeese,False,Reconstructed history,W7,3.38,McNeese,6,3,3,incorrect,no_cover,6.38,Evaluated,,,,,,No provider selected,48433,1978-10-21
+8,App State,The Citadel,False,Reconstructed history,W7,-6.08,App State,42,14,28,correct,cover,21.92,Evaluated,,,,,,No provider selected,48432,1978-10-21
+8,Tennessee,Alabama,False,Reconstructed history,W7,13.67,Alabama,17,30,-13,correct,no_cover,0.67,Evaluated,,,,,,No provider selected,48431,1978-10-21
+8,Wichita State,Southern Illinois,False,Reconstructed history,W7,3.81,Southern Illinois,33,7,26,incorrect,no_cover,29.81,Evaluated,,,,,,No provider selected,48495,1978-10-21
+8,Western Michigan,Eastern Michigan,False,Reconstructed history,W7,-13.03,Western Michigan,32,0,32,correct,cover,18.97,Evaluated,,,,,,No provider selected,48494,1978-10-21
+8,Indiana State,West Texas A&M,False,Reconstructed history,W7,-3.33,Indiana State,7,36,-29,incorrect,no_cover,32.33,Evaluated,,,,,,No provider selected,48492,1978-10-21
+8,Ohio,Toledo,False,Reconstructed history,W7,-7.15,Ohio,14,28,-14,incorrect,no_cover,21.15,Evaluated,,,,,,No provider selected,48487,1978-10-21
+8,Temple,West Virginia,False,Reconstructed history,W7,-15.89,Temple,28,27,1,correct,no_cover,14.89,Evaluated,,,,,,No provider selected,48482,1978-10-21
+8,Washington State,Stanford,False,Reconstructed history,W7,-7.94,Washington State,27,43,-16,incorrect,no_cover,23.94,Evaluated,,,,,,No provider selected,48481,1978-10-21
+8,Memphis,Southern Miss,False,Reconstructed history,W7,7.07,Southern Miss,10,13,-3,correct,no_cover,4.07,Evaluated,,,,,,No provider selected,48480,1978-10-21
+8,USC,Oregon State,False,Reconstructed history,W7,-19.23,USC,38,7,31,correct,cover,11.77,Evaluated,,,,,,No provider selected,48479,1978-10-21
+8,San José State,Fresno State,False,Reconstructed history,W7,-5.46,San José State,26,16,10,correct,cover,4.54,Evaluated,,,,,,No provider selected,48476,1978-10-21
+8,Rutgers,Villanova,False,Reconstructed history,W7,-11.09,Rutgers,24,9,15,correct,cover,3.91,Evaluated,,,,,,No provider selected,48474,1978-10-21
+8,Illinois,Purdue,False,Reconstructed history,W7,14.47,Purdue,0,13,-13,correct,no_cover,1.47,Evaluated,,,,,,No provider selected,48473,1978-10-21
+8,Pittsburgh,Florida State,False,Reconstructed history,W7,-5.06,Pittsburgh,7,3,4,correct,no_cover,1.06,Evaluated,,,,,,No provider selected,48471,1978-10-21
+9,UCLA,Arizona,False,Reconstructed history,W8,-11.15,UCLA,24,14,10,correct,no_cover,1.15,Evaluated,,,,,,No provider selected,48497,1978-10-27
+9,Harvard,Princeton,False,Reconstructed history,W8,-13.00,Harvard,24,24,0,tie,no_cover,13.00,Evaluated,,,,,,No provider selected,48519,1978-10-28
+9,Army,Colgate,False,Reconstructed history,W8,-2.55,Army,28,3,25,correct,cover,22.45,Evaluated,,,,,,No provider selected,48501,1978-10-28
+9,Texas-Arlington,Arkansas State,False,Reconstructed history,W8,1.91,Arkansas State,7,27,-20,correct,cover,18.09,Evaluated,,,,,,No provider selected,48500,1978-10-28
+9,Marshall,Furman,False,Reconstructed history,W8,10.82,Furman,12,42,-30,correct,cover,19.18,Evaluated,,,,,,No provider selected,48516,1978-10-28
+9,Kentucky,Georgia,False,Reconstructed history,W8,11.53,Georgia,16,17,-1,correct,no_cover,10.53,Evaluated,,,,,,No provider selected,48517,1978-10-28
+9,Houston,Arkansas,False,Reconstructed history,W8,-2.76,Houston,20,9,11,correct,cover,8.24,Evaluated,,,,,,No provider selected,48520,1978-10-28
+9,Kansas,Iowa State,False,Reconstructed history,W8,10.65,Iowa State,7,13,-6,correct,no_cover,4.65,Evaluated,,,,,,No provider selected,48522,1978-10-28
+9,Louisville,William & Mary,False,Reconstructed history,W8,-3.19,Louisville,33,21,12,correct,cover,8.81,Evaluated,,,,,,No provider selected,48525,1978-10-28
+9,Toledo,Miami (OH),False,Reconstructed history,W8,12.72,Miami (OH),7,28,-21,correct,cover,8.28,Evaluated,,,,,,No provider selected,48528,1978-10-28
+9,Vanderbilt,Ole Miss,False,Reconstructed history,W8,2.47,Ole Miss,10,35,-25,correct,cover,22.53,Evaluated,,,,,,No provider selected,48531,1978-10-28
+9,UTEP,New Mexico,False,Reconstructed history,W8,11.47,New Mexico,0,21,-21,correct,cover,9.53,Evaluated,,,,,,No provider selected,48536,1978-10-28
+9,Rutgers,Columbia,False,Reconstructed history,W8,-4.31,Rutgers,69,0,69,correct,cover,64.69,Evaluated,,,,,,No provider selected,48550,1978-10-28
+9,Hawai'i,Pacific,False,Reconstructed history,W8,-5.65,Hawai'i,17,27,-10,incorrect,no_cover,15.65,Evaluated,,,,,,No provider selected,48547,1978-10-28
+9,Southern Illinois,Northern Illinois,False,Reconstructed history,W8,-8.34,Southern Illinois,13,14,-1,incorrect,no_cover,9.34,Evaluated,,,,,,No provider selected,48540,1978-10-28
+9,Louisiana Tech,North Texas,False,Reconstructed history,W8,-1.14,Louisiana Tech,14,16,-2,incorrect,no_cover,3.14,Evaluated,,,,,,No provider selected,48539,1978-10-28
+9,South Carolina,North Carolina,False,Reconstructed history,W8,-12.88,South Carolina,22,24,-2,incorrect,no_cover,14.88,Evaluated,,,,,,No provider selected,48538,1978-10-28
+9,McNeese,Chattanooga,False,Reconstructed history,W8,6.92,Chattanooga,28,24,4,incorrect,no_cover,10.92,Evaluated,,,,,,No provider selected,48527,1978-10-28
+9,UL Monroe,Indiana State,False,Reconstructed history,W8,-13.66,UL Monroe,14,0,14,correct,cover,0.34,Evaluated,,,,,,No provider selected,48524,1978-10-28
+9,Long Beach State,San Diego State,False,Reconstructed history,W8,-3.25,Long Beach State,27,25,2,correct,no_cover,1.25,Evaluated,,,,,,No provider selected,48523,1978-10-28
+9,Georgia Tech,Florida,False,Reconstructed history,W8,-9.32,Georgia Tech,17,13,4,correct,no_cover,5.32,Evaluated,,,,,,No provider selected,48518,1978-10-28
+9,Louisiana,Cincinnati,False,Reconstructed history,W8,-5.54,Louisiana,13,38,-25,incorrect,no_cover,30.54,Evaluated,,,,,,No provider selected,48508,1978-10-28
+9,Brown,Holy Cross,False,Reconstructed history,W8,7.64,Holy Cross,31,25,6,incorrect,no_cover,13.64,Evaluated,,,,,,No provider selected,48505,1978-10-28
+9,Auburn,Wake Forest,False,Reconstructed history,W8,-18.35,Auburn,21,7,14,correct,no_cover,4.35,Evaluated,,,,,,No provider selected,48502,1978-10-28
+9,Alabama,Virginia Tech,False,Reconstructed history,W8,-15.13,Alabama,35,0,35,correct,cover,19.87,Evaluated,,,,,,No provider selected,48499,1978-10-28
+9,Air Force,Kent State,False,Reconstructed history,W8,1.46,Kent State,26,10,16,incorrect,no_cover,17.46,Evaluated,,,,,,No provider selected,48498,1978-10-28
+9,Eastern Michigan,Ball State,False,Reconstructed history,W8,11.89,Ball State,0,21,-21,correct,cover,9.11,Evaluated,,,,,,No provider selected,48503,1978-10-28
+9,TCU,Baylor,False,Reconstructed history,W8,-3.59,TCU,21,28,-7,incorrect,no_cover,10.59,Evaluated,,,,,,No provider selected,48504,1978-10-28
+9,Fresno State,Cal State Fullerton,False,Reconstructed history,W8,0.78,Cal State Fullerton,8,37,-29,correct,cover,28.22,Evaluated,,,,,,No provider selected,48506,1978-10-28
+9,Bowling Green,Central Michigan,False,Reconstructed history,W8,0.92,Central Michigan,7,38,-31,correct,cover,30.08,Evaluated,,,,,,No provider selected,48507,1978-10-28
+9,NC State,Clemson,False,Reconstructed history,W8,-1.07,NC State,10,33,-23,incorrect,no_cover,24.07,Evaluated,,,,,,No provider selected,48510,1978-10-28
+9,Missouri,Colorado,False,Reconstructed history,W8,-3.32,Missouri,27,28,-1,incorrect,no_cover,4.32,Evaluated,,,,,,No provider selected,48511,1978-10-28
+9,Cornell,Dartmouth,False,Reconstructed history,W8,-12.25,Cornell,7,14,-7,incorrect,no_cover,19.25,Evaluated,,,,,,No provider selected,48512,1978-10-28
+9,East Carolina,Richmond,False,Reconstructed history,W8,-14.21,East Carolina,21,14,7,correct,no_cover,7.21,Evaluated,,,,,,No provider selected,48513,1978-10-28
+9,Southern Miss,Florida State,False,Reconstructed history,W8,-4.46,Southern Miss,16,38,-22,incorrect,no_cover,26.46,Evaluated,,,,,,No provider selected,48515,1978-10-28
+9,VMI,Western Carolina,False,Reconstructed history,W8,1.30,Western Carolina,12,41,-29,correct,cover,27.70,Evaluated,,,,,,No provider selected,48561,1978-10-28
+9,Washington,Arizona State,False,Reconstructed history,W8,4.86,Arizona State,41,7,34,incorrect,no_cover,38.86,Evaluated,,,,,,No provider selected,48560,1978-10-28
+9,Tulane,Memphis,False,Reconstructed history,W8,-1.81,Tulane,41,24,17,correct,cover,15.19,Evaluated,,,,,,No provider selected,48556,1978-10-28
+9,Iowa,Purdue,False,Reconstructed history,W8,16.67,Purdue,7,34,-27,correct,cover,10.33,Evaluated,,,,,,No provider selected,48549,1978-10-28
+9,West Virginia,Penn State,False,Reconstructed history,W8,22.91,Penn State,21,49,-28,correct,cover,5.09,Evaluated,,,,,,No provider selected,48548,1978-10-28
+9,Ohio State,Northwestern,False,Reconstructed history,W8,-19.82,Ohio State,63,20,43,correct,cover,23.18,Evaluated,,,,,,No provider selected,48544,1978-10-28
+9,Wichita State,New Mexico State,False,Reconstructed history,W8,-6.49,Wichita State,21,31,-10,incorrect,no_cover,16.49,Evaluated,,,,,,No provider selected,48537,1978-10-28
+9,Yale,Pennsylvania,False,Reconstructed history,W8,-6.61,Yale,17,17,0,tie,no_cover,6.61,Evaluated,,,,,,No provider selected,48564,1978-10-28
+9,Colorado State,Wyoming,False,Reconstructed history,W8,4.54,Wyoming,3,13,-10,correct,cover,5.46,Evaluated,,,,,,No provider selected,48563,1978-10-28
+9,Utah State,San José State,False,Reconstructed history,W8,-11.94,Utah State,31,21,10,correct,no_cover,1.94,Evaluated,,,,,,No provider selected,48558,1978-10-28
+9,Tulsa,Drake,False,Reconstructed history,W8,-11.15,Tulsa,44,20,24,correct,cover,12.85,Evaluated,,,,,,No provider selected,48557,1978-10-28
+9,Texas A&M,Rice,False,Reconstructed history,W8,-17.97,Texas A&M,38,21,17,correct,no_cover,0.97,Evaluated,,,,,,No provider selected,48555,1978-10-28
+9,Texas,SMU,False,Reconstructed history,W8,-8.23,Texas,22,3,19,correct,cover,10.77,Evaluated,,,,,,No provider selected,48554,1978-10-28
+9,Stanford,Oregon State,False,Reconstructed history,W8,-14.80,Stanford,24,6,18,correct,cover,3.20,Evaluated,,,,,,No provider selected,48552,1978-10-28
+9,USC,California,False,Reconstructed history,W8,-6.72,USC,42,17,25,correct,cover,18.28,Evaluated,,,,,,No provider selected,48551,1978-10-28
+9,Oregon,Washington State,False,Reconstructed history,W8,15.91,Washington State,31,7,24,incorrect,no_cover,39.91,Evaluated,,,,,,No provider selected,48546,1978-10-28
+9,Oklahoma,Kansas State,False,Reconstructed history,W8,-23.28,Oklahoma,56,19,37,correct,cover,13.72,Evaluated,,,,,,No provider selected,48545,1978-10-28
+9,Western Michigan,Ohio,False,Reconstructed history,W8,-21.47,Western Michigan,7,10,-3,incorrect,no_cover,24.47,Evaluated,,,,,,No provider selected,48543,1978-10-28
+9,Notre Dame,Miami,False,Reconstructed history,W8,-6.56,Notre Dame,20,0,20,correct,cover,13.44,Evaluated,,,,,,No provider selected,48542,1978-10-28
+9,Nebraska,Oklahoma State,False,Reconstructed history,W8,-20.37,Nebraska,22,14,8,correct,no_cover,12.37,Evaluated,,,,,,No provider selected,48534,1978-10-28
+9,Navy,Pittsburgh,False,Reconstructed history,W8,-5.71,Navy,21,11,10,correct,cover,4.29,Evaluated,,,,,,No provider selected,48533,1978-10-28
+9,Mississippi State,Tennessee,False,Reconstructed history,W8,-15.13,Mississippi State,34,21,13,correct,no_cover,2.13,Evaluated,,,,,,No provider selected,48532,1978-10-28
+9,Michigan State,Wisconsin,False,Reconstructed history,W8,3.42,Wisconsin,55,2,53,incorrect,no_cover,56.42,Evaluated,,,,,,No provider selected,48530,1978-10-28
+9,Michigan,Minnesota,False,Reconstructed history,W8,-12.27,Michigan,42,10,32,correct,cover,19.73,Evaluated,,,,,,No provider selected,48529,1978-10-28
+9,Indiana,Illinois,False,Reconstructed history,W8,-5.16,Indiana,31,10,21,correct,cover,15.84,Evaluated,,,,,,No provider selected,48521,1978-10-28
+9,Duke,Maryland,False,Reconstructed history,W8,13.22,Maryland,0,27,-27,correct,cover,13.78,Evaluated,,,,,,No provider selected,48526,1978-10-28
+10,Louisiana,Arkansas State,False,Reconstructed history,W9,8.69,Arkansas State,6,16,-10,correct,cover,1.31,Evaluated,,,,,,No provider selected,48568,1978-11-04
+10,Wichita State,Louisville,False,Reconstructed history,W9,5.24,Louisville,20,38,-18,correct,cover,12.76,Evaluated,,,,,,No provider selected,48591,1978-11-04
+10,Memphis,Vanderbilt,False,Reconstructed history,W9,-6.10,Memphis,35,14,21,correct,cover,14.90,Evaluated,,,,,,No provider selected,48592,1978-11-04
+10,NC State,South Carolina,False,Reconstructed history,W9,-5.04,NC State,22,13,9,correct,cover,3.96,Evaluated,,,,,,No provider selected,48600,1978-11-04
+10,Penn State,Maryland,False,Reconstructed history,W9,-2.43,Penn State,27,3,24,correct,cover,21.57,Evaluated,,,,,,No provider selected,48608,1978-11-04
+10,Richmond,North Carolina,False,Reconstructed history,W9,5.05,North Carolina,27,18,9,incorrect,no_cover,14.05,Evaluated,,,,,,No provider selected,48612,1978-11-04
+10,Tennessee,Duke,False,Reconstructed history,W9,3.31,Duke,34,0,34,incorrect,no_cover,37.31,Evaluated,,,,,,No provider selected,48618,1978-11-04
+10,Texas-Arlington,Northwestern State,False,Reconstructed history,W9,-0.87,Texas-Arlington,30,7,23,correct,cover,22.13,Evaluated,,,,,,No provider selected,48621,1978-11-04
+10,West Virginia,Virginia,False,Reconstructed history,W9,2.28,Virginia,20,17,3,incorrect,no_cover,5.28,Evaluated,,,,,,No provider selected,48628,1978-11-04
+10,Marshall,Western Michigan,False,Reconstructed history,W9,16.18,Western Michigan,6,24,-18,correct,cover,1.82,Evaluated,,,,,,No provider selected,48630,1978-11-04
+10,William & Mary,The Citadel,False,Reconstructed history,W9,-6.86,William & Mary,12,8,4,correct,no_cover,2.86,Evaluated,,,,,,No provider selected,48631,1978-11-04
+10,Washington,Arizona,False,Reconstructed history,W9,-7.05,Washington,31,21,10,correct,cover,2.95,Evaluated,,,,,,No provider selected,48627,1978-11-04
+10,Villanova,Boston College,False,Reconstructed history,W9,-14.19,Villanova,28,16,12,correct,no_cover,2.19,Evaluated,,,,,,No provider selected,48626,1978-11-04
+10,Utah State,Pacific,False,Reconstructed history,W9,-9.87,Utah State,40,14,26,correct,cover,16.13,Evaluated,,,,,,No provider selected,48625,1978-11-04
+10,UCLA,Oregon,False,Reconstructed history,W9,-23.36,UCLA,23,21,2,correct,no_cover,21.36,Evaluated,,,,,,No provider selected,48624,1978-11-04
+10,Texas Tech,Baylor,False,Reconstructed history,W9,-5.95,Texas Tech,27,9,18,correct,cover,12.05,Evaluated,,,,,,No provider selected,48620,1978-11-04
+10,Indiana State,Southern Illinois,False,Reconstructed history,W9,4.88,Southern Illinois,7,28,-21,correct,cover,16.12,Evaluated,,,,,,No provider selected,48617,1978-11-04
+10,Stanford,USC,False,Reconstructed history,W9,3.97,USC,7,13,-6,correct,cover,2.03,Evaluated,,,,,,No provider selected,48616,1978-11-04
+10,San José State,Cal State Fullerton,False,Reconstructed history,W9,-2.14,San José State,30,21,9,correct,cover,6.86,Evaluated,,,,,,No provider selected,48615,1978-11-04
+10,San Diego State,Colorado State,False,Reconstructed history,W9,-4.69,San Diego State,34,31,3,correct,no_cover,1.69,Evaluated,,,,,,No provider selected,48614,1978-11-04
+10,Syracuse,Pittsburgh,False,Reconstructed history,W9,15.14,Pittsburgh,17,18,-1,correct,no_cover,14.14,Evaluated,,,,,,No provider selected,48609,1978-11-04
+10,Washington State,Oregon State,False,Reconstructed history,W9,-12.98,Washington State,31,32,-1,incorrect,no_cover,13.98,Evaluated,,,,,,No provider selected,48607,1978-11-04
+10,Oklahoma State,Missouri,False,Reconstructed history,W9,10.50,Missouri,35,20,15,incorrect,no_cover,25.50,Evaluated,,,,,,No provider selected,48606,1978-11-04
+10,Notre Dame,Navy,False,Reconstructed history,W9,4.00,Navy,27,7,20,incorrect,no_cover,24.00,Evaluated,,,,,,No provider selected,48603,1978-11-04
+10,New Mexico State,Drake,False,Reconstructed history,W9,-5.11,New Mexico State,21,20,1,correct,no_cover,4.11,Evaluated,,,,,,No provider selected,48599,1978-11-04
+10,Kansas,Nebraska,False,Reconstructed history,W9,20.67,Nebraska,21,63,-42,correct,cover,21.33,Evaluated,,,,,,No provider selected,48597,1978-11-04
+10,Minnesota,Indiana,False,Reconstructed history,W9,-3.02,Minnesota,32,31,1,correct,no_cover,2.02,Evaluated,,,,,,No provider selected,48596,1978-11-04
+10,BYU,Wyoming,False,Reconstructed history,W9,-5.56,BYU,48,14,34,correct,cover,28.44,Evaluated,,,,,,No provider selected,48572,1978-11-04
+10,Cincinnati,UL Monroe,False,Reconstructed history,W9,9.18,UL Monroe,20,7,13,incorrect,no_cover,22.18,Evaluated,,,,,,No provider selected,48575,1978-11-04
+10,Fresno State,Long Beach State,False,Reconstructed history,W9,8.96,Long Beach State,42,41,1,incorrect,no_cover,9.96,Evaluated,,,,,,No provider selected,48582,1978-11-04
+10,Houston,TCU,False,Reconstructed history,W9,-19.97,Houston,63,6,57,correct,cover,37.03,Evaluated,,,,,,No provider selected,48586,1978-11-04
+10,Iowa State,Kansas State,False,Reconstructed history,W9,-13.20,Iowa State,24,0,24,correct,cover,10.80,Evaluated,,,,,,No provider selected,48587,1978-11-04
+10,LSU,Ole Miss,False,Reconstructed history,W9,-14.41,LSU,30,8,22,correct,cover,7.59,Evaluated,,,,,,No provider selected,48589,1978-11-04
+10,Ohio,Miami (OH),False,Reconstructed history,W9,10.54,Miami (OH),16,31,-15,correct,cover,4.46,Evaluated,,,,,,No provider selected,48593,1978-11-04
+10,Iowa,Michigan,False,Reconstructed history,W9,19.62,Michigan,0,34,-34,correct,cover,14.38,Evaluated,,,,,,No provider selected,48594,1978-11-04
+10,Illinois,Michigan State,False,Reconstructed history,W9,11.99,Michigan State,19,59,-40,correct,cover,28.01,Evaluated,,,,,,No provider selected,48595,1978-11-04
+10,Utah,New Mexico,False,Reconstructed history,W9,-2.84,Utah,12,24,-12,incorrect,no_cover,14.84,Evaluated,,,,,,No provider selected,48598,1978-11-04
+10,North Texas,Southern Miss,False,Reconstructed history,W9,-7.47,North Texas,25,12,13,correct,cover,5.53,Evaluated,,,,,,No provider selected,48601,1978-11-04
+10,Northern Illinois,Kent State,False,Reconstructed history,W9,-3.34,Northern Illinois,27,21,6,correct,cover,2.66,Evaluated,,,,,,No provider selected,48602,1978-11-04
+10,Wisconsin,Ohio State,False,Reconstructed history,W9,1.54,Ohio State,14,49,-35,correct,cover,33.46,Evaluated,,,,,,No provider selected,48604,1978-11-04
+10,Colorado,Oklahoma,False,Reconstructed history,W9,5.04,Oklahoma,7,28,-21,correct,cover,15.96,Evaluated,,,,,,No provider selected,48605,1978-11-04
+10,Princeton,Pennsylvania,False,Reconstructed history,W9,2.40,Pennsylvania,21,0,21,incorrect,no_cover,23.40,Evaluated,,,,,,No provider selected,48610,1978-11-04
+10,Purdue,Northwestern,False,Reconstructed history,W9,-26.15,Purdue,31,0,31,correct,cover,4.85,Evaluated,,,,,,No provider selected,48611,1978-11-04
+10,SMU,Texas A&M,False,Reconstructed history,W9,3.13,Texas A&M,17,20,-3,correct,no_cover,0.13,Evaluated,,,,,,No provider selected,48619,1978-11-04
+10,Tulane,Miami,False,Reconstructed history,W9,-0.68,Tulane,20,16,4,correct,cover,3.32,Evaluated,,,,,,No provider selected,48622,1978-11-04
+10,Tulsa,West Texas A&M,False,Reconstructed history,W9,-14.00,Tulsa,44,23,21,correct,cover,7.00,Evaluated,,,,,,No provider selected,48623,1978-11-04
+10,Chattanooga,Western Carolina,False,Reconstructed history,W9,-8.56,Chattanooga,21,31,-10,incorrect,no_cover,18.56,Evaluated,,,,,,No provider selected,48629,1978-11-04
+10,Yale,Cornell,False,Reconstructed history,W9,-0.14,Yale,42,14,28,correct,cover,27.86,Evaluated,,,,,,No provider selected,48632,1978-11-04
+10,Alabama,Mississippi State,False,Reconstructed history,W9,-6.53,Alabama,35,14,21,correct,cover,14.47,Evaluated,,,,,,No provider selected,48565,1978-11-04
+10,Arizona State,California,False,Reconstructed history,W9,-6.92,Arizona State,35,21,14,correct,cover,7.08,Evaluated,,,,,,No provider selected,48566,1978-11-04
+10,Arkansas,Rice,False,Reconstructed history,W9,-19.19,Arkansas,37,7,30,correct,cover,10.81,Evaluated,,,,,,No provider selected,48567,1978-11-04
+10,Virginia Tech,Kentucky,False,Reconstructed history,W9,-3.19,Virginia Tech,0,28,-28,incorrect,no_cover,31.19,Evaluated,,,,,,No provider selected,48588,1978-11-04
+10,Army,Air Force,False,Reconstructed history,W9,-0.84,Army,28,14,14,correct,cover,13.16,Evaluated,,,,,,No provider selected,48569,1978-11-04
+10,Bowling Green,Ball State,False,Reconstructed history,W9,7.07,Ball State,14,39,-25,correct,cover,17.93,Evaluated,,,,,,No provider selected,48570,1978-11-04
+10,Harvard,Brown,False,Reconstructed history,W9,0.19,Brown,30,31,-1,correct,cover,0.81,Evaluated,,,,,,No provider selected,48573,1978-11-04
+10,Central Michigan,Toledo,False,Reconstructed history,W9,-20.36,Central Michigan,27,3,24,correct,cover,3.64,Evaluated,,,,,,No provider selected,48574,1978-11-04
+10,Wake Forest,Clemson,False,Reconstructed history,W9,19.93,Clemson,6,51,-45,correct,cover,25.07,Evaluated,,,,,,No provider selected,48576,1978-11-04
+10,Dartmouth,Columbia,False,Reconstructed history,W9,-0.21,Dartmouth,37,7,30,correct,cover,29.79,Evaluated,,,,,,No provider selected,48578,1978-11-04
+10,Florida,Auburn,False,Reconstructed history,W9,6.69,Auburn,31,7,24,incorrect,no_cover,30.69,Evaluated,,,,,,No provider selected,48581,1978-11-04
+10,Louisiana Tech,Lamar,False,Reconstructed history,W9,-15.20,Louisiana Tech,40,3,37,correct,cover,21.80,Evaluated,,,,,,No provider selected,48590,1978-11-04
+10,App State,East Carolina,False,Reconstructed history,W9,-0.67,App State,8,33,-25,incorrect,no_cover,25.67,Evaluated,,,,,,No provider selected,48579,1978-11-04
+10,Georgia,VMI,False,Reconstructed history,W9,-16.49,Georgia,41,3,38,correct,cover,21.51,Evaluated,,,,,,No provider selected,48584,1978-11-04
+10,Hawai'i,UTEP,False,Reconstructed history,W9,-11.84,Hawai'i,35,13,22,correct,cover,10.16,Evaluated,,,,,,No provider selected,48585,1978-11-04
+11,Air Force,Georgia Tech,False,Reconstructed history,W10,10.95,Georgia Tech,21,42,-21,correct,cover,10.05,Evaluated,,,,,,No provider selected,48659,1978-11-11
+11,Pennsylvania,Harvard,False,Reconstructed history,W10,3.79,Harvard,13,17,-4,correct,cover,0.21,Evaluated,,,,,,No provider selected,48660,1978-11-11
+11,Texas,Houston,False,Reconstructed history,W10,-1.73,Texas,7,10,-3,incorrect,no_cover,4.73,Evaluated,,,,,,No provider selected,48662,1978-11-11
+11,Kansas State,Colorado,False,Reconstructed history,W10,11.86,Colorado,20,10,10,incorrect,no_cover,21.86,Evaluated,,,,,,No provider selected,48666,1978-11-11
+11,North Texas,UL Monroe,False,Reconstructed history,W10,-6.80,North Texas,28,6,22,correct,cover,15.20,Evaluated,,,,,,No provider selected,48682,1978-11-11
+11,Oregon State,UCLA,False,Reconstructed history,W10,15.68,UCLA,15,13,2,incorrect,no_cover,17.68,Evaluated,,,,,,No provider selected,48685,1978-11-11
+11,Pittsburgh,West Virginia,False,Reconstructed history,W10,-17.80,Pittsburgh,52,7,45,correct,cover,27.20,Evaluated,,,,,,No provider selected,48687,1978-11-11
+11,Pacific,San José State,False,Reconstructed history,W10,-2.46,Pacific,31,33,-2,incorrect,no_cover,4.46,Evaluated,,,,,,No provider selected,48690,1978-11-11
+11,USC,Washington,False,Reconstructed history,W10,-7.29,USC,28,10,18,correct,cover,10.71,Evaluated,,,,,,No provider selected,48691,1978-11-11
+11,Wichita State,Tulsa,False,Reconstructed history,W10,8.53,Tulsa,13,27,-14,correct,cover,5.47,Evaluated,,,,,,No provider selected,48699,1978-11-11
+11,UTEP,Utah,False,Reconstructed history,W10,12.36,Utah,0,38,-38,correct,cover,25.64,Evaluated,,,,,,No provider selected,48700,1978-11-11
+11,Yale,Princeton,False,Reconstructed history,W10,-9.68,Yale,23,7,16,correct,cover,6.32,Evaluated,,,,,,No provider selected,48702,1978-11-11
+11,Kentucky,Vanderbilt,False,Reconstructed history,W10,-10.69,Kentucky,53,2,51,correct,cover,40.31,Evaluated,,,,,,No provider selected,48667,1978-11-11
+11,VMI,App State,False,Reconstructed history,W10,4.12,App State,10,31,-21,correct,cover,16.88,Evaluated,,,,,,No provider selected,48634,1978-11-11
+11,Army,Boston College,False,Reconstructed history,W10,-12.55,Army,29,26,3,correct,no_cover,9.55,Evaluated,,,,,,No provider selected,48637,1978-11-11
+11,Mississippi State,Auburn,False,Reconstructed history,W10,-2.58,Mississippi State,0,6,-6,incorrect,no_cover,8.58,Evaluated,,,,,,No provider selected,48638,1978-11-11
+11,BYU,San Diego State,False,Reconstructed history,W10,-11.08,BYU,21,3,18,correct,cover,6.92,Evaluated,,,,,,No provider selected,48640,1978-11-11
+11,California,Washington State,False,Reconstructed history,W10,-2.99,California,22,14,8,correct,cover,5.01,Evaluated,,,,,,No provider selected,48643,1978-11-11
+11,Clemson,North Carolina,False,Reconstructed history,W10,-17.10,Clemson,13,9,4,correct,no_cover,13.10,Evaluated,,,,,,No provider selected,48648,1978-11-11
+11,Louisiana Tech,Arkansas State,False,Reconstructed history,W10,-1.59,Louisiana Tech,24,10,14,correct,cover,12.41,Evaluated,,,,,,No provider selected,48669,1978-11-11
+11,Virginia,Maryland,False,Reconstructed history,W10,16.83,Maryland,7,17,-10,correct,no_cover,6.83,Evaluated,,,,,,No provider selected,48670,1978-11-11
+11,Lamar,McNeese,False,Reconstructed history,W10,12.81,McNeese,23,24,-1,correct,no_cover,11.81,Evaluated,,,,,,No provider selected,48672,1978-11-11
+11,Louisville,Memphis,False,Reconstructed history,W10,-14.83,Louisville,22,29,-7,incorrect,no_cover,21.83,Evaluated,,,,,,No provider selected,48673,1978-11-11
+11,Miami (OH),Kent State,False,Reconstructed history,W10,-14.33,Miami (OH),38,13,25,correct,cover,10.67,Evaluated,,,,,,No provider selected,48674,1978-11-11
+11,Northwestern,Michigan,False,Reconstructed history,W10,23.48,Michigan,14,59,-45,correct,cover,21.52,Evaluated,,,,,,No provider selected,48675,1978-11-11
+11,Michigan State,Minnesota,False,Reconstructed history,W10,-8.40,Michigan State,33,9,24,correct,cover,15.60,Evaluated,,,,,,No provider selected,48676,1978-11-11
+11,Missouri,Kansas,False,Reconstructed history,W10,-16.84,Missouri,48,0,48,correct,cover,31.16,Evaluated,,,,,,No provider selected,48678,1978-11-11
+11,Rutgers,Temple,False,Reconstructed history,W10,-5.84,Rutgers,13,10,3,correct,no_cover,2.84,Evaluated,,,,,,No provider selected,48689,1978-11-11
+11,Rice,SMU,False,Reconstructed history,W10,8.66,SMU,0,58,-58,correct,cover,49.34,Evaluated,,,,,,No provider selected,48693,1978-11-11
+11,Arizona State,Stanford,False,Reconstructed history,W10,-6.20,Arizona State,14,21,-7,incorrect,no_cover,13.20,Evaluated,,,,,,No provider selected,48695,1978-11-11
+11,Syracuse,Navy,False,Reconstructed history,W10,19.38,Navy,20,17,3,incorrect,no_cover,22.38,Evaluated,,,,,,No provider selected,48696,1978-11-11
+11,TCU,Texas Tech,False,Reconstructed history,W10,8.56,Texas Tech,17,27,-10,correct,cover,1.44,Evaluated,,,,,,No provider selected,48697,1978-11-11
+11,Ole Miss,Tulane,False,Reconstructed history,W10,0.97,Tulane,13,3,10,incorrect,no_cover,10.97,Evaluated,,,,,,No provider selected,48677,1978-11-11
+11,Toledo,Northern Illinois,False,Reconstructed history,W10,7.79,Northern Illinois,35,16,19,incorrect,no_cover,26.79,Evaluated,,,,,,No provider selected,48698,1978-11-11
+11,Purdue,Wisconsin,False,Reconstructed history,W10,-12.66,Purdue,24,24,0,tie,no_cover,12.66,Evaluated,,,,,,No provider selected,48688,1978-11-11
+11,Ohio State,Illinois,False,Reconstructed history,W10,-19.44,Ohio State,45,7,38,correct,cover,18.56,Evaluated,,,,,,No provider selected,48684,1978-11-11
+11,Columbia,Cornell,False,Reconstructed history,W10,-0.51,Columbia,14,35,-21,incorrect,no_cover,21.51,Evaluated,,,,,,No provider selected,48650,1978-11-11
+11,Brown,Dartmouth,False,Reconstructed history,W10,-5.57,Brown,21,31,-10,incorrect,no_cover,15.57,Evaluated,,,,,,No provider selected,48651,1978-11-11
+11,Nebraska,Oklahoma,False,Reconstructed history,W10,0.49,Oklahoma,17,14,3,incorrect,no_cover,3.49,Evaluated,,,,,,No provider selected,48680,1978-11-11
+11,Chattanooga,Richmond,False,Reconstructed history,W10,-15.97,Chattanooga,30,3,27,correct,cover,11.03,Evaluated,,,,,,No provider selected,48645,1978-11-11
+11,Cincinnati,Ohio,False,Reconstructed history,W10,-7.22,Cincinnati,35,0,35,correct,cover,27.78,Evaluated,,,,,,No provider selected,48646,1978-11-11
+11,Hawai'i,New Mexico State,False,Reconstructed history,W10,-1.86,Hawai'i,35,20,15,correct,cover,13.14,Evaluated,,,,,,No provider selected,48661,1978-11-11
+11,Illinois State,Indiana State,False,Reconstructed history,W10,3.62,Indiana State,27,14,13,incorrect,no_cover,16.62,Evaluated,,,,,,No provider selected,48663,1978-11-11
+11,Northwestern State,Louisiana,False,Reconstructed history,W10,-5.94,Northwestern State,17,19,-2,incorrect,no_cover,7.94,Evaluated,,,,,,No provider selected,48668,1978-11-11
+11,Drake,West Texas A&M,False,Reconstructed history,W10,-2.40,Drake,24,21,3,correct,cover,0.60,Evaluated,,,,,,No provider selected,48653,1978-11-11
+11,Indiana,Iowa,False,Reconstructed history,W10,-8.55,Indiana,34,14,20,correct,cover,11.45,Evaluated,,,,,,No provider selected,48664,1978-11-11
+11,Oklahoma State,Iowa State,False,Reconstructed history,W10,7.91,Iowa State,15,28,-13,correct,cover,5.09,Evaluated,,,,,,No provider selected,48665,1978-11-11
+11,Southern Miss,Bowling Green,False,Reconstructed history,W10,-2.70,Southern Miss,38,21,17,correct,cover,14.30,Evaluated,,,,,,No provider selected,48694,1978-11-11
+11,Southern Illinois,Marshall,False,Reconstructed history,W10,-14.80,Southern Illinois,15,14,1,correct,no_cover,13.80,Evaluated,,,,,,No provider selected,48692,1978-11-11
+11,Penn State,NC State,False,Reconstructed history,W10,-8.91,Penn State,19,10,9,correct,cover,0.09,Evaluated,,,,,,No provider selected,48686,1978-11-11
+11,Notre Dame,Tennessee,False,Reconstructed history,W10,-14.84,Notre Dame,31,14,17,correct,cover,2.16,Evaluated,,,,,,No provider selected,48683,1978-11-11
+11,UNLV,Wyoming,False,Reconstructed history,W10,-4.12,UNLV,12,10,2,correct,no_cover,2.12,Evaluated,,,,,,No provider selected,48681,1978-11-11
+11,Alabama,LSU,False,Reconstructed history,W10,-3.75,Alabama,31,10,21,correct,cover,17.25,Evaluated,,,,,,No provider selected,48633,1978-11-11
+11,Oregon,Arizona,False,Reconstructed history,W10,6.44,Arizona,3,24,-21,correct,cover,14.56,Evaluated,,,,,,No provider selected,48635,1978-11-11
+11,Baylor,Arkansas,False,Reconstructed history,W10,11.32,Arkansas,14,27,-13,correct,cover,1.68,Evaluated,,,,,,No provider selected,48636,1978-11-11
+11,Ball State,Western Michigan,False,Reconstructed history,W10,-5.26,Ball State,20,14,6,correct,cover,0.74,Evaluated,,,,,,No provider selected,48639,1978-11-11
+11,Eastern Michigan,Central Michigan,False,Reconstructed history,W10,11.11,Central Michigan,9,41,-32,correct,cover,20.89,Evaluated,,,,,,No provider selected,48644,1978-11-11
+11,New Mexico,Colorado State,False,Reconstructed history,W10,-14.99,New Mexico,15,26,-11,incorrect,no_cover,25.99,Evaluated,,,,,,No provider selected,48649,1978-11-11
+11,Duke,Wake Forest,False,Reconstructed history,W10,-8.61,Duke,3,0,3,correct,no_cover,5.61,Evaluated,,,,,,No provider selected,48654,1978-11-11
+11,East Carolina,William & Mary,False,Reconstructed history,W10,-3.71,East Carolina,20,3,17,correct,cover,13.29,Evaluated,,,,,,No provider selected,48655,1978-11-11
+11,Florida State,Virginia Tech,False,Reconstructed history,W10,-12.00,Florida State,24,14,10,correct,no_cover,2.00,Evaluated,,,,,,No provider selected,48656,1978-11-11
+11,Western Carolina,Furman,False,Reconstructed history,W10,-1.72,Western Carolina,7,24,-17,incorrect,no_cover,18.72,Evaluated,,,,,,No provider selected,48657,1978-11-11
+11,Georgia,Florida,False,Reconstructed history,W10,-12.49,Georgia,24,22,2,correct,no_cover,10.49,Evaluated,,,,,,No provider selected,48658,1978-11-11
+12,Memphis,North Texas,False,Reconstructed history,W11,9.91,North Texas,24,41,-17,correct,cover,7.09,Evaluated,,,,,,No provider selected,48743,1978-11-18
+12,Oklahoma,Oklahoma State,False,Reconstructed history,W11,-19.71,Oklahoma,62,7,55,correct,cover,35.29,Evaluated,,,,,,No provider selected,48748,1978-11-18
+12,Rice,Baylor,False,Reconstructed history,W11,2.24,Baylor,24,10,14,incorrect,no_cover,16.24,Evaluated,,,,,,No provider selected,48750,1978-11-18
+12,Holy Cross,Rutgers,False,Reconstructed history,W11,4.79,Rutgers,21,31,-10,correct,cover,5.21,Evaluated,,,,,,No provider selected,48752,1978-11-18
+12,California,Stanford,False,Reconstructed history,W11,1.04,Stanford,10,30,-20,correct,cover,18.96,Evaluated,,,,,,No provider selected,48758,1978-11-18
+12,TCU,Texas,False,Reconstructed history,W11,15.31,Texas,0,41,-41,correct,cover,25.69,Evaluated,,,,,,No provider selected,48763,1978-11-18
+12,Texas Tech,SMU,False,Reconstructed history,W11,-3.83,Texas Tech,19,16,3,correct,no_cover,0.83,Evaluated,,,,,,No provider selected,48764,1978-11-18
+12,McNeese,Texas-Arlington,False,Reconstructed history,W11,-8.49,McNeese,17,20,-3,incorrect,no_cover,11.49,Evaluated,,,,,,No provider selected,48765,1978-11-18
+12,Utah,BYU,False,Reconstructed history,W11,2.27,BYU,23,22,1,incorrect,no_cover,3.27,Evaluated,,,,,,No provider selected,48766,1978-11-18
+12,Harvard,Yale,False,Reconstructed history,W11,1.52,Yale,28,35,-7,correct,cover,5.48,Evaluated,,,,,,No provider selected,48769,1978-11-18
+12,Temple,Villanova,False,Reconstructed history,W11,-7.72,Temple,27,17,10,correct,cover,2.28,Evaluated,,,,,,No provider selected,48760,1978-11-18
+12,Tennessee,Ole Miss,False,Reconstructed history,W11,0.76,Ole Miss,41,17,24,incorrect,no_cover,24.76,Evaluated,,,,,,No provider selected,48761,1978-11-18
+12,Colorado State,West Virginia,False,Reconstructed history,W11,-5.62,Colorado State,50,14,36,correct,cover,30.38,Evaluated,,,,,,No provider selected,48713,1978-11-18
+12,Arizona,Washington State,False,Reconstructed history,W11,-3.73,Arizona,31,24,7,correct,cover,3.27,Evaluated,,,,,,No provider selected,48704,1978-11-18
+12,Northern Illinois,Ball State,False,Reconstructed history,W11,12.09,Ball State,13,31,-18,correct,cover,5.91,Evaluated,,,,,,No provider selected,48708,1978-11-18
+12,Columbia,Brown,False,Reconstructed history,W11,5.11,Brown,12,24,-12,correct,cover,6.89,Evaluated,,,,,,No provider selected,48709,1978-11-18
+12,Western Michigan,Central Michigan,False,Reconstructed history,W11,0.52,Central Michigan,14,35,-21,correct,cover,20.48,Evaluated,,,,,,No provider selected,48711,1978-11-18
+12,Maryland,Clemson,False,Reconstructed history,W11,-1.98,Maryland,24,28,-4,incorrect,no_cover,5.98,Evaluated,,,,,,No provider selected,48712,1978-11-18
+12,Cornell,Pennsylvania,False,Reconstructed history,W11,-10.30,Cornell,35,17,18,correct,cover,7.70,Evaluated,,,,,,No provider selected,48714,1978-11-18
+12,Kentucky,Florida,False,Reconstructed history,W11,-3.81,Kentucky,16,18,-2,incorrect,no_cover,5.81,Evaluated,,,,,,No provider selected,48718,1978-11-18
+12,Florida State,Navy,False,Reconstructed history,W11,0.54,Navy,38,6,32,incorrect,no_cover,32.54,Evaluated,,,,,,No provider selected,48719,1978-11-18
+12,Georgia,Auburn,False,Reconstructed history,W11,-7.81,Georgia,22,22,0,tie,no_cover,7.81,Evaluated,,,,,,No provider selected,48722,1978-11-18
+12,Kent State,Toledo,False,Reconstructed history,W11,-4.51,Kent State,17,13,4,correct,no_cover,0.51,Evaluated,,,,,,No provider selected,48729,1978-11-18
+12,Michigan,Purdue,False,Reconstructed history,W11,-2.87,Michigan,24,6,18,correct,cover,15.13,Evaluated,,,,,,No provider selected,48734,1978-11-18
+12,Minnesota,Illinois,False,Reconstructed history,W11,-10.45,Minnesota,24,6,18,correct,cover,7.55,Evaluated,,,,,,No provider selected,48736,1978-11-18
+12,Mississippi State,LSU,False,Reconstructed history,W11,2.38,LSU,16,14,2,incorrect,no_cover,4.38,Evaluated,,,,,,No provider selected,48737,1978-11-18
+12,Virginia Tech,VMI,False,Reconstructed history,W11,-2.18,Virginia Tech,28,2,26,correct,cover,23.82,Evaluated,,,,,,No provider selected,48768,1978-11-18
+12,Vanderbilt,Air Force,False,Reconstructed history,W11,3.09,Air Force,41,27,14,incorrect,no_cover,17.09,Evaluated,,,,,,No provider selected,48767,1978-11-18
+12,Louisiana,Southern Illinois,False,Reconstructed history,W11,6.18,Southern Illinois,9,10,-1,correct,no_cover,5.18,Evaluated,,,,,,No provider selected,48756,1978-11-18
+12,South Carolina,Wake Forest,False,Reconstructed history,W11,-15.04,South Carolina,37,14,23,correct,cover,7.96,Evaluated,,,,,,No provider selected,48754,1978-11-18
+12,New Mexico,Pacific,False,Reconstructed history,W11,-9.38,New Mexico,44,6,38,correct,cover,28.62,Evaluated,,,,,,No provider selected,48740,1978-11-18
+12,UNLV,UTEP,False,Reconstructed history,W11,-16.59,UNLV,27,0,27,correct,cover,10.41,Evaluated,,,,,,No provider selected,48739,1978-11-18
+12,Miami (OH),Cincinnati,False,Reconstructed history,W11,-9.54,Miami (OH),28,24,4,correct,no_cover,5.54,Evaluated,,,,,,No provider selected,48733,1978-11-18
+12,Kansas State,Kansas,False,Reconstructed history,W11,-6.86,Kansas State,36,20,16,correct,cover,9.14,Evaluated,,,,,,No provider selected,48728,1978-11-18
+12,Colorado,Iowa State,False,Reconstructed history,W11,0.42,Iowa State,16,20,-4,correct,cover,3.58,Evaluated,,,,,,No provider selected,48727,1978-11-18
+12,Iowa,Wisconsin,False,Reconstructed history,W11,8.92,Wisconsin,38,24,14,incorrect,no_cover,22.92,Evaluated,,,,,,No provider selected,48726,1978-11-18
+12,Indiana State,Wichita State,False,Reconstructed history,W11,3.56,Wichita State,42,18,24,incorrect,no_cover,27.56,Evaluated,,,,,,No provider selected,48725,1978-11-18
+12,Furman,The Citadel,False,Reconstructed history,W11,-9.09,Furman,17,13,4,correct,no_cover,5.09,Evaluated,,,,,,No provider selected,48721,1978-11-18
+12,Princeton,Dartmouth,False,Reconstructed history,W11,6.94,Dartmouth,21,28,-7,correct,cover,0.06,Evaluated,,,,,,No provider selected,48715,1978-11-18
+12,Arkansas State,Lamar,False,Reconstructed history,W11,-16.04,Arkansas State,6,3,3,correct,no_cover,13.04,Evaluated,,,,,,No provider selected,48707,1978-11-18
+12,Arkansas,Texas A&M,False,Reconstructed history,W11,-2.38,Arkansas,26,7,19,correct,cover,16.62,Evaluated,,,,,,No provider selected,48706,1978-11-18
+12,Oregon State,Arizona State,False,Reconstructed history,W11,8.42,Arizona State,22,44,-22,correct,cover,13.58,Evaluated,,,,,,No provider selected,48705,1978-11-18
+12,App State,Western Carolina,False,Reconstructed history,W11,-1.35,App State,39,13,26,correct,cover,24.65,Evaluated,,,,,,No provider selected,48703,1978-11-18
+12,Miami,San Diego State,False,Reconstructed history,W11,-2.25,Miami,16,14,2,correct,no_cover,0.25,Evaluated,,,,,,No provider selected,48732,1978-11-18
+12,UL Monroe,Louisiana Tech,False,Reconstructed history,W11,1.96,Louisiana Tech,18,0,18,incorrect,no_cover,19.96,Evaluated,,,,,,No provider selected,48731,1978-11-18
+12,Long Beach State,Drake,False,Reconstructed history,W11,-4.18,Long Beach State,25,0,25,correct,cover,20.82,Evaluated,,,,,,No provider selected,48730,1978-11-18
+12,Illinois State,Eastern Michigan,False,Reconstructed history,W11,3.55,Eastern Michigan,14,13,1,incorrect,no_cover,4.55,Evaluated,,,,,,No provider selected,48724,1978-11-18
+12,Hawai'i,Wyoming,False,Reconstructed history,W11,-6.49,Hawai'i,27,22,5,correct,no_cover,1.49,Evaluated,,,,,,No provider selected,48723,1978-11-18
+12,East Carolina,Marshall,False,Reconstructed history,W11,-19.59,East Carolina,45,0,45,correct,cover,25.41,Evaluated,,,,,,No provider selected,48717,1978-11-18
+12,NC State,Duke,False,Reconstructed history,W11,-10.93,NC State,24,10,14,correct,cover,3.07,Evaluated,,,,,,No provider selected,48742,1978-11-18
+12,Georgia Tech,Notre Dame,False,Reconstructed history,W11,-0.93,Georgia Tech,21,38,-17,incorrect,no_cover,17.93,Evaluated,,,,,,No provider selected,48745,1978-11-18
+12,Indiana,Ohio State,False,Reconstructed history,W11,8.55,Ohio State,18,21,-3,correct,no_cover,5.55,Evaluated,,,,,,No provider selected,48747,1978-11-18
+12,Pittsburgh,Army,False,Reconstructed history,W11,-11.72,Pittsburgh,35,17,18,correct,cover,6.28,Evaluated,,,,,,No provider selected,48749,1978-11-18
+12,Richmond,William & Mary,False,Reconstructed history,W11,8.18,William & Mary,17,3,14,incorrect,no_cover,22.18,Evaluated,,,,,,No provider selected,48751,1978-11-18
+12,UCLA,USC,False,Reconstructed history,W11,1.10,USC,10,17,-7,correct,cover,5.90,Evaluated,,,,,,No provider selected,48755,1978-11-18
+12,Southern Miss,Louisville,False,Reconstructed history,W11,2.37,Louisville,37,3,34,incorrect,no_cover,36.37,Evaluated,,,,,,No provider selected,48757,1978-11-18
+12,Boston College,Syracuse,False,Reconstructed history,W11,3.23,Syracuse,23,37,-14,correct,cover,10.77,Evaluated,,,,,,No provider selected,48759,1978-11-18
+12,Northwestern,Michigan State,False,Reconstructed history,W11,18.74,Michigan State,3,52,-49,correct,cover,30.26,Evaluated,,,,,,No provider selected,48735,1978-11-18
+12,Nebraska,Missouri,False,Reconstructed history,W11,-9.54,Nebraska,31,35,-4,incorrect,no_cover,13.54,Evaluated,,,,,,No provider selected,48738,1978-11-18
+12,North Carolina,Virginia,False,Reconstructed history,W11,-5.23,North Carolina,38,20,18,correct,cover,12.77,Evaluated,,,,,,No provider selected,48741,1978-11-18
+12,Bowling Green,Ohio,False,Reconstructed history,W11,-8.92,Bowling Green,15,19,-4,incorrect,no_cover,12.92,Evaluated,,,,,,No provider selected,48746,1978-11-18
+13,Pacific,Colorado State,False,Reconstructed history,W12,-0.29,Pacific,13,20,-7,incorrect,no_cover,7.29,Evaluated,,,,,,No provider selected,48770,1978-11-23
+13,UNLV,Cal State Fullerton,False,Reconstructed history,W12,-9.09,UNLV,24,7,17,correct,cover,7.91,Evaluated,,,,,,No provider selected,48771,1978-11-24
+13,Penn State,Pittsburgh,False,Reconstructed history,W12,-7.78,Penn State,17,10,7,correct,no_cover,0.78,Evaluated,,,,,,No provider selected,48772,1978-11-24
+13,Hawai'i,BYU,False,Reconstructed history,W12,0.24,BYU,13,31,-18,correct,cover,17.76,Evaluated,,,,,,No provider selected,48776,1978-11-25
+13,Clemson,South Carolina,False,Reconstructed history,W12,-10.46,Clemson,41,23,18,correct,cover,7.54,Evaluated,,,,,,No provider selected,48778,1978-11-25
+13,Texas A&M,TCU,False,Reconstructed history,W12,-17.03,Texas A&M,15,7,8,correct,no_cover,9.03,Evaluated,,,,,,No provider selected,48799,1978-11-25
+13,San Diego State,New Mexico,False,Reconstructed history,W12,7.61,New Mexico,27,24,3,incorrect,no_cover,10.61,Evaluated,,,,,,No provider selected,48796,1978-11-25
+13,Oregon State,Oregon,False,Reconstructed history,W12,-6.98,Oregon State,3,24,-21,incorrect,no_cover,27.98,Evaluated,,,,,,No provider selected,48794,1978-11-25
+13,Ohio,Northern Illinois,False,Reconstructed history,W12,0.73,Northern Illinois,14,23,-9,correct,cover,8.27,Evaluated,,,,,,No provider selected,48793,1978-11-25
+13,North Carolina,Duke,False,Reconstructed history,W12,-3.14,North Carolina,16,15,1,correct,no_cover,2.14,Evaluated,,,,,,No provider selected,48791,1978-11-25
+13,West Texas A&M,New Mexico State,False,Reconstructed history,W12,3.13,New Mexico State,31,33,-2,correct,no_cover,1.13,Evaluated,,,,,,No provider selected,48790,1978-11-25
+13,Lamar,Long Beach State,False,Reconstructed history,W12,10.31,Long Beach State,36,31,5,incorrect,no_cover,15.31,Evaluated,,,,,,No provider selected,48782,1978-11-25
+13,Michigan State,Iowa,False,Reconstructed history,W12,-18.12,Michigan State,42,7,35,correct,cover,16.88,Evaluated,,,,,,No provider selected,48788,1978-11-25
+13,Miami,Syracuse,False,Reconstructed history,W12,-6.46,Miami,21,9,12,correct,cover,5.54,Evaluated,,,,,,No provider selected,48786,1978-11-25
+13,McNeese,Louisiana,False,Reconstructed history,W12,-11.81,McNeese,44,18,26,correct,cover,14.19,Evaluated,,,,,,No provider selected,48785,1978-11-25
+13,Rutgers,Colgate,False,Reconstructed history,W12,-21.31,Rutgers,9,14,-5,incorrect,no_cover,26.31,Evaluated,,,,,,No provider selected,48779,1978-11-25
+13,Arizona,Arizona State,False,Reconstructed history,W12,3.18,Arizona State,17,18,-1,correct,no_cover,2.18,Evaluated,,,,,,No provider selected,48773,1978-11-25
+13,UTEP,Wyoming,False,Reconstructed history,W12,6.97,Wyoming,21,51,-30,correct,cover,23.03,Evaluated,,,,,,No provider selected,48804,1978-11-25
+13,Wisconsin,Minnesota,False,Reconstructed history,W12,-1.13,Wisconsin,48,10,38,correct,cover,36.87,Evaluated,,,,,,No provider selected,48803,1978-11-25
+13,Washington State,Washington,False,Reconstructed history,W12,5.64,Washington,8,38,-30,correct,cover,24.36,Evaluated,,,,,,No provider selected,48802,1978-11-25
+13,Tennessee,Kentucky,False,Reconstructed history,W12,0.29,Kentucky,29,14,15,incorrect,no_cover,15.29,Evaluated,,,,,,No provider selected,48798,1978-11-25
+13,Purdue,Indiana,False,Reconstructed history,W12,-13.75,Purdue,20,7,13,correct,no_cover,0.75,Evaluated,,,,,,No provider selected,48795,1978-11-25
+13,Virginia,NC State,False,Reconstructed history,W12,12.94,NC State,21,24,-3,correct,no_cover,9.94,Evaluated,,,,,,No provider selected,48792,1978-11-25
+13,Ohio State,Michigan,False,Reconstructed history,W12,1.31,Michigan,3,14,-11,correct,cover,9.69,Evaluated,,,,,,No provider selected,48787,1978-11-25
+13,Memphis,Cincinnati,False,Reconstructed history,W12,0.94,Cincinnati,14,34,-20,correct,cover,19.06,Evaluated,,,,,,No provider selected,48777,1978-11-25
+13,Baylor,Texas,False,Reconstructed history,W12,15.01,Texas,38,14,24,incorrect,no_cover,39.01,Evaluated,,,,,,No provider selected,48775,1978-11-25
+13,SMU,Arkansas,False,Reconstructed history,W12,5.96,Arkansas,14,27,-13,correct,cover,7.04,Evaluated,,,,,,No provider selected,48774,1978-11-25
+13,Ole Miss,Mississippi State,False,Reconstructed history,W12,5.93,Mississippi State,27,7,20,incorrect,no_cover,25.93,Evaluated,,,,,,No provider selected,48789,1978-11-25
+13,Florida State,Florida,False,Reconstructed history,W12,-8.02,Florida State,38,21,17,correct,cover,8.98,Evaluated,,,,,,No provider selected,48780,1978-11-25
+13,Texas Tech,Houston,False,Reconstructed history,W12,4.61,Houston,22,21,1,incorrect,no_cover,5.61,Evaluated,,,,,,No provider selected,48800,1978-11-25
+13,Utah State,Utah,False,Reconstructed history,W12,-2.17,Utah State,20,23,-3,incorrect,no_cover,5.17,Evaluated,,,,,,No provider selected,48801,1978-11-25
+13,USC,Notre Dame,False,Reconstructed history,W12,-4.49,USC,27,25,2,correct,no_cover,2.49,Evaluated,,,,,,No provider selected,48797,1978-11-25
+13,LSU,Tulane,False,Reconstructed history,W12,-10.51,LSU,40,21,19,correct,cover,8.49,Evaluated,,,,,,No provider selected,48783,1978-11-25
+14,Navy,Army,False,Reconstructed history,W13,-10.95,Navy,28,0,28,correct,cover,17.05,Evaluated,,,,,,No provider selected,48813,1978-12-02
+14,San Diego State,Utah,False,Reconstructed history,W13,7.00,Utah,18,20,-2,correct,no_cover,5.00,Evaluated,,,,,,No provider selected,48818,1978-12-02
+14,Boston College,Holy Cross,False,Reconstructed history,W13,14.34,Holy Cross,29,30,-1,correct,no_cover,13.34,Evaluated,,,,,,No provider selected,48809,1978-12-02
+14,Houston,Rice,False,Reconstructed history,W13,-20.67,Houston,49,25,24,correct,cover,3.33,Evaluated,,,,,,No provider selected,48810,1978-12-02
+14,San José State,Long Beach State,False,Reconstructed history,W13,-2.11,San José State,24,6,18,correct,cover,15.89,Evaluated,,,,,,No provider selected,48814,1978-12-02
+14,Texas,Texas A&M,False,Reconstructed history,W13,-2.69,Texas,22,7,15,correct,cover,12.31,Evaluated,,,,,,No provider selected,48817,1978-12-02
+14,Hawai'i,USC,False,Reconstructed history,W13,8.38,USC,5,21,-16,correct,cover,7.62,Evaluated,,,,,,No provider selected,48815,1978-12-02
+14,Florida,Miami,False,Reconstructed history,W13,-1.19,Florida,21,22,-1,incorrect,no_cover,2.19,Evaluated,,,,,,No provider selected,48812,1978-12-02
+14,LSU,Wyoming,False,Reconstructed history,W13,-8.84,LSU,24,17,7,correct,no_cover,1.84,Evaluated,,,,,,No provider selected,48811,1978-12-02
+14,Georgia,Georgia Tech,False,Reconstructed history,W13,-7.00,Georgia,29,28,1,correct,no_cover,6.00,Evaluated,,,,,,No provider selected,48808,1978-12-02
+14,Vanderbilt,Tennessee,False,Reconstructed history,W13,6.83,Tennessee,15,41,-26,correct,cover,19.17,Evaluated,,,,,,No provider selected,48816,1978-12-02
+14,BYU,UNLV,False,Reconstructed history,W13,-3.96,BYU,28,24,4,correct,cover,0.04,Evaluated,,,,,,No provider selected,48807,1978-12-02
+14,Alabama,Auburn,False,Reconstructed history,W13,-8.53,Alabama,34,16,18,correct,cover,9.47,Evaluated,,,,,,No provider selected,48805,1978-12-02
+14,Arkansas,Texas Tech,False,Reconstructed history,W13,-5.25,Arkansas,49,7,42,correct,cover,36.75,Evaluated,,,,,,No provider selected,48806,1978-12-02
+15,Temple,Boston College,False,Reconstructed history,W14,-20.66,Temple,28,24,4,correct,no_cover,16.66,Evaluated,,,,,,No provider selected,48819,1978-12-10
+16,Arizona State,Rutgers,True,Reconstructed history,W15,1.64,Rutgers,34,18,16,incorrect,no_cover,17.64,Evaluated,,,,,,No provider selected,48820,1978-12-16
+16,East Carolina,Louisiana Tech,True,Reconstructed history,W15,-2.92,East Carolina,35,13,22,correct,cover,19.08,Evaluated,,,,,,No provider selected,48821,1978-12-16
+17,Texas A&M,Iowa State,True,Reconstructed history,W16,1.62,Iowa State,28,12,16,incorrect,no_cover,17.62,Evaluated,,,,,,No provider selected,48822,1978-12-20
+17,Navy,BYU,True,Reconstructed history,W16,0.95,BYU,23,16,7,incorrect,no_cover,7.95,Evaluated,,,,,,No provider selected,48823,1978-12-22
+17,Missouri,LSU,True,Reconstructed history,W16,1.49,LSU,20,15,5,incorrect,no_cover,6.49,Evaluated,,,,,,No provider selected,48824,1978-12-23
+17,NC State,Pittsburgh,True,Reconstructed history,W16,0.31,Pittsburgh,30,17,13,incorrect,no_cover,13.31,Evaluated,,,,,,No provider selected,48825,1978-12-23
+17,Texas,Maryland,True,Reconstructed history,W16,1.89,Maryland,42,0,42,incorrect,no_cover,43.89,Evaluated,,,,,,No provider selected,48826,1978-12-23
+18,Georgia Tech,Purdue,True,Reconstructed history,W17,3.96,Purdue,21,41,-20,correct,cover,16.04,Evaluated,,,,,,No provider selected,48827,1978-12-25
+18,UCLA,Arkansas,True,Reconstructed history,W17,2.58,Arkansas,10,10,0,tie,no_cover,2.58,Evaluated,,,,,,No provider selected,48828,1978-12-25
+18,Clemson,Ohio State,True,Reconstructed history,W17,-5.27,Clemson,17,15,2,correct,no_cover,3.27,Evaluated,,,,,,No provider selected,48829,1978-12-29
+18,Stanford,Georgia,True,Reconstructed history,W17,5.69,Georgia,25,22,3,incorrect,no_cover,8.69,Evaluated,,,,,,No provider selected,48830,1978-12-31
+19,Alabama,Penn State,True,Reconstructed history,W18,1.96,Penn State,14,7,7,incorrect,no_cover,8.96,Evaluated,,,,,,No provider selected,48831,1979-01-01
+19,Notre Dame,Houston,True,Reconstructed history,W18,1.73,Houston,35,34,1,incorrect,no_cover,2.73,Evaluated,,,,,,No provider selected,48832,1979-01-01
+19,Oklahoma,Nebraska,True,Reconstructed history,W18,-1.94,Oklahoma,31,24,7,correct,cover,5.06,Evaluated,,,,,,No provider selected,48833,1979-01-01
+19,USC,Michigan,True,Reconstructed history,W18,-0.57,USC,17,10,7,correct,cover,6.43,Evaluated,,,,,,No provider selected,48834,1979-01-01

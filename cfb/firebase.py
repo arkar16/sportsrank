@@ -885,6 +885,11 @@ _MANAGED_RESOURCE_PATHS = (
     "/__/firebase/init.js",
     "/__/firebase/init.json",
 )
+_FIREBASE_INIT_CALL_PREFIX = "firebase.initializeApp("
+_FIREBASE_INIT_SDK_GUARD = (
+    "if (typeof firebase === 'undefined') throw new Error("
+    "'hosting/init-error: Firebase SDK not detected. You must include it before /__/firebase/init.js');\n"
+)
 
 
 def _configuration_digest(value: Mapping[str, Any]) -> str:
@@ -1071,6 +1076,15 @@ class FirebasePublicationAdapter:
             raise FirebaseReleaseReceiptUncertain(
                 "Firebase release receipt is incomplete"
             )
+        # Keep the provider's authenticated release time, not the runner's
+        # observation clock.  Legacy records remain unchanged on disk.
+        from .publication_timing import publication_instant
+        try:
+            publication_instant(released["releaseTime"])
+        except ValueError as exc:
+            raise FirebaseReleaseReceiptUncertain(
+                "Firebase release time is invalid"
+            ) from exc
         try:
             observed = self.backend.observe(self.target)
         except FirebasePublicationError as exc:
@@ -1084,8 +1098,11 @@ class FirebasePublicationAdapter:
         return FirebaseDeploymentReceipt(
             identity,
             {
-                "schema_version": 1,
+                "schema_version": 2,
                 "record_type": "firebase_deployment_observation",
+                "provider_published_at": released["releaseTime"],
+                "artifact_sha256": artifact.package.bundle_sha256,
+                "attempt_id": attempt_id,
                 "outcome": "accepted",
                 "release": identity.release,
                 "version": identity.version,
@@ -1233,12 +1250,18 @@ class FirebasePublicationAdapter:
 
 def _managed_app_identity(path: str, body: bytes) -> Mapping[str, str]:
     try:
+        if path not in _MANAGED_RESOURCE_PATHS:
+            raise ValueError
         text = body.decode("utf-8")
-        if path.endswith("init.js"):
-            prefix = "firebase.initializeApp("
-            if not text.startswith(prefix) or not text.rstrip().endswith(");"):
+        if path == "/__/firebase/init.js":
+            if text.startswith(_FIREBASE_INIT_SDK_GUARD):
+                text = text[len(_FIREBASE_INIT_SDK_GUARD):]
+            if not text.startswith(_FIREBASE_INIT_CALL_PREFIX):
                 raise ValueError
-            text = text[len(prefix):text.rfind(");")]
+            text = text.rstrip()
+            if not text.endswith(");"):
+                raise ValueError
+            text = text[len(_FIREBASE_INIT_CALL_PREFIX):-2]
         value = json.loads(text)
         if not isinstance(value, Mapping):
             raise ValueError

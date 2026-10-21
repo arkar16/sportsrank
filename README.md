@@ -29,27 +29,179 @@ the implementation and operating requirements.
 The recovery contract above owns product requirements. Use
 [CFB CLI documentation](cfb/README.md) for supported recovery interfaces.
 
+## Local working files
+
+Keep private inputs and generated review output in the ignored `.sportsrank/`
+directory. The root `.scratch/` directory holds local investigation and release
+evidence; the root `error.log` is a legacy runtime log. Both are ignored to keep
+them out of accidental staging. Ignoring these paths does not delete or back up
+their contents. Preserve evidence needed by active tasks and publication.
+
 ## Safe offline verification
 
 Python 3.12 and the locked dependencies are required:
 
 ```sh
-env -u CFBD_API -u CFBD_API_KEY uv sync --locked
-env -u CFBD_API -u CFBD_API_KEY uv run --locked python -m unittest discover -s tests -v
-env -u CFBD_API -u CFBD_API_KEY uv run --locked python -m compileall -q cfb tools tests
-env -u CFBD_API -u CFBD_API_KEY npm ci
-env -u CFBD_API -u CFBD_API_KEY npm run build
+env -u CFBD_API -u CFBD_API_KEY -u CFBD_PRED_API uv sync --locked
+env -u CFBD_API -u CFBD_API_KEY -u CFBD_PRED_API uv run --locked python -m unittest discover -s tests -v
+env -u CFBD_API -u CFBD_API_KEY -u CFBD_PRED_API uv run --locked python -m compileall -q cfb tools scripts tests
+test -f website/index.html && test -f website/404.html
 ```
+
+Portable CI runs the offline suite on every pull request and main push, with
+superseded runs cancelled. Feature-branch pushes do not duplicate PR checks.
+CI checks the static entry files without installing Node/Firebase dependencies.
+Deployment remains independent and does not require a release receipt; see
+[Publication](#publication). Node dependencies are needed for deployment and the
+local Firebase emulator.
 
 These commands do not require a CFBD key and must not publish. Ordinary
 verification uses portable Schema 2/3 fixtures and does not depend on private
 or ignored caches. Static hosting build success does not establish strict
 Release, link, or HTML acceptance. The production adapter reads the project-
-only bearer token from `CFBD_API`, supplied through the BB environment variables
-settings. The adapter does not fall back to `CFBD_API_KEY` or load a dotenv file.
+only bearer token from `CFBD_API`, injected by T3 for authorized local fetches.
+The adapter does not fall back to `CFBD_API_KEY` or load a dotenv file.
 The value must never enter source,
 command arguments, tracked environment files, generated artifacts, logs,
 issues, or chat.
+
+## Historical postseason reconstruction
+
+Saved forecasts/results cannot reveal games absent from both. To restore
+available postseason games from a local CFBD historical games CSV and rebuild
+the affected carryover chain through the latest completed archived checkpoint:
+
+```sh
+env -u CFBD_API -u CFBD_API_KEY uv run --locked python -m scripts.rebuild_history \
+  --games-csv /path/to/games.csv --output .sportsrank/historical-review
+open .sportsrank/historical-review/cfb/performance/index.html
+```
+
+The output must be a new directory separate from the source website and CSV.
+The command detects the earliest missing or relocated postseason season; `--from-season`
+can select an explicit chain start. It writes corrected rankings, results,
+records, progression, historical summaries, separate reconstructed predictions,
+and retrospective performance. Original input and saved spread/issued-forecast
+bytes remain unchanged. [ADR-0024](docs/adr/0024-reconstruct-history-with-archived-membership.md)
+owns historical membership and calendar compatibility. No API request occurs.
+
+This output is an **unsealed local review site**, not a production release.
+Inherited release metadata does not validate its corrections; do not deploy it.
+The delivery task owns acceptance and subsequent authenticated release integration.
+
+For a complete release candidate, use the public export boundary with
+`--historical-games-csv /private/path/games.csv --historical-games-sha256 SHA256`
+and `--market-inputs /private/path/inputs.json`. It first validates the ordinary
+private release, then independently checks restored results, rankings, records,
+carryover, progression, original forecast preservation and complete reports.
+The resulting correction and its input identities are bound into the reviewed
+public receipt. Passing local validation does not authorize publication.
+
+To keep those inputs together, retain one **private** JSON configuration (no
+credentials) and run:
+
+```sh
+env -u CFBD_API -u CFBD_API_KEY uv run --locked python -m scripts.prepare_site \
+  --config /private/path/site-preparation.json --output /new/preparation
+```
+
+The configuration's `schema` is `sportsrank-site-preparation/v1`. Required path
+fields are `private_candidate`, `baseline_archive`, `source_input_root`,
+`source_archive`, `trusted_input_manifest`, `firebase_json`, `code_root`,
+`historical_games_csv` and `market_inputs`; relative paths resolve beside the
+configuration. Required digest fields are `baseline_sha256`,
+`source_archive_sha256` and `historical_games_sha256`. Select the authenticated
+current predecessor with `successor_baseline` for successor publication.
+Omitting it supports an initial-baseline draft, not a replacement for current
+live-predecessor reconciliation. Calculations and tests use cached inputs and
+make zero CFBD requests. Successor authentication retrieves existing immutable
+GitHub evidence using `GITHUB_TOKEN`, `GH_TOKEN`, or the existing `gh` login,
+without printing or saving the credential; it does not read or
+write Firebase. Results are `site/` and `receipt.json` under a new output folder.
+
+## CORS model performance
+
+Evaluate every archived season using the predictions and final scores already
+on the website:
+
+```sh
+uv run --locked python -m scripts.backforecast
+open .sportsrank/backforecasts/all/cfb/performance/index.html
+```
+
+For one season or week:
+
+```sh
+uv run --locked python -m scripts.backforecast 2023
+uv run --locked python -m scripts.backforecast 2026 --from-week 5 --through-week 5
+open .sportsrank/backforecasts/2026/report.html
+```
+
+Saved spreads keep their original rounding. Where a scored FBS matchup has no
+saved prediction, the command uses preceding-checkpoint ratings with the current
+unchanged CORS arithmetic (PRESEASON for Week 0). Missing predictions/ratings,
+pending scores and non-FBS games are counted explicitly. Legacy HTML encodings
+are supported. No ranking rerun, historical-source validation or API request is
+needed. Reports show winner accuracy, CORS line coverage/pushes, MAE, RMSE,
+weekly summaries and game-level results with CSV/JSON downloads.
+
+The normal `cfb.public_site export` step also generates these reports at
+`cfb/performance/index.html` and `cfb/performance/<year>/index.html`, links them
+from CORS home, and binds them into the validated public manifest and receipt.
+Publication uses the existing reviewed-site workflow. Running the report command
+alone makes a local preview; it does not deploy. Existing predictions, rankings,
+result inputs and issued-forecast records are preserved.
+
+For a manual T3 project script, use `uv run --locked python -m
+scripts.backforecast` from the repository root, with automatic execution disabled.
+
+### Provider comparison
+
+The same reports can include provider spreads, Market ATS, and paired CORS/provider
+MAE and RMSE. Upcoming retained forecasts appear on the current-season report,
+linked from the all-season index. Original spread files are preserved. The
+selection policy is teamrankings in 2013–2020 and Bovada from 2021; equal lines
+produce no pick, every nonzero difference selects a side, and pushes are separate.
+Missing quotes remain unavailable; comparisons never substitute another provider.
+
+Reuse a private manifest of retained API responses for both preview and release
+preparation:
+
+```sh
+env -u CFBD_API -u CFBD_API_KEY uv run --locked python -m scripts.backforecast \
+  --market-inputs /private/path/market-inputs.json
+```
+
+`market-inputs/v1` contains `responses`, each with `season`, local `path`
+(relative to the manifest or absolute), exact `sha256`, and timezone-bearing
+`retrieved_at`. Each response is the unchanged CFBD `/lines` JSON array. Raw
+responses stay private; the site contains only selected-line observations and
+safe provenance at `cfb/performance/market-lines.json`. Retrieval time is not a
+claim that the line was quoted then or was the closing line.
+
+Pass the same `--market-inputs` option to `cfb.public_site export` to bind the
+comparison pages and selected observations into the validated manifest/receipt.
+Pass it to `scripts.rebuild_history` to include provider comparison in the
+corrected-history review. To refresh reports on an existing corrected review,
+use `scripts.backforecast --website /path/to/review --reconstruct-history
+--market-inputs /path/to/inputs.json --output /new/preview`. That review remains
+unsealed until historical-correction publication integration is accepted.
+
+Acquisition is a separate, explicitly authorized operation:
+
+```sh
+uv run --locked python -m scripts.fetch_market_lines --seasons 2026 \
+  --meter /private/path/cfbd_requests.sqlite3 --output /private/new-observation
+```
+
+Use the existing accounted request audit, never an empty replacement ledger.
+Each selected season consumes one metered request through the Season Snapshot
+boundary. A new directory is claimed before transport; interrupted/failed
+observations are retained and cannot be replayed by rerunning the same command.
+There is no automatic retry or fetch during reporting/export. An explicit
+`--historical-reserve N` conservatively accounts for known current-month
+historical attempts absent from the selected audit. A previous allowance or
+example command does not authorize another fetch.
 
 ## Postseason calendar repair
 
@@ -70,67 +222,27 @@ fails closed.
 
 ## Publication
 
-The remote publication entry point is the manually dispatched
-`Publish validated static site to Firebase Hosting` workflow after review and
-merge. It provides `prepare`, `seal-only`, `execute`, `reconcile`, and
-`verify-only`. `normal`, `rollback`, and `correction` are sealed purposes;
-each provider write follows the same two-dispatch procedure.
+Push reviewed generated `website/` changes to `main` to publish directly to
+Firebase Hosting. The workflow deploys the triggering commit and checks five
+current public pages against committed bytes. It can also be dispatched manually
+on `main` to publish the existing website. Broad offline CI runs independently;
+full-site receipt regeneration, immutable packaging, sealing and exhaustive live
+inventory verification are not routine publication gates.
 
-Local preparation independently validates the complete provider-backed baseline
-and privately retained recovery inputs, then exports safe public pages and a
-reviewed hash receipt. GitHub-hosted preparation verifies that receipt against
-the committed site/code/configuration and input pins, packages `website/` plus
-`firebase.json`, and binds those exact bytes to the actual merged commit. The protected `seal-only`
-dispatch retains the package, provenance and attempt intent in immutable GitHub
-releases and returns the exact canonical sealed reference. A separate fresh
-owner-approved `execute` dispatch consumes that reference once, rechecks the
-live predecessor, and sends the exact package to Firebase. Any existing
-execution claim blocks replay, including after a timeout or lost runner.
+Keep raw CFBD inputs and credentials private. Preserve historical public URLs,
+the CORS model and originally issued forecasts. The existing production
+credential environment remains protected. This publishes files already generated
+and committed; unattended weekly generation remains separate work.
 
-The workflow requires the fixed repository, `refs/heads/main`, manual dispatch,
-and run attempt `1`. Deployment credentials are available only behind the
-owner-reviewed `production` environment. Authenticated GitHub commit/tree and
-attestation checks precede runtime extraction, installation and secret use.
-The protected job never rebuilds the site. Agents never supply production
-approval. A staged package with `candidate_commit` absent or `null` cannot be
-published; repeat preparation against the actual merged SHA after owner merge.
-
-Retain the exact sealed reference, including its canonical final newline.
-`reconcile` and `verify-only` retrieve immutable evidence through this reference
-and observe Firebase without deploying, even when an execution failed before
-uploading state. Actions artifacts are optional transport, not recovery
-authority. A consumed or uncertain attempt requires reconciliation and a newly
-sealed, separately approved attempt for any further write. Failed verification
-pauses ordinary publication; there is no automatic rollback.
-
-The committed `config/sr7-recovery-inputs.json` records trusted input
-identities; it does not make raw bytes public or replace private retrieval.
-Public releases and artifacts are limited to intended generated static output
-and safe hashes/provenance. Raw CFBD source snapshots, the original-prepared
-archive containing them and provider actor/auth metadata remain in private
-local storage. New transport excludes raw Actions inputs and Git ancestry.
-Historical public copies remain subject to a separate cleanup decision.
-The owner selected this computer for private retention;
-local source validation with a reviewed hash receipt is approved; implementation
-and acceptance are tracked in SR-7. See the
-[ADR-0018 retention gate](docs/adr/0018-retain-publication-evidence-in-github-releases.md)
-and [publication runbook](docs/operations/2026-season-recovery-morning.md).
-Concrete operational commands may read or write GitHub/Firebase; offline tests
-use fakes and no CFBD key. Local hosting commands are emulator-only.
-
-See the [publication runbook](docs/operations/2026-season-recovery-morning.md)
-for exact transport, approval and recovery steps, and run
-`uv run --locked python -m cfb.publication_cli --help` for current arguments.
-Setup evidence belongs to SR-15 and final acceptance to SR-16; implementation,
-review, merge, production approval, deployment and verification are separate
-states. [ADR-0016](docs/adr/0016-bind-publication-to-verified-live-content.md)
-and [ADR-0018](docs/adr/0018-retain-publication-evidence-in-github-releases.md)
-record the accepted behavior and retention limits.
+See [the current runbook](docs/operations/direct-publication.md) and
+[ADR-0026](docs/adr/0026-restore-direct-static-publication.md). The recovery CLI
+and old evidence remain available for historical inspection, not routine release.
 
 ## Working with agents
 
 [AGENTS.md](AGENTS.md) is the portable repository entry point.
 [Project memory](docs/agents/project-memory.md) assigns one home to each kind
-of information. Installed ask-matt skills guide design and delivery; BB owns
-thread and environment state. Historical workflow records are retained in the
+of information. Installed ask-matt skills guide design and delivery; T3 owns
+thread and execution state. [GitHub issues](docs/agents/issue-tracker.md) own
+current task scope, dependencies, and acceptance. Historical workflow records are retained in the
 [frozen archive](docs/archive/codex-workflow/2026-09-10/README.md).

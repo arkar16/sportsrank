@@ -1,5 +1,12 @@
 # 2026 recovery publication runbook
 
+> Historical recovery procedure. On October 20 the owner replaced its publication
+> gates with [direct static publication](../operations/direct-publication.md)
+> under [ADR-0026](../adr/0026-restore-direct-static-publication.md). The workflow
+> operations below are retired; do not dispatch or replay old sealed attempts.
+> Historical source/model requirements remain applicable to reconstruction.
+
+
 Before any publication action, read the authoritative SportsRank task SR-7 (`bb tasks show SR-7`) and
 verify the actual merged candidate SHA and complete live baseline. Historical acceptance
 and artifact identities are indexed in [historical Gate 1 reports](../evidence/2026-gate1.md).
@@ -78,6 +85,31 @@ The owner selected this computer for private retention and approved the local
 validation/hosted packaging trust contract in ADR-0018. Safe public baseline
 references are separately pinned; they never substitute for private raw inputs.
 
+For artifact contract 4, local validation records a canonical top-level
+`used_coverage` value in the receipt only after trusted `validate_release`
+succeeds. Record the source coverage actually used by the validated progression
+origin and run, including its season, sport, classification, source snapshot and
+checksum, required progression and season-navigation paths, and public
+provenance paths. Preserve refresh and correction ownership; do not substitute a
+latest-run inference. Current or retained-2025 output requires that coverage.
+Use a versioned `used_coverage` descriptor with `status: none` only for a
+genuine pre-2025 build that did not use 2025 progression coverage; this is a
+descriptor, not JSON null, even when future-2025 inputs happen to be available.
+
+The contract-4 receipt is a migration boundary. Preserve literal contract-2 and
+contract-3 manifests, run dictionaries, public bytes and legacy receipt parsing.
+Those receipts may support historical inspection, but a current preparation
+requires a newly generated contract-4 receipt and its coverage identity.
+
+An explicitly prepared CSV correction additionally binds `historical-correction/v1`
+evidence in both the public manifest and receipt. Local export must validate the
+ordinary private candidate first, then independently validate the reconstructed
+artifact graph against the pinned original site and CSV. Corrected 2025 progression
+uses `ranking-progression/used-coverage/v2`: its original coverage remains retained,
+and its replacement identifies the correction evidence and corrected carryover.
+An ordinary receipt or an unsealed historical preview cannot attest that output.
+The exact receipt/coverage authentication below applies equally to this extension.
+
 Before extracting runtime code, installing dependencies or using credentials,
 the trusted workflow bootstrap verifies authenticated GitHub run provenance,
 package and package-record attestation, the actual candidate commit/tree and
@@ -104,6 +136,66 @@ schema conversion alone is not sanitization. Audit current packages and Git
 history as well as new uploads. Existing exposure requires an explicit
 remediation decision before claiming this boundary is satisfied.
 
+### Draft checks and final candidate binding
+
+For a weekly successor, first derive the separate predecessor record with the
+read-only `publication_cli successor-baseline` command. Supply the unchanged
+historical `baseline.json`, exact current prior `SealedAttemptReference`, and
+the prior audit's six immutable record/source reference selectors through
+`--audit-evidence`. That run JSON is only a selector carrier: its claimed state,
+identity and record bodies confer no authority. The command retrieves and
+authenticates the original hosted preparation, candidate tree, full package and
+complete coordinator verification. It makes no Firebase calls and writes a new
+`verified_successor_baseline` record, never a capture.
+
+Pass that record as `public_site export --successor-baseline` alongside the
+original historical baseline archive and retained private source inputs. This
+reauthenticates the evidence, runs the real private validator, independently
+preserves historical bytes and checks prior package paths/unowned bytes before
+exporting and issuing a new receipt. Review the safe output and receipt together.
+The historical private archive/sanitizer pins remain unchanged. Hosted
+preparation retrieves only safe existing evidence under the existing GitHub read
+boundary; it does not observe Firebase or use a deployment credential.
+
+Before sealing and executing, supply the same original prior sealed reference
+and the baseline record that accompanied **that prior attempt**, not the new
+successor record. The existing `prior_reference` plus
+`prior_preparation_run_id`/`prior_preparation_artifact_name` workflow interfaces
+freshly reconcile it. The current candidate's transported `baseline.json` now
+contains the distinct successor record; its nested `historical` remains the
+preservation capture. Fresh reconciliation must equal the pinned predecessor
+and prior package. A stale identity or failed verification blocks dispatch.
+After the owner merges, prepare the actual merged SHA, obtain fresh approval to
+seal a new attempt, retain its exact reference, then obtain a separate fresh
+approval to execute. The failed/consumed old attempt is never replayed. Keep #27
+open until the weekly output is live and completely verified.
+
+Offline export, receipt verification and direct preparation are draft
+self-consistency checks. Keep their outputs private and label them as draft
+evidence. They do not authenticate a caller-supplied replacement receipt,
+replacement coverage or fully re-sealed package, and a draft result cannot be
+used as a final fallback.
+
+Final hosted preparation uses the actual runtime `GITHUB_SHA` as the candidate
+authority. Resolve the candidate commit from that value, verify the supplied
+candidate-tree archive against the commit and its root tree, and require the
+caller-supplied receipt bytes to equal the receipt blob at the fixed path
+`config/sr7-local-validation-receipt.json` in the authenticated `candidate_commit`;
+callers cannot select another receipt path. The final package evidence must bind
+the receipt identity and the canonical `used_coverage` identity to that same tree. Missing,
+replacement or mismatched receipt or coverage evidence fails closed; caller
+arguments cannot replace the authenticated candidate identity or expected tree.
+Package records, validation records, rehydration and merged-candidate rebinds
+must preserve those identities.
+
+If the validated coverage, source fingerprint or safe public output changes,
+rerun the real exporter and review the regenerated receipt with the generated
+site. Never hand-edit a receipt. Do not add its digest to the trusted input
+manifest. Exclude the receipt from the source fingerprint and trusted
+configuration identity so the regenerated receipt does not hash itself. These
+checks provide evidence for owner review and do not authorize merge, production
+approval or publication.
+
 ### Private-input proof gate
 
 Keep the exact source-input, original-prepared and raw-baseline archives in
@@ -118,8 +210,9 @@ Reconstruct and independently validate the recovery in private staging using
 the retained source inputs. Run the public exporter only on that accepted
 candidate. The export preserves reader pages while replacing source snapshot
 payloads with strict provenance, and emits a safe receipt binding inventory,
-hosting configuration, validator/runtime/workflow source, trusted input hashes
-and baseline. Review and commit the safe website and receipt together.
+hosting configuration, validator/runtime/workflow source, trusted input hashes,
+baseline and the actual `used_coverage` identity. Review and commit the safe
+website and receipt together.
 
 Hosted `prepare` requires only the reviewed safe tree, receipt, hash pins and
 the verified public baseline derivative. It never retrieves raw source data.
@@ -150,16 +243,32 @@ owner decision; completing the new path does not erase historical exposure.
    retired, and immutable release protection enabled. Recheck dated setup
    evidence instead of assuming YAML establishes account protection.
 4. Finish SR-16 acceptance, including strict release/link/HTML preservation,
-   exact-head review and real immutable archive retrieval proof. Obtain owner
-   merge, then prepare and validate the actual merged candidate.
+   exact-head review, authenticated receipt/used-coverage tree binding and real
+   immutable archive retrieval proof. Obtain owner merge, then prepare and
+   validate the actual merged candidate.
 
 ## Seal, approve and execute
 
 The workflow guard requires the fixed repository, `refs/heads/main`, manual
 `workflow_dispatch`, and run attempt `1`. Production jobs require the owner's
-`production` approval. Agents never submit approval. `GITHUB_TOKEN` supplies
+`production` approval. Agents submit approval only for the routine weekly
+standing delegation in [ADR-0025](../adr/0025-authorize-routine-weekly-publication.md),
+following the [Monday procedure](monday-automation.md). Other releases, including
+the #39 historical correction, retain human approval. `GITHUB_TOKEN` supplies
 provenance/archive/approval access; Firebase credentials are available only
 inside the protected job, and `CFBD_API` is absent.
+
+The protected Google-auth action creates a private credential file from the
+existing Firebase service account and removes it during cleanup. Pass its exact
+`credentials_file_path` output as `FIREBASE_CREDENTIALS_FILE`; do not export a
+fixed one-hour access token for the complete operation. The Firebase token
+provider loads only that file with the existing cloud-platform scope and uses
+Google's credential freshness/refresh logic before authenticated requests.
+Both Firebase adapters share it, and concurrent upload callers serialize
+refresh. Credential failures stop before the provider request and expose only
+sanitized errors. The file is outside all tracked package/source transports.
+Local explicit `FIREBASE_ACCESS_TOKEN` callers remain supported when no gated
+file is selected; they must manage that token's lifetime themselves.
 
 1. Select the exact validated preparation, expected baseline and purpose.
    Normal successors, rollback and correction need freshly reconciled verified

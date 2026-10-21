@@ -12,6 +12,7 @@ from cfb.candidate_tree import (
     create_candidate_tree_archive,
     materialize_candidate_tree_archive,
 )
+from cfb.public_safety import assert_public_bytes
 
 
 def _git(root: Path, *args: str) -> str:
@@ -22,6 +23,55 @@ def _git(root: Path, *args: str) -> str:
 
 
 class CandidateCurrentTreeTests(unittest.TestCase):
+    def test_reviewed_workbook_round_trips_only_in_candidate_tree(self):
+        relative = "docs/inbox/CORS CFB 2020_21.xlsx"
+        raw = (Path(__file__).parents[1] / relative).read_bytes()
+        with self.assertRaisesRegex(ValueError, "unapproved archive"):
+            assert_public_bytes(relative, raw)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            repo, _parent, _commit = self._repository(root)
+            workbook = repo / relative
+            workbook.parent.mkdir(parents=True)
+            workbook.write_bytes(raw)
+            _git(repo, "add", ".")
+            _git(repo, "commit", "--quiet", "-m", "public workbook")
+            commit = _git(repo, "rev-parse", "HEAD")
+            archive = root / "candidate-tree.tar.gz"
+            create_candidate_tree_archive(repo, commit, archive)
+            restored = materialize_candidate_tree_archive(
+                archive, candidate_commit=commit, destination=root / "bare.git"
+            )
+            actual = subprocess.run(
+                ["git", "-C", str(restored), "show", f"{commit}:{relative}"],
+                check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            ).stdout
+            self.assertEqual(actual, raw)
+
+    def test_changed_or_renamed_workbook_rejects_at_both_transport_boundaries(self):
+        relative = "docs/inbox/CORS CFB 2020_21.xlsx"
+        raw = (Path(__file__).parents[1] / relative).read_bytes()
+        for path, value in ((relative, raw + b"changed"),
+                            ("docs/inbox/another.xlsx", raw)):
+            with self.subTest(path=path), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                repo, _parent, _commit = self._repository(root)
+                workbook = repo / path
+                workbook.parent.mkdir(parents=True)
+                workbook.write_bytes(value)
+                _git(repo, "add", ".")
+                _git(repo, "commit", "--quiet", "-m", "unreviewed workbook")
+                commit = _git(repo, "rev-parse", "HEAD")
+                archive = root / "candidate-tree.tar.gz"
+                with self.assertRaises(CandidateTreeError):
+                    create_candidate_tree_archive(repo, commit, archive)
+                with patch("cfb.candidate_tree._assert_public_safe", return_value=None):
+                    create_candidate_tree_archive(repo, commit, archive)
+                with self.assertRaises(CandidateTreeError):
+                    materialize_candidate_tree_archive(
+                        archive, candidate_commit=commit, destination=root / "rejected.git"
+                    )
+
     def _repository(self, root: Path) -> tuple[Path, str, str]:
         repo = root / "repo"
         repo.mkdir()

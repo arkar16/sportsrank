@@ -20,8 +20,9 @@ Build CFB/FBS CORS rankings and a permanent static statistical-reference site.
 - Every CFBD request crosses the metered Season Snapshot boundary. Ordinary
   tests and cached rebuilds make zero live calls. Fetch allowances require
   explicit authorization; an old plan is not a fresh allowance.
-- Read credentials only from BB-injected `CFBD_API`; keep values out of source,
-  arguments, fixtures, generated pages, logs, and messages.
+- Read source-data credentials only from T3-injected `CFBD_API` and model-contest
+  credentials only from T3-injected `CFBD_PRED_API`. Keep both values out of
+  source, arguments, fixtures, generated pages, logs, and messages.
 - Owner approval governs consequential product and
   architecture changes, merges, and production publication. Technical acceptance
   does not authorize those actions.
@@ -30,10 +31,11 @@ Build CFB/FBS CORS rankings and a permanent static statistical-reference site.
 
 Use ask-matt skills for design and delivery. Resolve consequential choices in
 ADRs, then define scope, acceptance, dependencies, and ownership in a spec/ticket.
-An Astra orchestrator may use configured Codex roles for substantial independent
-work: `investigator`, `default_executor`, `senior_executor`, and `tester`.
-Project-local `.codex/agents/` files own model, reasoning, and role behavior.
-They override same-named global roles for SportsRank; settings are not copied here.
+Use T3's native orchestration for authorized delegation. Read the selected role
+from `~/.codex/agents/` and the shared routing policy in
+`~/.codex/coding-policy.md`; use `~/.codex/worker-handoff.md` for assignments.
+Keep project constraints in the task brief; user-level files own role behavior
+and model settings. Continue the current thread unless the owner requests another.
 Run the offline checks in `README.md` for code/build changes; add focused
 regressions for changed contracts. Keep acceptance independent of renderer
 assumptions.
@@ -42,8 +44,8 @@ assumptions.
 
 ### Issue tracker
 
-Use SportsRank BB Tasks for task management, with GitHub/local drafts as fallback;
-see `docs/agents/issue-tracker.md`.
+Use GitHub issues for task management under the active tracker fallback;
+see `docs/agents/issue-tracker.md`. BB CLI/Tasks requires an explicit owner request.
 
 ### Triage labels
 

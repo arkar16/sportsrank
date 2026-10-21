@@ -1,58 +1,71 @@
 # Current work
 
-The recovery and publication repairs are merged through
-[PR #11](https://github.com/arkar16/sportsrank/pull/11). **SR-28** owns the
-consolidation of remaining documentation and finished branches onto `main`.
-Start new delivery branches from current `main`; old recovery worktrees retain
-historical evidence, not the current implementation.
+Direct Firebase publication and publishing the retained Week 7/8 website are
+tracked in [#68](https://github.com/arkar16/sportsrank/issues/68), under
+[ADR-0026](../adr/0026-restore-direct-static-publication.md). Use the
+[current publication runbook](../operations/direct-publication.md). The old
+prepare/seal/execute release procedure is retired. Publication evidence belongs
+to #68 and parent #64/#66; do not infer live success from a prepared package.
 
-## Next product deliveries
+The T3 Monday timer was deleted October 18. There is no active recurring writer;
+hosted generation in #54 remains separate. The retained October 18 data contains
+Week 7 results/ratings and all 56 Week 8 forecasts; the last contest readback
+verified 55/56. Publishing those files requires no additional source requests.
 
-- **SR-26 — Preserve published CORS forecasts and report 2026 evaluation
-  metrics** owns the accepted evaluation specification. Read
-  `bb tasks show SR-26` and [ADR-0019](../adr/0019-evaluate-predictions-against-market-lines.md).
-- **SR-25 — 2025 ranking progression, conference views, and championship
-  projections** owns that separate feature. Its
-  [plan](../plans/2025-ranking-progression-and-conferences.md) and
-  [ADR-0020](../adr/0020-preserve-pregame-boundaries-for-matchup-estimates.md)
-  preserve scope and pregame constraints.
-- **SR-27 — Add versioned BEV and AEV to 2024–2026 game tables** owns the
-  excitement-score delivery. Begin with the task and
-  [plan pointer](../plans/2026-game-excitement.md); ADR-0021 and the linked
-  calculation contract own accepted scoring decisions. Issued BEV depends on
-  SR-26's forecast-preservation contract; data qualification and empirical
-  acceptance remain required.
+## Earlier work references
 
-These records support delivery preparation. Their current task records govern
-execution authority; merging the documents grants no new CFBD fetch or
-production-publication allowance. The older
-[history/storage proposal](../plans/history-storage-and-performance.md) remains
-proposed future work, with unresolved choices in ADRs 0022/0023.
+- Weekly data/publication: [#64](https://github.com/arkar16/sportsrank/issues/64),
+  merged #65; credential repair [#66](https://github.com/arkar16/sportsrank/issues/66),
+  merged #67. #68 replaces the pending sealed recovery with direct publication.
+- Accepted season-page layout: #50 / merged #51; live acceptance follows #68.
+- Weekly generation/contest: #48. Hosted migration: #54, not activated.
+- Corrected historical baseline, performance and provider reporting: merged
+  #34/#36/#38/#40; preserve those accepted values and original forecasts.
 
-## Recovery acceptance and production evidence
+## Merged prerequisites and parked work
 
-**SR-7** owns the recovery outcome; **SR-24** owns the latest publication evidence.
-Its September 29 handoff records successful deployment of the reviewed recovery
-and independent representative HTTP checks. The final full audit subsequently
-failed; the recorded Firebase initialization-script parser issue remains a
-verification follow-up. Read `bb tasks show SR-24` before asserting full
-acceptance or starting any successor publication. A merged PR or a deployed site
-alone does not establish verified coordinator state.
+- Forecast preservation [#14](https://github.com/arkar16/sportsrank/pull/14),
+  permanent 2025 ranking progression [#15](https://github.com/arkar16/sportsrank/pull/15),
+  and retained published-spread grading [#22](https://github.com/arkar16/sportsrank/pull/22)
+  are merged. ADR-0019 and ADR-0020 remain their domain authorities.
+- The SR-24 native Firebase audit parser [#24](https://github.com/arkar16/sportsrank/pull/24)
+  and exact public-workbook transport repair [#25](https://github.com/arkar16/sportsrank/pull/25)
+  are merged. Read the current audit/publication evidence before asserting that
+  deployed state is fully verified; a merge alone does not establish that.
+- Excitement and conference projections are
+  parked by owner direction. Preserve their existing branches and evidence.
+  The selected forecast-comparison providers are recorded in
+  [#23](https://github.com/arkar16/sportsrank/pull/23) and now reconciled into
+  ADR-0019 with the October 11 implementation direction. Excitement’s separate
+  market policy remains outside this delivery.
 
-The published recovery uses the September 25 snapshot: 2024/2025 FINAL,
-2026 PRESEASON, completed Weeks 0–3 and Week 4 forecasts. SR-17 consumed its
-one authorized 2026 games refresh. Raw source retention remains private on the
-owner's computer under ADR-0018. Historical public-release deletion and
-Git-history rewriting remain separate owner decisions.
+## Current-season source and publication boundaries
+
+The October 7 allowance of one metered 2026 games refresh is spent. It reused
+cached teams and completed successfully; subsequent builds are offline. Retain
+the original source versions and new snapshot privately on the owner’s computer.
+The full historical chain is reconstructed under the expanded source bundle,
+as required by the current-season extension procedure. Preserve issued forecasts;
+reconstructed performance values do not overwrite authenticated pregame forecasts.
+
+On October 11 the owner approved needed API requests after a bounded search for
+the provider-survey cache. The selected-line refresh and private retention are
+tracked in #37. Reporting/export still make zero live calls; do not infer another
+allowance from completed acquisition evidence.
+
+The owner explicitly selected T3-injected `CFBD_API` for this continuation and
+prohibited BB CLI/Tasks use. Keep task evidence in the delivery PR/local fallback;
+do not infer live tracker status from historical exports. Production approvals follow ADR-0026 and the explicit authority
+recorded in each delivery.
 
 ## Operational and historical sources
 
 - [Recovery contract](../plans/2026-p0-recovery-and-backfill.md)
-- [Publication runbook](../operations/2026-season-recovery-morning.md)
-- [ADR index](../adr/README.md): 0011/0012/0016/0017/0018 for publication
+- [Publication runbook](../operations/direct-publication.md)
+- [ADR index](../adr/README.md): 0026 for current publication; earlier records retain historical context
 - [Historical Gate 1 evidence](../evidence/2026-gate1.md)
 - [Frozen postseason repair handoff](../archive/postseason-repair/2026-09-09/README.md)
 - [Tracker configuration](../agents/issue-tracker.md)
 
 Tasks own current status, verification and residual risk. These pointers do not
-replace a fresh task read or authorize deployment, rollback or claim replay.
+authorize a new fetch, deployment, rollback or claim replay.

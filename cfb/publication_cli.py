@@ -36,6 +36,7 @@ line arguments or persisted summaries.
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
 from dataclasses import dataclass
 import hashlib
 import json
@@ -46,7 +47,12 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from typing import Any, Mapping, Sequence
+from typing import Any, Iterator, Mapping, Sequence
+
+from .successor import (
+    SuccessorBaselineRecord, authenticate_successor, derive_successor,
+    parse_baseline, preservation_baseline,
+)
 
 from .baseline import (
     BaselineValidationError,
@@ -74,6 +80,7 @@ from .publication import (
     PreparedPackage,
     PublicationCoordinator,
     PublicationExecutionError,
+    PublicationPreparationError,
     PublicationTags,
     ReconciliationTags,
     SealedAttempt,
@@ -167,7 +174,7 @@ class PreparationContext:
 
     path: Path
     package: ValidatedPackageRecord
-    baseline: BaselineRecord | None
+    baseline: BaselineRecord | SuccessorBaselineRecord | None
     package_archive: Path
     candidate_tree_archive: Path
     candidate_tree_sha256: str
@@ -502,19 +509,22 @@ def _context_sibling(context: Path, name: str) -> Path:
     return path
 
 
-def _verify_candidate_tree(path: Path, candidate_commit: str) -> None:
-    """Require current-tree-only evidence for the exact candidate commit."""
+@contextmanager
+def _verify_candidate_tree(
+    path: Path, candidate_commit: str
+) -> Iterator[GitCommitTreeReader]:
+    """Yield the exact reader proven by current-tree evidence for the commit."""
 
     with tempfile.TemporaryDirectory(prefix="sportsrank-tree-check-") as directory:
         try:
-            materialize_candidate_tree_archive(
-                path, candidate_commit=candidate_commit,
-                destination=Path(directory) / "candidate.git",
+            reader = _materialize_candidate_reader(
+                path, candidate_commit, Path(directory)
             )
-        except CandidateTreeError as exc:
+        except (CandidateTreeError, PublicationPreparationError, PublicationCLIError) as exc:
             raise PublicationCLIError(
                 "candidate current-tree evidence is invalid"
             ) from exc
+        yield reader
 
 
 def _load_digest_pins(path: Path) -> Mapping[str, str]:
@@ -583,7 +593,7 @@ def _load_context(
     try:
         target = ProviderTarget.from_value(raw["target"])
         package = ValidatedPackageRecord.from_dict(raw["package"])
-        baseline = BaselineRecord.from_dict(raw["baseline"])
+        baseline = parse_baseline(raw["baseline"])
         raw_refs = raw["evidence_references"]
         if not isinstance(raw_refs, Mapping):
             raise PublicationCLIError("publication context evidence references are invalid")
@@ -603,7 +613,7 @@ def _load_context(
     if package.expected_baseline_sha256 != baseline.digest:
         raise PublicationCLIError("publication context baseline does not match its package")
     if trusted is not None:
-        if baseline.digest != trusted.baseline_record_sha256:
+        if preservation_baseline(baseline).digest != trusted.baseline_record_sha256:
             raise PublicationCLIError(
                 "publication context baseline is not the reviewed SR7 baseline"
             )
@@ -629,14 +639,14 @@ def _load_context(
     if not baseline_record_path.is_file():
         raise PublicationCLIError("baseline record is missing")
     try:
-        stored_baseline = BaselineRecord.from_dict(
+        stored_baseline = parse_baseline(
             _json_object(baseline_record_path, "baseline record")
         )
     except (TypeError, ValueError) as exc:
         raise PublicationCLIError("baseline record is invalid") from exc
     if _sha256_file(baseline_record_path) != baseline.digest or stored_baseline != baseline:
         raise PublicationCLIError("baseline record does not match its context")
-    if trusted is not None and _sha256_file(baseline_record_path) != trusted.baseline_record_sha256:
+    if trusted is not None and preservation_baseline(baseline).digest != trusted.baseline_record_sha256:
         raise PublicationCLIError("baseline record is not the reviewed SR7 baseline")
 
     baseline_public_archive: Path | None = None
@@ -686,7 +696,7 @@ def _load_context(
                     baseline_sanitizer_record, "baseline sanitizer record"
                 ),
                 expected_sanitizer_record_sha256=baseline_sanitizer_record_sha256,
-                baseline_record=baseline,
+                baseline_record=preservation_baseline(baseline),
                 expected_baseline_record_sha256=trusted.baseline_record_sha256,
                 target=TARGET,
             )
@@ -766,7 +776,8 @@ def _load_context(
     )
     if _sha256_file(candidate_tree_archive) != candidate_tree_sha256:
         raise PublicationCLIError("candidate current-tree evidence does not match its digest")
-    _verify_candidate_tree(candidate_tree_archive, candidate)
+    with _verify_candidate_tree(candidate_tree_archive, candidate):
+        pass
     return PreparationContext(
         context_path,
         package,
@@ -905,7 +916,8 @@ def prepare_operation(args: argparse.Namespace) -> Path:
     )
     if _sha256_file(candidate_tree_archive) != candidate_tree_sha256:
         raise PublicationCLIError("candidate current-tree evidence does not match its digest")
-    _verify_candidate_tree(candidate_tree_archive, candidate_commit)
+    verified_tree = _verify_candidate_tree(candidate_tree_archive, candidate_commit)
+    verified_reader = verified_tree.__enter__()
     source_archive = (
         Path(args.source_input_archive).resolve()
         if args.source_input_archive is not None else None
@@ -967,10 +979,8 @@ def prepare_operation(args: argparse.Namespace) -> Path:
             retained_inputs_sha256=retained_sha,
             output=package_archive,
         )
-        reader = GitCommitTreeReader(candidate_root)
-        reader.require_commit(candidate_commit)
         package = bind_merged_candidate(
-            prepared, candidate_commit=candidate_commit, reader=reader
+            prepared, candidate_commit=candidate_commit, reader=verified_reader
         )
         if baseline.record.digest != trusted.baseline_record_sha256:
             raise PublicationCLIError(
@@ -1037,6 +1047,7 @@ def prepare_operation(args: argparse.Namespace) -> Path:
     finally:
         if "baseline" in locals() and isinstance(baseline, VerifiedBaseline):
             baseline.close()
+        verified_tree.__exit__(*sys.exc_info())
     return output / "publication-context.json"
 
 
@@ -1059,9 +1070,18 @@ def prepare_reviewed_operation(args: argparse.Namespace) -> Path:
         raise PublicationCLIError(
             "candidate current-tree evidence does not match its digest"
         )
-    _verify_candidate_tree(candidate_tree_archive, candidate_commit)
+    verified_tree = _verify_candidate_tree(candidate_tree_archive, candidate_commit)
+    reader = verified_tree.__enter__()
     site = candidate_root / "website"
     try:
+        supplied_receipt_bytes = Path(args.local_validation_receipt).resolve().read_bytes()
+        committed_receipt_bytes = reader.read_file(
+            candidate_commit, "config/sr7-local-validation-receipt.json"
+        )
+        if supplied_receipt_bytes != committed_receipt_bytes:
+            raise PublicationCLIError(
+                "supplied local-validation receipt differs from candidate commit"
+            )
         receipt = verify_local_receipt(
             args.local_validation_receipt,
             site,
@@ -1084,7 +1104,7 @@ def prepare_reviewed_operation(args: argparse.Namespace) -> Path:
             receipt.retained_inputs_sha256, "receipt retained input identity"
         )
         if (
-            expected_baseline != trusted.baseline_record_sha256
+            preservation_baseline(baseline_record).digest != trusted.baseline_record_sha256
             or retained_inputs != trusted.source_archive_sha256
             or baseline_record.digest != expected_baseline
             or baseline_record.observed != predecessor
@@ -1107,23 +1127,26 @@ def prepare_reviewed_operation(args: argparse.Namespace) -> Path:
             expected_derivative_sha256=trusted.baseline_public_archive_sha256,
             sanitizer_record=sanitizer_raw,
             expected_sanitizer_record_sha256=trusted.baseline_sanitizer_record_sha256,
-            baseline_record=baseline_record,
+            baseline_record=preservation_baseline(baseline_record),
             expected_baseline_record_sha256=trusted.baseline_record_sha256,
             target=TARGET,
         )
         try:
+            if isinstance(baseline_record, SuccessorBaselineRecord):
+                authenticate_successor(
+                    baseline_record, archive=GitHubReleaseArchive(), repository=REPOSITORY,
+                    provenance_reader=GitHubPreparationProvenanceReader.from_github_token(),
+                    destination=output / "successor-authentication",
+                )
+                # Retained preparation contains only existing safe evidence;
+                # transient reconstruction is unnecessary in its transport.
+                shutil.rmtree(output / "successor-authentication")
             prepared = prepare_reviewed_package(
                 site,
                 firebase_json=firebase_json,
-                inventory_sha256=receipt.inventory_sha256,
-                configuration_sha256=receipt.configuration_sha256,
-                expected_baseline_sha256=expected_baseline,
-                expected_predecessor=predecessor,
-                retained_inputs_sha256=retained_inputs,
-                validation_sha256=receipt.validation_sha256,
+                local_validation_receipt=receipt,
                 output=output / "package.tar.gz",
             )
-            reader = GitCommitTreeReader(candidate_root)
             package = bind_merged_candidate(
                 prepared, candidate_commit=candidate_commit, reader=reader
             )
@@ -1162,6 +1185,8 @@ def prepare_reviewed_operation(args: argparse.Namespace) -> Path:
         )
     except (BaselineValidationError, PublicSiteError, RecordValidationError, OSError, ValueError) as exc:
         raise PublicationCLIError("reviewed preparation failed closed") from exc
+    finally:
+        verified_tree.__exit__(*sys.exc_info())
     return output / "publication-context.json"
 
 
@@ -1190,9 +1215,6 @@ def _rehydrate_package(context: PreparationContext) -> _RehydratedPackage:
     try:
         if _sha256_file(context.candidate_tree_archive) != context.candidate_tree_sha256:
             raise PublicationCLIError("candidate current-tree evidence changed after context validation")
-        _verify_candidate_tree(
-            context.candidate_tree_archive, context.package.candidate_commit
-        )
         reader = _materialize_candidate_reader(
             context.candidate_tree_archive,
             context.package.candidate_commit,
@@ -1222,7 +1244,9 @@ def _rehydrate_package(context: PreparationContext) -> _RehydratedPackage:
 def build_coordinator() -> PublicationCoordinator:
     """Construct the concrete production adapters from gated environment state."""
 
-    token = lambda: os.environ.get("FIREBASE_ACCESS_TOKEN", "")
+    from .firebase_auth import access_token_provider
+
+    token = access_token_provider()
     publication_backend = FirebaseRestPublicationBackend(token)
     read_backend = FirebaseRestReadBackend(token)
     provider = FirebasePublicationAdapter(TARGET, publication_backend)
@@ -1355,11 +1379,11 @@ def _load_sealed_reference(path: str | Path) -> SealedAttemptReference:
     return reference
 
 
-def _load_baseline_record(path: str | Path) -> BaselineRecord:
+def _load_baseline_record(path: str | Path) -> BaselineRecord | SuccessorBaselineRecord:
     """Load the baseline record transported beside a sealed reference."""
 
     try:
-        baseline = BaselineRecord.from_dict(
+        baseline = parse_baseline(
             _json_object(Path(path).resolve(), "baseline record")
         )
     except (RecordValidationError, TypeError, ValueError) as exc:
@@ -1435,6 +1459,8 @@ def _validate_initial_baseline_exception(
         raise PublicationCLIError(
             "initial-baseline is allowed only for a normal first publication"
         )
+    if isinstance(baseline, SuccessorBaselineRecord):
+        raise PublicationCLIError("initial-baseline cannot authorize a successor")
     if baseline.source.status != "unknown" or baseline.source.commit is not None:
         raise PublicationCLIError(
             "initial-baseline requires an explicitly unknown historical source"
@@ -2027,6 +2053,28 @@ def _attempt_context_args(parser: argparse.ArgumentParser) -> None:
     return None
 
 
+def successor_baseline_operation(args):
+    """Read existing immutable publication evidence; no Firebase capability."""
+    historical = _load_baseline_record(args.historical_baseline)
+    if not isinstance(historical, BaselineRecord):
+        raise PublicationCLIError("historical-baseline must remain the original capture")
+    selectors = _json_object(args.audit_evidence, "audit evidence selectors")
+    evidence = {}
+    for group, role in (("provider_evidence", "provider_result"), ("verification_evidence", "verification"), ("observation_evidence", "reconciliation")):
+        for field, suffix in (("record_reference", ""), ("source_reference", "_source")):
+            evidence[role + suffix] = _archive_reference(selectors[group][field], role + suffix)
+    verified = derive_successor(
+        historical, _load_sealed_reference(args.prior_reference), evidence,
+        archive=GitHubReleaseArchive(), repository=REPOSITORY,
+        provenance_reader=GitHubPreparationProvenanceReader.from_github_token(),
+        destination=args.retrieval_directory,
+    )
+    output = Path(args.output)
+    with output.open("xb") as stream:
+        stream.write(canonical_json(verified.record.to_dict()))
+    return output
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="operation", required=True)
@@ -2111,6 +2159,12 @@ def build_parser() -> argparse.ArgumentParser:
     external.add_argument("--sanitizer-reference", type=Path, required=True)
     external.add_argument("--source-baseline-archive", type=Path)
     external.add_argument("--materialized-site", type=Path)
+    successor = subparsers.add_parser("successor-baseline", help="derive a predecessor from existing immutable full verification; no Firebase reads")
+    successor.add_argument("--historical-baseline", type=Path, required=True)
+    successor.add_argument("--prior-reference", type=Path, required=True)
+    successor.add_argument("--audit-evidence", type=Path, required=True)
+    successor.add_argument("--retrieval-directory", type=Path, required=True)
+    successor.add_argument("--output", type=Path, required=True)
     return parser
 
 
@@ -2122,7 +2176,9 @@ def main(
     args = build_parser().parse_args(argv)
     unsafe_execute_state: object | None = None
     try:
-        if args.operation == "prepare-reviewed":
+        if args.operation == "successor-baseline":
+            path = successor_baseline_operation(args)
+        elif args.operation == "prepare-reviewed":
             path = prepare_reviewed_operation(args)
         elif args.operation == "seal-only":
             path = seal_only_operation(args, coordinator=coordinator)
@@ -2180,6 +2236,7 @@ __all__ = [
     "main",
     "prepare_reviewed_operation",
     "seal_only_operation",
+    "successor_baseline_operation",
     "reconcile_external_operation",
     "reconcile_operation",
     "verify_only_operation",

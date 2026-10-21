@@ -29,3 +29,41 @@ execution/documentation mechanism; existing product decisions, acceptance
 criteria, source budgets, and publication approvals are not relaxed.
 
 Supersedes [ADR-0004](0004-retain-operational-and-decision-memory.md).
+
+## Shared role amendment — 2026-10-08
+
+The owner requested a single source of Codex roles across projects. Repository
+copies had retained older model settings after the shared roles changed. This
+supersedes the project-local role ownership above: `~/.codex/agents/` owns worker
+behavior, models, and reasoning; `~/.codex/AGENTS.md` owns shared dispatch policy.
+`AGENTS.md` and project-memory guidance point to these sources, and the local
+worker copies are removed. Explicit task-level user overrides remain authoritative;
+the main agent uses the session's selected model.
+
+This trades self-contained worker configuration in a clone for one maintained
+user-level definition. Delegation requires those role files on the executing
+machine; missing configuration must be reported rather than recreated from old
+project pins. Sharing role definitions does not restore Codex Workflow routes or
+change project constraints, acceptance, or merge/publication authority.
+[Delivery task #28](https://github.com/arkar16/sportsrank/issues/28) owns validation
+and merge status.
+
+## Active orchestration amendment — 2026-10-11
+
+The owner's current instructions select T3 native orchestration and prohibit
+BB CLI/Tasks unless explicitly requested. GitHub issues are already the active
+fallback for current deliveries. Supersede the earlier BB execution directions
+with T3 threads/workspaces and the GitHub issue workflow in
+[tracker configuration](../agents/issue-tracker.md). Historical SR identifiers
+remain evidence references; no historical task migration is implied.
+
+Shared `~/.codex/coding-policy.md` owns current subscription routing and dispatch;
+`~/.codex/agents/` retains role definitions and `~/.codex/worker-handoff.md` owns
+assignment structure. Continue existing threads unless the owner requests a new
+one. T3 supplies authorized local `CFBD_API` through the environment. These
+operational corrections preserve task acceptance, metered request allowances,
+credential privacy, and human merge/publication authority.
+
+This keeps cold-start guidance consistent with the active environment while
+retaining dated decisions as history. [Delivery task #43](https://github.com/arkar16/sportsrank/issues/43)
+owns validation and merge status.

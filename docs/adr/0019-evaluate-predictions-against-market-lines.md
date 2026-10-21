@@ -14,33 +14,8 @@ measure so that future changes can be compared on both. ESPN was an example,
 not a required source; use bookmaker lines available through the API. These
 decisions settle the purpose, metric priority and source flexibility. Subsequent
 choices below settle forecast precision and margin-error metrics. The October 1
-clarification below settles use of the returned API line; the October 5
-decision selects providers by Season. Comparison implementation remains open.
-
-On 2026-10-01 the owner accepted the market line returned by the API without
-requiring quote timestamps or closing-line evidence: "whatever the api gives,
-we use." Use the returned `spread` as the market benchmark; opening fields may
-be retained as additional data but do not replace it. Retain the actual provider,
-Game identity, response and retrieval provenance for reproducibility. Missing
-or non-finite spreads remain unavailable rather than becoming zero. This
-supersedes the market-line timing requirements below; preservation of issued
-CORS forecasts remains unchanged.
-
-On 2026-10-05 the owner selected `teamrankings` for Seasons 2013–2020 and
-`Bovada` from Season 2021 onward, with no per-Game provider substitution.
-The [historical provider survey](../evidence/2026-10-01-market-provider-coverage.md)
-supports this split: Bovada's coverage becomes near-complete in 2021, while
-teamrankings covers the older period more consistently. Retain the selected
-provider's actual identity on each comparison. If its returned `spread` is
-missing or non-finite, the comparison is unavailable even when another
-provider supplies a line. No provider is selected before 2013. This prioritizes
-a reproducible benchmark over maximizing the sample through provider mixing.
-
-This decision selects the forecast-evaluation benchmark only. It does not
-select or relax the excitement market policy in ADR-0021, authorize a
-historical forecast reconstruction, or expand the initial 2026 graded record.
-The provider decision permits preparation of the separate comparison delivery
-contract; it does not authorize implementation, new API calls, merge or release.
+and October 5 decisions below settle the returned line and provider selection;
+the October 11 decision settles Market ATS selection and resumes delivery.
 
 The owner also confirmed on 2026-09-28 that improving accuracy over current CORS
 comes first; outperforming the market is a later goal, not a prerequisite for
@@ -87,6 +62,17 @@ the forecast actually published before kickoff. The pregame-input boundary in
 [ADR-0020](0020-preserve-pregame-boundaries-for-matchup-estimates.md) remains
 applicable; reconstructing from a pregame checkpoint alone does not prove
 publication before kickoff.
+
+On 2026-09-30 the owner confirmed that the retained weekly spread pages in the
+existing Published Site were published before kickoff and calculated from the
+preceding week's data. For this bounded contract upgrade, those exact retained
+page bytes, stable Game identity and source orientation, original decimal
+precision, and a pinned owner attestation qualify the retained values for
+grading even when later automated publication-audit metadata is absent. The
+attestation records the page and the owner's confirmation; it does not invent a
+provider event or timestamp. Future forecasts still require the normal
+verifiable automated publication evidence, and unconfirmed historical values
+remain unverified or missing.
 
 On 2026-09-29 the owner clarified the intended cadence: CORS runs weekly,
 ideally on Sunday after the preceding week's games finish, producing the next
@@ -163,8 +149,7 @@ published bookmaker line, which could differ from the model's line.
 Source inspection on 2026-09-28: CFBD documents betting-line coverage from
 2013 onward, varying by game and provider. Its line model exposes `spread` and
 `spread_open` without a quote timestamp or an explicit definition of closing-line
-semantics. Those metadata gaps do not block comparison under the owner's
-October 1 rule, and returned spreads need not be certified as closing lines. Sources:
+semantics. Historical comparisons must preserve those evidence limits. Sources:
 [CFBD data availability](https://apinext.collegefootballdata.com/data-availability#betting-lines-weather-and-media)
 and [GameLine schema](https://github.com/CFBD/cfbd-python/blob/main/docs/GameLine.md).
 
@@ -174,7 +159,9 @@ Carry into the initial implementation contract:
   rating/model/source provenance and the artifact and publication evidence that
   establish it was issued before the Game. A build timestamp alone is not
   publication evidence. Report unverified cases under the accepted
-  missing-forecast policy; do not manufacture historical publication claims.
+  missing-forecast policy; for the owner-confirmed retained-page migration,
+  record bounded owner-attested provenance instead of manufacturing a provider
+  publication claim.
 - Demonstrate that weekly progression, ordinary rebuilds, explicit pregame
   replacements and postgame score corrections preserve the accepted rules.
   Retain PRESEASON as the rating basis for Week 0 under ADR-0010 and the existing
@@ -189,20 +176,15 @@ Carry into the initial implementation contract:
   coverage grading and counted separately from a confirmed exact-zero Pick'em;
   do not reconstruct an unrecorded winner and present it as an issued pick.
 
-Carry into the later bookmaker-comparison contract:
+Apply the later decisions below to bookmaker-comparison delivery:
 
-- Apply the October 5 Season-based provider policy without per-Game fallback.
-  Use the returned `spread`, retaining provider identity
-  and response/retrieval provenance. No quote timestamp, opening-line selection,
-  or closing-line certification is required. Keep missing spreads unavailable;
-  do not silently mix providers or infer a zero from null.
-- Resolve how the model's predicted margin becomes a pick against that market
-  line, then grade the actual result. Specify home/away signs, neutral sites,
-  pushes, missing lines and canceled games.
-- Compare CORS and market errors on the same eligible games using the preserved
-  CORS forecasts and the selected provider's returned API spreads. Market-line
-  availability before kickoff is not an eligibility gate under the October 1
-  rule. Continue preserving the original CORS forecast and its issued values.
+- Use the selected provider's returned spread and retain response/retrieval
+  provenance. Retrieval time is not a quote timestamp or closing-line claim.
+- Grade every nonzero model advantage against the provider line, with no pick
+  for equal lines and separate pushes, using the October 11 rule below.
+- Compare CORS and market errors on the same eligible games. Preserve issued
+  CORS values; pregame market-line timing is not an eligibility gate under the
+  accepted October 1 rule.
 
 In the later probability work, establish empirical calibration before expressing
 confidence as a win probability; an unsupported rating-ratio percentage is not
@@ -227,3 +209,70 @@ historical model and feature reference; its formulas and saved results require
 comparison with current behavior before reuse. See the
 [workbook inspection](../evidence/2026-09-28-original-cors-workbook.md) for exact
 sheet references, retained feature ideas and grading limitations.
+
+## Recreational model performance — October 9, 2026
+
+The owner clarified that performance should be visible across the entire
+historical website using saved predictions and final scores. Historical-source
+qualification and proof of pregame publication are not prerequisites for these
+recreational reports. Preserve each saved spread's original value and rounding;
+calculate missing predictions from available preceding-checkpoint ratings with
+unchanged CORS arithmetic, identifying those reconstructed values and any gaps.
+A historical ranking rerun is not required to evaluate existing predictions.
+
+When an archived preceding checkpoint retains more than two decimal places,
+the retrospective gap calculation uses those retained values in the same
+home-minus-away-plus-HFA arithmetic. It does not round or rewrite the archive,
+change the production engine's two-decimal input contract, or replace any saved
+spread. The report retains the resulting precision and reconstruction label.
+
+Apply the same winner, CORS line coverage, MAE and RMSE definitions. Keep the
+existing authenticated issued-forecast records intact; model-performance pages
+can evaluate saved or reconstructed predictions without relabeling them as
+verified pregame publications. Reports are static derived output in the normal
+public export. This direction supersedes the earlier local-report-only scope of
+[#33](https://github.com/arkar16/sportsrank/issues/33); task acceptance and
+implementation evidence remain there. It does not authorize model tuning,
+additional live requests, merge or production publication.
+
+## Selected provider benchmark — October 1 and 5, 2026
+
+The owner accepted the API's returned `spread` without quote timestamps or
+closing-line evidence: "whatever the api gives, we use." Opening fields do not
+replace it. Retain Game identity, actual provider and response/retrieval
+provenance. A missing or non-finite selected-provider spread stays unavailable;
+finite zero is a valid line.
+
+The owner selected `teamrankings` for 2013–2020 and `Bovada` from 2021 onward,
+without per-Game provider substitution. No provider is selected before 2013.
+The research and coverage evidence are retained in
+[historical provider survey](../evidence/2026-10-01-market-provider-coverage.md)
+and [PR #23](https://github.com/arkar16/sportsrank/pull/23). These choices prioritize a
+reproducible benchmark over maximizing coverage by mixing providers. They
+supersede the earlier open selection/timing questions. Excitement's market
+policy remains separate.
+
+## Market ATS selection — October 11, 2026
+
+The owner resumed forecast/provider comparison as part of publishing the complete
+corrected website, then explicitly accepted grading every nonzero difference
+between CORS and the provider line. There is no minimum edge threshold. If CORS
+predicts Team A by 3 and the provider favors A by 7, select Team B +7. Equal
+lines produce no pick; pushes are counted separately. With home handicaps,
+`provider handicap - CORS handicap` selects home when positive and away when
+negative. Grade against the actual home margin plus provider home handicap,
+reversing its sign for an away selection. Neutral games require no extra
+home-field adjustment after the CORS forecast has been calculated.
+
+Market ATS win rate is wins divided by wins plus losses. Pending/canceled games,
+missing lines/predictions and equal-line no-picks have no graded selection.
+Paired MAE/RMSE include all completed games with both forecasts, including
+equal-line games and pushes, and use the same sample for CORS and the provider.
+Aggregate individual games rather than averages of weekly or season metrics.
+Retrospective forecasts remain labeled and separate from issued CORS forecasts.
+
+The owner also approved API requests if retained survey responses could not be
+found. Fetches remain explicit, metered and privately retained; rebuilds remain
+offline. Request counts and delivery acceptance belong to
+[#37](https://github.com/arkar16/sportsrank/issues/37). This does not change merge
+or protected production approval authority.

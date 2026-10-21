@@ -3,8 +3,9 @@
 The CFB boundary currently supports FBS data from CFBD and renders static
 HTML. The supported recovery entry point is `python -m cfb.recovery`; it keeps
 external fetching, cached snapshots, Release generation, validation, and local
-promotion as separate stages. See SportsRank task SR-7 (`bb tasks show SR-7`)
-for the recorded approval boundary and [historical Gate 1 reports](../docs/evidence/2026-gate1.md)
+promotion as separate stages. The [recovery contract](../docs/plans/2026-p0-recovery-and-backfill.md)
+retains SR-7's approval boundary; [current work](../docs/work/current.md) points
+to active tasks. See [historical Gate 1 reports](../docs/evidence/2026-gate1.md)
 for historical verification. Commands below describe interfaces; fetch and
 publication examples do not grant authorization to execute them.
 
@@ -17,8 +18,8 @@ uv sync --locked
 export SPORTSRANK_DATA_DIR="$PWD/.sportsrank"
 ```
 
-Configure `CFBD_API` in the BB environment variables settings for authorized
-local fetches. BB supplies it to the process environment; the adapter reads it
+Use T3-injected `CFBD_API` for authorized local fetches. T3 supplies it to the
+process environment; the adapter reads it
 as a bearer token without a dotenv file or legacy-variable fallback. The
 request meter stores credential-free
 audit rows in `$SPORTSRANK_DATA_DIR/cfbd_requests.sqlite3`.
@@ -191,6 +192,17 @@ historical initial baseline may omit predecessor evidence. CLI-only
 `reconcile-external` requires a complete fresh live capture and sanitized
 retained evidence; archived history alone cannot establish live origin.
 
+The read-only `successor-baseline` CLI derives a distinct verified predecessor
+record from an exact prior sealed reference and existing immutable full audit
+evidence. It authenticates the prior hosted preparation and complete package;
+it makes no Firebase calls. Supply `--historical-baseline`, `--prior-reference`,
+`--audit-evidence`, `--retrieval-directory` and a new `--output` path. Pass its
+record to `public_site export --successor-baseline` while retaining the original
+capture archive for independent historical preservation validation. The real
+exporter binds both authorities in the reviewed receipt. Hosted preparation
+reauthenticates those immutable references; seal and execute still require fresh
+live reconciliation and separate owner approvals.
+
 Use `uv run --locked python -m cfb.publication_cli --help` and each operation's
 `--help` for the canonical grammar. The [publication runbook](../docs/operations/2026-season-recovery-morning.md)
 owns exact transport and recovery instructions. Its authenticated bootstrap
@@ -226,9 +238,63 @@ the emulator only; use the gated workflow for publication.
 The older `cfb/main.py` script and batch file are retained for historical
 compatibility; new recovery work should use the staged interface above.
 
-## Future spread evaluation
+## Preserved 2026 forecasts
 
-[ADR-0019](../docs/adr/0019-evaluate-predictions-against-market-lines.md) records
-the accepted forecast-preservation and evaluation design, owned by task SR-26.
-Market-line selection and timing remain deferred. The current runtime's spread
-grading is unchanged; the accepted design is not yet an implemented evaluator.
+[ADR-0019](../docs/adr/0019-evaluate-predictions-against-market-lines.md) defines
+this boundary; SR-26 owns delivery acceptance. Market lines remain deferred.
+
+The cached `build` command writes natural two-decimal CORS forecasts with a
+Predicted Winner, immutable candidate JSON, a retained ledger, and weekly/season
+evaluation on the existing spread-result pages. An unpublished candidate is
+not an issued prediction. Missing publication or actual-start evidence produces
+an explicit omission, never a reconstructed historical win/loss record.
+Missing or invalid rating inputs fail the build rather than becoming a zero
+forecast. The current builder stops before publication instead of emitting
+per-game invalid-rating omissions.
+
+`build`, `validate`, `promote`, and `cfb.public_site export` accept:
+
+- `--forecast-history FILE`: a `forecast-history-locators/v1` JSON object with a
+  `publications` array. Each entry contains exact ArchiveReference objects named
+  `intent`, `package`, `package_record`, `validation`, `provider_result`,
+  `provider_source`, `verification`, and `verification_source`, taken from the
+  retained publication attempt and its sealed evidence. Every invocation
+  revalidates immutable GitHub archive bytes and bindings; this performs archive
+  reads, never CFBD calls or Firebase observations/writes. Supply the complete
+  issued history represented by the inherited ledger, not only the newest entry.
+  A preserved `forecast-ledger/v1` file can also be supplied directly: its
+  publication locators are revalidated and the remaining references are resolved
+  from each immutable intent. Durable current-tree attempts additionally require
+  authenticated GitHub preparation-provenance access. Historical Git-bundle
+  intents require reviewed offline evidence migration and fail explicitly here;
+  their original records remain readable and unchanged.
+- `--forecast-timing FILE --forecast-timing-sha256 HASH`: a separately reviewed
+  `reviewed-forecast-timing/v1` object with `evidence` (GameTimingEvidence objects)
+  and `sources` (evidence digest to relative retained source filename). The hash
+  comes from the review record, independently of the candidate. Source documents
+  must remain alongside the supplement and match the declared digests. Review
+  must establish an actual start or an authoritative not-started observation;
+  scheduled kickoff, a local build time, or a checksum alone proves neither.
+
+Only `build` also accepts `--forecast-corrections FILE`, a JSON object mapping
+an exact predecessor forecast version digest to a nonempty correction reason.
+This requests a retained child candidate; qualification still requires its own
+verified pregame publication. Ordinary rebuilds preserve earlier issued values.
+Score corrections create a separate timestamped revision and regrade the saved
+forecast. Keep staging output outside `website/` until reviewed.
+
+A same-checkpoint upgrade from legacy artifact contract 2 preserves existing
+forecast HTML and PRESEASON pages byte-for-byte. New evaluation replaces the old
+ATS result tables and reports only qualified issued forecasts. Natural candidate
+JSON created from that stale checkpoint is preparation output: the retained
+legacy forecast page does not display it, and it establishes no historical
+issuance. The next ordinary eligible checkpoint displays its new natural
+forecast with the matching immutable candidate.
+
+Current Release preparation requires artifact contract 3 independently of the
+candidate's own version marker. New public manifests and local receipts use
+schema 2 to carry that expectation. Legacy schema-1 public evidence and receipt
+bytes remain parseable for inspection; they cannot authorize current
+preparation. Regenerate receipts through complete private validation/export,
+never by changing their hashes. ADR-0020 will use a later artifact contract;
+contract 3 does not retroactively acquire progression requirements.

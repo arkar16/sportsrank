@@ -35,6 +35,7 @@ from cfb.publication import (
 )
 from cfb.publication_authorization import (
     FakeGitHubApprovalReader,
+    GitHubApprovalReader,
     GitHubRuntimeContext,
     ProtectedExecutionEvidence,
     PublicationAuthorizationError,
@@ -266,6 +267,46 @@ def coordinator(
 
 
 class PublicationExecutionTests(unittest.TestCase):
+    def test_concrete_approval_reads_omit_pr_expansion_and_preserve_owner_gate(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fx = fixture(Path(directory))
+            run_url = "https://api.github.com/repos/owner/repository/actions/runs/123"
+            for approved in (True, False):
+                with self.subTest(approved=approved):
+                    evidence, runtime = approval(fx.package.candidate_commit, approved=approved)
+                    requests = []
+
+                    def respond(request, timeout):
+                        requests.append(request.full_url)
+                        # Reproduce the observed GitHub 502 on unused PR expansion.
+                        if request.full_url == run_url:
+                            raise HTTPError(run_url, 502, "Bad Gateway", {}, None)
+                        if request.full_url == run_url + "?exclude_pull_requests=true":
+                            body = evidence.run_value
+                        elif request.full_url == run_url + "/approvals":
+                            body = evidence.approval_values
+                        else:
+                            self.fail(f"Unexpected authorization request: {request.full_url}")
+                        return StubHttpResponse(200, request.full_url, json.dumps(body).encode())
+
+                    with patch("cfb.publication_authorization.urlopen", side_effect=respond):
+                        reader = GitHubApprovalReader(lambda: "offline-token")
+                        if approved:
+                            result = authorize_protected_execution(
+                                fx.package, runtime=runtime, github=reader,
+                                expected_repository="owner/repository",
+                            )
+                            self.assertEqual(result.candidate_commit, fx.package.candidate_commit)
+                        else:
+                            with self.assertRaises(PublicationAuthorizationError):
+                                authorize_protected_execution(
+                                    fx.package, runtime=runtime, github=reader,
+                                    expected_repository="owner/repository",
+                                )
+                    self.assertEqual(requests, [
+                        run_url + "?exclude_pull_requests=true", run_url + "/approvals",
+                    ])
+
     def test_finalize_uses_the_documented_camel_case_update_mask(self):
         backend = FirebaseRestPublicationBackend(lambda: "offline-token")
         requests = []
@@ -379,7 +420,18 @@ class PublicationExecutionTests(unittest.TestCase):
             )
             prior = cross_run.as_prior()
             source_bytes = prior.provider_result_source_reference
-            original_source = reconciled.provider_evidence.retrieved_source.read_bytes()
+            original_source = cross_run.provider_evidence.retrieved_source.read_bytes()
+            # Each reconciliation now points back to the preceding immutable
+            # source. Restore this exact asset, not a different generation.
+            self.assertEqual(sha(original_source), source_bytes.sha256)
+            prior_source = reconciled.provider_evidence.retrieved_source.read_bytes()
+            self.assertEqual(
+                sha(prior_source), reconciled.provider_evidence.source_reference.sha256
+            )
+            self.assertEqual(
+                json.loads(original_source)["original_evidence"]["provider_source"],
+                reconciled.provider_evidence.source_reference.to_dict(),
+            )
             first.archive.corrupt(source_bytes, b"fabricated provider source")
             writes_before = backend.write_count
             with self.assertRaisesRegex(

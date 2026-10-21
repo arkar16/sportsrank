@@ -37,6 +37,7 @@ try:
     )
     from .season_source import FixtureSeasonSource, ProductionSeasonSource
     from .snapshot_cache import SnapshotCache
+    from .forecast_inputs import add_forecast_arguments, load_forecast_inputs, load_corrections
 except ImportError:  # pragma: no cover - direct execution compatibility
     from cfbd_client import get_snapshot_service, redact_api_key
     from release import (
@@ -51,6 +52,7 @@ except ImportError:  # pragma: no cover - direct execution compatibility
     from season_snapshot import SeasonSnapshot, SeasonSnapshotService, migrate_postseason_cache
     from season_source import FixtureSeasonSource, ProductionSeasonSource
     from snapshot_cache import SnapshotCache
+    from cfb.forecast_inputs import add_forecast_arguments, load_forecast_inputs, load_corrections
 
 
 PHASES = ("preseason", "week", "final")
@@ -242,6 +244,7 @@ def build_parser() -> argparse.ArgumentParser:
     build.add_argument("--timestamp")
     build.add_argument("--code-revision", default="working-tree")
     _source_input_args(build)
+    add_forecast_arguments(build, corrections=True)
 
     backfill = subparsers.add_parser(
         "backfill",
@@ -265,6 +268,7 @@ def build_parser() -> argparse.ArgumentParser:
     validate.add_argument("--published-site", type=Path)
     validate.add_argument("--json", action="store_true", dest="as_json")
     _source_input_args(validate)
+    add_forecast_arguments(validate)
 
     promote = subparsers.add_parser(
         "promote", help="explicitly validate then atomically promote a local Release"
@@ -277,6 +281,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="independent Published Site used for validation; defaults to destination",
     )
     _source_input_args(promote)
+    add_forecast_arguments(promote)
 
     migration = subparsers.add_parser(
         "migrate-postseason",
@@ -840,6 +845,7 @@ def _build(args: argparse.Namespace) -> int:
         if args.phase == "week" and args.through_week is None:
             raise ValueError("week requires --through-week")
         source_inputs = _source_inputs(args)
+        forecasts = load_forecast_inputs(args)
         service = _service(args)
         snapshot = service.load_cached(args.year, args.classification)
         release = build_release(
@@ -853,11 +859,16 @@ def _build(args: argparse.Namespace) -> int:
             code_revision=args.code_revision,
             published_site=args.published_site,
             source_inputs=source_inputs,
+            forecast_publications=forecasts.publications,
+            timing_evidence=forecasts.timing,
+            forecast_replacements=load_corrections(args.forecast_corrections),
         )
         report = validate_release(
             release,
             published_site=args.published_site,
             source_inputs=source_inputs,
+            forecast_publications=forecasts.publications,
+            timing_evidence=forecasts.timing,
         )
         report.raise_for_failure()
         print(
@@ -912,14 +923,19 @@ def _backfill(args: argparse.Namespace) -> int:
 
 def _validate(args: argparse.Namespace) -> int:
     source_inputs = _source_inputs(args)
+    forecasts = load_forecast_inputs(args)
     if args.published_site is None:
-        report = validate_release(args.candidate, source_inputs=source_inputs)
+        report = validate_release(args.candidate, source_inputs=source_inputs,
+                                  forecast_publications=forecasts.publications,
+                                  timing_evidence=forecasts.timing)
         delta = None
     else:
         report = validate_release_chain(
             args.candidate,
             args.published_site,
             source_inputs=source_inputs,
+            forecast_publications=forecasts.publications,
+            timing_evidence=forecasts.timing,
         )
         delta = _public_delta(args.published_site, args.candidate)
     if args.as_json:
@@ -952,11 +968,14 @@ def _validate(args: argparse.Namespace) -> int:
 def _promote(args: argparse.Namespace) -> int:
     try:
         source_inputs = _source_inputs(args)
+        forecasts = load_forecast_inputs(args)
         result = promote_release(
             args.candidate,
             args.published_site,
             validation_base=args.validation_base,
             source_inputs=source_inputs,
+            forecast_publications=forecasts.publications,
+            timing_evidence=forecasts.timing,
         )
         print(
             json.dumps(

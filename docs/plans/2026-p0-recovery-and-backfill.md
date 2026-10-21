@@ -1,5 +1,12 @@
 # SportsRank P0 recovery and backfill — implementation handoff
 
+> Historical recovery procedure. On October 20 the owner replaced its publication
+> gates with [direct static publication](../operations/direct-publication.md)
+> under [ADR-0026](../adr/0026-restore-direct-static-publication.md). The workflow
+> operations below are retired; do not dispatch or replay old sealed attempts.
+> Historical source/model requirements remain applicable to reconstruction.
+
+
 Status: retained recovery implementation and acceptance contract. SportsRank
 BB task SR-7 (`bb tasks show SR-7`) owns current scope, execution and acceptance.
 Earlier verification below is historical; the absent historical reconstruction
@@ -25,6 +32,15 @@ and separate production approval remain required. Detailed scope and evidence
 belong to SR-17; the original mission below records the earlier recovery scope.
 
 ## Mission
+
+The October 11 owner direction extends delivery to the full CSV-corrected site.
+[ADR-0024](../adr/0024-reconstruct-history-with-archived-membership.md) defines
+the bounded historical correction transform and its independent validation;
+[#39](https://github.com/arkar16/sportsrank/issues/39) owns implementation and
+acceptance. Its explicit transform may replace validated historical rankings,
+results and carryover while preserving original issued forecasts and URLs.
+The historical freeze remains applicable to every path outside that derived
+correction graph. Ordinary source validation and human publication gates remain.
 
 The approved recovery mission was to make the CFB/FBS static-site recovery
 safe to run with the user's new CFBD key, rebuild 2024 and 2025 in carryover
@@ -68,7 +84,8 @@ contradiction scan across all human- and machine-facing guidance.
   games; W0 is calculated only after completed Week 0 games using the normal
   first-week divisor of `1`.
 - Correct PRESEASON/W0 semantics apply to rebuilt Seasons from 2024 onward.
-  Pre-2024 public artifacts remain byte-for-byte unchanged.
+  Pre-2024 public artifacts remain byte-for-byte unchanged except the explicit
+  independently validated CSV correction defined by ADR-0024's October 11 extension.
 - Every public path remains addressable indefinitely. A candidate Release is a
   full overlay of the Published Site, not a partial replacement.
   ADR-0017 preserves the availability and app identity of exactly the two
@@ -414,14 +431,34 @@ the safe reviewed receipt, site and authenticated baseline derivative.
   success or state upload. After an interrupted consumed attempt, any new write
   requires a new sealed intent and fresh owner approval. Concrete operational
   adapters may make live calls; ordinary tests remain offline.
+- For the owner-approved [#27 repair](https://github.com/arkar16/sportsrank/issues/27),
+  ordinary weekly export binds a distinct evidence-backed successor baseline
+  derived from the authenticated prior sealed package and complete immutable
+  coordinator verification. Preserve the original capture as independent
+  historical URL/byte authority. The exporter revalidates private source inputs,
+  every prior public path and unchanged bytes outside independently derived run
+  ownership, and binds both authorities in its genuine reviewed receipt.
+  Hosted preparation authenticates that exact committed receipt and retrieves
+  the successor's existing immutable package/audit evidence. Seal and execute
+  freshly reconcile the same sealed prior reference and reject differing
+  identity, package, partial verification and stale live state. Never relabel a
+  capture, edit a receipt by hand, reuse the initial-baseline exception or replay
+  a consumed claim. Existing credentials/retention, separate human approvals
+  and CORS/weekly reader bytes remain unchanged. Implementation ownership is the
+  sole #27 worker; parent owns independent review, integration and dispatch.
+  Acceptance includes a real two-generation regression, evidence/tampering and
+  replay rejection, regenerated local receipt, full offline/CI checks and an
+  atomic PR. The issue remains open until publication is live and verified.
 - Use one manually dispatched workflow on `main` with the `production`
   environment. The guard requires the fixed repository, `workflow_dispatch`,
   `refs/heads/main`, and run attempt `1`. The protected job uses `actions: read`
   for authenticated GitHub run/approval and artifact evidence, and deployment
   credentials are available only there. `GITHUB_TOKEN` supplies provenance and
   approval reads; `FIREBASE_ACCESS_TOKEN` is protected to that job and
-  `CFBD_API` is absent. The owner's production approval is required; agents
-  never approve on the owner's behalf.
+  `CFBD_API` is absent. The owner's production approval is required. Agents
+  may submit it only within the routine weekly standing delegation in
+  [ADR-0025](../adr/0025-authorize-routine-weekly-publication.md); all other
+  releases retain the human-approval boundary.
 - Workflow summaries expose sanitized target, operation, state, and digest
   identity. Raw provider actor/auth evidence, `baseline.tar.gz`, raw source
   snapshots, the original-prepared archive, and any Git bundle/history that
