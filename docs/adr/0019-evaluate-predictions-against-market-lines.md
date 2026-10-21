@@ -275,3 +275,14 @@ found. Fetches remain explicit, metered and privately retained; rebuilds remain
 offline. Request counts and delivery acceptance belong to
 [#37](https://github.com/arkar16/sportsrank/issues/37). This does not change merge
 or protected production approval authority.
+
+## Personal reference presentation — October 20, 2026
+
+The owner explicitly removed reconstruction/pregame-publication warnings from
+the website. Historical CORS forecasts are ordinary dated reference content.
+Show the rankings, forecasts, results and performance without reconstruction
+banners, saved-versus-reconstructed counters or prediction-source columns.
+Keep underlying numerical values, timestamps, URLs, original forecasts and
+source records; internal provenance does not require a public disclaimer. This
+supersedes the presentation-label requirements above and applies to ADR-0024's
+corrected output. [#71](https://github.com/arkar16/sportsrank/issues/71) owns delivery.

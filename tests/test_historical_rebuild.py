@@ -130,7 +130,7 @@ class HistoricalRebuildTests(unittest.TestCase):
         self.assertEqual(report['prediction_policy'], 'reconstructed_history')
         self.assertNotEqual(report['games'][0]['home_handicap'], '-99')
         self.assertEqual(report['games'][-1]['rating_checkpoint'], 'W15')
-        self.assertIn('not the original issued forecasts', (corrected / 'cfb/performance/1901/index.html').read_text())
+        self.assertNotIn('not the original issued forecasts', (corrected / 'cfb/performance/1901/index.html').read_text())
         self.assertIn('reconstructed/1901_W16_FBS_spread.html',
                       (corrected / 'cfb/years/1901/1901_CFB.html').read_text())
         navigation = (corrected / 'cfb/years/1901/1901_CFB.html').read_text()

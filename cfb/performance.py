@@ -274,6 +274,8 @@ def _text(value: Any) -> str:
 
 
 def _table(rows: list[dict], columns: tuple[str, ...], *, season_links: bool = False) -> str:
+    columns = tuple(key for key in columns if key not in
+                    {"prediction_source", "saved_predictions", "reconstructed_predictions"})
     cells = []
     for row in rows:
         values = []
@@ -383,14 +385,8 @@ def report_files(report: dict, *, site_links: bool = False) -> dict[str, bytes]:
     year, summary = report["season"], report["summary"]
     occurrence_columns = ("game_id", "game_date") if any("game_id" in game for game in report["games"]) else ()
     navigation = '<a href="../index.html">All seasons</a> · <a href="../../cfb.html">CORS home</a>' if site_links else "CORS model performance"
-    reconstructed = report.get("prediction_policy") == "reconstructed_history"
-    description = ('Retrospective CORS predictions from the corrected preceding-checkpoint ratings, '
-                   'compared with final FBS-versus-FBS scores. These are reconstructed model results, '
-                   'not the original issued forecasts.' if reconstructed else
-                   'Saved CORS spreads compared with final FBS-versus-FBS scores. Original spread rounding '
-                   'is preserved. Missing predictions are reconstructed from preceding ratings where available.')
-    body = f'<p>{description}</p>' + _metrics(summary)
-    body += f'<p>{summary["saved_predictions"]:,} saved predictions · {summary["reconstructed_predictions"]:,} reconstructed · {summary["missing_predictions"]:,} unavailable · {summary["missing_scores"]:,} pending scores · {summary["non_fbs_games"]:,} non-FBS games excluded.</p>'
+    body = '<p>CORS predictions compared with final FBS-versus-FBS scores.</p>' + _metrics(summary)
+    body += f'<p>{summary["missing_predictions"]:,} unavailable · {summary["missing_scores"]:,} pending scores · {summary["non_fbs_games"]:,} non-FBS games excluded.</p>'
     body += '<p>CORS line coverage measures whether the selected favorite covered the CORS spread. Pushes are reported separately; zero lines have no winner selection. MAE/RMSE use every evaluated margin, including ties and zero lines. Lower margin error is better.</p>'
     market = "market_policy" in report
     if market:
@@ -433,21 +429,14 @@ def build_performance_files(website: Path, *, reconstruct_all: bool = False,
         for name, raw in report_files(report, site_links=True).items():
             output[f"{PREFIX}/{year}/{name}"] = raw
     totals = {**_summary(grades), **{k: sum(s[k] for s in summaries) for k in COUNTS}}
-    description = ('Retrospective model performance after historical postseason and carryover reconstruction. '
-                   'Every evaluated prediction uses preceding-checkpoint ratings. Original saved spread files '
-                   'and issued forecasts are retained separately; these results do not claim pregame publication.'
-                   if reconstruct_all else
-                   'Explore model performance across every season in the archive. Saved predictions keep their '
-                   'original values; reconstructed gaps are counted separately. This uses the existing site '
-                   'data without rerunning historical rankings.')
-    body = f'<p>{description}</p>'+_metrics(totals)
+    body = '<p>CORS model performance across seasons.</p>'+_metrics(totals)
     if market is not None:
         totals.update(summarize_market(market_games))
         body += _market_metrics(totals)
         output[MARKET_PATH] = market.to_bytes()
         if years:
             body += f'<p><a href="{max(years)}/index.html">Current forecasts and results</a> · <a href="market-lines.json">Selected lines and retrieval provenance</a></p>'
-    body += f'<p>{len(summaries)} seasons · {totals["saved_predictions"]:,} saved predictions · {totals["reconstructed_predictions"]:,} reconstructed · {totals["missing_predictions"]:,} unavailable.</p><p><a href="seasons.csv">Download season summaries</a></p>'
+    body += f'<p>{len(summaries)} seasons · {totals["missing_predictions"]:,} unavailable.</p><p><a href="seasons.csv">Download season summaries</a></p>'
     summary_columns = ("season", *WEEK_COLUMNS[1:], *(MARKET_SUMMARY_COLUMNS if market is not None else ()))
     body += _table(list(reversed(summaries)), summary_columns, season_links=True)
     output[f"{PREFIX}/index.html"] = _page("CORS model performance", body, '<a href="../cfb.html">CORS home</a>')
