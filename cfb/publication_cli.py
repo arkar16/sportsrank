@@ -1244,7 +1244,9 @@ def _rehydrate_package(context: PreparationContext) -> _RehydratedPackage:
 def build_coordinator() -> PublicationCoordinator:
     """Construct the concrete production adapters from gated environment state."""
 
-    token = lambda: os.environ.get("FIREBASE_ACCESS_TOKEN", "")
+    from .firebase_auth import access_token_provider
+
+    token = access_token_provider()
     publication_backend = FirebaseRestPublicationBackend(token)
     read_backend = FirebaseRestReadBackend(token)
     provider = FirebasePublicationAdapter(TARGET, publication_backend)
