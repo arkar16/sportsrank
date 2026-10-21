@@ -23,8 +23,6 @@ jobs:
     steps:
       - name: Check out the submitted tree
         uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
 
       - name: Configure runner-local package caches
         shell: bash
@@ -37,10 +35,6 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-
-      - name: Determine release-readiness scope
-        id: scope
-        run: python -m scripts.ci_scope >> "$GITHUB_OUTPUT"
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v9.0.0
@@ -55,16 +49,6 @@ jobs:
 
       - name: Compile the Python source
         run: uv run --locked python -m compileall -q cfb tools scripts tests
-
-      - name: Verify the reviewed local validation receipt and public site
-        if: steps.scope.outputs.release_readiness == 'true'
-        run: >-
-          uv run --locked python -m cfb.public_site verify
-          --receipt config/sr7-local-validation-receipt.json
-          --site website
-          --firebase-json firebase.json
-          --source-root .
-          --trusted-input-manifest config/sr7-recovery-inputs.json
 
       - name: Check static hosting tree
         run: test -f website/index.html && test -f website/404.html

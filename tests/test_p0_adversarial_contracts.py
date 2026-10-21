@@ -169,31 +169,7 @@ class _P0Source:
 
 
 class P0AdversarialContractTests(unittest.TestCase):
-    def test_ci_materializes_immutable_candidate_and_retained_inputs_before_execution(self):
-        source = (REPO_ROOT / ".github/workflows/firebase-hosting-publish.yml").read_text(
-            encoding="utf-8"
-        )
-        prepare_start = source.index("\n  prepare:")
-        protected_start = source.index("\n  protected:")
-        preparation = source[prepare_start:protected_start]
-        self.assertIn("--local-validation-receipt", preparation)
-        self.assertIn("--baseline-public-archive", preparation)
-        self.assertIn("--baseline-sanitizer-record", preparation)
-        self.assertNotIn("--source-input-archive", preparation)
-        self.assertNotIn("--evidence-references", preparation)
-        self.assertIn("--trusted-input-manifest", preparation)
-        self.assertNotIn('cat "$input_root/baseline.sha256"', preparation)
-        self.assertNotIn('cat "$input_root/source-inputs.sha256"', preparation)
-        self.assertIn("candidate-tree.tar.gz", preparation)
-        self.assertIn('candidate_tree="$RUNNER_TEMP/candidate-tree.tar.gz"', preparation)
-        self.assertNotIn("git bundle create", preparation)
-        self.assertIn("prepare-reviewed", preparation)
-        self.assertIn("publication-context.json", preparation)
-        self.assertIn("package.sha256", preparation)
-        self.assertNotIn("merge-base", preparation)
-        self.assertNotIn("candidate_sha", preparation)
-        self.assertNotIn("base_sha", preparation)
-
+    def test_retained_recovery_source_pins_remain_private_and_versioned(self):
         trust = json.loads(
             (REPO_ROOT / "config" / "sr7-recovery-inputs.json").read_text(
                 encoding="utf-8"
@@ -212,6 +188,8 @@ class P0AdversarialContractTests(unittest.TestCase):
                 "snapshots/cfb-fbs-2026.json",
                 "snapshots/9bf66d0ccab3878c7926f17b44664644774eed8ea95a7ffa73b3a206eb45296a/cfb-fbs-2026.json",
                 "snapshots/cab1cce4eec9b3547ef2292855fb7792e8ff0e1f8e18d4fb98ee20c537c4bc3e/cfb-fbs-2026.json",
+                "snapshots/e9cd3bf8ba68763678cf2c487d63e84d84e92ac71b98337066eafd07d3766cac/cfb-fbs-2026.json",
+                "snapshots/a8fe5578b728741af8e29b745f36e0da52c40831d988cba05fe31e3244fd9e0c/cfb-fbs-2026.json",
             },
         )
         self.assertEqual(
@@ -225,20 +203,14 @@ class P0AdversarialContractTests(unittest.TestCase):
                 "snapshots/cfb-fbs-2026.json": 3,
                 "snapshots/9bf66d0ccab3878c7926f17b44664644774eed8ea95a7ffa73b3a206eb45296a/cfb-fbs-2026.json": 4,
                 "snapshots/cab1cce4eec9b3547ef2292855fb7792e8ff0e1f8e18d4fb98ee20c537c4bc3e/cfb-fbs-2026.json": 4,
+                "snapshots/e9cd3bf8ba68763678cf2c487d63e84d84e92ac71b98337066eafd07d3766cac/cfb-fbs-2026.json": 4,
+                "snapshots/a8fe5578b728741af8e29b745f36e0da52c40831d988cba05fe31e3244fd9e0c/cfb-fbs-2026.json": 4,
             },
         )
         self.assertNotEqual(
             trust["baseline"]["private_archive_sha256"],
             trust["baseline"]["public_archive_sha256"],
         )
-        upload_start = source.index("      - name: Upload the immutable preparation transport")
-        upload = source[upload_start:protected_start]
-        self.assertIn("baseline-public.tar.gz", upload)
-        self.assertIn("baseline-sanitizer.json", upload)
-        self.assertIn("candidate-tree.tar.gz.sha256", upload)
-        self.assertNotIn("baseline.tar.gz", upload)
-        self.assertNotIn("source-inputs.tar.gz", upload)
-
         self.assertEqual(
             trust["baseline"]["public_archive_sha256"],
             "0e8cda0c3042b02f96f4c5ae12a502944b2f9742fa768b257616e171399eaa20",

@@ -4,6 +4,11 @@ status: accepted
 
 # Authorize routine weekly publication through T3
 
+October 20 publication update: [ADR-0026](0026-restore-direct-static-publication.md) supersedes the routine
+release procedure below. Historical evidence and unrelated domain/private-input
+constraints remain; use the direct-publication runbook for new deployments.
+
+
 On October 12, 2026 the owner selected Monday at 08:00 Eastern and explicitly
 requested fully unattended weekly grading, forecasts, website publication and
 model-contest submission. T3's persistent scheduler will run this operation in
