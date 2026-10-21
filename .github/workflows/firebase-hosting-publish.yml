@@ -52,7 +52,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          season_dir=$(find website/cfb/years -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)
+          season_dir=$(find website/cfb/years -mindepth 1 -maxdepth 1 -type d -name '[0-9][0-9][0-9][0-9]' | sort -V | tail -1)
           season=$(basename "$season_dir")
           ranking=$(find "$season_dir/rankings" -name '*_W*_FBS_cors.html' | sort -V | tail -1)
           results=$(find "$season_dir/data/results/weekly_results" -name '*_FBS_results.html' | sort -V | tail -1)

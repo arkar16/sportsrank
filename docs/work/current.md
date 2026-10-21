@@ -61,8 +61,8 @@ recorded in each delivery.
 ## Operational and historical sources
 
 - [Recovery contract](../plans/2026-p0-recovery-and-backfill.md)
-- [Publication runbook](../operations/2026-season-recovery-morning.md)
-- [ADR index](../adr/README.md): 0011/0012/0016/0017/0018 for publication
+- [Publication runbook](../operations/direct-publication.md)
+- [ADR index](../adr/README.md): 0026 for current publication; earlier records retain historical context
 - [Historical Gate 1 evidence](../evidence/2026-gate1.md)
 - [Frozen postseason repair handoff](../archive/postseason-repair/2026-09-09/README.md)
 - [Tracker configuration](../agents/issue-tracker.md)
