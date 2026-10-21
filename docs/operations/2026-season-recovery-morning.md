@@ -1,5 +1,12 @@
 # 2026 recovery publication runbook
 
+> Historical recovery procedure. On October 20 the owner replaced its publication
+> gates with [direct static publication](../operations/direct-publication.md)
+> under [ADR-0026](../adr/0026-restore-direct-static-publication.md). The workflow
+> operations below are retired; do not dispatch or replay old sealed attempts.
+> Historical source/model requirements remain applicable to reconstruction.
+
+
 Before any publication action, read the authoritative SportsRank task SR-7 (`bb tasks show SR-7`) and
 verify the actual merged candidate SHA and complete live baseline. Historical acceptance
 and artifact identities are indexed in [historical Gate 1 reports](../evidence/2026-gate1.md).
