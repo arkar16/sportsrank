@@ -18,3 +18,8 @@ class CIRoutingTests(unittest.TestCase):
         self.assertNotIn("scripts.ci_scope", workflow)
         self.assertNotIn("npm ci", workflow)
         self.assertNotIn("setup-node", workflow)
+        job, steps = workflow.split("    steps:", 1)
+        self.assertNotRegex(job, r"(?m)^\s+if:")
+        for step in steps.split("      - "):
+            if "python -m unittest" in step:
+                self.assertNotRegex(step, r"(?m)^\s+if:")

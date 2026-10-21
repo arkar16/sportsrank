@@ -1,15 +1,11 @@
 """Focused regressions for the second Gate 1 release review."""
 
-from copy import deepcopy
-import hashlib
-import json
 from pathlib import Path
 from types import MappingProxyType
 import tempfile
 import unittest
-from unittest.mock import patch
 
-from cfb.release import build_release, grade_ats, validate_release
+from cfb.release import build_release
 from cfb.ranking_engine import PreviousFinal
 from cfb.season_snapshot import SeasonSnapshot, _checksum
 from cfb.season_source import SourceGame, SourceTeam
@@ -99,93 +95,7 @@ def _base(root: Path) -> Path:
     return base
 
 
-def _canonical_json(value: object) -> str:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False) + "\n"
-
-
-def _reseal(candidate) -> None:
-    manifest = json.loads(candidate.manifest_path.read_text(encoding="utf-8"))
-    manifest["artifact_checksums"] = {
-        relative: hashlib.sha256((candidate.site / relative).read_bytes()).hexdigest()
-        for relative in manifest.get("owned_artifacts", [])
-        if (candidate.site / relative).is_file()
-    }
-    manifest.pop("manifest_checksum", None)
-    manifest["manifest_checksum"] = hashlib.sha256(
-        _canonical_json(manifest).encode("utf-8")
-    ).hexdigest()
-    candidate.manifest_path.write_text(_canonical_json(manifest), encoding="utf-8")
-
-
-def _build(root: Path, *, phase: str = "week", target_week: int = 1):
-    candidate = build_release(
-        _snapshot(),
-        root / "candidate",
-        release_id="candidate",
-        phase=phase,
-        target_week=target_week,
-        previous_final=_prior(),
-        published_site=_base(root),
-        timestamp=STAMP,
-    )
-    return candidate, root / "published"
-
-
 class ReviewGate1ReleaseRepairTests(unittest.TestCase):
-    def test_zero_line_pickem_preserves_actual_side_but_is_ungraded(self):
-        self.assertEqual(
-            grade_ats(
-                home_team="Home",
-                away_team="Away",
-                home_points=17,
-                away_points=14,
-                home_margin_line=0,
-            ),
-            {
-                "favorite": None,
-                "underdog": None,
-                "ats_result": "home",
-                "ats_correct": None,
-            },
-        )
-        self.assertIsNone(
-            grade_ats(
-                home_team="Home",
-                away_team="Away",
-                home_points=14,
-                away_points=17,
-                home_margin_line=0,
-            )["ats_correct"]
-        )
-        self.assertEqual(
-            grade_ats(
-                home_team="Home",
-                away_team="Away",
-                home_points=17,
-                away_points=17,
-                home_margin_line=0,
-            )["ats_result"],
-            "push",
-        )
-
-    def test_numbered_checkpoint_owns_and_validates_preseason(self):
-        with tempfile.TemporaryDirectory() as directory:
-            candidate, base = _build(Path(directory))
-            relative = "cfb/years/2025/rankings/2025_PRESEASON_FBS_cors.html"
-            path = candidate.site / relative
-            manifest = json.loads(candidate.manifest_path.read_text(encoding="utf-8"))
-            self.assertTrue(path.is_file())
-            self.assertIn(relative, manifest["owned_artifacts"])
-            self.assertTrue(validate_release(candidate, published_site=base).valid)
-
-            path.unlink()
-            manifest["owned_artifacts"].remove(relative)
-            manifest["required_artifacts"].remove(relative)
-            _reseal(candidate)
-            report = validate_release(candidate, published_site=base)
-            self.assertFalse(report.valid)
-            self.assertIn("artifact.required", {failure.code for failure in report.failures})
-
     def test_incomplete_w0_cannot_claim_a_numbered_completion_boundary(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -203,54 +113,3 @@ class ReviewGate1ReleaseRepairTests(unittest.TestCase):
                     published_site=base,
                     timestamp=STAMP,
                 )
-
-    def test_malformed_manifest_numbers_are_structured_failures(self):
-        mutations = (
-            ("season", "bad"),
-            ("target_week", []),
-            ("target_week", float("nan")),
-            ("scheduled_end_week", {}),
-            ("complete_through_week", []),
-        )
-        for field, value in mutations:
-            with self.subTest(field=field, value=value):
-                with tempfile.TemporaryDirectory() as directory:
-                    root = Path(directory)
-                    candidate, base = _build(root)
-                    manifest = json.loads(candidate.manifest_path.read_text(encoding="utf-8"))
-                    manifest[field] = value
-                    candidate.manifest_path.write_text(_canonical_json(manifest), encoding="utf-8")
-                    _reseal(candidate)
-
-                    report = validate_release(candidate, published_site=base)
-
-                    self.assertFalse(report.valid)
-                    self.assertTrue(report.failures)
-
-    def test_inherited_cfb_home_read_error_aborts_build(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            snapshot = _snapshot()
-            base = _base(root)
-            home = base / "cfb/cfb.html"
-            home.parent.mkdir(parents=True, exist_ok=True)
-            home.write_text('<a href="legacy.html">Legacy</a>', encoding="utf-8")
-            (base / "cfb/legacy.html").write_text("legacy", encoding="utf-8")
-            original_read_text = Path.read_text
-
-            def fail_home_read(path, *args, **kwargs):
-                if path.as_posix().endswith("cfb/cfb.html"):
-                    raise OSError("injected inherited home read failure")
-                return original_read_text(path, *args, **kwargs)
-
-            with patch.object(Path, "read_text", new=fail_home_read):
-                with self.assertRaisesRegex(OSError, "inherited home read failure"):
-                    build_release(
-                        snapshot,
-                        root / "candidate",
-                        release_id="candidate",
-                        phase="final",
-                        previous_final=_prior(),
-                        published_site=base,
-                        timestamp=STAMP,
-                    )

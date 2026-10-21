@@ -171,6 +171,7 @@ def fixture(
     baseline_record: BaselineRecord | None = None,
     marker: bytes = b"first",
     archive: FakeImmutableArchive | None = None,
+    extra_files: dict[str, bytes] | None = None,
 ) -> Fixture:
     predecessor = predecessor or ProviderIdentity(
         TARGET,
@@ -193,6 +194,10 @@ def fixture(
         path = site / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(marker + b":" + relative.encode())
+    for relative, content in (extra_files or {}).items():
+        path = site / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
     config = repository / "firebase.json"
     config.write_bytes(canonical_json({
         "hosting": {
@@ -1083,9 +1088,12 @@ class PublicationExecutionTests(unittest.TestCase):
                     fx.baseline.digest, fx.prepared.retained_inputs_sha256,
                 ), fx.prepared.site, fx.prepared.firebase_json,
             )
-            package = bind_merged_candidate(
-                prepared, candidate_commit=commit, reader=fx.reader
-            )
+            with patch("subprocess.run", wraps=subprocess.run) as processes:
+                package = bind_merged_candidate(
+                    prepared, candidate_commit=commit, reader=fx.reader
+                )
+            # Exact complete-file proof must not start one Git process per path.
+            self.assertLessEqual(processes.call_count, 12)
             artifact = FirebaseDeployArtifact.from_archive(package_path, package)
             backend = FakeFirebasePublicationBackend(
                 TARGET, package.expected_predecessor,

@@ -194,7 +194,7 @@ class ForecastNumericalAcceptanceTests(unittest.TestCase):
         self.assertEqual(season.game_count, 5)
         self.assertEqual(season.margin_count, 5)
         self.assertEqual(season.mae, Decimal("2.644"))
-        self.assertAlmostEqual(float(season.rmse), 3.87345, places=4)
+        self.assertAlmostEqual(float(season.rmse), 3.87344807633, places=10)
         self.assertEqual((season.straight_up_wins, season.straight_up_losses, season.straight_up_count), (3, 1, 4))
         self.assertEqual((season.covers, season.no_covers, season.pushes, season.coverage_count), (1, 2, 1, 3))
         self.assertEqual(season.coverage_percentage, Decimal(1) / Decimal(3))
@@ -204,6 +204,10 @@ class ForecastNumericalAcceptanceTests(unittest.TestCase):
         week_one = aggregate_grades(grades[:1])
         week_two = aggregate_grades(grades[1:4])
         week_three = aggregate_grades(grades[4:])
+        self.assertNotEqual(
+            sum((week.mae for week in (week_one, week_two, week_three)), Decimal("0")) / 3,
+            season.mae,
+        )
         self.assertEqual(
             sum((week.mae * week.margin_count for week in (week_one, week_two, week_three)), Decimal("0")),
             season.mae * season.margin_count,

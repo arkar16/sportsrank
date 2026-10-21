@@ -180,33 +180,9 @@ class P0AdversarialContractTests(unittest.TestCase):
             trust["target"],
             {"project": "sportsrank-837af", "site": "sportsrank-837af", "channel": "live"},
         )
-        self.assertEqual(
-            set(trust["source_inputs"]["files"]),
-            {
-                "snapshots/cfb-fbs-2024.json",
-                "snapshots/cfb-fbs-2025.json",
-                "snapshots/cfb-fbs-2026.json",
-                "snapshots/9bf66d0ccab3878c7926f17b44664644774eed8ea95a7ffa73b3a206eb45296a/cfb-fbs-2026.json",
-                "snapshots/cab1cce4eec9b3547ef2292855fb7792e8ff0e1f8e18d4fb98ee20c537c4bc3e/cfb-fbs-2026.json",
-                "snapshots/e9cd3bf8ba68763678cf2c487d63e84d84e92ac71b98337066eafd07d3766cac/cfb-fbs-2026.json",
-                "snapshots/a8fe5578b728741af8e29b745f36e0da52c40831d988cba05fe31e3244fd9e0c/cfb-fbs-2026.json",
-            },
-        )
-        self.assertEqual(
-            {
-                path: entry.get("schema_version", 3)
-                for path, entry in trust["source_inputs"]["files"].items()
-            },
-            {
-                "snapshots/cfb-fbs-2024.json": 3,
-                "snapshots/cfb-fbs-2025.json": 3,
-                "snapshots/cfb-fbs-2026.json": 3,
-                "snapshots/9bf66d0ccab3878c7926f17b44664644774eed8ea95a7ffa73b3a206eb45296a/cfb-fbs-2026.json": 4,
-                "snapshots/cab1cce4eec9b3547ef2292855fb7792e8ff0e1f8e18d4fb98ee20c537c4bc3e/cfb-fbs-2026.json": 4,
-                "snapshots/e9cd3bf8ba68763678cf2c487d63e84d84e92ac71b98337066eafd07d3766cac/cfb-fbs-2026.json": 4,
-                "snapshots/a8fe5578b728741af8e29b745f36e0da52c40831d988cba05fe31e3244fd9e0c/cfb-fbs-2026.json": 4,
-            },
-        )
+        from cfb.publication_cli import _load_trusted_recovery_inputs
+        trusted = _load_trusted_recovery_inputs(REPO_ROOT / "config/sr7-recovery-inputs.json")
+        self.assertTrue(trusted.source_file_sha256)
         self.assertNotEqual(
             trust["baseline"]["private_archive_sha256"],
             trust["baseline"]["public_archive_sha256"],

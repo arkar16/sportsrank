@@ -17,8 +17,6 @@ from tools.scripts.postdeploy_smoke import (
 )
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-WORKFLOW_PATH = PROJECT_ROOT / ".github" / "workflows" / "firebase-hosting-publish.yml"
 PUBLISHED_URL = "https://www.sportsrank.top"
 
 EXPECTED_REQUIRED_PATHS = (
@@ -128,11 +126,13 @@ class PostdeploySmokeTests(unittest.TestCase):
             artifact_root = Path(directory)
             bodies = self._artifact(artifact_root)
             calls: list[str] = []
+            bases: list[str] = []
             failed_once = False
 
             def fetch_page(_base_url: str, relative_path: str, _timeout: float) -> bytes:
                 nonlocal failed_once
                 calls.append(relative_path)
+                bases.append(_base_url)
                 if relative_path == EXPECTED_REQUIRED_PATHS[2] and not failed_once:
                     failed_once = True
                     raise SmokeError("HTTP 503 transient failure")
@@ -142,6 +142,7 @@ class PostdeploySmokeTests(unittest.TestCase):
             result, error = self._run_main(artifact_root, fetch_page, clock)
 
         self.assertEqual(result, 0, error)
+        self.assertEqual(set(bases), {PUBLISHED_URL})
         self.assertEqual(calls, list(EXPECTED_REQUIRED_PATHS[:3]) + list(EXPECTED_REQUIRED_PATHS))
         self.assertEqual(clock.sleeps, [DEFAULT_RETRY_DELAY_SECONDS])
 
@@ -272,7 +273,6 @@ class PostdeploySmokeTests(unittest.TestCase):
         self.assertIn("absolute HTTP(S)", error)
         self.assertEqual(calls, [])
         self.assertEqual(clock.sleeps, [])
-
 
 
 if __name__ == "__main__":

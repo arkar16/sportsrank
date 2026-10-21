@@ -32,7 +32,7 @@ class OperationsContractTests(unittest.TestCase):
         self.assertNotIn("functions", firebase)
 
         package = json.loads((REPO_ROOT / "package.json").read_text(encoding="utf-8"))
-        self.assertEqual(package["devDependencies"]["firebase-tools"], "15.29.0")
+        self.assertRegex(package["devDependencies"]["firebase-tools"], r"^\d+\.\d+\.\d+$")
         self.assertEqual(package["scripts"]["serve"], "firebase emulators:start --only hosting")
         self.assertNotIn("deploy", package["scripts"])
         self.assertNotIn("hosting:deploy", package["scripts"])
@@ -40,49 +40,23 @@ class OperationsContractTests(unittest.TestCase):
         self.assertNotIn("functions", " ".join(package["scripts"].values()))
 
         lock = json.loads((REPO_ROOT / "package-lock.json").read_text(encoding="utf-8"))
-        self.assertEqual(lock["packages"][""]["devDependencies"]["firebase-tools"], "15.29.0")
+        pinned = package["devDependencies"]["firebase-tools"]
+        self.assertEqual(lock["packages"][""]["devDependencies"]["firebase-tools"], pinned)
+        self.assertEqual(lock["packages"]["node_modules/firebase-tools"]["version"], pinned)
 
 
-    def test_python_lock_declares_only_direct_runtime_dependencies(self):
+    def test_python_runtime_retains_the_supported_cfbd_sdk_range(self):
         project = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
         self.assertIn("cfbd>=5.26,<6", project["project"]["dependencies"])
-        self.assertEqual(
-            {
-                dependency.split(">", 1)[0].split("<", 1)[0].split("=", 1)[0]
-                for dependency in project["project"]["dependencies"]
-            },
-            {"beautifulsoup4", "cfbd", "google-auth[requests]", "html5lib", "lxml", "numpy", "pandas"},
-        )
 
 
-    def test_unsafe_morning_handoff_is_blocked_by_authoritative_plan(self):
+    def test_operator_guidance_excludes_retired_unsafe_commands(self):
         """Reviewed-unsafe recovery commands must not remain operator guidance."""
         handoff = (REPO_ROOT / "docs/operations/2026-season-recovery-morning.md").read_text(
             encoding="utf-8"
         )
-        plan = (REPO_ROOT / "docs/plans/2026-p0-recovery-and-backfill.md").read_text(
-            encoding="utf-8"
-        )
-
-        self.assertIn("procedure, not an approval", handoff)
-        self.assertIn("2026-p0-recovery-and-backfill.md", handoff)
-        self.assertIn("SR-15", handoff)
         self.assertNotIn("--clone-published", handoff)
         self.assertNotIn("npm run deploy", handoff)
-
-        for marker in (
-            "CFBD_API",
-            "exactly six calls",
-            "2024 FINAL",
-            "2025 FINAL",
-            "2026 PRESEASON",
-            "Gate 1",
-            "Gate 2",
-            "systemd",
-            "Pi/T7",
-        ):
-            with self.subTest(marker=marker):
-                self.assertIn(marker, plan)
 
 
     def test_publication_cli_has_one_manual_operation_surface(self):

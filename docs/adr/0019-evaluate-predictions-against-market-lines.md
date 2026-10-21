@@ -246,7 +246,8 @@ finite zero is a valid line.
 The owner selected `teamrankings` for 2013–2020 and `Bovada` from 2021 onward,
 without per-Game provider substitution. No provider is selected before 2013.
 The research and coverage evidence are retained in
-[PR #23](https://github.com/arkar16/sportsrank/pull/23). These choices prioritize a
+[historical provider survey](../evidence/2026-10-01-market-provider-coverage.md)
+and [PR #23](https://github.com/arkar16/sportsrank/pull/23). These choices prioritize a
 reproducible benchmark over maximizing coverage by mixing providers. They
 supersede the earlier open selection/timing questions. Excitement's market
 policy remains separate.
