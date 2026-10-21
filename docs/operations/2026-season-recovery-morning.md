@@ -1,5 +1,12 @@
 # 2026 recovery publication runbook
 
+> Historical recovery procedure. On October 20 the owner replaced its publication
+> gates with [direct static publication](../operations/direct-publication.md)
+> under [ADR-0026](../adr/0026-restore-direct-static-publication.md). The workflow
+> operations below are retired; do not dispatch or replay old sealed attempts.
+> Historical source/model requirements remain applicable to reconstruction.
+
+
 Before any publication action, read the authoritative SportsRank task SR-7 (`bb tasks show SR-7`) and
 verify the actual merged candidate SHA and complete live baseline. Historical acceptance
 and artifact identities are indexed in [historical Gate 1 reports](../evidence/2026-gate1.md).
@@ -250,6 +257,18 @@ following the [Monday procedure](monday-automation.md). Other releases, includin
 the #39 historical correction, retain human approval. `GITHUB_TOKEN` supplies
 provenance/archive/approval access; Firebase credentials are available only
 inside the protected job, and `CFBD_API` is absent.
+
+The protected Google-auth action creates a private credential file from the
+existing Firebase service account and removes it during cleanup. Pass its exact
+`credentials_file_path` output as `FIREBASE_CREDENTIALS_FILE`; do not export a
+fixed one-hour access token for the complete operation. The Firebase token
+provider loads only that file with the existing cloud-platform scope and uses
+Google's credential freshness/refresh logic before authenticated requests.
+Both Firebase adapters share it, and concurrent upload callers serialize
+refresh. Credential failures stop before the provider request and expose only
+sanitized errors. The file is outside all tracked package/source transports.
+Local explicit `FIREBASE_ACCESS_TOKEN` callers remain supported when no gated
+file is selected; they must manage that token's lifetime themselves.
 
 1. Select the exact validated preparation, expected baseline and purpose.
    Normal successors, rollback and correction need freshly reconciled verified

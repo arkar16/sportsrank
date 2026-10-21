@@ -4,6 +4,11 @@ status: accepted
 
 # Retain publication evidence in GitHub immutable releases
 
+October 20 publication update: [ADR-0026](0026-restore-direct-static-publication.md) supersedes the routine
+release procedure below. Historical evidence and unrelated domain/private-input
+constraints remain; use the direct-publication runbook for new deployments.
+
+
 Use immutable GitHub release assets in the existing repository for approved
 public site archives and safe hashes/provenance. Sanitized publication records
 are public only after the private-input proof gate; raw CFBD inputs require a

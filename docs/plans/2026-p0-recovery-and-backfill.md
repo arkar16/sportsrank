@@ -1,5 +1,12 @@
 # SportsRank P0 recovery and backfill — implementation handoff
 
+> Historical recovery procedure. On October 20 the owner replaced its publication
+> gates with [direct static publication](../operations/direct-publication.md)
+> under [ADR-0026](../adr/0026-restore-direct-static-publication.md). The workflow
+> operations below are retired; do not dispatch or replay old sealed attempts.
+> Historical source/model requirements remain applicable to reconstruction.
+
+
 Status: retained recovery implementation and acceptance contract. SportsRank
 BB task SR-7 (`bb tasks show SR-7`) owns current scope, execution and acceptance.
 Earlier verification below is historical; the absent historical reconstruction
