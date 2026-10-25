@@ -155,6 +155,51 @@ result inputs and issued-forecast records are preserved.
 For a manual T3 project script, use `uv run --locked python -m
 scripts.backforecast` from the repository root, with automatic execution disabled.
 
+### Machine-learning testing starter pack
+
+Run a local, offline experiment against the saved forecast archive:
+
+```sh
+env -u CFBD_API -u CFBD_API_KEY -u CFBD_PRED_API uv run --locked python -m scripts.ml_testing \
+  --output .sportsrank/ml-testing/first-run
+```
+
+Use a **new output directory** for each run. No API requests, publication or new
+ML dependencies are needed. The experiment learns a linear calibration,
+`actual home margin = intercept + slope * CORS home margin`, using NumPy's
+least-squares solver. It compares that challenger with unchanged CORS and a
+zero-margin baseline on exactly the same games. Positive margin favors home;
+the saved home handicap has the opposite sign.
+
+Each season is a held-out fold trained on all eligible **earlier seasons**,
+with at least two training seasons and 100 games by default. There is no random
+split, within-season fitting or parameter search. Only completed FBS versus FBS
+games with saved forecasts enter training or scoring. Reconstructed forecasts,
+missing predictions/scores and non-FBS games are counted separately. A saved
+archive value is not proof it was issued before kickoff; this experiment does
+not certify historical feature timing or change authenticated forecast records.
+
+To score a narrower period, retain earlier training history with:
+
+```sh
+env -u CFBD_API -u CFBD_API_KEY -u CFBD_PRED_API uv run --locked python -m scripts.ml_testing \
+  --from-season 2023 --through-season 2025 --output .sportsrank/ml-testing/2023-2025
+```
+
+`report.json` records configuration, source paths/SHA-256 hashes, NumPy version,
+coverage, skipped folds, training seasons, fitted coefficients and paired
+game-weighted MAE/RMSE. `games.csv` holds every held-out prediction and outcome.
+Those files reproduce from the same inputs and environment; `runtime.json`
+separately records variable elapsed time. Source/output overlap and reusing an
+existing output directory are rejected. Early seasons with insufficient training
+are skipped explicitly; a run with no held-out games fails.
+
+Treat the results as exploratory. Archive gaps and changes between football
+eras can bias the aggregate; inspect individual recent folds as well. Keep a
+future season untouched before selecting a production model, and do not select
+parameters on the test results and then describe them as an independent test.
+Production CORS, site generation and publication do not use this challenger.
+
 ### Provider comparison
 
 The same reports can include provider spreads, Market ATS, and paired CORS/provider

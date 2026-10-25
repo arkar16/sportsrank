@@ -1,5 +1,11 @@
 # Current work
 
+Offline machine-learning evaluation starter pack:
+[#75](https://github.com/arkar16/sportsrank/issues/75). It compares an experimental
+margin calibration with unchanged CORS using earlier-season training and local
+archive inputs. Task/PR evidence owns results and acceptance. Hosted weekly
+generation remains separate in #54.
+
 Direct Firebase publication and publishing the retained Week 7/8 website are
 tracked in [#68](https://github.com/arkar16/sportsrank/issues/68), under
 [ADR-0026](../adr/0026-restore-direct-static-publication.md). Use the
