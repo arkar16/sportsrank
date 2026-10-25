@@ -1,10 +1,11 @@
 # Current work
 
-Offline machine-learning evaluation starter pack:
-[#75](https://github.com/arkar16/sportsrank/issues/75). It compares an experimental
-margin calibration with unchanged CORS using earlier-season training and local
-archive inputs. Task/PR evidence owns results and acceptance. Hosted weekly
-generation remains separate in #54.
+Offline machine-learning evaluation with the local CFBD Starter Pack:
+[#75](https://github.com/arkar16/sportsrank/issues/75),
+[PR #76](https://github.com/arkar16/sportsrank/pull/76). Prior-game advanced metrics
+and saved CORS forecasts feed paired, earlier-season-only model comparisons.
+Task/PR evidence owns results and acceptance. Hosted weekly generation remains
+separate in #54.
 
 Direct Firebase publication and publishing the retained Week 7/8 website are
 tracked in [#68](https://github.com/arkar16/sportsrank/issues/68), under

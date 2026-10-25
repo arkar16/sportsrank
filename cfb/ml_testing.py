@@ -107,14 +107,17 @@ def experiment(website: Path, *, from_season: int | None = None,
             "summary": _summary(games), "games": games}
 
 
-def write_experiment(report: dict, output: Path, website: Path) -> None:
+def write_experiment(report: dict, output: Path, website: Path, *, protected_roots: tuple[Path, ...] = ()) -> None:
     """Write a new local experiment, refusing any overlap with the source tree."""
-    source, destination = website.resolve(), output.resolve()
-    if destination.is_relative_to(source) or source.is_relative_to(destination):
-        raise ValueError("experiment output must be outside and separate from the website")
+    destination = output.resolve()
+    for root in (website, *protected_roots):
+        source = root.resolve()
+        if destination.is_relative_to(source) or source.is_relative_to(destination):
+            raise ValueError("experiment output must be outside and separate from the website and input roots")
     raw = json.dumps(report, indent=2, sort_keys=True, allow_nan=False) + "\n"
     stream = StringIO()
-    writer = csv.DictWriter(stream, fieldnames=GAME_COLUMNS)
+    columns = GAME_COLUMNS if report["schema"] == SCHEMA else tuple(report["games"][0])
+    writer = csv.DictWriter(stream, fieldnames=columns)
     writer.writeheader()
     writer.writerows(report["games"])
     output.mkdir(parents=True, exist_ok=False)
