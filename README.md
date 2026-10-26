@@ -155,6 +155,103 @@ result inputs and issued-forecast records are preserved.
 For a manual T3 project script, use `uv run --locked python -m
 scripts.backforecast` from the repository root, with automatic execution disabled.
 
+### Machine-learning testing with the CFBD Starter Pack
+
+Use the privately retained CollegeFootballData.com Starter Pack in your dev
+directory to compare forecasts based on prior-game advanced metrics with CORS:
+
+```sh
+env -u CFBD_API -u CFBD_API_KEY -u CFBD_PRED_API uv run --locked python -m scripts.ml_testing \
+  --starter-pack ../starter_pack --output .sportsrank/ml-testing/starter-run-01
+```
+
+The adapter reads `data/games.csv` and `data/advanced_game_stats/<year>.csv`.
+It uses the existing NumPy dependency and runs entirely offline. Keep the bundle
+and generated research output private: the pack's license permits personal use
+but prohibits redistribution of its data and notebook code. Repository tests use
+synthetic inputs. Neither source tree is modified, and output must be a new
+directory separate from both source trees.
+
+Four forecasts are scored on the **same eligible games**: original saved CORS,
+a learned CORS-only calibration, advanced-stat regression, and CORS plus advanced
+stats. The latter two use fixed ridge regularization (`alpha=1`); no parameter
+search occurs. Features are home-minus-away differences in prior-game offensive
+and defensive PPA and success rate, plus a home-field indicator (zero at neutral
+sites). Each team's history uses equal-weighted, completed FBS-versus-FBS games
+from the same season, with at least two usable prior games required.
+
+Features freeze at Monday 00:00 UTC of the target game's week. A prior game's
+kickoff plus a 24-hour availability allowance must be strictly before that cutoff.
+Postseason dates determine chronology even when provider week numbers restart.
+Timezone-free bundle timestamps are interpreted as UTC. Legacy blank TBD flags
+are counted and use their recorded timestamps; explicitly TBD or missing kickoff
+times are excluded. This is a conservative historical availability **proxy**:
+the bundle has no original metric-retrieval timestamps. Full-season aggregates,
+postgame win probabilities and end-of-game Elo never enter the features.
+
+Each held-out season fits its models and feature scaling using only earlier
+seasons, with at least two training seasons and 100 paired games by default.
+Use `--from-season 2023 --through-season 2024` to narrow evaluation while retaining
+earlier training history. The local bundle determines the available years;
+missing recent seasons are not downloaded. Game IDs match saved CORS when
+possible. Legacy IDs can use a unique team/orientation match across the whole
+season; ambiguous identities, missing forecasts and score disagreements are
+counted and excluded from every model's paired sample.
+
+`report.json` retains source hashes, coverage and join exclusions, model settings,
+training seasons, scaling and coefficients, per-game features/predictions, and
+per-season and game-weighted MAE/RMSE. `games.csv` holds the same held-out rows.
+These outputs are deterministic in the same environment; `runtime.json` records
+variable elapsed time separately. Inspect recent folds as well as totals, since
+coverage and football eras vary. Keep future data untouched before selecting a
+production model; retrospective results alone do not establish live improvement.
+Production CORS, site generation and publication do not use these challengers.
+
+### Archive-only calibration baseline
+
+Run a local, offline experiment against the saved forecast archive:
+
+```sh
+env -u CFBD_API -u CFBD_API_KEY -u CFBD_PRED_API uv run --locked python -m scripts.ml_testing \
+  --output .sportsrank/ml-testing/first-run
+```
+
+Use a **new output directory** for each run. No API requests, publication or new
+ML dependencies are needed. The experiment learns a linear calibration,
+`actual home margin = intercept + slope * CORS home margin`, using NumPy's
+least-squares solver. It compares that challenger with unchanged CORS and a
+zero-margin baseline on exactly the same games. Positive margin favors home;
+the saved home handicap has the opposite sign.
+
+Each season is a held-out fold trained on all eligible **earlier seasons**,
+with at least two training seasons and 100 games by default. There is no random
+split, within-season fitting or parameter search. Only completed FBS versus FBS
+games with saved forecasts enter training or scoring. Reconstructed forecasts,
+missing predictions/scores and non-FBS games are counted separately. A saved
+archive value is not proof it was issued before kickoff; this experiment does
+not certify historical feature timing or change authenticated forecast records.
+
+To score a narrower period, retain earlier training history with:
+
+```sh
+env -u CFBD_API -u CFBD_API_KEY -u CFBD_PRED_API uv run --locked python -m scripts.ml_testing \
+  --from-season 2023 --through-season 2025 --output .sportsrank/ml-testing/2023-2025
+```
+
+`report.json` records configuration, source paths/SHA-256 hashes, NumPy version,
+coverage, skipped folds, training seasons, fitted coefficients and paired
+game-weighted MAE/RMSE. `games.csv` holds every held-out prediction and outcome.
+Those files reproduce from the same inputs and environment; `runtime.json`
+separately records variable elapsed time. Source/output overlap and reusing an
+existing output directory are rejected. Early seasons with insufficient training
+are skipped explicitly; a run with no held-out games fails.
+
+Treat the results as exploratory. Archive gaps and changes between football
+eras can bias the aggregate; inspect individual recent folds as well. Keep a
+future season untouched before selecting a production model, and do not select
+parameters on the test results and then describe them as an independent test.
+Production CORS, site generation and publication do not use this challenger.
+
 ### Provider comparison
 
 The same reports can include provider spreads, Market ATS, and paired CORS/provider
