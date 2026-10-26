@@ -7,10 +7,16 @@ tracked in [#68](https://github.com/arkar16/sportsrank/issues/68), under
 prepare/seal/execute release procedure is retired. Publication evidence belongs
 to #68 and parent #64/#66; do not infer live success from a prepared package.
 
+The October 26 weekly update is tracked in
+[#77](https://github.com/arkar16/sportsrank/issues/77): Week 8 final results,
+138 Week 8 ratings and 56 Week 9 forecasts. Contest readback verified all 56;
+website publication and live verification follow the direct runbook. The task
+owns acceptance and destination status. The current private request ledger is
+`.sportsrank/weekly/2026-week9-20261026/acquisition/cfbd_requests.sqlite3` (82 rows,
+including the two explicitly approved October 26 requests); preserve its history.
+
 The T3 Monday timer was deleted October 18. There is no active recurring writer;
-hosted generation in #54 remains separate. The retained October 18 data contains
-Week 7 results/ratings and all 56 Week 8 forecasts; the last contest readback
-verified 55/56. Publishing those files requires no additional source requests.
+hosted generation in #54 remains separate.
 
 ## Earlier work references
 
