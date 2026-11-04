@@ -54,6 +54,14 @@ provenance remains intact; versioned coverage identifies corrected progression.
 `scripts/prepare_site.py` composes the existing export boundary from one private
 path/hash configuration, without adding a fetch or publication action.
 
+`cfb/starter_pack.py` reads private local CFBD Starter Pack CSVs and constructs
+weekly, prior-game feature rows. `cfb/starter_experiment.py` joins those rows to
+saved forecasts through the existing performance adapter, fits models on earlier
+seasons only, and emits paired experimental results. `scripts/ml_testing.py`
+exposes this local research path and the archive-only calibration baseline in
+`cfb/ml_testing.py`. These modules do not participate in ranking generation or
+publication; input data and generated experiments remain private.
+
 ## Compatibility and deferred architecture
 
 The modern source/ranking boundary coexists with legacy pandas/static-HTML
