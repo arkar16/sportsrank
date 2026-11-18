@@ -14,6 +14,7 @@ import re
 from typing import Any
 
 from .forecast_release import _LegacySpreadTable
+from .reference_markup import source_bytes
 from .forecast_record import (
     EvidenceRef, FinalScore, ForecastCandidate, ForecastGrade, ForecastProvenance,
     ForecastSelection, GameIdentity, ScoreRevision, aggregate_grades, grade_forecast,
@@ -40,7 +41,7 @@ def _digest(raw: bytes) -> str:
 
 
 def _read(path: Path) -> tuple[list[dict[str, str]], str]:
-    raw = path.read_bytes()
+    raw = source_bytes(path.read_bytes())
     try:
         text = raw.decode("utf-8")
     except UnicodeDecodeError:

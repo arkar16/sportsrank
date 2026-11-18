@@ -1,6 +1,8 @@
 # Publish the static website
 
 Review the changed rankings/results/forecasts against the intended data and
+refresh the team record book with `uv run --locked python -m cfb.record_book`
+after its archived inputs and performance reports are current. Then
 inspect the diff for unexpected edits or deletions. Commit the intended generated
 `website/` files through a reviewed PR. Preserve historical URLs and issued
 forecasts. Source acquisition is separate; publishing makes zero CFBD calls.

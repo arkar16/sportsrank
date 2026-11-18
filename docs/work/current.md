@@ -1,5 +1,11 @@
 # Current work
 
+The CFB record-book redesign is tracked in [program histories #85](https://github.com/arkar16/sportsrank/issues/85),
+[season progress #86](https://github.com/arkar16/sportsrank/issues/86) and
+[school marks #87](https://github.com/arkar16/sportsrank/issues/87).
+See the [reader experience](../plans/cfb-team-and-season-pages.md) and
+[program history decision](../adr/0027-preserve-program-history-across-seasons.md).
+
 Direct Firebase publication and publishing the retained Week 7/8 website are
 tracked in [#68](https://github.com/arkar16/sportsrank/issues/68), under
 [ADR-0026](../adr/0026-restore-direct-static-publication.md). Use the
