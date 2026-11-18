@@ -10,6 +10,7 @@ from .program_marks import program_logo_paths
 from .program_pages import build_program_pages
 from .reference_archive import Season, program_routes, read_archive
 from .reference_markup import PagePresentation
+from .season_pages import build_season_pages
 
 
 def _write_changed(path: Path, content: bytes) -> bool:
@@ -76,6 +77,12 @@ def build(site: Path) -> tuple[int, int, int]:
         changed += _write_changed(site / "cfb/assets" / asset.name, asset.read_bytes())
     for relative, markup in build_program_pages(seasons, routes):
         changed += _write_changed(site / relative, presentation.render(markup.encode(), archive=False))
+    season_pages = set()
+    for season in seasons:
+        for relative, markup in build_season_pages(site, season, routes):
+            path = site / relative
+            changed += _write_changed(path, presentation.render(markup.encode(), archive=False))
+            season_pages.add(path)
     for relative in ("index.html", "cfb/cfb.html"):
         markup = _home(seasons, routes, is_root=relative == "index.html")
         changed += _write_changed(site / relative, presentation.render(markup.encode(), archive=False))
@@ -83,6 +90,8 @@ def build(site: Path) -> tuple[int, int, int]:
     # the exact input bytes used by forecast evaluation can all be recovered.
     for directory in ("years", "performance", "history"):
         for path in (site / "cfb" / directory).rglob("*.html"):
+            if path in season_pages:
+                continue
             raw = path.read_bytes()
             markup = presentation.render(raw, archive=True)
             if raw != markup:

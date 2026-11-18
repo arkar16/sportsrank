@@ -364,6 +364,19 @@ html .metrics {
   nav[aria-label="Ranking checkpoints"] .week-links { gap: 0 .25rem; }
 }
 
+@media (min-width: 1100px) {
+  .season-standings {
+    display: grid;
+    grid-template-columns: minmax(0, 1.85fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 1.8rem;
+  }
+  .season-standings > section { min-width: 0; }
+  .season-standings table thead th { white-space: normal; }
+  .season-standings section[aria-labelledby="cors-upsets"] table td { white-space: normal; }
+  .season-standings section[aria-labelledby="cors-upsets"] .num { white-space: nowrap; }
+}
+
 @media print {
   html body { max-width: none; background: white; color: black; padding: 0; }
   .masthead nav, .week-links { display: none; }
