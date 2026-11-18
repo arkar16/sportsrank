@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Callable
+from contextlib import contextmanager
 from dataclasses import dataclass
-import fcntl
 import hashlib
 from http.client import HTTPException
 import json
@@ -21,6 +21,10 @@ import zlib
 _ASSET_DIR = Path("cfb/assets/program-marks")
 _ASSET_PREFIX = f"/{_ASSET_DIR.as_posix()}/"
 _SCHEMA = "program-marks/v1"
+# The 2022 CFBD team table retained in Git before 1cff7ef95 pairs these FBS
+# schools with these IDs. The unfiltered catalog also has unrelated schools
+# named Charlotte and Troy.
+_ARCHIVED_FBS_IDS = {"Charlotte": 2429, "Troy": 2653}
 # SportsRank's previously retained team pages establish this ESPN logo origin.
 _IMAGE_URL = re.compile(
     r"https?://a\.espncdn\.com(/i/teamlogos/ncaa/500(?:-dark)?/[a-zA-Z0-9_-]+\.png)"
@@ -236,6 +240,23 @@ def _install_assets(
     return paths, pending
 
 
+@contextmanager
+def _installation_lock(cache: Path):
+    with (cache / "install.lock").open("a+b") as lock:
+        if os.name == "nt":
+            import msvcrt
+            if not lock.tell():
+                lock.write(b"0")
+                lock.flush()
+            lock.seek(0)
+            msvcrt.locking(lock.fileno(), msvcrt.LK_LOCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        # Closing the descriptor releases the lock on both platforms.
+        yield
+
+
 def install_program_marks(
     site: Path, cache: Path, *, acquire: Callable[[], bytes] | None = None, offline: bool = False,
 ) -> MarkInstallResult:
@@ -249,8 +270,7 @@ def install_program_marks(
     if directory.resolve() != directory:
         raise ProgramMarksError("The site mark directory must stay inside the site without symlinks.")
     programs = _load_catalog(cache, acquire)
-    with (cache / "install.lock").open("ab") as lock:
-        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+    with _installation_lock(cache):
         directory.mkdir(parents=True, exist_ok=True)
         # Previous installs rejected the provider's two 4096-pixel originals.
         # Recheck rejected assets when this acceptance policy changes.
@@ -302,6 +322,7 @@ def program_logo_paths(site: Path) -> dict[str, str]:
         if not _ASSET_NAME.fullmatch(name) or path.is_symlink() or not path.is_file():
             continue
         result.update(dict.fromkeys(names, asset))
-        if schools[school] == 1:
+        identified = school in _ARCHIVED_FBS_IDS and row.get("cfbd_id") == _ARCHIVED_FBS_IDS[school]
+        if schools[school] == 1 or identified:
             result[school] = asset
     return {name: asset for name, asset in result.items() if aliases[name] <= 1}

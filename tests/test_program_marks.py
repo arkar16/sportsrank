@@ -136,6 +136,21 @@ class ProgramMarksTest(unittest.TestCase):
             self.assertEqual(opener.return_value.open.call_args.args[0].full_url, url)
         self.assertEqual(set(program_logo_paths(self.site)), {"Oregon"})
 
+    def test_archived_fbs_identity_resolves_a_duplicate_catalog_name(self):
+        self.cache.mkdir()
+        (self.cache / "response.json").write_text(json.dumps([
+            {"id": 3237, "school": "Troy", "logos": [CDN + "other.png"]},
+            {"id": 2653, "school": "Troy", "alternateNames": ["Trojans"], "logos": [CDN + "2653.png"]},
+            {"id": 12, "school": "Springfield", "logos": [CDN + "other.png"]},
+            {"id": 13, "school": "Springfield", "logos": [CDN + "2653.png"]},
+        ]))
+        with patch("cfb.program_marks.build_opener") as opener:
+            opener.return_value.open.side_effect = lambda *args, **kwargs: self.image_response()
+            self.assertEqual(self.run_cli()[0], 0)
+        marks = program_logo_paths(self.site)
+        self.assertEqual(marks["Troy"], marks["Trojans"])
+        self.assertNotIn("Springfield", marks)
+
     def test_uncertain_catalog_attempt_is_never_replayed(self):
         acquire = ("--acquire-catalog", "--meter", str(self.meter.path))
         with patch("cfb.season_source.create_api_client", side_effect=TimeoutError("private test detail")) as sdk:
