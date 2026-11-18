@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from html import escape
 from typing import TYPE_CHECKING
 
+from .reference_markup import school_label
+
 if TYPE_CHECKING:
     from cfb.reference_archive import Game, Season, Standing
 
@@ -270,5 +272,5 @@ def _game_cells(school: str, game: Game, routes: dict[str, str]) -> str:
         handicap = game.home_handicap if at_home else game.home_handicap.copy_negate()
         spread = format(handicap, "+f") if handicap else format(handicap.copy_abs(), "f")
 
-    name = _link(routes[opponent], opponent) if opponent in routes else escape(opponent)
+    name = school_label(opponent, routes)
     return f'<td>{name}</td><td>{side}</td><td class="num">{spread}</td><td class="num">{score}</td>'

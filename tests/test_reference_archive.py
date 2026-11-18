@@ -5,6 +5,9 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
+from lxml import html
+
+from cfb.program_pages import build_program_pages
 from cfb.reference_archive import program_routes, read_archive
 from cfb.reference_markup import PagePresentation, source_bytes
 
@@ -38,7 +41,8 @@ class ArchiveTests(unittest.TestCase):
              "neutral_site": True, "home_handicap": "-7.89"}
         ]}))
         seasons = read_archive(site)
-        self.assertEqual(program_routes(seasons), {
+        routes = program_routes(seasons)
+        self.assertEqual(routes, {
             "Miami": "/cfb/teams/miami/index.html", "Miami (OH)": "/cfb/teams/miami-oh/index.html"
         })
         games = {game.week: game for game in seasons[0].games}
@@ -46,6 +50,15 @@ class ArchiveTests(unittest.TestCase):
         self.assertTrue(games[1].neutral_site)
         self.assertEqual((games[0].away, games[0].away_score, games[0].home_handicap), ("Town College", 0, None))
         self.assertIsNone(games[2].home_score)
+        mark = "/cfb/assets/program-marks/town.png"
+        pages = dict(build_program_pages(seasons, routes))
+        view = PagePresentation(routes, {"Town College": mark})
+        log = html.fromstring(view.render(pages["cfb/teams/miami/2026.html"].encode(), archive=False))
+        opponents = log.xpath('//td[normalize-space(.)="Town College"]')
+        self.assertEqual(len(opponents), 2)
+        self.assertEqual(opponents[0].xpath('.//img/@src'), [mark])
+        self.assertFalse(opponents[1].xpath('.//img'))
+        self.assertFalse(any(cell.xpath('.//a') for cell in opponents))
 
     def test_presentation_round_trip_preserves_archival_bytes_and_numeric_values(self):
         routes = {"San José State": "/cfb/teams/san-jose-state/index.html"}
