@@ -120,6 +120,22 @@ class ProgramMarksTest(unittest.TestCase):
             self.assertEqual(self.run_cli("--offline")[0], 0)
             self.assertEqual(program_logo_paths(self.site), first)
 
+    def test_current_provider_cdn_installs_from_the_retained_response(self):
+        url = "https://cdn.collegefootballdata.com/logos/2483.png"
+        self.cache.mkdir()
+        (self.cache / "response.json").write_text(json.dumps([
+            {"id": 2483, "school": "Oregon", "logos": [url]},
+            {"id": 193, "school": "Bad path", "logos": [url.replace("logos/", "../")]},
+        ]))
+        with patch("cfbd.TeamsApi", side_effect=AssertionError), patch(
+            "cfb.program_marks.build_opener"
+        ) as opener:
+            opener.return_value.open.return_value = self.image_response()
+            self.assertEqual(self.run_cli()[0], 0)
+            self.assertEqual(opener.return_value.open.call_count, 1)
+            self.assertEqual(opener.return_value.open.call_args.args[0].full_url, url)
+        self.assertEqual(set(program_logo_paths(self.site)), {"Oregon"})
+
     def test_uncertain_catalog_attempt_is_never_replayed(self):
         acquire = ("--acquire-catalog", "--meter", str(self.meter.path))
         with patch("cfb.season_source.create_api_client", side_effect=TimeoutError("private test detail")) as sdk:

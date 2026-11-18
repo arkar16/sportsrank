@@ -25,6 +25,9 @@ _SCHEMA = "program-marks/v1"
 _IMAGE_URL = re.compile(
     r"https?://a\.espncdn\.com(/i/teamlogos/ncaa/500(?:-dark)?/[a-zA-Z0-9_-]+\.png)"
 )
+_CFBD_IMAGE_URL = re.compile(
+    r"https://cdn\.collegefootballdata\.com/(?:[A-Za-z0-9_-]+/)*[A-Za-z0-9_-]+\.png"
+)
 _ASSET_NAME = re.compile(r"[0-9a-f]{64}\.png")
 _MAX_IMAGE_BYTES = 2 * 1024 * 1024
 _PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
@@ -64,7 +67,11 @@ def _display_name(value: object) -> str:
 
 
 def _image_url(value: object) -> str | None:
-    match = _IMAGE_URL.fullmatch(value) if isinstance(value, str) else None
+    if not isinstance(value, str):
+        return None
+    if _CFBD_IMAGE_URL.fullmatch(value):
+        return value
+    match = _IMAGE_URL.fullmatch(value)
     if match:
         # Older catalog responses used HTTP for this same CDN path.
         return "https://a.espncdn.com" + match[1]
