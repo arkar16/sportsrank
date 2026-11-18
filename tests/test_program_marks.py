@@ -20,15 +20,15 @@ CDN = "https://a.espncdn.com/i/teamlogos/ncaa/500/"
 ASSET_DIR = Path("cfb/assets/program-marks")
 
 
-def sample_png():
+def sample_png(width=1, height=1):
     def chunk(name, value):
         data = name + value
         return struct.pack(">I", len(value)) + data + struct.pack(">I", zlib.crc32(data))
 
     return (
         b"\x89PNG\r\n\x1a\n"
-        + chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 2, 0, 0, 0))
-        + chunk(b"IDAT", zlib.compress(b"\x00\x01\x02\x03"))
+        + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0))
+        + chunk(b"IDAT", zlib.compress((b"\x00" + b"\x01\x02\x03" * width) * height))
         + chunk(b"IEND", b"")
     )
 
@@ -130,7 +130,7 @@ class ProgramMarksTest(unittest.TestCase):
         with patch("cfbd.TeamsApi", side_effect=AssertionError), patch(
             "cfb.program_marks.build_opener"
         ) as opener:
-            opener.return_value.open.return_value = self.image_response()
+            opener.return_value.open.return_value = self.image_response(data=sample_png(4096, 4096))
             self.assertEqual(self.run_cli()[0], 0)
             self.assertEqual(opener.return_value.open.call_count, 1)
             self.assertEqual(opener.return_value.open.call_args.args[0].full_url, url)

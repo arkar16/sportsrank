@@ -141,7 +141,7 @@ def _valid_png(data: bytes) -> bool:
         return False
     width = int.from_bytes(data[16:20], "big")
     height = int.from_bytes(data[20:24], "big")
-    if not (1 <= width <= 1024 and 1 <= height <= 1024):
+    if not (1 <= width <= 4096 and 1 <= height <= 4096):
         return False
     offset = len(_PNG_SIGNATURE)
     has_pixels = False
@@ -252,7 +252,9 @@ def install_program_marks(
     with (cache / "install.lock").open("ab") as lock:
         fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
         directory.mkdir(parents=True, exist_ok=True)
-        unavailable = cache / "unavailable"
+        # Previous installs rejected the provider's two 4096-pixel originals.
+        # Recheck rejected assets when this acceptance policy changes.
+        unavailable = cache / "unavailable-v2"
         if not offline:
             unavailable.mkdir(exist_ok=True)
         paths, pending = _install_assets(programs, directory, unavailable, offline=offline)
