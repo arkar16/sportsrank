@@ -1,0 +1,372 @@
+@font-face {
+  font-family: "PT Serif";
+  src: url("pt-serif-bold.ttf") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light;
+  --paper: #faf7ef;
+  --ink: #252a23;
+  --muted: #565b50;
+  --rule: #cfcbbb;
+  --table-head: #e8e2d2;
+  --stripe: #f1eee3;
+  --row-focus: #ece2cf;
+  --link: #195348;
+  --rust: #823b27;
+  --headline: "PT Serif", Georgia, "Times New Roman", serif;
+}
+
+* { box-sizing: border-box; }
+html { background: var(--paper); }
+html body {
+  width: 100%;
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: 0 clamp(.875rem, 3.5vw, 3rem) 2.75rem;
+  color: var(--ink);
+  background: var(--paper);
+  font: 15px/1.45 Arial, Helvetica, sans-serif;
+  font-variant-numeric: lining-nums tabular-nums;
+  overflow-wrap: anywhere;
+}
+html a, html a:visited { color: var(--link); text-underline-offset: .16em; }
+html a:hover, html a:focus-visible { color: var(--rust); text-decoration: underline; }
+:focus-visible { outline: 2px solid var(--rust); outline-offset: 2px; }
+::selection { color: var(--ink); background: #e7d6af; }
+
+.masthead {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: .25rem 1.75rem;
+  margin-bottom: 1rem;
+  padding: .85rem 0 .55rem;
+  border-top: 4px solid var(--rust);
+  border-bottom: 4px double var(--ink);
+}
+.masthead .nameplate {
+  color: var(--rust);
+  font: italic 700 clamp(1.7rem, 3.2vw, 2.5rem)/1 var(--headline);
+  letter-spacing: -.035em;
+  text-decoration: none;
+}
+.masthead nav {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 .95rem;
+  margin: 0;
+}
+.masthead nav a {
+  display: inline-block;
+  padding: .3rem 0;
+  color: var(--ink);
+  font-size: .8125rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.masthead nav a:hover, .masthead nav a:focus-visible, .masthead nav [aria-current=page] {
+  color: var(--rust);
+  text-decoration: underline;
+}
+
+html h1, html h2, html h3, figcaption {
+  color: var(--ink);
+  font-family: var(--headline);
+  font-weight: 700;
+  letter-spacing: -.025em;
+}
+html h1 { margin: .36em 0 .24em; font-size: 2.75rem; line-height: 1.08; }
+html h2 { margin: 1.05em 0 .34em; font-size: 1.7rem; line-height: 1.12; }
+html h3 { margin: .65em 0 .15em; font-size: 1.1rem; line-height: 1.2; }
+html p { margin: .45em 0; }
+main { min-width: 0; }
+body > nav {
+  color: var(--muted);
+  font-size: .8125rem;
+}
+body > nav[aria-label="College Football"] {
+  padding: 0 0 .45rem;
+  border-bottom: 1px solid var(--rule);
+}
+body > h1 + p, .season-page header p, body.record-book > p {
+  color: var(--muted);
+  font-size: .8125rem;
+}
+body > nav:not([aria-label]) { gap: .15rem .75rem; }
+body > nav:not([aria-label]) a { padding-block: .2rem; }
+
+.edition {
+  margin-bottom: 1rem;
+  color: var(--rust);
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .0625em;
+  text-transform: uppercase;
+}
+main:has(> .home-columns) > h1 { font-size: 3.2rem; }
+.home-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 1.6rem;
+}
+.home-columns h2 { margin: .25rem 0 .45rem; }
+.home-columns .table-scroll { margin-bottom: .55rem; }
+.home-columns th:first-child { width: 1%; }
+.home-columns :is(th, td):nth-child(3) { text-align: right; }
+.home-columns > section:first-child > p { font-size: .875rem; font-weight: 700; }
+.home-columns > section:last-child { border-left: 1px solid var(--rule); padding-left: 1.4rem; }
+.home-columns > section:last-child p {
+  margin: 0;
+  padding: .47rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+.home-columns > section:last-child h2 + p { border-top: 2px solid var(--ink); }
+
+.year-archive { border-top: 2px solid var(--ink); }
+.year-archive div {
+  display: grid;
+  grid-template-columns: 3.4rem minmax(0, 1fr);
+  align-items: baseline;
+  gap: .6rem;
+  border-bottom: 1px solid var(--rule);
+  padding: .2rem 0;
+}
+.year-archive h3 { margin: 0; }
+.year-archive p { display: flex; flex-wrap: wrap; gap: 0 .35rem; margin: 0; }
+.year-archive a {
+  display: inline-block;
+  min-width: 2.55rem;
+  padding: .26rem .15rem;
+  font-size: .875rem;
+}
+
+.table-scroll, html .scroll, .forecast-table-scroll {
+  max-width: 100%;
+  overflow: auto;
+  margin: .45rem 0 .95rem;
+  overscroll-behavior-inline: contain;
+  scrollbar-color: #827d6d var(--stripe);
+}
+:is(.table-scroll, .scroll, .forecast-table-scroll):focus-visible {
+  outline: 2px solid var(--rust);
+  outline-offset: 2px;
+}
+/* Archive decoration can wrap a table already inside its own scroll region. */
+:is(.table-scroll, .scroll, .forecast-table-scroll) > .table-scroll { display: contents; }
+.table-scroll[aria-label] { container-type: inline-size; }
+
+html table {
+  width: 100%;
+  border: 0;
+  border-top: 2px solid var(--ink);
+  border-collapse: separate;
+  border-spacing: 0;
+  color: var(--ink);
+  background: transparent;
+  font-size: .875rem;
+  line-height: 1.32;
+  font-variant-numeric: lining-nums tabular-nums;
+  text-align: left;
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+html table th, html table td {
+  padding: .27rem .6rem;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  text-align: inherit;
+  vertical-align: middle;
+}
+html table thead th {
+  padding-block: .42rem;
+  border-bottom-color: #a6a08f;
+  color: var(--ink);
+  background: var(--table-head);
+  font-size: .75rem;
+  line-height: 1.2;
+}
+html table tbody th, html table tbody td {
+  background: var(--row-paper, var(--paper));
+}
+html table:not(:where([aria-label="Rankings and games"] table)) tbody tr:nth-child(even),
+[aria-label="Rankings and games"] tbody:nth-of-type(even) {
+  --row-paper: var(--stripe);
+}
+html table tbody tr:focus-within { --row-paper: var(--row-focus); }
+@media (hover: hover) {
+  html table tbody tr:hover { --row-paper: var(--row-focus); }
+}
+html table tbody th { font-weight: 700; }
+html table :is(th, td) a { font-weight: 700; text-decoration-thickness: 1px; }
+html table caption {
+  position: sticky;
+  left: 0;
+  max-inline-size: 100cqi;
+  padding: 0 0 .4rem;
+  color: var(--muted);
+  font-size: .8125rem;
+  text-align: left;
+  white-space: normal;
+}
+[aria-label="Season history"] caption {
+  color: var(--ink);
+  font: 700 1.5rem/1.15 var(--headline);
+}
+html table .num,
+[aria-label="Season history"] thead th:nth-child(n+3):nth-child(-n+6),
+[aria-label="Rankings and games"] thead th:is(:nth-child(2), :nth-child(3), :nth-child(4), :nth-last-child(-n+2)),
+[aria-label="Rankings and games"] tbody tr:first-child td:nth-child(4),
+[aria-label="Rankings and games"] td:nth-last-child(-n+2) { text-align: right; }
+
+[aria-label="Rankings and games"] :is([scope="rowgroup"], thead th:first-child) {
+  border-right: 1px solid var(--rule);
+}
+[aria-label="Rankings and games"] [rowspan] { vertical-align: top; }
+
+/* The preserved archive tables have no column classes. Align their numeric
+   fields by default and join team label alignment across all rows and headers. */
+html table.dataframe,
+html .scroll table,
+[aria-label="Ranking progression"] table { text-align: right; }
+html .dataframe :is(th, td) { text-align: inherit; }
+html .scroll table :is(th, td):first-child,
+[aria-label="Ranking progression"] :is(th, td):nth-child(-n+2) { text-align: left; }
+.dataframe:has(tbody td:nth-child(1) > :is([data-sr-team], .school-mark)) :is(th, td):nth-child(1),
+.dataframe:has(tbody td:nth-child(2) > :is([data-sr-team], .school-mark)) :is(th, td):nth-child(2),
+.dataframe:has(tbody td:nth-child(3) > :is([data-sr-team], .school-mark)) :is(th, td):nth-child(3),
+.dataframe:has(tbody td:nth-child(4) > :is([data-sr-team], .school-mark)) :is(th, td):nth-child(4),
+.dataframe:has(tbody td:nth-child(5) > :is([data-sr-team], .school-mark)) :is(th, td):nth-child(5),
+.dataframe:has(tbody td:nth-child(7) > :is([data-sr-team], .school-mark)) :is(th, td):nth-child(7),
+.dataframe:has(tbody td:nth-child(8) > :is([data-sr-team], .school-mark)) :is(th, td):nth-child(8) {
+  text-align: left;
+}
+/* In ranking and record tables the conference directly follows the school. */
+.dataframe:has(tbody td:first-child > [data-sr-team]):not(:has(tbody td:nth-child(2) > [data-sr-team])) :is(th, td):nth-child(2),
+.dataframe:has(tbody td:nth-child(2) > [data-sr-team]):not(:has(tbody td:nth-child(3) > [data-sr-team])) :is(th, td):nth-child(3) {
+  text-align: left;
+}
+html .forecast-report .forecast-games :is(th, td):nth-child(-n+3) {
+  background: var(--row-paper, var(--paper));
+}
+html .forecast-report .forecast-games thead th:nth-child(-n+3) { background: var(--table-head); }
+html .forecast-report .forecast-games :is(th, td):nth-child(3) { border-right: 1px solid var(--rule); }
+[aria-label="Ranking progression"] :is(th, td):nth-child(2n + 3) { border-left: 1px solid var(--rule); }
+
+.school-mark {
+  width: 20px;
+  height: 20px;
+  margin-right: .38em;
+  vertical-align: middle;
+  object-fit: contain;
+}
+.school-mark.large {
+  width: 54px;
+  height: 54px;
+  margin-right: .24em;
+}
+.rank-trend {
+  width: min(100%, 36rem);
+  margin: .9rem 0 1.15rem;
+  padding-block: .5rem .3rem;
+  border-block: 1px solid var(--rule);
+}
+.rank-trend figcaption { margin-bottom: .3rem; font-size: 1.15rem; }
+.rank-trend svg { display: block; color: var(--link); }
+
+.program-list {
+  columns: 4 12rem;
+  column-gap: 1.5rem;
+  margin: .6rem 0 0;
+  padding: 0;
+  border-top: 2px solid var(--ink);
+  list-style: none;
+}
+.program-list li {
+  break-inside: avoid;
+  padding: .25rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.week-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 .5rem;
+  margin: .32rem 0;
+  padding: 0;
+  list-style: none;
+}
+.week-links a {
+  display: inline-block;
+  padding: .25rem .2rem;
+  font-size: .8125rem;
+}
+nav[aria-label="Ranking checkpoints"] {
+  border-block: 1px solid var(--rule);
+  margin-block: .7rem;
+}
+.week-links [aria-current=page] {
+  color: var(--paper);
+  background: var(--rust);
+  font-weight: 700;
+  text-decoration: none;
+}
+#season-archive > h3 {
+  padding-top: .45rem;
+  border-top: 1px solid var(--rule);
+}
+html .metrics {
+  padding: .6rem 0;
+  border-block: 1px solid var(--rule);
+  border-radius: 0;
+  background: transparent;
+  font-size: .9375rem;
+}
+
+@media (max-width: 650px) {
+  .masthead { display: block; padding-top: .6rem; margin-bottom: .75rem; }
+  .masthead nav { margin-top: .2rem; gap: 0 .8rem; }
+  html h1 { font-size: 2rem; }
+  html h2 { font-size: 1.4rem; }
+  main:has(> .home-columns) > h1 { font-size: 2.45rem; }
+  .home-columns { display: block; }
+  .home-columns > section:last-child { margin-top: 1.25rem; border-left: 0; padding-left: 0; }
+  .program-list { columns: 2 8rem; column-gap: .85rem; }
+  .rank-trend svg text { font-size: 16px; }
+  html table td, html table th { padding-inline: .4rem; }
+  html table thead th { white-space: normal; }
+  .home-columns thead th, .dataframe thead th { white-space: nowrap; }
+  [aria-label="Season history"] td:nth-child(2) {
+    min-width: 5.25rem;
+    white-space: normal;
+  }
+  .season-page [aria-labelledby="cors-ranking"] :is(th, td):nth-child(2) {
+    width: 9rem;
+    max-width: 9rem;
+    white-space: normal;
+  }
+  :is([aria-label="Season history"], [aria-label="Rankings and games"]) th:first-child,
+  .season-page [aria-labelledby="cors-ranking"] :is(th, td):nth-child(2) {
+    position: sticky;
+    left: 0;
+    border-right: 1px solid var(--rule);
+  }
+  [aria-label="Ranking progression"] th:first-child {
+    min-width: 7.25rem;
+    max-width: 9rem;
+    white-space: normal;
+  }
+  html .forecast-games { --team-width: clamp(6.5rem, 29.5vw, 7.25rem); }
+  .week-links { gap: 0 .35rem; }
+  nav[aria-label="Ranking checkpoints"] .week-links { gap: 0 .25rem; }
+}
+
+@media print {
+  html body { max-width: none; background: white; color: black; padding: 0; }
+  .masthead nav, .week-links { display: none; }
+  html a { color: inherit; text-decoration: none; }
+  .table-scroll, html .scroll, .forecast-table-scroll { overflow: visible; }
+}

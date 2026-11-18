@@ -88,11 +88,11 @@ class ProgramPagesTests(unittest.TestCase):
         self.assertEqual(page.select_one("h1 span[data-program]")["data-program"], TEAM)
         rows = [cell_text(row) for row in page.select("table tbody tr")]
         self.assertEqual(rows, [
-            ["2026", "Through Week 2", "A&B", "2-1", "15", "-2.40", "6"],
-            ["1905", "Final", "A&B", "8-3", "13", "8.630", "2"],
-            ["1904", "Final", "—", "—", "—", "—", "4"],
-            ["1903", "Final", "A&B", "1-0", "9", "17.25", "9"],
-            ["1902", "Final", "A&B", "1-0", "10", "17.25", "10"],
+            ["2026", "Through Week 2", "15", "-2.40", "6", "2-1", "A&B"],
+            ["1905", "Final", "13", "8.630", "2", "8-3", "A&B"],
+            ["1904", "Final", "—", "—", "4", "—", "—"],
+            ["1903", "Final", "9", "17.25", "9", "1-0", "A&B"],
+            ["1902", "Final", "10", "17.25", "10", "1-0", "A&B"],
         ])
         page_years = [link["href"] for link in page.select("table tbody th a")]
         self.assertEqual(page_years, [
@@ -101,7 +101,7 @@ class ProgramPagesTests(unittest.TestCase):
         former_history = self.pages[ROUTES[FORMER].lstrip("/")]
         self.assertEqual(
             cell_text(former_history.select_one("table tbody tr")),
-            ["2026", "Through Week 2", "—", "—", "—", "—", "14"],
+            ["2026", "Through Week 2", "—", "—", "14", "—", "—"],
         )
 
         trend = page.select_one('svg[role="img"]')

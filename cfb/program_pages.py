@@ -137,15 +137,15 @@ def _history_table(route: str, history: list[_ProgramSeason]) -> str:
         rows.append(
             f'<tr><th scope="row">{_link(_season_route(route, year), str(year))}</th>'
             f"<td>{through}{_checkpoint_label(checkpoint)}</td>"
-            f"<td>{escape(standing.conference) if standing else _MISSING}</td>"
-            f"<td>{escape(standing.record) if standing else _MISSING}</td>"
             f'<td class="num">{standing.rank if standing else _MISSING}</td>'
             f'<td class="num">{format(standing.rating, "f") if standing else _MISSING}</td>'
-            f'<td class="num">{best_rank}</td></tr>\n'
+            f'<td class="num">{best_rank}</td>'
+            f'<td class="num">{escape(standing.record) if standing else _MISSING}</td>'
+            f"<td>{escape(standing.conference) if standing else _MISSING}</td></tr>\n"
         )
     return _table(
         "Season history",
-        ("Season", "As of", "Conference", "Record", "National Rank", "CORS Rating", "Best Rank"),
+        ("Season", "As of", "National Rank", "CORS Rating", "Best Rank", "Record", "Conference"),
         "<tbody>" + "".join(rows) + "</tbody>",
         caption="Season history",
     )
