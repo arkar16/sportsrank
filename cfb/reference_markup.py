@@ -8,7 +8,10 @@ _UI = re.compile(rb"<!--sr-ui-->.*?<!--/sr-ui-->", re.DOTALL)
 _MARK = re.compile(rb'<img class="school-mark(?: large)?" [^<>]*>')
 _SCHOOL_LINK = re.compile(rb'<a data-sr-team href="[^"<>]+">([^<>]*)</a>')
 _CELL = re.compile(r'(<(?P<tag>td|th)\b[^>]*>)(?P<value>[^<>]+)(</(?P=tag)>)', re.I)
-_LINK = re.compile(r'(<a(?: data-sr-team)? href="(?P<route>/cfb/teams/[^"/]+/index\.html)"[^>]*>)(?P<name>[^<>]+)(</a>)')
+_SCHOOL_LABEL = re.compile(
+    r'(?P<start><a(?: data-sr-team)? href="(?P<route>/cfb/teams/[^"/]+/index\.html)"[^>]*>|<span data-school>)'
+    r'(?P<name>[^<>]+)(?P<end></(?:a|span)>)'
+)
 _HEADING = re.compile(r'(<span data-program="([^"]+)">)')
 _BODY = re.compile(r"<body\b[^>]*>", re.I)
 _HEAD_END = re.compile(r"</head\s*>", re.I)
@@ -35,6 +38,17 @@ def _image(path: str, *, large: bool = False) -> str:
             f'width="{size}" height="{size}" loading="lazy">')
 
 
+def school_label(name: str, routes: dict[str, str]) -> str:
+    label = escape(name)
+    if name in routes:
+        return f'<a href="{escape(routes[name])}">{label}</a>'
+    return f'<span data-school>{label}</span>'
+
+
+def _school_text(raw: str) -> str:
+    return unescape(raw).strip().replace("San Jos\ufffd State", "San José State")
+
+
 MASTHEAD = (
     '<header class="masthead"><a class="nameplate" href="/">SportsRank</a>'
     '<nav aria-label="Site"><a href="/cfb/cfb.html">College football</a>'
@@ -51,7 +65,7 @@ class PagePresentation:
 
     @lru_cache(maxsize=4096)
     def _school(self, raw_label: str) -> str:
-        name = unescape(raw_label).strip().replace("San Jos\ufffd State", "San José State")
+        name = _school_text(raw_label)
         route = self.routes.get(name)
         if route:
             return f'<a data-sr-team href="{escape(route)}">{raw_label}</a>'
@@ -62,12 +76,14 @@ class PagePresentation:
     def _cell(self, match: re.Match) -> str:
         return match[1] + self._school(match["value"]) + match[4]
 
-    def _link(self, match: re.Match, seen: set[str]) -> str:
-        name = self.by_route.get(match["route"])
-        if name in seen or name not in self.marks or unescape(match["name"]).strip() != name:
+    def _mark_label(self, match: re.Match, seen: set[str]) -> str:
+        name = _school_text(match["name"])
+        if name in seen or name not in self.marks:
+            return match[0]
+        if match["route"] and self.by_route.get(match["route"]) != name:
             return match[0]
         seen.add(name)
-        return match[1] + _image(self.marks[name]) + match["name"] + match[4]
+        return match["start"] + _image(self.marks[name]) + match["name"] + match["end"]
 
     def _heading(self, match: re.Match) -> str:
         path = self.marks.get(unescape(match[2]))
@@ -106,7 +122,7 @@ class PagePresentation:
             game_log = set() if _HEADING.search(markup) else None
             def row_images(match):
                 seen = game_log if game_log is not None else set()
-                return _LINK.sub(lambda link: self._link(link, seen), match[0])
+                return _SCHOOL_LABEL.sub(lambda label: self._mark_label(label, seen), match[0])
             markup = re.sub(r"<tr\b[^>]*>.*?</tr>", row_images, markup, flags=re.I | re.S)
             markup = _HEADING.sub(self._heading, markup)
         return markup.encode(encoding, errors="xmlcharrefreplace")
