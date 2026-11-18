@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 from urllib.parse import unquote, urlsplit
 
 from bs4 import BeautifulSoup, Tag
-from .reference_markup import source_bytes
+from .reference_markup import school_label, source_bytes
 
 if TYPE_CHECKING:
     from .reference_archive import Game, Season, Standing
@@ -37,12 +37,6 @@ def _checkpoint_order(checkpoint: str) -> tuple[int, int]:
 
 def _anchor(href: str, label: str) -> str:
     return f'<a href="{escape(href)}">{escape(label)}</a>'
-
-
-def _school(school: str, routes: dict[str, str]) -> str:
-    if school in routes:
-        return _anchor(routes[school], school)
-    return escape(school)
 
 
 def _archive_link(site: Path, directory: Path, href: str, label: str) -> str:
@@ -140,7 +134,7 @@ def _rankings(
             rank_change = f"{rank_delta:+d}" if rank_delta else "0"
             rating_change = f"{rating_delta:+.2f}" if rating_delta else "0.00"
         body.append(
-            f'<tr><td class="num">{row.rank}</td><th scope="row">{_school(row.school, routes)}</th>'
+            f'<tr><td class="num">{row.rank}</td><th scope="row">{school_label(row.school, routes)}</th>'
             f'<td class="num">{rank_change}</td><td class="num">{rating_change}</td>'
             f'<td class="num">{row.rating:.2f}</td><td class="num">{escape(row.record)}</td>'
             f'<td>{escape(row.conference)}</td></tr>'
@@ -181,8 +175,8 @@ def _upsets(games: Iterable[Game], checkpoint: str, routes: dict[str, str]) -> s
         return heading + "<p>No available results qualify at seven points or more.</p></section>"
     rows = []
     for deficit, week, favorite, winner, winner_score, loser_score in qualifying[:3]:
-        favorite_link = _school(favorite, routes)
-        winner_link = _school(winner, routes)
+        favorite_link = school_label(favorite, routes)
+        winner_link = school_label(winner, routes)
         rows.append(
             f'<tr><td class="num">{week}</td><td>{favorite_link} by <span class="num">{deficit:.2f}</span></td>'
             f'<td>{winner_link} <span class="num">{winner_score}–{loser_score}</span> {favorite_link}</td></tr>'

@@ -8,6 +8,7 @@ import unittest
 from bs4 import BeautifulSoup
 
 from cfb.reference_archive import Game, Season, Standing
+from cfb.reference_markup import PagePresentation
 from cfb.season_pages import build_season_pages
 
 
@@ -67,6 +68,12 @@ class SeasonPageTests(unittest.TestCase):
             ["2", "Favorite A by 16.04", "Winner A 21–14 Favorite A"],
             ["20", "Favorite D by 12.00", "Winner D 7–0 Favorite D"],
         ])
+        mark = "/cfb/assets/program-marks/favorite-c.png"
+        view = PagePresentation(self.routes, {"Favorite C": mark})
+        marked = BeautifulSoup(view.render(pages[f"{base}/2025_CFB.html"].encode(), archive=False), "html.parser")
+        upset = marked.select_one('table[aria-labelledby="cors-upsets"] tbody tr')
+        self.assertEqual([image["src"] for image in upset.find_all("img")], [mark])
+        self.assertIsNone(upset.find("a", string="Favorite C"))
         self.assertEqual(
             [a["href"] for a in landing.select('nav[aria-label="Ranking checkpoints"] a')],
             ["checkpoints/PRESEASON.html", "checkpoints/W2.html", "checkpoints/W11.html", "checkpoints/FINAL.html"],
