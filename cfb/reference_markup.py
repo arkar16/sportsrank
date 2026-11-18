@@ -3,6 +3,8 @@ from functools import lru_cache
 from html import escape, unescape
 import re
 
+from .archive_presentation import decorate_archive, restore_chrome
+
 
 _UI = re.compile(rb"<!--sr-ui-->.*?<!--/sr-ui-->", re.DOTALL)
 _MARK = re.compile(rb'<img class="school-mark(?: large)?" [^<>]*>')
@@ -24,7 +26,7 @@ def source_bytes(raw: bytes) -> bytes:
         return raw
     raw = _UI.sub(b"", raw)
     raw = _MARK.sub(b"", raw)
-    return _SCHOOL_LINK.sub(rb"\1", raw)
+    return restore_chrome(_SCHOOL_LINK.sub(rb"\1", raw))
 
 
 def _ui(markup: str) -> str:
@@ -89,7 +91,7 @@ class PagePresentation:
         path = self.marks.get(unescape(match[2]))
         return match[0] + (_image(path, large=True) if path else "")
 
-    def render(self, raw: bytes, *, archive: bool) -> bytes:
+    def render(self, raw: bytes, *, archive: bool, relative: str = "", targets: set[str] | None = None) -> bytes:
         original = source_bytes(raw)
         try:
             markup = original.decode("utf-8")
@@ -99,6 +101,8 @@ class PagePresentation:
             encoding = "latin-1"
         if not _BODY.search(markup):
             return original
+        if archive and relative and targets is not None:
+            markup = decorate_archive(markup, relative, targets, _ui)
         head = ""
         if 'name="viewport"' not in markup[:1500]:
             head += '<meta name="viewport" content="width=device-width, initial-scale=1">'

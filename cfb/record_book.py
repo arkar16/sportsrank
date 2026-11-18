@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import tempfile
 
+from .history_sheets import render_history_sheet
 from .program_marks import program_logo_paths
 from .program_pages import build_program_pages
 from .reference_archive import Season, program_routes, read_archive
@@ -65,6 +66,36 @@ def _home(seasons: list[Season], routes: dict[str, str], *, is_root: bool) -> st
 """
 
 
+def _not_found(year: int) -> str:
+    return f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>404 · Page not found | SportsRank</title><link rel="stylesheet" href="/cfb/assets/record-book.css"></head>
+<body><main class="missing-page"><h1>Page not found</h1>
+<p>Error 404. There’s no SportsRank page at this address.</p>
+<ul class="recovery-links">
+<li><a href="/cfb/years/{year}/{year}_CFB.html">{year} college football standings</a></li>
+<li><a href="/cfb/teams/index.html">Find a team</a></li>
+<li><a href="/cfb/cfb.html">Browse the season archive</a></li>
+</ul></main></body></html>
+"""
+
+
+def _history_sheet(path: Path, routes: dict[str, str], years: set[int], presentation: PagePresentation) -> int:
+    # After the one-time conversion, the public original also supplies the next
+    # offline build. A freshly exported table fragment takes precedence.
+    source = path.with_suffix(".source.txt")
+    current = path.read_bytes()
+    if current.lstrip().startswith(b"<table"):
+        original = current
+    elif b'<h1 id="history-title">' in current:
+        original = source.read_bytes()
+    else:
+        raise ValueError(f"unrecognized history sheet at {path}")
+    markup = render_history_sheet(path.name, original, routes, years)
+    changed = _write_changed(source, original)
+    return changed + _write_changed(path, presentation.render(markup.encode(), archive=False))
+
+
 def build(site: Path) -> tuple[int, int, int]:
     site = site.resolve()
     seasons = read_archive(site)
@@ -86,14 +117,21 @@ def build(site: Path) -> tuple[int, int, int]:
     for relative in ("index.html", "cfb/cfb.html"):
         markup = _home(seasons, routes, is_root=relative == "index.html")
         changed += _write_changed(site / relative, presentation.render(markup.encode(), archive=False))
+    changed += _write_changed(site / "404.html", presentation.render(_not_found(seasons[-1].year).encode(), archive=False))
+    years = {season.year for season in seasons}
+    targets = {"/" + path.relative_to(site).as_posix() for path in site.rglob("*.html")}
     # Decorate source pages last. School text, scoring rows, existing links and
     # the exact input bytes used by forecast evaluation can all be recovered.
     for directory in ("years", "performance", "history"):
         for path in (site / "cfb" / directory).rglob("*.html"):
             if path in season_pages:
                 continue
+            relative = path.relative_to(site).as_posix()
+            if relative in {"cfb/years/history/CORS_NC_FBS_CFB.html", "cfb/years/history/CORS_WT_FBS_CFB.html"}:
+                changed += _history_sheet(path, routes, years, presentation)
+                continue
             raw = path.read_bytes()
-            markup = presentation.render(raw, archive=True)
+            markup = presentation.render(raw, archive=True, relative=relative, targets=targets)
             if raw != markup:
                 changed += _write_changed(path, markup)
     return len(seasons), len(routes), changed
