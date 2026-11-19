@@ -264,3 +264,20 @@ of information. Installed ask-matt skills guide design and delivery; T3 owns
 thread and execution state. [GitHub issues](docs/agents/issue-tracker.md) own
 current task scope, dependencies, and acceptance. Historical workflow records are retained in the
 [frozen archive](docs/archive/codex-workflow/2026-09-10/README.md).
+
+### Basketball record book
+
+Build the current basketball rankings, dated forecast edition, team histories,
+weekly score and forecast archives, and model performance from the retained
+SQLite cache. The season argument is the ending year. For the first edition:
+
+```sh
+uv run --locked python -m cbb.site --database .sportsrank/cbb/history.sqlite3 \
+  --season 2027 --as-of 2026-11-19T18:58:00Z --output website/cbb
+```
+
+Use the actual preparation timestamp for a new edition. Earlier editions retain
+their printed picks. After a deployment verifies the public current page, record
+the verification time and workflow URL in `cbb/issued.py` for the corresponding
+edition. The performance page grades its printed margins only for matching games
+that tipped after verification. Reconstructed performance is reported separately.
