@@ -265,3 +265,25 @@ of information. Installed ask-matt skills guide design and delivery; T3 owns
 thread and execution state. [GitHub issues](docs/agents/issue-tracker.md) own
 current task scope, dependencies, and acceptance. Historical workflow records are retained in the
 [frozen archive](docs/archive/codex-workflow/2026-09-10/README.md).
+
+### Men's NCAA tournament tracking
+
+Use the local basketball cache to reconstruct weekly matchup forecasts or save
+picks before tipoff. The season is the CBBD ending year. Commands are offline.
+
+```sh
+uv run --locked python -m cbb.tournament report --database .sportsrank/cbb/history.sqlite3 --season 2026
+uv run --locked python -m cbb.tournament freeze --database .sportsrank/cbb/history.sqlite3 --season 2027 --ledger .sportsrank/cbb/tournament.sqlite3
+uv run --locked python -m cbb.tournament report --database .sportsrank/cbb/history.sqlite3 --season 2027 --ledger .sportsrank/cbb/tournament.sqlite3
+```
+
+Freeze again as new matchups enter the schedule. Each season, game and model
+keeps its first saved pick. After the cache is refreshed with results, the
+ledger report grades those picks and lists pending fixtures. The retrospective
+report uses realized matchups, including later rounds. A Selection Sunday
+bracket requires a separately frozen bracket tree and advancement picks.
+
+To track another weekly model, add `--model NAME --forecasts FILE` to freeze.
+Supply a JSON array of objects with `game_id`, `home_team_id`, `away_team_id`,
+`cutoff_utc` (the replay's ISO timestamp), and numeric `home_margin` (positive
+favors home). Use the same model name when reading its ledger report.
