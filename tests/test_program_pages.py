@@ -144,7 +144,7 @@ class ProgramPagesTests(unittest.TestCase):
         ])
         week_one = table.find("th", string="Week 1")
         self.assertEqual(week_one["rowspan"], "2")
-        self.assertEqual(week_one.find_parent("tbody").a["href"], ROUTES[FORMER])
+        self.assertEqual(week_one.find_parent("tbody").a["href"], "/cfb/teams/former-state/2026.html")
         self.assertEqual([a.get_text() for a in table.select("tbody td a")], [FORMER])
 
     def test_postseason_game_without_checkpoint_precedes_final(self):

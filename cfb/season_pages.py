@@ -12,6 +12,7 @@ from urllib.parse import unquote, urlsplit
 
 from bs4 import BeautifulSoup, Tag
 from .archive_presentation import updated_time
+from .reference_archive import season_team_routes
 from .reference_markup import school_label, source_bytes
 
 if TYPE_CHECKING:
@@ -230,6 +231,7 @@ def _document(title: str, heading: str, body: str, *, metadata: str = "", head: 
 def build_season_pages(site: Path, season: Season, routes: dict[str, str]) -> Iterator[tuple[str, str]]:
     """Yield the existing season landing and one stable HTML route per ranking."""
     year = season.year
+    routes = season_team_routes(season, routes)
     base = f"cfb/years/{year}"
     directory = site / base
     filename = f"{year}_CFB.html"

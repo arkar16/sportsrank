@@ -62,7 +62,7 @@ class SeasonPageTests(unittest.TestCase):
             ["2", "Oregon", "+8", "+15.75", "72.35", "12-2", "Big Ten"],
             ["7", "New & State", "—", "—", "67.30", "12-2", "Big Ten"],
         ])
-        self.assertEqual(landing.find("a", string="Oregon")["href"], self.routes["Oregon"])
+        self.assertEqual(landing.find("a", string="Oregon")["href"], "/cfb/teams/oregon/2025.html")
         self.assertEqual(cells(landing, "cors-upsets"), [
             ["11", "Favorite C by 18.00", "Winner C 21–14 Favorite C"],
             ["2", "Favorite A by 16.04", "Winner A 21–14 Favorite A"],

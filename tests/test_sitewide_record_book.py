@@ -69,8 +69,15 @@ class SitewideRecordBookTests(unittest.TestCase):
         row = ("1897", "Princeton", "Independent", "1-0", "1", "20.0", "8", "0", "1", "0")
         original = ('<table><tbody><tr>' + ''.join(f"<td>{v}</td>" for v in row) + '</tr></tbody></table>\r\n').encode()
         sheet.write_bytes(original)
+        ranking = rankings / "1897_FINAL_FBS_cors.html"
+        original_ranking = ranking.read_bytes()
         build(site)
         self.assertEqual(build(site), (1, 1, 0))
+        ranked = BeautifulSoup(ranking.read_bytes(), "html.parser")
+        review = ranked.find("a", string="Princeton")["href"]
+        self.assertEqual(review, "/cfb/teams/princeton/1897.html")
+        self.assertTrue((site / review.lstrip("/")).is_file())
+        self.assertEqual(source_bytes(ranking.read_bytes()), original_ranking)
         doc = BeautifulSoup(sheet.read_bytes(), "html.parser")
         download = doc.select_one("a[download]")
         self.assertEqual((sheet.parent / download["href"]).read_bytes(), original)

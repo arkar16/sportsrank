@@ -9,6 +9,7 @@ from html import escape
 from typing import TYPE_CHECKING
 
 from .archive_presentation import updated_time
+from .reference_archive import program_season_route, season_team_routes
 from .reference_markup import school_label
 
 if TYPE_CHECKING:
@@ -35,6 +36,7 @@ def build_program_pages(
 ) -> Iterator[tuple[str, str]]:
     """Yield the program index and one history and season page per ranked program."""
     histories: dict[str, list[_ProgramSeason]] = defaultdict(list)
+    opponent_routes = {season.year: season_team_routes(season, routes) for season in seasons}
     for season in sorted(seasons, key=lambda season: season.year, reverse=True):
         standings: dict[str, dict[str, Standing]] = defaultdict(dict)
         for checkpoint, rows in season.rankings.items():
@@ -69,22 +71,18 @@ def build_program_pages(
         )
         for entry in history:
             year = entry.season.year
-            yield _season_route(route, year).lstrip("/"), _page(
+            yield program_season_route(route, year).lstrip("/"), _page(
                 f"{year} {school} football", f"{year} {heading}",
                 [
                     (route, f"{school} history"),
                     (f"/cfb/years/{year}/{year}_CFB.html", f"{year} season"),
                 ],
-                _season_table(school, entry, routes), entry.season.updated_at,
+                _season_table(school, entry, opponent_routes[year]), entry.season.updated_at,
             )
 
 
 def _link(route: str, text: str) -> str:
     return f'<a href="{escape(route)}">{escape(text)}</a>'
-
-
-def _season_route(route: str, year: int) -> str:
-    return f"{route.rsplit('/', 1)[0]}/{year}.html"
 
 
 def _page(title: str, heading: str, links: list[tuple[str, str]], content: str, updated_at: str) -> str:
@@ -136,7 +134,7 @@ def _history_table(route: str, history: list[_ProgramSeason]) -> str:
         through = "Through " if checkpoint.startswith("W") else ""
         best_rank = min(row.rank for row in entry.standings.values())
         rows.append(
-            f'<tr><th scope="row">{_link(_season_route(route, year), str(year))}</th>'
+            f'<tr><th scope="row">{_link(program_season_route(route, year), str(year))}</th>'
             f"<td>{through}{_checkpoint_label(checkpoint)}</td>"
             f'<td class="num">{standing.rank if standing else _MISSING}</td>'
             f'<td class="num">{format(standing.rating, "f") if standing else _MISSING}</td>'
@@ -200,7 +198,7 @@ def _rank_trend(route: str, history: list[_ProgramSeason]) -> str:
         end = min(cx + 12, (cx + x(ranks[i + 1][0])) / 2) if i + 1 < len(ranks) else cx + 12
         label = f"{year} season, final rank {rank}"
         dots.append(
-            f'<a href="{escape(_season_route(route, year))}" aria-label="{label}">'
+            f'<a href="{escape(program_season_route(route, year))}" aria-label="{label}">'
             f'<title>{label}</title>'
             f'<rect x="{start:.2f}" y="{cy - 12:.2f}" width="{end - start:.2f}" '
             f'height="24" fill="transparent"/>'
