@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from html import escape
 from typing import TYPE_CHECKING
 
+from .archive_presentation import updated_time
 from .reference_markup import school_label
 
 if TYPE_CHECKING:
@@ -15,7 +16,6 @@ if TYPE_CHECKING:
 
 
 _DIRECTORY = "/cfb/teams/index.html"
-_CFB = "/cfb/cfb.html"
 _MISSING = "—"
 
 
@@ -55,7 +55,7 @@ def build_program_pages(
         f"<li>{_link(routes[school], school)}</li>" for school in schools
     ) + "</ul>"
     yield _DIRECTORY.lstrip("/"), _page(
-        "College Football Teams", "College Football Teams", [], directory, seasons[-1].updated_at if seasons else ""
+        "College football teams", "College football teams", [], directory, seasons[-1].updated_at if seasons else ""
     )
 
     for school in schools:
@@ -64,17 +64,16 @@ def build_program_pages(
         name = escape(school)
         heading = f'<span data-program="{name}">{name}</span>'
         yield route.lstrip("/"), _page(
-            f"{school} Football", heading, [(_DIRECTORY, "Teams")],
+            f"{school} football", heading, [],
             _rank_trend(history) + _history_table(route, history), history[0].season.updated_at,
         )
         for entry in history:
             year = entry.season.year
             yield _season_route(route, year).lstrip("/"), _page(
-                f"{year} {school} Football", f"{year} {heading}",
+                f"{year} {school} football", f"{year} {heading}",
                 [
-                    (_DIRECTORY, "Teams"),
-                    (route, school),
-                    (f"/cfb/years/{year}/{year}_CFB.html", f"{year} Season"),
+                    (route, f"{school} history"),
+                    (f"/cfb/years/{year}/{year}_CFB.html", f"{year} season"),
                 ],
                 _season_table(school, entry, routes), entry.season.updated_at,
             )
@@ -89,10 +88,10 @@ def _season_route(route: str, year: int) -> str:
 
 
 def _page(title: str, heading: str, links: list[tuple[str, str]], content: str, updated_at: str) -> str:
-    navigation = " · ".join(
-        _link(route, label) for route, label in [(_CFB, "College Football"), *links]
-    )
-    stamp = f'<footer>Ranking data updated <time>{escape(updated_at)}</time></footer>' if updated_at else ""
+    links_html = " · ".join(_link(route, label) for route, label in links)
+    navigation = f'<nav class="archive-nav" aria-label="Related records">{links_html}</nav>' if links else ""
+    timestamp = updated_time(updated_at, "Rankings updated") or escape(updated_at)
+    stamp = f"<footer>{timestamp}</footer>" if timestamp else ""
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -102,7 +101,7 @@ def _page(title: str, heading: str, links: list[tuple[str, str]], content: str, 
 <link rel="stylesheet" href="/cfb/assets/record-book.css">
 </head>
 <body class="record-book">
-<nav aria-label="College Football">{navigation}</nav>
+{navigation}
 <main>
 <h1>{heading}</h1>
 {content}
@@ -119,12 +118,12 @@ def _checkpoint_label(checkpoint: str) -> str:
     return checkpoint.title()
 
 
-def _table(label: str, headers: tuple[str, ...], body: str, *, caption: str) -> str:
+def _table(label: str, headers: tuple[str, ...], body: str, *, caption: str = "") -> str:
     columns = "".join(f'<th scope="col">{header}</th>' for header in headers)
+    table = f"<table><caption>{caption}</caption>" if caption else f'<table aria-label="{label}">'
     return (
         f'<div class="table-scroll" role="region" aria-label="{label}" tabindex="0">'
-        f"<table><caption>{caption}</caption>"
-        f"<thead><tr>{columns}</tr></thead>{body}</table></div>\n"
+        f"{table}<thead><tr>{columns}</tr></thead>{body}</table></div>\n"
     )
 
 
@@ -147,7 +146,7 @@ def _history_table(route: str, history: list[_ProgramSeason]) -> str:
         )
     return _table(
         "Season history",
-        ("Season", "As of", "National Rank", "CORS Rating", "Best Rank", "Record", "Conference"),
+        ("Season", "As of", "National rank", "CORS rating", "Best rank", "Record", "Conference"),
         "<tbody>" + "".join(rows) + "</tbody>",
         caption="Season history",
     )
@@ -203,7 +202,7 @@ def _rank_trend(history: list[_ProgramSeason]) -> str:
         '<svg viewBox="0 0 480 142" width="100%" role="img" aria-labelledby="rank-trend-title" '
         'aria-describedby="rank-trend-description">'
         '<desc id="rank-trend-description">'
-        "Gaps indicate seasons without a final rank. Final ranks are listed in the season history table."
+        "Gaps mark seasons without a final rank. See Season history for each rank."
         '</desc><g fill="currentColor" font-size="12">'
         + "".join(grid + years)
         + '</g><g stroke="currentColor" stroke-width="1.5">'
@@ -245,9 +244,9 @@ def _season_table(school: str, entry: _ProgramSeason, routes: dict[str, str]) ->
 
     return _table(
         "Rankings and games",
-        ("Checkpoint", "National Rank", "CORS Rating", "Record", "Opponent", "Side", "CORS Spread", "Score"),
+        ("Week", "National rank", "CORS rating", "Record", "Opponent", "Site",
+         "CORS spread <small>Negative if favored</small>", f"Score <small>{escape(school)} first</small>"),
         "".join(groups),
-        caption=f"Scores list {escape(school)} first. A negative spread favors {escape(school)}.",
     )
 
 
