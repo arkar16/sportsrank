@@ -12,8 +12,12 @@ import json
 from pathlib import Path
 import re
 from typing import Any
+from urllib.parse import urljoin
+
+from bs4 import BeautifulSoup
 
 from .forecast_release import _LegacySpreadTable
+from .reference_markup import source_bytes
 from .forecast_record import (
     EvidenceRef, FinalScore, ForecastCandidate, ForecastGrade, ForecastProvenance,
     ForecastSelection, GameIdentity, ScoreRevision, aggregate_grades, grade_forecast,
@@ -39,8 +43,14 @@ def _digest(raw: bytes) -> str:
     return hashlib.sha256(raw).hexdigest()
 
 
+def _performance_link_count(home: bytes) -> int:
+    target = f"/{PREFIX}/index.html"
+    return sum(urljoin("/" + NAVIGATION, link["href"]) == target
+               for link in BeautifulSoup(home, "html.parser").select("a[href]"))
+
+
 def _read(path: Path) -> tuple[list[dict[str, str]], str]:
-    raw = path.read_bytes()
+    raw = source_bytes(path.read_bytes())
     try:
         text = raw.decode("utf-8")
     except UnicodeDecodeError:
@@ -498,7 +508,7 @@ def build_performance_files(website: Path, *, reconstruct_all: bool = False,
     nav = website / NAVIGATION
     if nav.exists():
         raw = nav.read_bytes()
-        output[NAVIGATION] = raw if NAV_LINK in raw else raw + b"\n" + NAV_LINK
+        output[NAVIGATION] = raw if _performance_link_count(raw) else raw + b"\n" + NAV_LINK
     return output
 
 
@@ -513,7 +523,7 @@ def write_performance(website: Path, *, market_lines: MarketLines | None = None)
 
 def validate_performance(website: Path, *, reconstruct_all: bool = False) -> tuple[str, ...]:
     expected = build_performance_files(website, reconstruct_all=reconstruct_all)
-    if NAVIGATION in expected and (website / NAVIGATION).read_bytes().count(NAV_LINK) != 1:
+    if NAVIGATION in expected and _performance_link_count((website / NAVIGATION).read_bytes()) != 1:
         raise ValueError("CORS home must link performance exactly once")
     actual_paths = {p.relative_to(website).as_posix() for p in (website / PREFIX).rglob("*") if p.is_file()}
     if actual_paths != {path for path in expected if path.startswith(PREFIX + "/")}:

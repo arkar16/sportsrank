@@ -82,6 +82,18 @@ class PerformanceTests(unittest.TestCase):
             validate_performance(self.site)
         self.assertEqual(inputs, {p: p.read_bytes() for p in inputs})
 
+    def test_a_report_refresh_reuses_the_public_masthead_link(self):
+        self.seed()
+        home = self.site / 'cfb/cfb.html'
+        markup = b'<html><body><nav><a href="/cfb/performance/index.html">Model performance</a></nav></body></html>'
+        home.write_bytes(markup)
+        paths = write_performance(self.site)
+        self.assertEqual(validate_performance(self.site), paths)
+        self.assertEqual(home.read_bytes(), markup)
+        home.write_bytes(markup + NAV_LINK)
+        with self.assertRaisesRegex(ValueError, 'exactly once'):
+            validate_performance(self.site)
+
     def test_missing_spread_uses_retained_four_decimal_ratings_without_rounding(self):
         self.seed()
         self.spread.unlink()
