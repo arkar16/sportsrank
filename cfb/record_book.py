@@ -9,7 +9,7 @@ import tempfile
 from .history_sheets import render_history_sheet
 from .program_marks import program_logo_paths
 from .program_pages import build_program_pages
-from .reference_archive import Season, program_routes, read_archive
+from .reference_archive import Season, program_routes, read_archive, season_team_routes
 from .reference_markup import PagePresentation
 from .season_pages import build_season_pages
 
@@ -100,7 +100,12 @@ def build(site: Path) -> tuple[int, int, int]:
     if not seasons:
         raise ValueError(f"no college football rankings at {site}")
     routes = program_routes(seasons)
-    presentation = PagePresentation(routes, program_logo_paths(site))
+    marks = program_logo_paths(site)
+    presentation = PagePresentation(routes, marks)
+    season_views = {
+        str(season.year): PagePresentation(season_team_routes(season, routes), marks)
+        for season in seasons
+    }
     changed = 0
     for asset in (Path(__file__).parent / "assets").iterdir():
         changed += _write_changed(site / "cfb/assets" / asset.name, asset.read_bytes())
@@ -121,7 +126,8 @@ def build(site: Path) -> tuple[int, int, int]:
     # Decorate source pages last. School text, scoring rows, existing links and
     # the exact input bytes used by forecast evaluation can all be recovered.
     for directory in ("years", "performance", "history"):
-        for path in (site / "cfb" / directory).rglob("*.html"):
+        root = site / "cfb" / directory
+        for path in root.rglob("*.html"):
             if path in season_pages:
                 continue
             relative = path.relative_to(site).as_posix()
@@ -129,7 +135,9 @@ def build(site: Path) -> tuple[int, int, int]:
                 changed += _history_sheet(path, routes, years, presentation)
                 continue
             raw = path.read_bytes()
-            markup = presentation.render(raw, archive=True, relative=relative, targets=targets)
+            # Year archives use cfb/years/YYYY/ and reports use cfb/performance/YYYY/.
+            view = season_views.get(path.relative_to(root).parts[0], presentation)
+            markup = view.render(raw, archive=True, relative=relative, targets=targets)
             if raw != markup:
                 changed += _write_changed(path, markup)
     return len(seasons), len(routes), changed
