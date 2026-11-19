@@ -32,3 +32,4 @@ consult architecture/current work before treating it as implemented.
 | [0025](0025-authorize-routine-weekly-publication.md) | Standing authority for Monday grading, forecasts and publication |
 | [0026](0026-restore-direct-static-publication.md) | Direct static publication with changed-output validation |
 | [0027](0027-preserve-program-history-across-seasons.md) | Permanent histories for every ranked program and shared school marks |
+| [0028](0028-start-basketball-cors-in-2019-20.md) | Start men’s Division I basketball CORS in 2019–20 |
