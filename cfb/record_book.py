@@ -48,11 +48,10 @@ def _home(seasons: list[Season], routes: dict[str, str], *, is_root: bool) -> st
         decades[year // 10 * 10].append(f'<a href="/cfb/years/{year}/{year}_CFB.html">{year}</a>')
     archive = "".join(f'<div><h3>{decade}s</h3><p>{" ".join(links)}</p></div>' for decade, links in decades.items())
     title = "SportsRank" if is_root else "College Football | SportsRank"
-    basketball = '<p><a href="/cbb/index.html">Men&rsquo;s college basketball rankings</a></p>' if is_root else ""
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{title}</title><link rel="stylesheet" href="/cfb/assets/record-book.css"></head>
-<body><main>{basketball}<h1>College football</h1>
+<body><main><h1>College football</h1>
 <p class="edition">{latest.year} FBS &middot; {edition}</p>
 <div class="home-columns"><section><h2>CORS top {len(top)}</h2><div class="table-scroll">
 <table><thead><tr><th scope="col" class="num">Rank</th><th scope="col">Team</th>
