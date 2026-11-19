@@ -135,3 +135,11 @@ class ReportPresentationTests(unittest.TestCase):
         page = self._decorate(text, _PERFORMANCE_SEASON)
         self.assertIn("1 missing forecast · 2 scores pending", page.get_text())
         self.assertIn("League qualification changed for this edition.", page.get_text())
+
+    def test_fcs_archive_does_not_claim_fbs_game_coverage(self):
+        route = "cfb/years/2025/spread/2025_W1_FCS_spread_results.html"
+        source = ('<html><head></head><body><h1>Forecast results</h1>'
+                  '<p class="metrics"><strong>1 games</strong> · Winner accuracy 100% (1–0; 0 ties)</p>'
+                  '<table><thead><tr><th>Week</th></tr></thead><tbody></tbody></table></body></html>')
+        page = self._decorate(source, route)
+        self.assertEqual(page.select_one(".metrics").text, "1 game · Winner accuracy 100% (1–0)")

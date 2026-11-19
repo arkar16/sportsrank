@@ -96,14 +96,15 @@ def _legacy_record(match: re.Match) -> str:
         f'<br>Straight up · {winners} correct ({winner_rate})</p>')
 
 
-def _metrics_paragraph(match: re.Match, before_market: bool) -> str:
+def _metrics_paragraph(match: re.Match, before_market: bool, fbs: bool) -> str:
     body = match[1]
     if body == _EMPTY_MARKET and before_market:
         return replace_copy(match[0], "<p>Market lines start in 2013.</p>")
-    if not (body.startswith("Market ATS ") or " · Winner accuracy " in body):
+    if "--" in body or not (body.startswith("Market ATS ") or " · Winner accuracy " in body):
         return match[0]
+    units = ("FBS matchup", "FBS matchups") if fbs else ("game", "games")
     body = re.sub(r"^<strong>([\d,]+) games</strong>",
-                  lambda m: f'<strong>{_count(m[1], "FBS matchup", "FBS matchups")}</strong>', body)
+                  lambda m: f'<strong>{_count(m[1], *units)}</strong>', body)
     body = re.sub(r"; 0 (?:ties|pushes|no picks)(?=[;)])", "", body)
     body = body.removesuffix(" · 0 missing lines")
     singular = {"ties": "tie", "pushes": "push", "no picks": "no pick", "missing lines": "missing line",
@@ -124,12 +125,14 @@ def _report_copy(markup: str, relative: str) -> str:
     # report survives until an editor has read it.
     season = re.fullmatch(r"cfb/performance/(\d{4})/index\.html", relative)
     before_market = bool(season and int(season[1]) < 2013 and _EMPTY_MARKET in markup and _MARKET_NOTE in markup)
+    fbs = relative.startswith("cfb/performance/") or "_FBS_" in relative
+    eligibility = "Only games between FBS teams count. " if fbs else ""
     paragraphs = {
         "CORS model performance across seasons.": "",
         "CORS predictions compared with final FBS-versus-FBS scores.": "",
         "Saved CORS spreads; results are not yet in this report.": "",
         _SCORING_NOTE: (
-            "<details><summary>Scoring rules</summary><p>Only games between FBS teams count. "
+            f"<details><summary>Scoring rules</summary><p>{eligibility}"
             "CORS line coverage is the percentage of favorites that beat the CORS spread, excluding pushes. "
             "An even spread has no pick. Mean absolute error (MAE) and root mean square error (RMSE) "
             "include ties and even spreads.</p></details>"
@@ -145,7 +148,7 @@ def _report_copy(markup: str, relative: str) -> str:
     for text, visible in paragraphs.items():
         source = f"<p>{text}</p>"
         markup = markup.replace(source, replace_copy(source, visible))
-    markup = re.sub(r'<p class="metrics">([^\n]*?)</p>', lambda m: _metrics_paragraph(m, before_market), markup)
+    markup = re.sub(r'<p class="metrics">([^\n]*?)</p>', lambda m: _metrics_paragraph(m, before_market, fbs), markup)
     for old, label in _HEADINGS.items():
         markup = markup.replace(f"<h2>{old}</h2>", f"<h2>{replace_copy(old, label)}</h2>")
     markup = markup.replace("<summary>Saved inputs</summary>", "<summary>" + replace_copy("Saved inputs", "Sources") + "</summary>")
