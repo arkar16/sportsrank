@@ -23,9 +23,9 @@ proceed automatically without a pending-deployment approval call. Administrator
 bypass remains disabled.
 Broad portable CI is independent and does not gate deployment.
 
-After publication the job compares five current pages against the committed
+After publication the job compares six current pages against the committed
 bytes: season navigation, latest weekly rankings, latest weekly results, latest
-forecast and current-season performance. It records the commit in the run summary.
+football forecast, current-season football performance and basketball rankings. It records the commit in the run summary.
 These are brief product checks, not a full inventory audit. Record the run and
 public links in the delivery issue. A failed page check may follow a successful
 deploy: inspect the actual updated pages and Firebase release before another
