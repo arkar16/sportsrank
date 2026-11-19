@@ -9,8 +9,9 @@ import tempfile
 from .history_sheets import render_history_sheet
 from .program_marks import program_logo_paths
 from .program_pages import build_program_pages
-from .reference_archive import Game, Season, program_routes, read_archive
+from .reference_archive import Game, Season, final_history_rows, program_routes, read_archive
 from .reference_markup import PagePresentation, school_label
+from .release import _page, _row_table
 from .season_pages import build_season_pages
 
 
@@ -141,11 +142,34 @@ def _history_sheet(path: Path, routes: dict[str, str], years: set[int], presenta
     return changed + _write_changed(path, presentation.render(markup.encode(), archive=False))
 
 
+def _honors_pages(site: Path, seasons: list[Season]) -> dict[str, bytes]:
+    finals = [season for season in seasons if "FINAL" in season.rankings]
+    standings = {season.year: final_history_rows(site, season.year) for season in finals}
+    latest = finals[-1] if finals else seasons[-1]
+    links = (("Season", f"/cfb/years/{latest.year}/{latest.year}_CFB.html"),)
+    fields = ("school", "conference", "record", "win_pct", "cors")
+    columns = ("year", *fields, "kind")
+    pages = {}
+    for filename, title, kind, place in (
+        ("nc_FBS_CFB_output.html", "National Champions", "National champion", 0),
+        ("wt_FBS_CFB_output.html", "Worst Teams", "Worst team", 1),
+    ):
+        rows = [
+            {"year": year, "kind": kind, **{key: finishers[place][key] for key in fields}}
+            for year, finishers in standings.items()
+        ]
+        markup = _page(title, latest.updated_at, _row_table(rows, columns), links).encode("utf-8")
+        for directory in ("cfb/history", "cfb/years/history"):
+            pages[f"{directory}/{filename}"] = markup
+    return pages
+
+
 def build(site: Path) -> tuple[int, int, int]:
     site = site.resolve()
     seasons = read_archive(site)
     if not seasons:
         raise ValueError(f"no college football rankings at {site}")
+    honors = _honors_pages(site, seasons)
     routes = program_routes(seasons)
     presentation = PagePresentation(routes, program_logo_paths(site))
     changed = 0
@@ -165,6 +189,9 @@ def build(site: Path) -> tuple[int, int, int]:
     changed += _write_changed(site / "404.html", presentation.render(_not_found(seasons[-1].year).encode(), archive=False))
     years = {season.year for season in seasons}
     targets = {"/" + path.relative_to(site).as_posix() for path in site.rglob("*.html")}
+    for relative, raw in honors.items():
+        markup = presentation.render(raw, archive=True, relative=relative, targets=targets)
+        changed += _write_changed(site / relative, markup)
     # Decorate source pages last. School text, scoring rows, existing links and
     # the exact input bytes used by forecast evaluation can all be recovered.
     for directory in ("years", "performance", "history"):
@@ -172,6 +199,8 @@ def build(site: Path) -> tuple[int, int, int]:
             if path in season_pages:
                 continue
             relative = path.relative_to(site).as_posix()
+            if relative in honors:
+                continue
             if relative in {"cfb/years/history/CORS_NC_FBS_CFB.html", "cfb/years/history/CORS_WT_FBS_CFB.html"}:
                 changed += _history_sheet(path, routes, years, presentation)
                 continue

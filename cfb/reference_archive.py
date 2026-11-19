@@ -92,9 +92,20 @@ def _standings(directory: Path, year: int) -> dict[str, list[Standing]]:
             row.rank < 1 or not row.rating.is_finite() for row in rows
         ):
             raise ValueError(f"invalid standings in {paths[key]}")
+        if key == "FINAL" and not rows:
+            raise ValueError(f"empty FINAL standings in {paths[key]}")
         if rows:
             rankings[key] = rows
     return rankings
+
+
+def final_history_rows(site: Path, year: int) -> tuple[dict[str, str], dict[str, str]]:
+    """Return the first and last published FINAL ranks with their archived values."""
+    path = site / f"cfb/years/{year}/rankings/{year}_FINAL_FBS_cors.html"
+    rows = sorted(_rows(path), key=lambda row: int(row["rank"]))
+    if not rows or [int(row["rank"]) for row in rows] != list(range(1, len(rows) + 1)):
+        raise ValueError(f"missing or ambiguous FINAL ranks in {path}")
+    return rows[0], rows[-1]
 
 
 def _score(value) -> int | None:

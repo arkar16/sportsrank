@@ -110,8 +110,9 @@ class SitewideRecordBookTests(unittest.TestCase):
         rankings.mkdir(parents=True)
         (rankings / "1897_FINAL_FBS_cors.html").write_text(
             '<html><head></head><body><h1>Final</h1><table><tr><th>rank</th><th>school</th>'
-            '<th>conference</th><th>record</th><th>cors</th></tr><tr><td>1</td><td>Princeton</td>'
-            '<td>Independent</td><td>1-0</td><td>20.0</td></tr></table></body></html>'
+            '<th>conference</th><th>record</th><th>win_pct</th><th>cors</th></tr>'
+            '<tr><td>1</td><td>Princeton</td><td>Independent</td><td>1-0</td><td>1</td>'
+            '<td>20.0</td></tr></table></body></html>'
         )
         history = site / "cfb/years/history"
         history.mkdir()
@@ -148,3 +149,39 @@ class SitewideRecordBookTests(unittest.TestCase):
                 missing = BeautifulSoup(view.render(raw, archive=True, relative=relative, targets=set()), "html5lib")
                 self.assertIn(label, missing.main.text)
                 self.assertIsNone(missing.main.find("a", href=prior))
+
+    def test_offline_export_replaces_stale_honors_from_final_ranks_only(self):
+        site = Path(self.enterContext(TemporaryDirectory()))
+        headers = ("rank", "school", "conference", "record", "win_pct", "cors")
+        last_place = ("2", "Beta & Tech", "East", "0-3", "0", "20.00")
+        champion = ("1", "Alpha State", "West", "2-1", "0.67", "20.00")
+        for year, checkpoint, rows in (
+            (2025, "FINAL", (last_place, champion)),
+            (2026, "W1", (champion,)),
+        ):
+            rankings = site / f"cfb/years/{year}/rankings"
+            rankings.mkdir(parents=True)
+            headings = "".join(f"<th>{field}</th>" for field in headers)
+            entries = "".join("<tr>" + "".join(f"<td>{value}</td>" for value in row) + "</tr>" for row in rows)
+            (rankings / f"{year}_{checkpoint}_FBS_cors.html").write_text(
+                f'<html><head><title>Standings</title></head><body>'
+                f'<p>Last updated: 2026-01-20T00:00:00Z</p>'
+                f'<table><thead><tr>{headings}</tr></thead><tbody>{entries}</tbody></table></body></html>',
+                encoding="utf-8",
+            )
+        expected = {}
+        for directory in ("cfb/history", "cfb/years/history"):
+            for prefix, row, kind in (("nc", champion, "National champion"), ("wt", last_place, "Worst team")):
+                path = site / directory / f"{prefix}_FBS_CFB_output.html"
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("<html><body><table><tr><td>Stale row</td></tr></table></body></html>", encoding="utf-8")
+                expected[path] = (["2025", *row[1:], kind], "/cfb/years/2025/2025_CFB.html")
+
+        build(site)
+        self.assertEqual(build(site), (2, 2, 0))
+        for path, (row, season_link) in expected.items():
+            with self.subTest(route=path.relative_to(site)):
+                page = BeautifulSoup(path.read_bytes(), "html.parser")
+                self.assertEqual([[cell.get_text() for cell in entry.select("td")]
+                                  for entry in page.select("tbody tr")], [row])
+                self.assertEqual(page.select_one("tbody tr a")["href"], season_link)
