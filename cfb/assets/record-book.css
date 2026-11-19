@@ -151,13 +151,32 @@ body > nav:not([aria-label]) a { padding-block: .2rem; }
 main:has(> .home-columns) > h1 { font-size: 3.2rem; }
 .home-columns {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
   gap: 1.6rem;
 }
 .home-columns h2 { margin: .25rem 0 .45rem; }
 .home-columns .table-scroll { margin-bottom: .55rem; }
 .home-columns th:first-child { width: 1%; }
 .home-columns :is(th, td):nth-child(3) { text-align: right; }
+.home-result { border-inline-start: 1px solid var(--rule); }
+.home-result small {
+  display: block;
+  margin-top: .15rem;
+  color: var(--muted);
+  font-size: .6875rem;
+  font-weight: 400;
+}
+.home-game {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: .15rem .38em;
+  white-space: normal;
+}
+.home-game + .home-game { margin-top: .25rem; }
+.home-game abbr { font-weight: 700; text-decoration: none; }
+.home-game-score { text-align: right; }
+strong.home-game-score { white-space: nowrap; }
 .home-columns > section:first-child > p { font-size: .875rem; font-weight: 700; }
 .home-columns > section:last-child { border-left: 1px solid var(--rule); padding-left: 1.4rem; }
 .home-columns > section:last-child p {
@@ -379,6 +398,11 @@ html .metrics {
   font-size: .9375rem;
 }
 
+@media (max-width: 820px) {
+  .home-columns { display: block; }
+  .home-columns > section:last-child { margin-top: 1.25rem; border-left: 0; padding-left: 0; }
+}
+
 @media (max-width: 650px) {
   @supports selector(:has(*)) {
     .archive-columns {
@@ -419,13 +443,30 @@ html .metrics {
   html h1 { font-size: 2rem; }
   html h2 { font-size: 1.4rem; }
   main:has(> .home-columns) > h1 { font-size: 2.45rem; }
-  .home-columns { display: block; }
-  .home-columns > section:last-child { margin-top: 1.25rem; border-left: 0; padding-left: 0; }
   .program-list { columns: 2 8rem; column-gap: .85rem; }
   .rank-trend svg text { font-size: 16px; }
   html table td, html table th { padding-inline: .4rem; }
   html table thead th { white-space: normal; }
-  .home-columns thead th, .dataframe thead th { white-space: nowrap; }
+  .dataframe thead th { white-space: nowrap; }
+  .home-columns table { table-layout: fixed; white-space: normal; }
+  .home-columns th:first-child { width: 2.5rem; }
+  .home-columns th:nth-child(2) { width: 28%; }
+  .home-columns th:nth-child(3), .home-columns th:nth-child(4) { width: 3rem; }
+  .home-columns td, .home-columns th { padding-inline: .35rem; }
+  .home-game { grid-template-columns: minmax(0, 1fr) auto; }
+  .home-game-score { grid-column: 2; grid-row: 1; }
+  .home-opponent { grid-column: 1 / -1; grid-row: 2; }
+  .home-columns :is(th[scope="row"], .home-result) a {
+    display: inline-flex;
+    max-width: 100%;
+    align-items: center;
+    overflow-wrap: anywhere;
+  }
+  .home-columns .school-mark {
+    flex: none;
+    width: 16px;
+    height: 16px;
+  }
   [aria-label="Season history"] td:nth-child(2) {
     min-width: 5.25rem;
     white-space: normal;

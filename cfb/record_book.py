@@ -9,8 +9,8 @@ import tempfile
 from .history_sheets import render_history_sheet
 from .program_marks import program_logo_paths
 from .program_pages import build_program_pages
-from .reference_archive import Season, final_history_rows, program_routes, read_archive
-from .reference_markup import PagePresentation
+from .reference_archive import Game, Season, final_history_rows, program_routes, read_archive
+from .reference_markup import PagePresentation, school_label
 from .release import _page, _row_table
 from .season_pages import build_season_pages
 
@@ -31,17 +31,62 @@ def _write_changed(path: Path, content: bytes) -> bool:
     return True
 
 
+def _last_week_game(school: str, game: Game, ranks: dict[str, int], routes: dict[str, str]) -> str:
+    if school == game.home:
+        opponent, site = game.away, "vs"
+        scored, allowed = game.home_score, game.away_score
+    else:
+        opponent, site = game.home, "@"
+        scored, allowed = game.away_score, game.home_score
+    if game.neutral_site:
+        site = "vs"
+    rank = f"#{ranks[opponent]} " if opponent in ranks else ""
+    neutral = " (neutral)" if game.neutral_site else ""
+    label = school_label(opponent, routes)
+    matchup = f'<span class="home-opponent">{rank}{label}{neutral}</span>'
+    outcome = ""
+    if scored is None or allowed is None:
+        score = '<span class="home-game-score">No final score</span>'
+    else:
+        letter, meaning = ("W", "Win") if scored > allowed else ("L", "Loss") if scored < allowed else ("T", "Tie")
+        outcome = f'<abbr title="{meaning}">{letter}</abbr> '
+        score = f'<strong class="home-game-score">{scored}–{allowed}</strong>'
+    return f'<div class="home-game"><span>{outcome}{site}</span> {matchup} {score}</div>'
+
+
 def _home(seasons: list[Season], routes: dict[str, str], *, is_root: bool) -> str:
     latest = seasons[-1]
     key = next(reversed(latest.rankings))
     edition = "Final" if key == "FINAL" else "Preseason" if key == "PRESEASON" else f"Through Week {key[1:]}"
     year_link = f"/cfb/years/{latest.year}/{latest.year}_CFB.html"
+    week = None
+    if key == "FINAL":
+        week = max((game.week for game in latest.games
+                    if game.home_score is not None and game.away_score is not None), default=None)
+    elif key != "PRESEASON":
+        week = int(key[1:])
+    pregame_ranks = {}
+    games_by_school = defaultdict(list)
+    if week is not None:
+        # Rankings are in checkpoint order. Use the last edition before kickoff week.
+        prior = next((rows for checkpoint, rows in reversed(latest.rankings.items())
+                      if checkpoint == "PRESEASON" or (checkpoint.startswith("W") and int(checkpoint[1:]) < week)), ())
+        pregame_ranks = {row.school: row.rank for row in prior}
+        for game in latest.games:
+            if game.week == week:
+                games_by_school[game.home].append(game)
+                games_by_school[game.away].append(game)
+    empty_result = "No games yet" if key == "PRESEASON" else "No game listed"
+    week_label = f"<small>Week {week}</small>" if week is not None else ""
     top = []
     for entry in sorted(latest.rankings[key], key=lambda row: row.rank)[:10]:
+        games = games_by_school.get(entry.school, ())
+        result = "".join(_last_week_game(entry.school, game, pregame_ranks, routes) for game in games)
         top.append(
             f'<tr><td class="num">{entry.rank}</td><th scope="row"><a href="{routes[entry.school]}">'
             f'{escape(entry.school)}</a></th><td>{escape(entry.record)}</td>'
-            f'<td class="num">{entry.rating:.2f}</td></tr>'
+            f'<td class="num">{entry.rating:.2f}</td>'
+            f'<td class="home-result">{result or empty_result}</td></tr>'
         )
     decades = defaultdict(list)
     for season in reversed(seasons):
@@ -57,7 +102,8 @@ def _home(seasons: list[Season], routes: dict[str, str], *, is_root: bool) -> st
 <p class="edition">{latest.year} FBS &middot; {edition}</p>
 <div class="home-columns"><section><h2>CORS top {len(top)}</h2><div class="table-scroll">
 <table><thead><tr><th scope="col" class="num">Rank</th><th scope="col">Team</th>
-<th scope="col">Record</th><th scope="col" class="num">CORS rating</th></tr></thead>
+<th scope="col">Record</th><th scope="col" class="num">CORS rating</th>
+<th scope="col" class="home-result">Last Week{week_label}</th></tr></thead>
 <tbody>{''.join(top)}</tbody></table></div><p><a href="{year_link}">{latest.year} standings</a></p>
 </section><section><h2>Record book</h2><p><a href="/cfb/teams/index.html">{len(routes)} program histories</a></p>
 <p><a href="/cfb/years/history/nc_FBS_CFB_output.html">National champions</a></p>
