@@ -57,7 +57,7 @@ jobs:
           ranking=$(find "$season_dir/rankings" -name '*_W*_FBS_cors.html' | sort -V | tail -1)
           results=$(find "$season_dir/data/results/weekly_results" -name '*_FBS_results.html' | sort -V | tail -1)
           forecast=$(find "$season_dir/spread" -name '*_W*_FBS_spread.html' | sort -V | tail -1)
-          for file in "$season_dir/${season}_CFB.html" "$ranking" "$results" "$forecast" "website/cfb/performance/$season/index.html"; do
+          for file in "$season_dir/${season}_CFB.html" "$ranking" "$results" "$forecast" "website/cfb/performance/$season/index.html" website/cbb/index.html; do
             test -s "$file"
             path=${file#website/}
             curl --fail --silent --show-error --location --max-time 15 --retry 2 --retry-delay 2 \
