@@ -10,6 +10,56 @@ from cfb.reference_markup import PagePresentation, source_bytes
 
 
 class SitewideRecordBookTests(unittest.TestCase):
+    def test_homepage_last_week_uses_the_featured_checkpoint_and_pregame_ranks(self):
+        site = Path(self.enterContext(TemporaryDirectory()))
+        season = site / "cfb/years/2026"
+
+        def write_table(relative, headers, rows):
+            path = season / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            heading = "".join(f"<th>{value}</th>" for value in headers)
+            body = "".join("<tr>" + "".join(f"<td>{value}</td>" for value in row) + "</tr>" for row in rows)
+            path.write_text(f"<html><body><table><tr>{heading}</tr>{body}</table></body></html>")
+
+        headers = ("rank", "school", "conference", "record", "cors")
+        write_table("rankings/2026_W10_FBS_cors.html", headers, [
+            (12, "Iowa State", "Big 12", "7-2", 20),
+            (22, "Kansas State", "Big 12", "5-4", 19),
+        ])
+        featured = ("Iowa State", "Kansas State", "Texas Tech", "Utah", "Kansas")
+        write_table("rankings/2026_W11_FBS_cors.html", headers, [
+            (rank, school, "Big 12", "7-3", 20)
+            for rank, school in enumerate(featured, 1)
+        ])
+        write_table("data/results/2026_FBS_results.html",
+                    ("week", "home_team", "away_team", "home_score", "away_score", "neutral_site"), [
+                        (10, "Utah", "Iowa State", 14, 0, "false"),
+                        (11, "Iowa State", "Kansas State", 49, 17, "false"),
+                        (11, "Visitors", "Texas Tech", 0, 0, "true"),
+                        (11, "Kansas", "Other School", "", "", "false"),
+                        (12, "Utah", "Kansas", 42, 7, "false"),
+                    ])
+        build(site)
+        self.assertEqual(build(site), (1, 5, 0))
+
+        for relative in ("index.html", "cfb/cfb.html"):
+            with self.subTest(page=relative):
+                page = BeautifulSoup((site / relative).read_bytes(), "html.parser")
+                self.assertEqual(page.select_one("thead th:last-child").get_text(" ", strip=True),
+                                 "Last Week Week 11")
+                rows = page.select("tbody tr")
+                self.assertEqual([row.th.get_text(strip=True) for row in rows], list(featured))
+                self.assertEqual([row.find_all("td")[-1].get_text(" ", strip=True) for row in rows], [
+                    "W vs #22 Kansas State 49–17",
+                    "L @ #12 Iowa State 17–49",
+                    "T vs Visitors (neutral) 0–0",
+                    "No game listed",
+                    "vs Other School No final score",
+                ])
+                link = rows[0].find_all("td")[-1].a["href"]
+                self.assertTrue((site / link.lstrip("/")).is_file())
+                self.assertIsNone(rows[2].find_all("td")[-1].find("a"))
+
     def test_archived_week_has_context_and_keeps_its_machine_readable_score_table(self):
         raw = (
             '<html>\r\n<head><title>1897 results</title></head><body>'
