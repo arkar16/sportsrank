@@ -28,7 +28,9 @@ class SitewideRecordBookTests(unittest.TestCase):
         doc = BeautifulSoup(rendered.decode("latin-1"), "html5lib")
         self.assertEqual(doc.html["lang"], "en")
         self.assertEqual([h.get_text() for h in doc.find_all("h1")], ["Week 7 scores"])
-        self.assertEqual({a["href"] for a in doc.select('.archive-nav a')}, local)
+        self.assertEqual(doc.title.text, "1897 Week 7 scores")
+        self.assertEqual([a["href"] for a in doc.select('.archive-nav a')], [season, week])
+        self.assertIn("/cfb/cfb.html", [a["href"] for a in doc.select('.masthead a')])
         self.assertEqual(doc.select_one("time")["datetime"], "2024-12-09T19:01:23")
         self.assertIsNotNone(doc.main.select_one('input[type="checkbox"]'))
         headers = doc.main.table.thead.find_all("th")
@@ -48,7 +50,7 @@ class SitewideRecordBookTests(unittest.TestCase):
         )
         page = BeautifulSoup(output, "html.parser")
         self.assertEqual(page.h1.text, "Week 12 reconstructed forecasts")
-        self.assertEqual([a["href"] for a in page.select(".archive-nav a")], ["/cfb/cfb.html", season])
+        self.assertEqual([a["href"] for a in page.select(".archive-nav a")], [season])
         self.assertIn(stamp, output)
         self.assertEqual(page.time.text, "Updated Nov 16, 2026 · 14:27 UTC")
 
@@ -79,3 +81,20 @@ class SitewideRecordBookTests(unittest.TestCase):
         for a in missing.main.select("a"):
             self.assertTrue(a["href"].startswith("/"))
             self.assertTrue((site / a["href"].lstrip("/")).is_file())
+
+    def test_reconstructed_forecast_names_the_rating_used_and_retains_the_archive(self):
+        raw = (b'<html><head><title>2025 Forecasts</title></head><body><h1>Forecasts</h1>'
+               b'<p>Calculated from prior-week CORS ratings.</p></body></html>')
+        for week, checkpoint, label in [(0, "PRESEASON", "Preseason ratings"), (7, "W6", "Week 6 ratings")]:
+            with self.subTest(week=week):
+                prior = f"/cfb/years/2025/rankings/2025_{checkpoint}_FBS_cors.html"
+                relative = f"cfb/years/2025/reconstructed/2025_W{week}_FBS_spread.html"
+                view = PagePresentation({}, {})
+                rendered = view.render(raw, archive=True, relative=relative, targets={prior})
+                page = BeautifulSoup(rendered, "html5lib")
+                self.assertEqual(page.title.text, f"2025 Week {week} reconstructed forecasts")
+                self.assertEqual(page.main.find("a", href=prior).text, label)
+                self.assertEqual(source_bytes(rendered), raw)
+                missing = BeautifulSoup(view.render(raw, archive=True, relative=relative, targets=set()), "html5lib")
+                self.assertIn(label, missing.main.text)
+                self.assertIsNone(missing.main.find("a", href=prior))

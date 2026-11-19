@@ -25,7 +25,7 @@ def render_history_sheet(filename: str, original: bytes, routes: dict[str, str],
     if filename not in _SHEETS:
         raise ValueError(f"unknown history sheet: {filename}")
     label, book, has_index = _SHEETS[filename]
-    title = f"CORS {label.lower()} by season"
+    title = f"Archived CORS {label.lower()}"
     tables = html.fragment_fromstring(original.decode("utf-8"), create_parent=True)
     if not len(tables):
         raise ValueError(f"{filename}: missing legacy tables")
@@ -66,10 +66,10 @@ def render_history_sheet(filename: str, original: bytes, routes: dict[str, str],
 <link rel="stylesheet" href="/cfb/assets/record-book.css">
 </head>
 <body class="record-book">
-<nav aria-label="Record book"><a href="/cfb/years/history/{book}">{label} record book</a></nav>
+<nav aria-label="Record book"><a href="/cfb/years/history/{book}">{label}</a></nav>
 <main class="history-sheet">
 <h1 id="history-title">{title}</h1>
-<p class="archive-date">Historical edition · <a href="{filename.removesuffix('.html')}.source.txt" download="{filename}">Download original HTML</a></p>
+<p class="archive-date"><a href="{filename.removesuffix('.html')}.source.txt" download="{filename}">Original table (HTML)</a></p>
 <label class="archive-columns"><input type="checkbox"> Show all columns</label>
 <div class="table-scroll" role="region" aria-label="Archived season results" tabindex="0">
 <table aria-labelledby="history-title">

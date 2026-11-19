@@ -7,10 +7,10 @@ from pathlib import PurePosixPath
 import posixpath
 import re
 
+from .archive_markup import original as _original, replace_copy, restore_original, ui
 from .report_presentation import decorate_report
 
 
-_ORIGINAL = re.compile(rb"<!--sr-original:(.*?)-->", re.S)
 _FIELD_ATTR = re.compile(rb' data-sr-field aria-label="[^"<>]*"')
 _END = re.compile(r"</body\s*>\s*</html\s*>", re.I)
 _SEASON = re.compile(r"cfb/(?:years|performance)/([0-9]{4})/")
@@ -58,14 +58,7 @@ def restore_chrome(raw: bytes) -> bytes:
     """Public headers retain their machine names; old navigation stays recoverable."""
     raw = raw.replace(b'<html lang="en" data-sr-lang>', b"<html>")
     raw = _FIELD_ATTR.sub(b"", raw)
-    return _ORIGINAL.sub(rb"\1", raw)
-
-
-def _original(text: str) -> str:
-    # Only keep known, comment-safe pieces of the old page furniture here.
-    if "--" in text:
-        raise ValueError("archived navigation or heading contains a comment delimiter")
-    return f"<!--sr-original:{text}-->"
+    return restore_original(raw)
 
 
 def _checkpoint(key: str) -> str:
@@ -81,7 +74,7 @@ def _field(match: re.Match) -> str:
 
 
 @lru_cache(maxsize=2048)
-def _dateline(value: str) -> str:
+def updated_time(value: str, label: str = "Updated") -> str:
     try:
         stamp = datetime.fromisoformat(value)
     except ValueError:
@@ -90,11 +83,12 @@ def _dateline(value: str) -> str:
     if stamp.tzinfo:
         stamp = stamp.astimezone(timezone.utc)
         zone = " UTC"
+    clock = "" if len(value) == 10 else f" · {stamp:%H:%M}{zone}"
     return (f'<time class="archive-date" datetime="{escape(value.replace(" ", "T"))}" '
-            f'title="{escape(value)}">Updated {_MONTHS[stamp.month - 1]} {stamp.day}, {stamp.year} · {stamp:%H:%M}{zone}</time>')
+            f'title="{escape(value)}">{escape(label)} {_MONTHS[stamp.month - 1]} {stamp.day}, {stamp.year}{clock}</time>')
 
 
-def _phone_columns(markup: str, kind: str, weekly: bool, ui) -> str:
+def _phone_columns(markup: str, kind: str, weekly: bool) -> str:
     """Place primary figures together on narrow screens; retain the full native table."""
     primary = _PRIMARY_FIELDS.get(kind)
     if not primary or "forecast-games" in markup or markup.count("<table") != 1:
@@ -118,7 +112,40 @@ def _phone_columns(markup: str, kind: str, weekly: bool, ui) -> str:
     return markup.replace("</head>", ui(rule) + "</head>", 1)
 
 
-def decorate_archive(markup: str, relative: str, targets: set[str], ui) -> str:
+def _progression_copy(markup: str, year: str, targets: set[str]) -> str:
+    data = f'<a href="{year}_FBS_progression.json">'
+    for source, replacement in {
+        "<p>CORS points and national rank are shown at each checkpoint.</p>": "",
+        "Scroll across for later checkpoints. Team names stay visible.": "Scroll for later weeks.",
+        "<summary>Data provenance</summary>": "<summary>Sources</summary>",
+        data + "Progression data</a>": data + "Ratings and ranks (JSON)</a>",
+    }.items():
+        markup = markup.replace(source, replace_copy(source, replacement))
+    if f"/cfb/years/{year}/{year}_CFB.html" in targets:
+        season = f'<a href="../{year}_CFB.html">Season</a>'
+        markup = markup.replace(season, replace_copy(season))
+    markup = re.sub(r"(?<=>)(W\d+|PRESEASON|FINAL) ranking(?=</a>)",
+                    lambda m: replace_copy(m[0], _checkpoint(m[1])), markup)
+    markup = re.sub(r"<p>Checkpoint: (W\d+|FINAL|PRESEASON)</p>",
+                    lambda m: replace_copy(m[0], "" if m[1] == "FINAL" else f"<p>Through {_checkpoint(m[1])}</p>"), markup)
+    return markup
+
+
+def _archive_title(markup: str, title: str) -> str:
+    old = re.search(r"<title>([^<>]*)</title>", markup, re.I)
+    if not old or "--" in old[1]:
+        return markup
+    version = re.search(r"\bCORS (v[0-9]+(?:\.[0-9]+)+)", old[1])
+    if version:
+        title += " · CORS " + version[1]
+    if unescape(old[1]) == title:
+        return markup
+    # A title element treats HTML comments as literal text. Retain the whole
+    # element outside the replacement so browser tabs show only the new title.
+    return markup[:old.start()] + replace_copy(old[0], f"<title>{escape(title)}</title>") + markup[old.end():]
+
+
+def decorate_archive(markup: str, relative: str, targets: set[str]) -> str:
     """Decorate a document from its route and the real destinations in this export."""
     name = PurePosixPath(relative).name
     season = _SEASON.match(relative)
@@ -128,16 +155,13 @@ def decorate_archive(markup: str, relative: str, targets: set[str], ui) -> str:
     crumbs = {}
 
     def link(href: str, label: str) -> None:
-        if href in targets and href != "/" + relative:
+        if href in targets and href not in ("/" + relative, "/cfb/cfb.html", "/cfb/performance/index.html"):
             crumbs.setdefault(href, label)
 
-    link("/cfb/cfb.html", "College football")
-    if relative.startswith("cfb/performance/"):
-        link("/cfb/performance/index.html", "Model performance")
     if year:
         link(f"/cfb/years/{year}/{year}_CFB.html", f"{year} season")
         if key:
-            link(f"/cfb/years/{year}/checkpoints/{key}.html", f"{_checkpoint(key)} overview")
+            link(f"/cfb/years/{year}/checkpoints/{key}.html", _checkpoint(key))
 
     heading = ""
     family = kind
@@ -145,6 +169,16 @@ def decorate_archive(markup: str, relative: str, targets: set[str], ui) -> str:
         period = _checkpoint(key) if key else year
         subject = "reconstructed forecasts" if "/reconstructed/" in relative else _NAMES[kind]
         heading = f"{period} {subject}"
+        if kind == "progression":
+            markup = _progression_copy(markup, year, targets)
+        elif "/reconstructed/" in relative and kind == "spread" and key and key.startswith("W"):
+            week = int(key[1:])
+            prior = f"W{week - 1}" if week else "PRESEASON"
+            label = _checkpoint(prior)
+            url = f"/cfb/years/{year}/rankings/{year}_{prior}_FBS_cors.html"
+            ratings = f'<a href="{url}">{label} ratings</a>' if url in targets else f"{label} ratings"
+            note = "<p>Calculated from prior-week CORS ratings.</p>"
+            markup = markup.replace(note, replace_copy(note, f"<p>From {ratings}.</p>"))
     elif name == "reconstruction.html":
         family, heading = "reconstruction", f"{year} reconstructed forecasts"
     elif name in {"nc_FBS_CFB_output.html", "wt_FBS_CFB_output.html"}:
@@ -166,7 +200,7 @@ def decorate_archive(markup: str, relative: str, targets: set[str], ui) -> str:
     if end and markup[end.end():].strip():
         markup = markup[:end.start()] + _original(end[0]) + markup[end.end():]
         markup += ui("</body></html>")
-    markup = decorate_report(markup, relative, ui)
+    markup = decorate_report(markup, relative)
 
     def absorb_navigation(match: re.Match) -> str:
         links = _ANCHOR.findall(match["links"])
@@ -194,14 +228,15 @@ def decorate_archive(markup: str, relative: str, targets: set[str], ui) -> str:
 
     markup = _NAV_BLOCK.sub(absorb_navigation, markup)
     if heading:
+        markup = _archive_title(markup, f"{year} {heading}" if year and key else heading)
         old = re.search(r"<h1>([^<>]*)</h1>", markup)
         if old and "--" not in old[1] and unescape(old[1]) != heading:
             markup = markup[:old.start(1)] + _original(old[1]) + ui(escape(heading)) + markup[old.end(1):]
-    markup = _phone_columns(markup, kind, bool(key), ui)
+    markup = _phone_columns(markup, kind, bool(key))
     markup = _FIELD.sub(_field, markup)
 
     def format_stamp(match: re.Match) -> str:
-        readable = _dateline(match["date"])
+        readable = updated_time(match["date"])
         if not readable:
             return match[0]
         if match["paragraph"]:

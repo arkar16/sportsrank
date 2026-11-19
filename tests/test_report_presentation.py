@@ -1,5 +1,4 @@
 from pathlib import Path
-import re
 import unittest
 
 from bs4 import BeautifulSoup
@@ -17,22 +16,12 @@ _SEASON_RESULTS = "cfb/years/2026/spread/2026_FBS_forecast_results.html"
 _LEGACY_RESULTS = "cfb/years/1995/spread/1995_W1_FBS_spread_results.html"
 _LATIN1_RESULTS = "cfb/years/1950/spread/1950_W10_FBS_spread_results.html"
 _LEGACY_TABLE = "cfb/years/2024/spread/2024_W0_FBS_spread_results.html"
-_UI = re.compile(r"<!--sr-ui-->.*?<!--/sr-ui-->", re.DOTALL)
 
 
 class ReportPresentationTests(unittest.TestCase):
     def _decorate(self, source: str, relative: str) -> BeautifulSoup:
-        ui_fragments = []
-
-        def ui(markup: str) -> str:
-            fragment = f"<!--sr-ui-->{markup}<!--/sr-ui-->"
-            ui_fragments.append(fragment)
-            return fragment
-
-        rendered = decorate_report(source, relative, ui)
-        self.assertEqual(_UI.sub("", rendered).encode(), source.encode())
-        self.assertCountEqual(_UI.findall(rendered), ui_fragments)
-        self.assertTrue(ui_fragments)
+        rendered = decorate_report(source, relative)
+        self.assertEqual(source_bytes(rendered.encode()), source.encode())
 
         page = BeautifulSoup(rendered, "html.parser")
         self.assertEqual(len(page.select("h1")), 1)
@@ -62,26 +51,25 @@ class ReportPresentationTests(unittest.TestCase):
 
     def test_latin1_archived_results_roundtrip_without_transcoding(self):
         raw = source_bytes((_SITE / _LATIN1_RESULTS).read_bytes())
-        rendered = decorate_report(
-            raw.decode("latin-1"), _LATIN1_RESULTS,
-            lambda markup: f"<!--sr-ui-->{markup}<!--/sr-ui-->",
-        )
-        self.assertIn('aria-label="On this page"', rendered)
+        rendered = decorate_report(raw.decode("latin-1"), _LATIN1_RESULTS)
+        page = BeautifulSoup(rendered, "html.parser")
+        self.assertIsNotNone(page.find(id="sr-report-results"))
+        self.assertIn("25 correct (49.0%)", page.select_one(".metrics").text)
+        self.assertIn("33 correct (64.7%)", page.select_one(".metrics").text)
         self.assertEqual(source_bytes(rendered.encode("latin-1")), raw)
 
     def test_jumps_expose_season_summaries_downloads_and_saved_inputs(self):
         for relative, expected in (
-            (_PERFORMANCE_INDEX, ["Provider comparison", "Season summaries"]),
-            (_PERFORMANCE_SEASON, ["Provider comparison", "Downloads", "Weekly performance",
-                                   "Game results", "Saved inputs"]),
-            (_SEASON_RESULTS, ["Provider comparison", "Weekly results", "Game results"]),
+            (_PERFORMANCE_INDEX, ["Market", "Season summaries"]),
+            (_PERFORMANCE_SEASON, ["Market", "Downloads", "By week", "Games", "Sources"]),
+            (_SEASON_RESULTS, ["Market", "Weekly results", "Games"]),
         ):
             with self.subTest(relative=relative):
                 source = source_bytes((_SITE / relative).read_bytes()).decode("utf-8")
                 page = self._decorate(source, relative)
                 links = page.select('nav[aria-label="On this page"] a')
                 if relative == _PERFORMANCE_SEASON and "<h2>Forecasts awaiting results</h2>" in source:
-                    expected.insert(1, "Forecasts awaiting results")
+                    expected.insert(1, "Ungraded forecasts")
                 self.assertEqual([link.get_text() for link in links], expected)
                 if relative == _PERFORMANCE_SEASON:
                     self.assertEqual(
@@ -108,9 +96,6 @@ class ReportPresentationTests(unittest.TestCase):
         ))
 
     def test_leaves_other_paths_and_unrecognized_markup_untouched(self):
-        def unexpected_ui(markup: str) -> str:
-            self.fail(f"Unexpected presentation on an unrelated page: {markup}")
-
         source = source_bytes((_SITE / _WEEKLY_RESULTS).read_bytes()).decode("utf-8")
         for relative in (
             "cfb/years/2026/spread/2026_W11_FBS_spread.html",
@@ -119,6 +104,34 @@ class ReportPresentationTests(unittest.TestCase):
             "cfb/performance/archive/index.html",
         ):
             with self.subTest(relative=relative):
-                self.assertEqual(decorate_report(source, relative, unexpected_ui), source)
+                self.assertEqual(decorate_report(source, relative), source)
         fragment = "<h1>Forecast report</h1>"
-        self.assertEqual(decorate_report(fragment, _WEEKLY_RESULTS, unexpected_ui), fragment)
+        self.assertEqual(decorate_report(fragment, _WEEKLY_RESULTS), fragment)
+
+    def test_scoring_rules_and_market_coverage_match_the_season(self):
+        for year in (1897, 2026):
+            with self.subTest(year=year):
+                route = f"cfb/performance/{year}/index.html"
+                raw = source_bytes((_SITE / route).read_bytes()).decode()
+                page = self._decorate(raw, route)
+                rules = {d.summary.text: d.get_text(" ", strip=True) for d in page.find_all("details")}
+                self.assertIn("excluding pushes", rules["Scoring rules"])
+                self.assertIn("even spread", rules["Scoring rules"])
+                self.assertNotIn("cfb/years/", rules["Sources"])
+                self.assertIn("Week 1 scores", rules["Sources"])
+                self.assertNotIn("0 unavailable", page.get_text(" ", strip=True))
+                if year == 1897:
+                    self.assertIn("Market lines start in 2013.", page.get_text())
+                    self.assertNotIn("0 paired games", page.get_text())
+                else:
+                    self.assertIn("Closing-line status is unknown", rules["Lines and grading"])
+                    self.assertIn("Both margin errors use the same games", rules["Lines and grading"])
+
+    def test_nonzero_omissions_survive_even_when_there_is_no_provider_comparison(self):
+        text = ('<html><head></head><body><h1>Forecast grades</h1>'
+                '<p>1 unavailable · 2 pending scores · 0 non-FBS games excluded.</p>'
+                '<p>League qualification changed for this edition.</p>'
+                '<table><thead><tr><th>Week</th></tr></thead><tbody></tbody></table></body></html>')
+        page = self._decorate(text, _PERFORMANCE_SEASON)
+        self.assertIn("1 missing forecast · 2 scores pending", page.get_text())
+        self.assertIn("League qualification changed for this edition.", page.get_text())
