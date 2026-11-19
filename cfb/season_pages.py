@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 from urllib.parse import unquote, urlsplit
 
 from bs4 import BeautifulSoup, Tag
+from .archive_presentation import updated_time
 from .reference_markup import school_label, source_bytes
 
 if TYPE_CHECKING:
@@ -18,7 +19,11 @@ if TYPE_CHECKING:
 
 
 _STYLESHEET = "/cfb/assets/record-book.css"
-_WEEKLY_ORDER = ("cors", "records", "results", "slate", "spread", "spread_results")
+_WEEKLY_LABELS = {
+    "cors": "Rankings", "records": "Records", "results": "Scores", "slate": "Schedule",
+    "spread": "Spreads", "spread_results": "Forecast results",
+}
+_WEEKLY_ORDER = tuple(_WEEKLY_LABELS)
 
 
 def _label(checkpoint: str) -> str:
@@ -39,14 +44,18 @@ def _anchor(href: str, label: str) -> str:
     return f'<a href="{escape(href)}">{escape(label)}</a>'
 
 
-def _archive_link(site: Path, directory: Path, href: str, label: str) -> str:
+def _archive_link(site: Path, directory: Path, href: str, label: str, original: str, week: str = "") -> str:
     target = urlsplit(href)
+    attrs = f' data-archive-label="{escape(original)}"' if original != label else ""
+    if week and original != label:
+        attrs += f' aria-label="{escape(label)}, Week {week}"'
     if not target.scheme and not target.netloc and target.path:
         path = unquote(target.path)
         destination = site / path.lstrip("/") if path.startswith("/") else directory / path
         if not (destination.is_file() or (destination / "index.html").is_file()):
-            return f'<span data-unavailable-href="{escape(href)}">{escape(label)}</span>'
-    return _anchor(href, label)
+            return (f'<span data-unavailable-href="{escape(href)}" data-archive-label="{escape(original)}">'
+                    f'{escape(label)} (unavailable)</span>')
+    return f'<a href="{escape(href)}"{attrs}>{escape(label)}</a>'
 
 
 def _archive_navigation(site: Path, directory: Path, source: Tag, year: int) -> str:
@@ -56,18 +65,28 @@ def _archive_navigation(site: Path, directory: Path, source: Tag, year: int) -> 
     seen = set()
     for entry in source.select("a[href], [data-unavailable-href]"):
         href = entry.get("href", entry.get("data-unavailable-href", ""))
-        label = entry.get_text(" ", strip=True)
+        label = entry.get("data-archive-label", entry.get_text(" ", strip=True))
         if (href, label) in seen:
             continue
         seen.add((href, label))
-        link = f"<li>{_archive_link(site, directory, href, label)}</li>"
         match = pattern.search(urlsplit(href).path)
         if match:
+            week = match[1]
             kind = match[2]
+            visible = label
+            if re.fullmatch(rf"(?:Link to {year} W{week} FBS CFB |W{week} )(?:rankings?|records|results|slate|spread(?: results)?)", label):
+                visible = _WEEKLY_LABELS.get(kind, label)
+                if kind == "spread" and "reconstructed/" in href:
+                    visible = "Reconstructed spreads"
+            link = f"<li>{_archive_link(site, directory, href, visible, label, week)}</li>"
             priority = _WEEKLY_ORDER.index(kind) if kind in _WEEKLY_ORDER else len(_WEEKLY_ORDER)
             weekly[int(match[1])].append((priority, link))
         else:
-            general.append(link)
+            visible = {
+                f"Link to {year} FBS CFB final rankings": "Final rankings", "Final": "Final rankings",
+                "Preseason ranking": "Preseason rankings", "CORS home": "College football",
+            }.get(label, label)
+            general.append(f"<li>{_archive_link(site, directory, href, visible, label)}</li>")
     if not (general or weekly):
         return ""
     groups = [f'<ul class="week-links">{"".join(general)}</ul>'] if general else []
@@ -93,12 +112,14 @@ def _matchup_navigation(directory: Path, year: int, checkpoint: str, prefix: str
     following = f"{year}_W{week + 1}_FBS"
     candidates = []
     if week >= 0:
-        candidates.append((f"data/results/weekly_results/{year}_W{week}_FBS_results.html", f"Week {week} results"))
-    candidates.append((f"data/slate/weekly_slate/{following}_slate.html", f"Week {week + 1} slate"))
+        candidates.append((f"data/results/weekly_results/{year}_W{week}_FBS_results.html", f"Week {week} scores"))
+    candidates.append((f"data/slate/weekly_slate/{following}_slate.html", f"Week {week + 1} schedule"))
     forecast = f"spread/{following}_spread.html"
+    label = f"Week {week + 1} spreads"
     if not (directory / forecast).is_file():
         forecast = f"reconstructed/{following}_spread.html"
-    candidates.append((forecast, f"Week {week + 1} forecast"))
+        label = f"Week {week + 1} reconstructed spreads"
+    candidates.append((forecast, label))
     links = [
         f"<li>{_anchor(prefix + path, label)}</li>"
         for path, label in candidates
@@ -120,7 +141,7 @@ def _rankings(
     if baseline is None:
         note = "Earlier rankings are unavailable." if checkpoint != "PRESEASON" else ""
     elif checkpoint == "FINAL" and baseline != "PRESEASON":
-        note = f"Change since the earliest available ranking ({_label(baseline)})."
+        note = f"Change since {_label(baseline)}, the first archived ranking."
     else:
         note = f"Change since {_label(baseline)}."
 
@@ -140,28 +161,29 @@ def _rankings(
             f'<td>{escape(row.conference)}</td></tr>'
         )
     return (
-        f'<section aria-labelledby="cors-ranking"><h2 id="cors-ranking">{_label(checkpoint)} CORS Ranking</h2>'
-        + (f"<p>{note}</p>" if note else "")
+        (f"<p>{note}</p>" if note else "")
         + '<div class="table-scroll" role="region" aria-labelledby="cors-ranking" tabindex="0">'
         '<table aria-labelledby="cors-ranking"><thead><tr>'
         '<th scope="col" class="num">Rank</th><th scope="col">Team</th>'
         '<th scope="col" class="num">Rank change</th><th scope="col" class="num">Rating change</th>'
-        '<th scope="col" class="num">CORS Rating</th><th scope="col" class="num">Record</th>'
+        '<th scope="col" class="num">CORS rating</th><th scope="col" class="num">Record</th>'
         '<th scope="col">Conference</th>'
-        f'</tr></thead><tbody>{"".join(body)}</tbody></table></div></section>'
+        f'</tr></thead><tbody>{"".join(body)}</tbody></table></div>'
     )
 
 
-def _upsets(games: Iterable[Game], checkpoint: str, routes: dict[str, str]) -> str:
+def _upsets(games: Iterable[Game], routes: dict[str, str]) -> str:
     qualifying = []
+    has_scored_forecast = False
     for game in games:
         handicap = game.home_handicap
         if handicap is None or not handicap.is_finite():
             continue
         deficit = handicap.copy_abs()
-        if deficit < 7:
-            continue
         if game.home_score is None or game.away_score is None:
+            continue
+        has_scored_forecast = True
+        if deficit < 7:
             continue
         if handicap < 0 and game.away_score > game.home_score:
             qualifying.append((deficit, game.week, game.home, game.away, game.away_score, game.home_score))
@@ -169,10 +191,11 @@ def _upsets(games: Iterable[Game], checkpoint: str, routes: dict[str, str]) -> s
             qualifying.append((deficit, game.week, game.away, game.home, game.home_score, game.away_score))
     # Preserve archive game order when two Model Spreads have equal magnitude.
     qualifying.sort(key=lambda upset: upset[0], reverse=True)
-    title = "Season CORS Upsets" if checkpoint == "FINAL" else f"{_label(checkpoint)} CORS Upsets"
+    title = "Biggest CORS upsets" if qualifying else "CORS upsets"
     heading = f'<section aria-labelledby="cors-upsets"><h2 id="cors-upsets">{title}</h2>'
     if not qualifying:
-        return heading + "<p>No available results qualify at seven points or more.</p></section>"
+        note = "No wins by underdogs of 7+ points." if has_scored_forecast else "No final scores with a CORS spread."
+        return heading + f"<p>{note}</p></section>"
     rows = []
     for deficit, week, favorite, winner, winner_score, loser_score in qualifying[:3]:
         favorite_link = school_label(favorite, routes)
@@ -184,9 +207,14 @@ def _upsets(games: Iterable[Game], checkpoint: str, routes: dict[str, str]) -> s
     return (
         heading + '<div class="table-scroll" role="region" aria-labelledby="cors-upsets" tabindex="0">'
         '<table aria-labelledby="cors-upsets"><thead><tr>'
-        '<th scope="col" class="num">Week</th><th scope="col">CORS Forecast</th><th scope="col">Final score</th>'
+        '<th scope="col" class="num">Week</th><th scope="col">CORS favorite</th><th scope="col">Final score</th>'
         f'</tr></thead><tbody>{"".join(rows)}</tbody></table></div></section>'
     )
+
+
+def _standings(title: str, table: str, upsets: str) -> str:
+    rankings = f'<section aria-labelledby="cors-ranking"><h2 id="cors-ranking">{title}</h2>{table}</section>'
+    return f'<div class="season-standings">{rankings}{upsets}</div>' if upsets else rankings
 
 
 def _document(title: str, heading: str, body: str, *, metadata: str = "", head: str = "") -> str:
@@ -211,8 +239,10 @@ def build_season_pages(site: Path, season: Season, routes: dict[str, str]) -> It
     default_title = f"{year} CFB Season"
     title = original.title.get_text(strip=True) if original.title else default_title
     heading = original.h1.get_text(strip=True) if original.h1 else default_title
-    if re.fullmatch(rf"{year} CORS v[\d.]+ CFB Results", heading):
-        heading = f"{year} College Football"
+    if version := re.fullmatch(rf"{year} CORS (v[\d.]+) CFB Results", title):
+        title = f"{year} college football · CORS {version[1]}"
+    if re.fullmatch(rf"{year} (?:CORS v[\d.]+ CFB Results|College Football|CFB Season)", heading):
+        heading = f"{year} college football"
     # Legacy archives can place links after </html>. On reruns, read only the
     # archive section so generated shortcuts and team links stay out of it.
     generated = original.select_one("body.season-page") is not None
@@ -225,8 +255,13 @@ def build_season_pages(site: Path, season: Season, routes: dict[str, str]) -> It
         notes_html = "".join(str(p) for p in source.find_all("p") if not p.find("a"))
         metadata = f'<div id="season-notes">{notes_html}</div>' if notes_html else ""
         archive_source = original
+    metadata = re.sub(
+        r"<p>(?:Last updated: |Ranking data updated <time>)([0-9][0-9T:.+ Z-]*)(?:</time>)?</p>",
+        lambda m: f"<p>{stamp}</p>" if (stamp := updated_time(m[1])) else m[0], metadata,
+    )
     if not metadata and season.updated_at:
-        metadata = f'<div id="season-notes"><p>Ranking data updated <time>{escape(season.updated_at)}</time></p></div>'
+        stamp = updated_time(season.updated_at, "Rankings updated") or escape(season.updated_at)
+        metadata = f'<div id="season-notes"><p>{stamp}</p></div>'
     head = "".join(
         str(tag) for tag in original.select("head meta")
         if not tag.has_attr("charset") and tag.get("name") != "viewport"
@@ -235,7 +270,7 @@ def build_season_pages(site: Path, season: Season, routes: dict[str, str]) -> It
     checkpoints = sorted((key for key, rows in season.rankings.items() if rows), key=_checkpoint_order)
     if not checkpoints:
         yield f"{base}/{filename}", _document(
-            title, heading, "<p>No CORS Rankings available.</p>" + archive, metadata=metadata, head=head
+            title, heading, "<p>No CORS rankings for this season.</p>" + archive, metadata=metadata, head=head
         )
         return
 
@@ -253,16 +288,16 @@ def build_season_pages(site: Path, season: Season, routes: dict[str, str]) -> It
         )
         upsets = ""
         if checkpoint == "FINAL":
-            upsets = _upsets(season.games, checkpoint, routes)
+            upsets = _upsets(season.games, routes)
         elif checkpoint.startswith("W"):
-            upsets = _upsets(games_by_week[int(checkpoint[1:])], checkpoint, routes)
-        content = f'<div class="season-standings">{standings}{upsets}</div>' if upsets else standings
+            upsets = _upsets(games_by_week[int(checkpoint[1:])], routes)
+        content = _standings("CORS rankings", standings, upsets)
         if checkpoint == landing:
-            landing_content = content
+            landing_content = _standings(f"{_label(checkpoint)} CORS rankings", standings, upsets)
 
         links = [_anchor("../" + filename, f"{year} season")]
         if checkpoint != "PRESEASON":
-            links.append(_anchor("#cors-upsets", "CORS Upsets"))
+            links.append(_anchor("#cors-upsets", "Upsets"))
         navigation = _checkpoint_navigation(checkpoints, checkpoint)
         matchups = _matchup_navigation(directory, year, checkpoint, "../")
         checkpoint_title = f"{year} CFB · {_label(checkpoint)}"
@@ -272,7 +307,7 @@ def build_season_pages(site: Path, season: Season, routes: dict[str, str]) -> It
 
     links = []
     if landing != "PRESEASON":
-        links.append(_anchor("#cors-upsets", "CORS Upsets"))
+        links.append(_anchor("#cors-upsets", "Upsets"))
     if archive:
         links.append(_anchor("#season-archive", "Season archive"))
     jumps = f'<p>{" · ".join(links)}</p>' if links else ""

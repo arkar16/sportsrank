@@ -65,7 +65,7 @@ class HistorySheetsTests(unittest.TestCase):
         self.assertEqual(page.link["href"], "/cfb/assets/record-book.css")
         self.assertIsNotNone(page.select_one('meta[name="viewport"]'))
         heading, = page.find_all("h1")
-        self.assertEqual(heading.text, "CORS national champions by season")
+        self.assertEqual(heading.text, "Archived CORS national champions")
         self.assertIn(heading.text, page.title.text)
         region = page.select_one('.table-scroll[role="region"][tabindex="0"][aria-label]')
         self.assertEqual(region.table["aria-labelledby"], heading["id"])
@@ -77,7 +77,7 @@ class HistorySheetsTests(unittest.TestCase):
 
         original = legacy_fragment(LAST_PLACE_ROWS, has_index=True)
         page = BeautifulSoup(render_history_sheet(LAST_PLACE, original, {}, set()), "html5lib")
-        self.assertEqual(page.h1.text, "CORS last-place finishers by season")
+        self.assertEqual(page.h1.text, "Archived CORS last-place finishers")
         self.assertEqual(page.nav.a["href"], "/cfb/years/history/wt_FBS_CFB_output.html")
 
     def test_rejects_an_unexpected_source_column_layout(self):

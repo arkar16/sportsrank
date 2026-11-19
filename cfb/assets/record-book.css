@@ -88,10 +88,6 @@ body > nav {
   color: var(--muted);
   font-size: .8125rem;
 }
-body > nav[aria-label="College Football"] {
-  padding: 0 0 .45rem;
-  border-bottom: 1px solid var(--rule);
-}
 .archive-nav, body > nav[aria-label="Record book"] {
   padding-block-end: .45rem;
   border-bottom: 1px solid var(--rule);
@@ -271,6 +267,13 @@ html table .num,
   border-right: 1px solid var(--rule);
 }
 [aria-label="Rankings and games"] [rowspan] { vertical-align: top; }
+[aria-label="Rankings and games"] thead small {
+  display: block;
+  white-space: nowrap;
+  color: var(--muted);
+  font-weight: normal;
+  font-size: inherit;
+}
 
 /* The preserved archive tables have no column classes. Align their numeric
    fields by default and join team label alignment across all rows and headers. */

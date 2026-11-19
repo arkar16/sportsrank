@@ -54,22 +54,8 @@
   font-weight: 700;
 }
 
-.sr-report-legacy-metrics {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .65rem 2rem;
-  padding-block: .35rem;
-}
-
-.sr-report-legacy-metrics p {
-  margin-block: 0 .15rem;
-  font-weight: 700;
-}
-
-.sr-report-legacy-metrics ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.sr-report details p {
+  max-inline-size: 65ch;
 }
 
 .sr-report hr {

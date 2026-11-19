@@ -3,10 +3,10 @@ from functools import lru_cache
 from html import escape, unescape
 import re
 
+from .archive_markup import strip_ui, ui as _ui
 from .archive_presentation import decorate_archive, restore_chrome
 
 
-_UI = re.compile(rb"<!--sr-ui-->.*?<!--/sr-ui-->", re.DOTALL)
 _MARK = re.compile(rb'<img class="school-mark(?: large)?" [^<>]*>')
 _SCHOOL_LINK = re.compile(rb'<a data-sr-team href="[^"<>]+">([^<>]*)</a>')
 _CELL = re.compile(r'(<(?P<tag>td|th)\b[^>]*>)(?P<value>[^<>]+)(</(?P=tag)>)', re.I)
@@ -24,13 +24,9 @@ def source_bytes(raw: bytes) -> bytes:
     """Recover an archive input exactly, including its original encoding and whitespace."""
     if b"<!--sr-ui-->" not in raw:
         return raw
-    raw = _UI.sub(b"", raw)
+    raw = strip_ui(raw)
     raw = _MARK.sub(b"", raw)
     return restore_chrome(_SCHOOL_LINK.sub(rb"\1", raw))
-
-
-def _ui(markup: str) -> str:
-    return "<!--sr-ui-->" + markup + "<!--/sr-ui-->"
 
 
 def _image(path: str, *, large: bool = False) -> str:
@@ -102,7 +98,7 @@ class PagePresentation:
         if not _BODY.search(markup):
             return original
         if archive and relative and targets is not None:
-            markup = decorate_archive(markup, relative, targets, _ui)
+            markup = decorate_archive(markup, relative, targets)
         head = ""
         if 'name="viewport"' not in markup[:1500]:
             head += '<meta name="viewport" content="width=device-width, initial-scale=1">'

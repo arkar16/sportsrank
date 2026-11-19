@@ -53,12 +53,11 @@ def _home(seasons: list[Season], routes: dict[str, str], *, is_root: bool) -> st
 <title>{title}</title><link rel="stylesheet" href="/cfb/assets/record-book.css"></head>
 <body><main><h1>College football</h1>
 <p class="edition">{latest.year} FBS &middot; {edition}</p>
-<div class="home-columns"><section><h2>CORS rankings</h2><div class="table-scroll">
+<div class="home-columns"><section><h2>CORS top {len(top)}</h2><div class="table-scroll">
 <table><thead><tr><th scope="col" class="num">Rank</th><th scope="col">Team</th>
 <th scope="col">Record</th><th scope="col" class="num">CORS rating</th></tr></thead>
-<tbody>{''.join(top)}</tbody></table></div><p><a href="{year_link}">Full {latest.year} rankings and results</a></p>
-</section><section><h2>Record book</h2><p><a href="/cfb/teams/index.html">All {len(routes)} ranked programs</a></p>
-<p><a href="/cfb/performance/index.html">CORS model performance</a></p>
+<tbody>{''.join(top)}</tbody></table></div><p><a href="{year_link}">{latest.year} standings</a></p>
+</section><section><h2>Record book</h2><p><a href="/cfb/teams/index.html">{len(routes)} program histories</a></p>
 <p><a href="/cfb/years/history/nc_FBS_CFB_output.html">National champions</a></p>
 <p><a href="/cfb/years/history/wt_FBS_CFB_output.html">Last-place finishers</a></p></section></div>
 <section><h2>Season archive</h2><div class="year-archive">{archive}</div></section>
@@ -71,11 +70,10 @@ def _not_found(year: int) -> str:
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>404 · Page not found | SportsRank</title><link rel="stylesheet" href="/cfb/assets/record-book.css"></head>
 <body><main class="missing-page"><h1>Page not found</h1>
-<p>Error 404. There’s no SportsRank page at this address.</p>
 <ul class="recovery-links">
-<li><a href="/cfb/years/{year}/{year}_CFB.html">{year} college football standings</a></li>
+<li><a href="/cfb/years/{year}/{year}_CFB.html">{year} standings</a></li>
 <li><a href="/cfb/teams/index.html">Find a team</a></li>
-<li><a href="/cfb/cfb.html">Browse the season archive</a></li>
+<li><a href="/cfb/cfb.html">Season archive</a></li>
 </ul></main></body></html>
 """
 
