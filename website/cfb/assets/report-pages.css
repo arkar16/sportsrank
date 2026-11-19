@@ -1,0 +1,123 @@
+.sr-report {
+  min-inline-size: 0;
+}
+
+.sr-report > p,
+.sr-report .metrics {
+  max-inline-size: 72ch;
+}
+
+.sr-report .metrics {
+  margin-block: .55rem;
+  padding: .45rem 0;
+  border: 0;
+  border-block: 1px solid var(--rule);
+  border-radius: 0;
+  background: transparent;
+  font-size: .9375rem;
+  line-height: 1.65;
+}
+
+.sr-report-nav {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 1rem;
+  padding-block: .18rem;
+  margin-block: .65rem .8rem;
+  border-block: 1px solid var(--rule);
+}
+
+.sr-report-nav a,
+.sr-report-weeks a,
+.sr-report-links a {
+  display: inline-block;
+  padding-block: .3rem;
+  font-size: .875rem;
+  font-weight: 700;
+}
+
+.sr-report [id^="sr-report-"] {
+  scroll-margin-block-start: .75rem;
+}
+
+.sr-report-weeks {
+  max-inline-size: 72ch;
+}
+
+.sr-report-weeks a {
+  white-space: nowrap;
+}
+
+.sr-report summary {
+  cursor: pointer;
+  font-family: var(--headline);
+  font-weight: 700;
+}
+
+.sr-report details p {
+  max-inline-size: 65ch;
+}
+
+.sr-report hr {
+  border: 0;
+  border-block-start: 1px solid var(--rule);
+}
+
+.sr-report table :is(th, td) {
+  text-align: right;
+}
+
+.sr-report table thead th {
+  white-space: normal;
+}
+
+.sr-report-index table :is(th, td):first-child,
+.sr-report-matchups :is(th, td):nth-child(2),
+.sr-report-matchups :is(th, td):nth-child(3),
+.sr-report-legacy-matchups :is(th, td):nth-child(-n+2) {
+  text-align: left;
+}
+
+.sr-report-matchups th:nth-child(3),
+.sr-report-matchups td:nth-child(3),
+.sr-report-legacy-matchups :is(th, td):nth-child(2) {
+  border-inline-end: 1px solid var(--rule);
+}
+
+@media (min-width: 900px) {
+  .sr-report-comparison {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem;
+    margin-block: 1rem;
+  }
+  .sr-report-comparison > section + section {
+    padding-inline-start: 1.5rem;
+    border-inline-start: 1px solid var(--rule);
+  }
+  .sr-report-comparison h2 { margin-top: 0; }
+}
+
+@media (max-width: 650px) {
+  .sr-report-nav {
+    column-gap: .75rem;
+  }
+
+  .sr-report-matchups table:not(.forecast-games) td:nth-child(2),
+  .sr-report-matchups table:not(.forecast-games) td:nth-child(3),
+  .sr-report-legacy-matchups td:nth-child(-n+2) {
+    min-inline-size: 6.5rem;
+    max-inline-size: 8rem;
+    white-space: normal;
+  }
+
+  .sr-report-index :is(th, td):first-child {
+    position: sticky;
+    inset-inline-start: 0;
+    border-inline-end: 1px solid var(--rule);
+  }
+}
+
+@media print {
+  .sr-report-nav { display: none; }
+}

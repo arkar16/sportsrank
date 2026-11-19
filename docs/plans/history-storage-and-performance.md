@@ -31,7 +31,7 @@ The user endorsed addressing the legacy history regression, durable database sto
 
 ## Decisions still to settle
 
-- Identity policy needs further discussion. Proposed approach: stable internal team IDs, source/provider ID mappings, season-scoped aliases and membership, and reviewable manual corrections with reason and provenance. A spelling correction need not merge two programs; a program merger or identity reassignment is a separate explicit decision. SQLite stores and enforces the chosen policy but cannot decide historical identity by itself. Preserve raw source values and revision history, and invalidate affected results when a correction changes calculation inputs.
+- [ADR-0027](../adr/0027-preserve-program-history-across-seasons.md) settles public program identity and archive membership. The proposed database representation still needs a decision on internal IDs, provider mappings, season-scoped aliases and reviewable corrections. Preserve raw source values and revision history. A program merger or identity reassignment needs explicit evidence.
 - Whether measured workload warrants cross-run checkpoint skipping beyond storing results for rendering and reusing inputs within one process. Explain and agree the reuse/invalidation behavior before adopting it.
 
 The user requests recalculation capability and current regeneration/fixes. Execute historical reruns once input coverage and correctness are verified; this does not grant additional provider requests or supersede the existing Call Budget. Removal of generated HTML from Git remains subject to ADR 0008's migration conditions.

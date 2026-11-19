@@ -685,6 +685,13 @@ class SeasonSnapshotService:
             (destination / "failure.json").write_text(json.dumps({"error_type": type(error).__name__}) + "\n")
             raise
 
+    def fetch_program_catalog_response(self) -> bytes:
+        """Explicit source acquisition for the season-independent marks catalog."""
+        fetch = getattr(self.source, "fetch_program_catalog_response", None)
+        if fetch is None:
+            raise TypeError("source does not support explicit program catalog acquisition")
+        return fetch()
+
     def get(
         self,
         year: int,

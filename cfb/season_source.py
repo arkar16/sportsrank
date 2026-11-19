@@ -530,6 +530,25 @@ class ProductionSeasonSource:
         return self.meter.execute(purpose=self.category, endpoint="lines", season=year,
                                   cache_decision="refresh", transport=transport)
 
+    def fetch_program_catalog_response(self) -> bytes:
+        """Retain one unfiltered /teams response, including provider logo URLs."""
+        def transport():
+            with create_api_client() as api_client:
+                response = cfbd.TeamsApi(api_client).get_teams_with_http_info(
+                    _preload_content=False, _request_timeout=(15, 60),
+                )
+                raw = response.raw_data
+                if not isinstance(raw, bytes) or not isinstance(json.loads(raw), list):
+                    raise ValueError("invalid program catalog response envelope")
+                return raw
+
+        # The audit schema requires an integer season. Zero denotes this
+        # season-independent request, distinct from ordinary FBS team calls.
+        return self.meter.execute(
+            purpose=self.category, endpoint="teams-catalog", season=0,
+            cache_decision="miss", transport=transport,
+        )
+
 
 class FixtureSeasonSource:
     """Recorded-file adapter with the same consumer interface as production."""

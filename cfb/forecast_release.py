@@ -22,6 +22,7 @@ from .forecast_record import (
 )
 from .season_source import SourceGame, is_completed, is_explicit_non_played
 from .publication_records import ArchiveReference
+from .reference_markup import source_bytes
 
 if TYPE_CHECKING:
     from .forecast_publication import VerifiedForecastPublication
@@ -81,13 +82,9 @@ class _LegacySpreadTable(HTMLParser):
             self._table_done = True
 
 
-def _legacy_spread_rows(path: Path) -> list[dict[str, str]]:
-    try:
-        raw = path.read_text(encoding="utf-8", errors="replace")
-    except OSError as exc:
-        raise ForecastContractError(f"retained spread page cannot be read: {path}") from exc
+def _legacy_spread_rows(path: Path, raw: bytes) -> list[dict[str, str]]:
     parser = _LegacySpreadTable()
-    parser.feed(raw)
+    parser.feed(raw.decode("utf-8", errors="replace"))
     if not parser.rows:
         raise ForecastContractError(f"retained spread page has no table: {path}")
     headers = parser.rows[0]
@@ -137,13 +134,13 @@ def load_retained_spread_forecasts(
         if match is None:
             raise ForecastContractError(f"invalid retained spread page path: {relative}")
         page_week = int(match.group(1))
-        raw_bytes = path.read_bytes()
+        raw_bytes = source_bytes(path.read_bytes())
         page_digest = hashlib.sha256(raw_bytes).hexdigest()
         source_evidence = EvidenceRef(
             "retained-published-spread", str(relative).replace("\\", "/"),
             "sha256:" + page_digest,
         )
-        for row in _legacy_spread_rows(path):
+        for row in _legacy_spread_rows(path, raw_bytes):
             try:
                 week = int(row["week"])
                 neutral_text = row["neutral_site"]

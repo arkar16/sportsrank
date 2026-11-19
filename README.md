@@ -119,6 +119,24 @@ GitHub evidence using `GITHUB_TOKEN`, `GH_TOKEN`, or the existing `gh` login,
 without printing or saving the credential; it does not read or
 write Firebase. Results are `site/` and `receipt.json` under a new output folder.
 
+## College football record book
+
+The public college football record book links each ranked program to its
+season-by-season history and weekly game logs. After updating local rankings,
+results and performance reports, refresh the committed site offline:
+
+```sh
+env -u CFBD_API -u CFBD_API_KEY -u CFBD_PRED_API uv run --locked python -m cfb.record_book
+```
+
+The command reads `website/` and retains the original forecast values and
+their source identities. Use `--site DIRECTORY` to build on a review copy.
+The original champion and last-place tables are available as `.source.txt`
+downloads beside their historical sheets in `website/cfb/years/history/`.
+The offline build reads those originals when refreshing the sheets.
+The [program and season page spec](docs/plans/cfb-team-and-season-pages.md)
+describes what each page shows.
+
 ## CORS model performance
 
 Evaluate every archived season using the predictions and final scores already

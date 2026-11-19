@@ -20,6 +20,9 @@ A shared interpretation of CORS values across separate Classification rankings. 
 **FBS**:
 The first supported college-football classification and the initial production scope.
 
+**Program**:
+A school's college football team across seasons, including seasons played under a documented earlier name. A program's CORS history spans the seasons in which it appears in the rankings.
+
 **Classification Entrant**:
 A team with authoritative, source-cited evidence that it newly joins a Classification for a Season and therefore has no preceding FINAL in that Classification. Its declared entrant baseline is explicit Season Carryover evidence, not a fallback for a missing or mismatched returning team.
 
@@ -59,6 +62,9 @@ A team's numerical strength assessment from the CORS model at one Season checkpo
 SportsRank's ordered assessment of team strength for one sport, classification, Season, and completed checkpoint using the CORS model, intended to forecast game outcomes and scoring margins. A checkpoint may be PRESEASON, a numbered Week, or FINAL.
 _Avoid_: Poll, power ranking
 
+**Rank Movement**:
+The change in a team's position in the CORS Ranking between two checkpoints of a Season. A move from 12th to 8th is a rise of four places.
+
 **Model Spread**:
 The scoring margin forecast by CORS for one Game.
 
@@ -73,6 +79,9 @@ A bookmaker's published point spread for one Game, used as a reference for evalu
 
 **Predicted Winner**:
 The team CORS selects to win one Game.
+
+**CORS Upset**:
+A completed Game won outright by the opponent of the Predicted Winner. The size of the upset is the number of points by which the Model Spread favored the losing team. A Pick'em has no CORS underdog.
 
 **Pick'em**:
 A CORS forecast with an exactly zero Model Spread and no Predicted Winner.
