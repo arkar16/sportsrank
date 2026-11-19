@@ -56,7 +56,7 @@ class SeasonPageTests(unittest.TestCase):
         base = "cfb/years/2025"
         pages = self.render(2025, rankings, games)
         landing = BeautifulSoup(pages[f"{base}/2025_CFB.html"], "html.parser")
-        self.assertEqual(landing.select_one("#cors-ranking").get_text(), "Final CORS Ranking")
+        self.assertEqual(landing.select_one("#cors-ranking").get_text(), "Final CORS rankings")
         self.assertIn("Change since Preseason.", landing.get_text())
         self.assertEqual(cells(landing, "cors-ranking"), [
             ["2", "Oregon", "+8", "+15.75", "72.35", "12-2", "Big Ten"],
@@ -118,7 +118,7 @@ class SeasonPageTests(unittest.TestCase):
             self.write(f"{base}/{relative}", "<h1>Archived game data</h1>")
         pages = self.render(2026, rankings, games)
         landing = BeautifulSoup(pages[f"{base}/2026_CFB.html"], "html.parser")
-        self.assertEqual(landing.select_one("#cors-ranking").get_text(), "Week 11 CORS Ranking")
+        self.assertEqual(landing.select_one("#cors-ranking").get_text(), "Week 11 CORS rankings")
         self.assertIn("Change since Week 10.", landing.get_text())
         self.assertEqual(cells(landing, "cors-ranking")[0][2:4], ["-3", "0.00"])
         self.assertEqual(cells(landing, "cors-upsets"), [
@@ -142,7 +142,7 @@ class SeasonPageTests(unittest.TestCase):
         rankings["W12"] = [standing("Clemson", 3, "73")]
         following = self.render(2026, rankings, games)
         self.assertIn(f"{base}/checkpoints/W11.html", following)
-        self.assertIn("Week 12 CORS Ranking", following[f"{base}/2026_CFB.html"])
+        self.assertIn("Week 12 CORS rankings", following[f"{base}/2026_CFB.html"])
 
     def test_legacy_landing_retains_metadata_and_links_in_week_order_across_reruns(self):
         base = "cfb/years/1897"
@@ -176,8 +176,9 @@ class SeasonPageTests(unittest.TestCase):
         self.assertEqual(landing.title.get_text(), "Historic CORS v0.2.0")
         self.assertEqual(landing.h1.get_text(), "Historic CORS Results")
         self.assertEqual(landing.find("meta", attrs={"name": "description"})["content"], "CFB in 1897")
-        self.assertIn("Last updated: 2001-05-07", landing.get_text())
-        self.assertIn("Change since the earliest available ranking (Week 1).", landing.get_text())
+        self.assertEqual(landing.time.get_text(), "Updated May 7, 2001")
+        self.assertEqual(landing.time["datetime"], "2001-05-07")
+        self.assertIn("Change since Week 1, the first archived ranking.", landing.get_text())
         self.assertEqual(cells(landing, "cors-ranking")[0][2:4], ["+4", "+10.00"])
         self.assertEqual(
             [(a["href"], a.get_text()) for a in landing.select("#season-archive a")],
@@ -203,3 +204,27 @@ class SeasonPageTests(unittest.TestCase):
             [a["href"] for a in landing.select('nav[aria-label="Ranking checkpoints"] a')],
             ["checkpoints/FINAL.html"],
         )
+
+    def test_week_group_names_its_links_and_distinguishes_unavailable_forecasts(self):
+        base = "cfb/years/1910"
+        score = "data/results/weekly_results/1910_W3_FBS_results.html"
+        reconstruction = "reconstructed/1910_W3_FBS_spread.html"
+        missing = "spread/1910_W4_FBS_spread.html"
+        self.write(f"{base}/1910_CFB.html", "<html><body><h1>1910 college football</h1>"
+                   f'<a href="{score}">Link to 1910 W3 FBS CFB results</a>'
+                   f'<a href="{reconstruction}">W3 spread</a><a href="{missing}">W4 spread</a></body></html>')
+        for path in (score, reconstruction):
+            self.write(f"{base}/{path}", "<html></html>")
+        rankings = {"W3": [standing("Oregon", 1, "17")]}
+        pages = self.render(1910, rankings, [game(3, "Oregon", "Visitors", 20, 14, None)])
+        landing = BeautifulSoup(pages[f"{base}/1910_CFB.html"], "html.parser")
+        links = [(a.text, a["aria-label"], a["href"]) for a in landing.select("#season-archive a")]
+        self.assertEqual(links, [("Scores", "Scores, Week 3", score),
+                                 ("Reconstructed spreads", "Reconstructed spreads, Week 3", reconstruction)])
+        self.assertEqual(landing.select_one("[data-unavailable-href]").text, "Spreads (unavailable)")
+        self.assertIn("No final scores with a CORS spread.", landing.get_text())
+        for path, content in pages.items():
+            self.write(path, content)
+        self.assertEqual(self.render(1910, rankings, [game(3, "Oregon", "Visitors", 20, 14, None)]), pages)
+        scored = self.render(1910, rankings, [game(3, "Oregon", "Visitors", 20, 14, "-10")])
+        self.assertIn("No wins by underdogs of 7+ points.", scored[f"{base}/1910_CFB.html"])

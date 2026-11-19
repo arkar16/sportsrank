@@ -88,9 +88,50 @@ body > nav {
   color: var(--muted);
   font-size: .8125rem;
 }
-body > nav[aria-label="College Football"] {
-  padding: 0 0 .45rem;
+.archive-nav, body > nav[aria-label="Record book"] {
+  padding-block-end: .45rem;
   border-bottom: 1px solid var(--rule);
+  margin-bottom: .75rem;
+  font-size: .8125rem;
+}
+.archive-date {
+  color: var(--muted);
+  font-size: .8125rem;
+  font-variant-numeric: tabular-nums;
+}
+.archive-content hr { border: 0; border-top: 1px solid var(--rule); }
+.archive-content > hr { margin: .5rem 0; }
+.archive-content details { margin-block: .55rem; }
+.archive-content summary { cursor: pointer; }
+.archive-reconstruction > ul, .recovery-links {
+  max-width: 40rem;
+  margin: 1rem 0;
+  padding: 0;
+  list-style: none;
+  border-top: 2px solid var(--ink);
+}
+.archive-reconstruction > ul li, .recovery-links li {
+  padding: .4rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+.archive-progression > nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .3rem .8rem;
+  padding-block: .55rem;
+  border-block: 1px solid var(--rule);
+  font-size: .8125rem;
+}
+.missing-page { max-width: 37rem; margin-top: 2rem; }
+.recovery-links a { display: block; padding-block: .2rem; }
+.archive-columns { display: none; }
+/* The visible and accessible column name can differ from the field name
+   retained in the header text for tools that read the archived tables. */
+html .archive-content thead th[data-sr-field] { font-size: 0; }
+html .archive-content thead th[data-sr-field]::after {
+  content: attr(aria-label);
+  font-size: .75rem;
+  line-height: 1.2;
 }
 body > h1 + p, .season-page header p, body.record-book > p {
   color: var(--muted);
@@ -226,6 +267,13 @@ html table .num,
   border-right: 1px solid var(--rule);
 }
 [aria-label="Rankings and games"] [rowspan] { vertical-align: top; }
+[aria-label="Rankings and games"] thead small {
+  display: block;
+  white-space: nowrap;
+  color: var(--muted);
+  font-weight: normal;
+  font-size: inherit;
+}
 
 /* The preserved archive tables have no column classes. Align their numeric
    fields by default and join team label alignment across all rows and headers. */
@@ -327,6 +375,40 @@ html .metrics {
 }
 
 @media (max-width: 650px) {
+  @supports selector(:has(*)) {
+    .archive-columns {
+      display: inline-flex;
+      align-items: center;
+      gap: .38rem;
+      padding: .4rem 0;
+      color: var(--muted);
+      font-size: .8125rem;
+      cursor: pointer;
+    }
+    .archive-columns input { margin: 0; accent-color: var(--link); }
+    .archive-content:has(.archive-columns input:not(:checked)) .dataframe {
+      table-layout: fixed;
+      width: 100%;
+    }
+    .archive-content:has(.archive-columns input:not(:checked)) .dataframe :is(th, td) {
+      padding-inline: .28rem;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+    .archive-content:has(.archive-columns input:not(:checked)) th:is([aria-label="Week"], [aria-label="Rank"]) { width: 11%; }
+    .archive-results:has(.archive-columns input:not(:checked)) th[aria-label$="score"] { width: 13%; }
+    .archive-results:has(.archive-columns input:not(:checked)) th[aria-label$="score"]::after { content: "Score"; }
+    .archive-cors:has(.archive-columns input:not(:checked)) th[aria-label="Team"] { width: 42%; }
+    .archive-records:has(.archive-columns input:not(:checked)) th[aria-label="Team"] { width: 43%; }
+    .archive-honors:has(.archive-columns input:not(:checked)) th[aria-label="Team"] { width: 42%; }
+    .history-sheet:has(.archive-columns input:not(:checked)) .history-detail { display: none; }
+    .history-sheet:has(.archive-columns input:not(:checked)) table {
+      table-layout: fixed;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+    .history-sheet:has(.archive-columns input:not(:checked)) .history-school { width: 43%; }
+  }
   .masthead { display: block; padding-top: .6rem; margin-bottom: .75rem; }
   .masthead nav { margin-top: .2rem; gap: 0 .8rem; }
   html h1 { font-size: 2rem; }

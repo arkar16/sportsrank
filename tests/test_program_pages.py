@@ -126,8 +126,9 @@ class ProgramPagesTests(unittest.TestCase):
         season_nav = {link["href"] for link in page.select("nav a")}
         self.assertTrue({ROUTES[TEAM], "/cfb/years/2026/2026_CFB.html"}.issubset(season_nav))
         table = page.select_one('div.table-scroll[tabindex="0"] table')
-        self.assertIn(f"Scores list {TEAM} first.", table.caption.text)
-        self.assertIn(f"A negative spread favors {TEAM}.", table.caption.text)
+        spread, score = table.select("thead th")[-2:]
+        self.assertEqual(spread.get_text(" ", strip=True), "CORS spread Negative if favored")
+        self.assertEqual(score.get_text(" ", strip=True), f"Score {TEAM} first")
         self.assertEqual([cell_text(row) for row in table.select("tbody tr")], [
             ["Preseason", "6", "17.25", "1-0", "—", "—", "—", "—"],
             ["Week 0", "8", "17.25", "1-0", "No game listed", "—", "—", "—"],
