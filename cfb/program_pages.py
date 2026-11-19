@@ -65,7 +65,7 @@ def build_program_pages(
         heading = f'<span data-program="{name}">{name}</span>'
         yield route.lstrip("/"), _page(
             f"{school} football", heading, [],
-            _rank_trend(history) + _history_table(route, history), history[0].season.updated_at,
+            _rank_trend(route, history) + _history_table(route, history), history[0].season.updated_at,
         )
         for entry in history:
             year = entry.season.year
@@ -152,7 +152,7 @@ def _history_table(route: str, history: list[_ProgramSeason]) -> str:
     )
 
 
-def _rank_trend(history: list[_ProgramSeason]) -> str:
+def _rank_trend(route: str, history: list[_ProgramSeason]) -> str:
     ranks = [
         (entry.season.year, entry.standings["FINAL"].rank)
         for entry in reversed(history)
@@ -192,20 +192,30 @@ def _rank_trend(history: list[_ProgramSeason]) -> str:
         for (year, rank), (next_year, next_rank) in zip(ranks, ranks[1:])
         if next_year == year + 1
     ]
-    dots = [
-        f'<circle cx="{x(year):.2f}" cy="{y(rank):.2f}" r="2.5"/>'
-        for year, rank in ranks
-    ]
+    dots = []
+    for i, (year, rank) in enumerate(ranks):
+        cx, cy = x(year), y(rank)
+        # Keep the clickable area within this season's share of the time axis.
+        start = max(cx - 12, (cx + x(ranks[i - 1][0])) / 2) if i else cx - 12
+        end = min(cx + 12, (cx + x(ranks[i + 1][0])) / 2) if i + 1 < len(ranks) else cx + 12
+        label = f"{year} season, final rank {rank}"
+        dots.append(
+            f'<a href="{escape(_season_route(route, year))}" aria-label="{label}">'
+            f'<title>{label}</title>'
+            f'<rect x="{start:.2f}" y="{cy - 12:.2f}" width="{end - start:.2f}" '
+            f'height="24" fill="transparent"/>'
+            f'<circle cx="{cx:.2f}" cy="{cy:.2f}" r="2.5"/></a>'
+        )
     return (
         '<figure class="rank-trend"><figcaption id="rank-trend-title">'
         "Final national rank</figcaption>"
-        '<svg viewBox="0 0 480 142" width="100%" role="img" aria-labelledby="rank-trend-title" '
+        '<svg viewBox="0 0 480 142" width="100%" role="group" aria-labelledby="rank-trend-title" '
         'aria-describedby="rank-trend-description">'
         '<desc id="rank-trend-description">'
         "Gaps mark seasons without a final rank. See Season history for each rank."
-        '</desc><g fill="currentColor" font-size="12">'
+        '</desc><g aria-hidden="true" fill="currentColor" font-size="12">'
         + "".join(grid + years)
-        + '</g><g stroke="currentColor" stroke-width="1.5">'
+        + '</g><g aria-hidden="true" stroke="currentColor" stroke-width="1.5">'
         + "".join(segments)
         + '</g><g fill="currentColor">'
         + "".join(dots)

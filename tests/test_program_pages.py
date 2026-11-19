@@ -104,10 +104,15 @@ class ProgramPagesTests(unittest.TestCase):
             ["2026", "Through Week 2", "—", "—", "14", "—", "—"],
         )
 
-        trend = page.select_one('svg[role="img"]')
+        trend = page.select_one('svg[role="group"]')
         self.assertEqual(page.find(id=trend["aria-labelledby"]).text, "Final national rank")
         observations = trend.select("circle")
         self.assertEqual(len(observations), 3)
+        for dot, year, rank in zip(observations, (1902, 1903, 1905), (10, 9, 13), strict=True):
+            link = dot.find_parent("a")
+            self.assertEqual(link["aria-label"], f"{year} season, final rank {rank}")
+            self.assertEqual(link["href"], f"/{TEAM_PATH}{year}.html")
+            self.assertEqual(self.pages[link["href"].lstrip("/")].h1.text, f"{year} {TEAM}")
         first, second, third = observations
         self.assertLess(float(second["cy"]), float(first["cy"]))
         self.assertLess(float(first["cy"]), float(third["cy"]))
