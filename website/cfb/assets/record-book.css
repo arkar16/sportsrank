@@ -324,6 +324,11 @@ html .forecast-report .forecast-games :is(th, td):nth-child(3) { border-right: 1
 }
 .rank-trend figcaption { margin-bottom: .3rem; font-size: 1.15rem; }
 .rank-trend svg { display: block; color: var(--link); }
+.rank-trend a:is(:hover, :focus-visible) circle {
+  fill: var(--paper);
+  stroke: var(--rust);
+  stroke-width: 2;
+}
 
 .program-list {
   columns: 4 12rem;
