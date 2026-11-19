@@ -50,9 +50,9 @@ class TournamentTrackerTests(unittest.TestCase):
 
     def test_only_explicit_ncaa_tag_for_selected_season_enters_tracking(self):
         with sqlite3.connect(self.ledger) as db:
-            db.execute("CREATE TABLE games(season INTEGER, start_utc TEXT, raw_json TEXT)")
-            db.executemany("INSERT INTO games VALUES(?,?,?)", [
-                (year, "2026-03-20", json.dumps({"id": key, "tournament": tag}))
+            db.execute("CREATE TABLE games(id INTEGER PRIMARY KEY, season INTEGER, start_utc TEXT, raw_json TEXT)")
+            db.executemany("INSERT INTO games VALUES(?,?,?,?)", [
+                (key, year, "2026-03-20", json.dumps({"id": key, "tournament": tag}))
                 for year, key, tag in [(2026, 1, "NCAA"), (2026, 2, "NIT"),
                                       (2026, 3, "ACC"), (2027, 4, "NCAA")]
             ])
