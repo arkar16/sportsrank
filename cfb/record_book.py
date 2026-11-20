@@ -139,7 +139,7 @@ def _history_sheet(path: Path, routes: dict[str, str], years: set[int], presenta
         raise ValueError(f"unrecognized history sheet at {path}")
     markup = render_history_sheet(path.name, original, routes, years)
     changed = _write_changed(source, original)
-    return changed + _write_changed(path, presentation.render(markup.encode(), archive=False))
+    return changed + _write_changed(path, presentation.render(markup.encode(), archive=False, sortable=True))
 
 
 def _honors_pages(site: Path, seasons: list[Season]) -> dict[str, bytes]:
@@ -190,7 +190,7 @@ def build(site: Path) -> tuple[int, int, int]:
     years = {season.year for season in seasons}
     targets = {"/" + path.relative_to(site).as_posix() for path in site.rglob("*.html")}
     for relative, raw in honors.items():
-        markup = presentation.render(raw, archive=True, relative=relative, targets=targets)
+        markup = presentation.render(raw, archive=True, relative=relative, targets=targets, sortable=True)
         changed += _write_changed(site / relative, markup)
     # Decorate source pages last. School text, scoring rows, existing links and
     # the exact input bytes used by forecast evaluation can all be recovered.
