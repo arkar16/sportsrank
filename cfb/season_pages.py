@@ -11,7 +11,9 @@ from typing import TYPE_CHECKING
 from urllib.parse import unquote, urlsplit
 
 from bs4 import BeautifulSoup, Tag
+from .conference_pages import conference_route
 from .archive_presentation import updated_time
+from .reference_archive import season_team_routes
 from .reference_markup import school_label, source_bytes
 
 if TYPE_CHECKING:
@@ -136,7 +138,7 @@ def _rankings(
     baseline: str | None,
     checkpoint: str,
     routes: dict[str, str],
-    *, extra_columns=(), extra_values=None,
+    *, conference_links=None, extra_columns=(), extra_values=None,
 ) -> str:
     prior = {row.school: row for row in comparison}
     if baseline is None:
@@ -148,6 +150,8 @@ def _rankings(
 
     body = []
     for row in sorted(rows, key=lambda row: row.rank):
+        conference = conference_links.get(row.conference) if conference_links else None
+        label = _anchor(conference, row.conference) if conference else escape(row.conference)
         previous = prior.get(row.school)
         rank_change = rating_change = "—"
         if previous is not None:
@@ -159,7 +163,7 @@ def _rankings(
             f'<tr><td class="num">{row.rank}</td><th scope="row">{school_label(row.school, routes)}</th>'
             f'<td class="num">{rank_change}</td><td class="num">{rating_change}</td>'
             f'<td class="num">{row.rating:.2f}</td><td class="num">{escape(row.record)}</td>'
-            f'<td>{escape(row.conference)}</td>'
+            f'<td>{label}</td>'
             + "".join(f'<td class="num">{escape(value)}</td>' for value in
                       (extra_values[row.school] if extra_values else ())) + "</tr>"
         )
@@ -234,6 +238,7 @@ def _document(title: str, heading: str, body: str, *, metadata: str = "", head: 
 def build_season_pages(site: Path, season: Season, routes: dict[str, str]) -> Iterator[tuple[str, str]]:
     """Yield the existing season landing and one stable HTML route per ranking."""
     year = season.year
+    routes = season_team_routes(season, routes)
     base = f"cfb/years/{year}"
     directory = site / base
     filename = f"{year}_CFB.html"
@@ -282,13 +287,15 @@ def build_season_pages(site: Path, season: Season, routes: dict[str, str]) -> It
     for game in season.games:
         games_by_week[game.week].append(game)
     landing = checkpoints[-1]
+    conference_links = {r.conference: conference_route(r.conference, year) for r in season.rankings[landing] if r.conference}
     landing_content = ""
     for index, checkpoint in enumerate(checkpoints):
         baseline = None
         if index:
             baseline = checkpoints[0] if checkpoint == "FINAL" else checkpoints[index - 1]
         standings = _rankings(
-            season.rankings[checkpoint], season.rankings[baseline] if baseline else [], baseline, checkpoint, routes
+            season.rankings[checkpoint], season.rankings[baseline] if baseline else [], baseline, checkpoint, routes,
+            conference_links=conference_links,
         )
         upsets = ""
         if checkpoint == "FINAL":

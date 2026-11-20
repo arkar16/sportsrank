@@ -2,7 +2,7 @@
 
 ## Team pages
 
-Opening a team brings up its program history first. A compact line shows
+The team directory opens each program’s history. Within a season, team links open that year’s team page whenever the archive has one. A compact line shows
 season-ending national rank over time. A table gives the record, final national
 rank, final CORS Rating and best rank reached for each completed season. For
 the current season, label the latest figures with the week they cover. Opening

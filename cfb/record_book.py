@@ -6,10 +6,11 @@ import os
 from pathlib import Path
 import tempfile
 
+from .conference_pages import build_conference_pages
 from .history_sheets import render_history_sheet
 from .program_marks import program_logo_paths
 from .program_pages import build_program_pages
-from .reference_archive import Game, Season, final_history_rows, program_routes, read_archive
+from .reference_archive import Game, Season, final_history_rows, program_routes, read_archive, season_team_routes
 from .reference_markup import PagePresentation, school_label
 from .release import _page, _row_table
 from .season_pages import build_season_pages
@@ -56,6 +57,8 @@ def _last_week_game(school: str, game: Game, ranks: dict[str, int], routes: dict
 
 def _home(seasons: list[Season], routes: dict[str, str], *, is_root: bool) -> str:
     latest = seasons[-1]
+    program_count = len(routes)
+    routes = season_team_routes(latest, routes)
     key = next(reversed(latest.rankings))
     edition = "Final" if key == "FINAL" else "Preseason" if key == "PRESEASON" else f"Through Week {key[1:]}"
     year_link = f"/cfb/years/{latest.year}/{latest.year}_CFB.html"
@@ -94,7 +97,8 @@ def _home(seasons: list[Season], routes: dict[str, str], *, is_root: bool) -> st
         decades[year // 10 * 10].append(f'<a href="/cfb/years/{year}/{year}_CFB.html">{year}</a>')
     archive = "".join(f'<div><h3>{decade}s</h3><p>{" ".join(links)}</p></div>' for decade, links in decades.items())
     title = "SportsRank" if is_root else "College Football | SportsRank"
-    record_links = f"""<p><a href="/cfb/teams/index.html">{len(routes)} program histories</a></p>
+    record_links = f"""<p><a href="/cfb/teams/index.html">{program_count} program histories</a></p>
+<p><a href="/cfb/conferences/index.html">Conference histories</a></p>
 <p><a href="/cfb/years/history/nc_FBS_CFB_output.html">National champions</a></p>
 <p><a href="/cfb/years/history/wt_FBS_CFB_output.html">Last-place finishers</a></p>"""
     return home_document(title, "College football", f"{latest.year} FBS &middot; {edition}", top,
@@ -131,7 +135,7 @@ def _not_found(year: int) -> str:
 """
 
 
-def _history_sheet(path: Path, routes: dict[str, str], years: set[int], presentation: PagePresentation) -> int:
+def _history_sheet(path: Path, routes: dict[str, str], year_routes: dict[int, dict[str, str]], presentation: PagePresentation) -> int:
     # After the one-time conversion, the public original also supplies the next
     # offline build. A freshly exported table fragment takes precedence.
     source = path.with_suffix(".source.txt")
@@ -142,7 +146,7 @@ def _history_sheet(path: Path, routes: dict[str, str], years: set[int], presenta
         original = source.read_bytes()
     else:
         raise ValueError(f"unrecognized history sheet at {path}")
-    markup = render_history_sheet(path.name, original, routes, years)
+    markup = render_history_sheet(path.name, original, routes, set(year_routes), year_routes)
     changed = _write_changed(source, original)
     return changed + _write_changed(path, presentation.render(markup.encode(), archive=False, sortable=True))
 
@@ -176,11 +180,16 @@ def build(site: Path) -> tuple[int, int, int]:
         raise ValueError(f"no college football rankings at {site}")
     honors = _honors_pages(site, seasons)
     routes = program_routes(seasons)
-    presentation = PagePresentation(routes, program_logo_paths(site))
+    marks = program_logo_paths(site)
+    presentation = PagePresentation(routes, marks)
+    year_routes = {s.year: season_team_routes(s, routes) for s in seasons}
+    views = {str(year): PagePresentation(mapping, marks) for year, mapping in year_routes.items()}
     changed = 0
     for asset in (Path(__file__).parent / "assets").iterdir():
         changed += _write_changed(site / "cfb/assets" / asset.name, asset.read_bytes())
     for relative, markup in build_program_pages(seasons, routes):
+        changed += _write_changed(site / relative, presentation.render(markup.encode(), archive=False))
+    for relative, markup in build_conference_pages(seasons, routes):
         changed += _write_changed(site / relative, presentation.render(markup.encode(), archive=False))
     season_pages = set()
     for season in seasons:
@@ -192,7 +201,6 @@ def build(site: Path) -> tuple[int, int, int]:
         markup = _home(seasons, routes, is_root=relative == "index.html")
         changed += _write_changed(site / relative, presentation.render(markup.encode(), archive=False))
     changed += _write_changed(site / "404.html", presentation.render(_not_found(seasons[-1].year).encode(), archive=False))
-    years = {season.year for season in seasons}
     targets = {"/" + path.relative_to(site).as_posix() for path in site.rglob("*.html")}
     for relative, raw in honors.items():
         markup = presentation.render(raw, archive=True, relative=relative, targets=targets, sortable=True)
@@ -207,10 +215,11 @@ def build(site: Path) -> tuple[int, int, int]:
             if relative in honors:
                 continue
             if relative in {"cfb/years/history/CORS_NC_FBS_CFB.html", "cfb/years/history/CORS_WT_FBS_CFB.html"}:
-                changed += _history_sheet(path, routes, years, presentation)
+                changed += _history_sheet(path, routes, year_routes, presentation)
                 continue
             raw = path.read_bytes()
-            markup = presentation.render(raw, archive=True, relative=relative, targets=targets)
+            view = views.get(path.relative_to(site / "cfb" / directory).parts[0], presentation)
+            markup = view.render(raw, archive=True, relative=relative, targets=targets)
             if raw != markup:
                 changed += _write_changed(path, markup)
     return len(seasons), len(routes), changed
