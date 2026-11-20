@@ -67,8 +67,8 @@ def season_team_routes(season: Season, routes: dict[str, str]) -> dict[str, str]
     """Every team ranked at any checkpoint gets a review for this season."""
     ranked = {row.school for rows in season.rankings.values() for row in rows}
     return {
-        school: program_season_route(route, season.year) if school in ranked else route
-        for school, route in routes.items()
+        school: program_season_route(route, season.year)
+        for school, route in routes.items() if school in ranked
     }
 
 

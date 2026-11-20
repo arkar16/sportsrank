@@ -57,6 +57,7 @@ def _last_week_game(school: str, game: Game, ranks: dict[str, int], routes: dict
 
 def _home(seasons: list[Season], routes: dict[str, str], *, is_root: bool) -> str:
     latest = seasons[-1]
+    program_count = len(routes)
     routes = season_team_routes(latest, routes)
     key = next(reversed(latest.rankings))
     edition = "Final" if key == "FINAL" else "Preseason" if key == "PRESEASON" else f"Through Week {key[1:]}"
@@ -106,7 +107,7 @@ def _home(seasons: list[Season], routes: dict[str, str], *, is_root: bool) -> st
 <th scope="col">Record</th><th scope="col" class="num">CORS rating</th>
 <th scope="col" class="home-result">Last Week{week_label}</th></tr></thead>
 <tbody>{''.join(top)}</tbody></table></div><p><a href="{year_link}">{latest.year} standings</a></p>
-</section><section><h2>Record book</h2><p><a href="/cfb/teams/index.html">{len(routes)} program histories</a></p>
+</section><section><h2>Record book</h2><p><a href="/cfb/teams/index.html">{program_count} program histories</a></p>
 <p><a href="/cfb/conferences/index.html">Conference histories</a></p>
 <p><a href="/cfb/years/history/nc_FBS_CFB_output.html">National champions</a></p>
 <p><a href="/cfb/years/history/wt_FBS_CFB_output.html">Last-place finishers</a></p></section></div>

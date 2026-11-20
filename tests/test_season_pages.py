@@ -126,7 +126,7 @@ class SeasonPageTests(unittest.TestCase):
             ["11", "First favorite by 7.00", "First winner 10–7 First favorite"],
             ["11", "Second favorite by 7.00", "Second winner 10–7 Second favorite"],
         ])
-        self.assertEqual(landing.find("a", string="Georgia Tech")["href"], self.routes["Georgia Tech"])
+        self.assertIsNone(landing.find("a", string="Georgia Tech"))
         self.assertEqual(
             [a["href"] for a in landing.select('nav[aria-label="Games and forecasts"] a')], [result, slate, forecast]
         )

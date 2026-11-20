@@ -47,9 +47,10 @@ def render_history_sheet(filename: str, original: bytes, routes: dict[str, str],
         row_index = f'<td class="num history-detail">{escape(cells[0])}</td>' if has_index else ""
         numbers = "".join(_stat_cell("td", column, value)
                           for column, value in zip(_STAT_COLUMNS, stats, strict=True))
+        links = routes if year_routes is None else year_routes.get(year, {})
         rows.append(
             f'<tr>{row_index}<th scope="row" class="num">{season_label}</th>'
-            f'<td>{school_label(school, (year_routes or {}).get(year, routes))}</td><td class="history-detail">{escape(conference)}</td>'
+            f'<td>{school_label(school, links)}</td><td class="history-detail">{escape(conference)}</td>'
             f'<td>{escape(record)}</td>{numbers}</tr>'
         )
 
