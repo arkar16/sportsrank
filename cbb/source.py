@@ -14,6 +14,7 @@ import sqlite3
 class Team:
     id: int
     school: str
+    conference: str = ""
 
 
 @dataclass(frozen=True)
@@ -39,10 +40,11 @@ def _read_season(db: sqlite3.Connection, year: int) -> Season:
     # The cache's season-specific /teams responses define D-I membership.
     # IDs are stable across seasons and independent of names and conferences.
     teams = {
-        team_id: Team(team_id, json.loads(raw)["school"])
+        team_id: Team(team_id, data["school"], data.get("conference") or "—")
         for team_id, raw in db.execute(
             "SELECT id, raw_json FROM teams WHERE season = ? ORDER BY id", (year,)
         )
+        for data in [json.loads(raw)]
     }
     if not teams:
         raise ValueError(f"Missing Division I roster for season {year}")

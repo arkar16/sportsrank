@@ -136,6 +136,7 @@ def _rankings(
     baseline: str | None,
     checkpoint: str,
     routes: dict[str, str],
+    *, extra_columns=(), extra_values=None,
 ) -> str:
     prior = {row.school: row for row in comparison}
     if baseline is None:
@@ -158,7 +159,9 @@ def _rankings(
             f'<tr><td class="num">{row.rank}</td><th scope="row">{school_label(row.school, routes)}</th>'
             f'<td class="num">{rank_change}</td><td class="num">{rating_change}</td>'
             f'<td class="num">{row.rating:.2f}</td><td class="num">{escape(row.record)}</td>'
-            f'<td>{escape(row.conference)}</td></tr>'
+            f'<td>{escape(row.conference)}</td>'
+            + "".join(f'<td class="num">{escape(value)}</td>' for value in
+                      (extra_values[row.school] if extra_values else ())) + "</tr>"
         )
     return (
         (f"<p>{note}</p>" if note else "")
@@ -168,7 +171,8 @@ def _rankings(
         '<th scope="col" class="num">Rank change</th><th scope="col" class="num">Rating change</th>'
         '<th scope="col" class="num">CORS rating</th><th scope="col" class="num">Record</th>'
         '<th scope="col">Conference</th>'
-        f'</tr></thead><tbody>{"".join(body)}</tbody></table></div>'
+        + "".join(f'<th scope="col" class="num">{escape(column)}</th>' for column in extra_columns)
+        + f'</tr></thead><tbody>{"".join(body)}</tbody></table></div>'
     )
 
 

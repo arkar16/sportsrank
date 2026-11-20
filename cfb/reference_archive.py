@@ -34,6 +34,7 @@ class Game:
     away_score: int | None
     home_handicap: Decimal | None
     neutral_site: bool = False
+    tipoff_label: str = ""
 
 
 @dataclass(slots=True)

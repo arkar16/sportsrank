@@ -5,8 +5,28 @@ from pathlib import Path
 import shutil
 
 from site_navigation import masthead
+from .home import landing_page
 from .march_archive import build_tournaments
-from .record_book import SECTIONS, build, team_label
+from .record_book import SECTIONS, _write, build, season_name, team_label
+
+
+def _forecasts(forecasts, prepared_at, logo_ids, current):
+    forecast_rows = []
+    for row in forecasts:
+        margin = row["predicted_home_margin"]
+        pick = "Pick’em" if margin == 0 else escape(row["home"] if margin > 0 else row["away"])
+        forecast_rows.append(
+            f'<tr><td>{escape(row["tipoff"])}</td><td>{team_label(row["away"], row.get("away_id"), logo_ids, linked=current)}</td>'
+            f'<td>{team_label(row["home"], row.get("home_id"), logo_ids, linked=current)}</td><td>{pick}</td><td class="num">{abs(margin):.2f}</td></tr>'
+        )
+    section_id = ' id="forecasts"' if current else ""
+    forecast_section = ""
+    if forecast_rows:
+        forecast_section = f"""
+<section{section_id}><h2>Game forecasts</h2><p>Prepared {prepared_at:%B %d, %Y at %H:%M %Z}. Tipoffs reflect the schedule at preparation.</p><div class="table-scroll"><table>
+<thead><tr><th>Tipoff (Eastern)</th><th>Away</th><th>Home</th><th>CORS pick</th><th>Margin</th></tr></thead>
+<tbody>{''.join(forecast_rows)}</tbody></table></div></section>"""
+    return forecast_section
 
 
 def render_rankings(season, cutoff, rankings, forecasts, prepared_at, *, logo_ids=frozenset(), current=False, tournaments=False):
@@ -19,24 +39,10 @@ def render_rankings(season, cutoff, rankings, forecasts, prepared_at, *, logo_id
             f'<tr><td class="num">{row["rank"]}</td><th scope="row">{team_label(row["team"], row.get("team_id"), logo_ids, linked=current)}</th>'
             f'<td>{row["wins"]}–{row["losses"]}</td><td class="num">{row["rating"]:.2f}</td></tr>'
         )
-    forecast_rows = []
-    for row in forecasts:
-        margin = row["predicted_home_margin"]
-        pick = "Pick’em" if margin == 0 else escape(row["home"] if margin > 0 else row["away"])
-        forecast_rows.append(
-            f'<tr><td>{escape(row["tipoff"])}</td><td>{team_label(row["away"], row.get("away_id"), logo_ids, linked=current)}</td>'
-            f'<td>{team_label(row["home"], row.get("home_id"), logo_ids, linked=current)}</td><td>{pick}</td><td class="num">{abs(margin):.2f}</td></tr>'
-        )
-    forecast_shortcut = '<p><a href="#forecasts">Upcoming game forecasts</a></p>' if current and forecast_rows else ""
+    forecast_shortcut = '<p><a href="#forecasts">Upcoming game forecasts</a></p>' if current and forecasts else ""
     if current and tournaments:
         forecast_shortcut += '<p><a href="/cbb/tournaments/index.html">March Madness picks and results</a></p>'
-    section_id = ' id="forecasts"' if current else ""
-    forecast_section = ""
-    if forecast_rows:
-        forecast_section = f"""
-<section{section_id}><h2>Game forecasts</h2><p>Prepared {prepared_at:%B %d, %Y at %H:%M %Z}. Tipoffs reflect the schedule at preparation.</p><div class="table-scroll"><table>
-<thead><tr><th>Tipoff (Eastern)</th><th>Away</th><th>Home</th><th>CORS pick</th><th>Margin</th></tr></thead>
-<tbody>{''.join(forecast_rows)}</tbody></table></div></section>"""
+    forecast_section = _forecasts(forecasts, prepared_at, logo_ids, current)
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{edition} men's college basketball rankings | SportsRank</title>
@@ -109,11 +115,13 @@ def main():
         raise ValueError("A different basketball edition exists for that timestamp")
     archive.write_text(page)
     years = build_tournaments(args.output, seasons, as_of, logo_ids)
-    build(args.output, seasons, as_of, logo_ids, tournament_years=years)
-    current = render_rankings(args.season, cutoff, rankings, upcoming, as_of.astimezone(et),
-                              logo_ids=logo_ids, current=True, tournaments=bool(years))
-    current = current.replace("</main>", f'<p><a href="editions/{archive.name}">Dated edition</a></p></main>')
-    (args.output / "index.html").write_text(current)
+    archives, routes, presentation = build(args.output, seasons, as_of, logo_ids, tournament_years=years)
+    edition_link = f'<nav class="sr-report-nav"><a href="editions/{archive.name}">Dated edition</a></nav>'
+    report = _forecasts(upcoming, as_of.astimezone(et), logo_ids, True)
+    if not report:
+        report = '<p id="forecasts">No upcoming games in this edition.</p>'
+    _write(args.output, "current.html", f"{season_name(args.season)} basketball forecasts", edition_link + report)
+    (args.output / "index.html").write_bytes(landing_page(archives, routes, presentation, checkpoint, archive, years))
 
 
 if __name__ == "__main__":

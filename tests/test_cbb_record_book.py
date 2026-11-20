@@ -30,9 +30,10 @@ class BasketballBookTests(unittest.TestCase):
                 return BeautifulSoup((root / path).read_bytes(), "html.parser")
             page = read("teams/1/2020.html")
             scores = [row.find_all("td")[-1].text for row in page.select("table")[0].select("tbody tr")]
-            self.assertEqual(scores, ["60–74", "—"])
+            self.assertIn("A & M first", page.select_one("thead").text)
+            self.assertEqual(scores, ["74–60", "—"])
             self.assertIn("1–0", page.get_text())
-            self.assertIn("A & M", read("teams/index.html").text)
+            self.assertIn("A & M", read("teams/index.html").select_one(".program-list").text)
             self.assertTrue(read("teams/1/index.html").select_one('a[href="/cbb/teams/1/2020.html"]'))
             self.assertEqual(len(read("seasons/2020/weeks/1.html").select("table")[0].select("tbody tr")), 2)
             self.assertFalse((root / "seasons/2020/weeks/2.html").exists())

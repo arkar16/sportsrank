@@ -13,7 +13,7 @@ _MARK = re.compile(rb'<img class="school-mark(?: large)?" [^<>]*>')
 _SCHOOL_LINK = re.compile(rb'<a data-sr-team href="[^"<>]+">([^<>]*)</a>')
 _CELL = re.compile(r'(<(?P<tag>td|th)\b[^>]*>)(?P<value>[^<>]+)(</(?P=tag)>)', re.I)
 _SCHOOL_LABEL = re.compile(
-    r'(?P<start><a(?: data-sr-team)? href="(?P<route>/cfb/teams/[^"/]+/index\.html)"[^>]*>|<span data-school>)'
+    r'(?P<start><a(?: data-sr-team)? href="(?P<route>/(?:cfb|cbb)/teams/[^"/]+/index\.html)"[^>]*>|<span data-school>)'
     r'(?P<name>[^<>]+)(?P<end></(?:a|span)>)'
 )
 _HEADING = re.compile(r'(<span data-program="([^"]+)">)')
@@ -57,7 +57,8 @@ MASTHEAD = masthead(
 
 
 class PagePresentation:
-    def __init__(self, routes: dict[str, str], marks: dict[str, str]):
+    def __init__(self, routes: dict[str, str], marks: dict[str, str], *, header=MASTHEAD):
+        self.header = header
         self.routes = routes
         self.marks = marks
         self.by_route = {route: name for name, route in routes.items()}
@@ -112,7 +113,7 @@ class PagePresentation:
             head += _SORT_SCRIPT
         if head:
             markup = _HEAD_END.sub(lambda m: _ui(head) + m[0], markup, count=1)
-        markup = _BODY.sub(lambda m: m[0] + _ui(MASTHEAD), markup, count=1)
+        markup = _BODY.sub(lambda m: m[0] + _ui(self.header), markup, count=1)
         if archive:
             markup = _CELL.sub(self._cell, markup)
             # Some legacy tables are direct body children and have dozens of
