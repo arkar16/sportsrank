@@ -123,6 +123,9 @@ class SitewideRecordBookTests(unittest.TestCase):
         build(site)
         self.assertEqual(build(site), (1, 1, 0))
         doc = BeautifulSoup(sheet.read_bytes(), "html.parser")
+        script = doc.select_one('script[src="/cfb/assets/sort-history.js"][defer]')
+        self.assertIsNotNone(script)
+        self.assertTrue((site / script["src"].lstrip("/")).is_file())
         download = doc.select_one("a[download]")
         self.assertEqual((sheet.parent / download["href"]).read_bytes(), original)
         self.assertEqual([c.text for c in doc.tbody.tr.find_all(["td", "th"])], list(row))
@@ -185,3 +188,7 @@ class SitewideRecordBookTests(unittest.TestCase):
                 self.assertEqual([[cell.get_text() for cell in entry.select("td")]
                                   for entry in page.select("tbody tr")], [row])
                 self.assertEqual(page.select_one("tbody tr a")["href"], season_link)
+                self.assertIsNotNone(page.select_one('script[src="/cfb/assets/sort-history.js"][defer]'))
+                archive = BeautifulSoup(source_bytes(path.read_bytes()), "html.parser")
+                self.assertIsNone(archive.find("script"))
+                self.assertIsNotNone(archive.select_one("tbody tr"))
