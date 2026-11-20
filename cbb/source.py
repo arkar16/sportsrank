@@ -25,6 +25,7 @@ class Game:
     neutral_site: bool
     status: str
     score: tuple[int, int] | None
+    ncaa_round: str | None = None
 
 
 @dataclass(frozen=True)
@@ -85,8 +86,11 @@ def _read_season(db: sqlite3.Connection, year: int) -> Season:
             ):
                 raise ValueError(f"Final basketball game {game_id} has an invalid score")
             score = (home_points, away_points)
+        ncaa_round = None
+        if data.get("tournament") == "NCAA":
+            ncaa_round = (data.get("gameNotes") or "").split(" - ")[-1] or "Tournament games"
         games.append(Game(
-            game_id, start.astimezone(timezone.utc), home, away, neutral_site, status, score,
+            game_id, start.astimezone(timezone.utc), home, away, neutral_site, status, score, ncaa_round,
         ))
 
     games.sort(key=lambda game: (game.start_utc, game.id))
