@@ -1,4 +1,5 @@
 """Check reader navigation and source compatibility at the static export boundary."""
+from hashlib import sha256
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
@@ -126,6 +127,10 @@ class SitewideRecordBookTests(unittest.TestCase):
         script = doc.select_one('script[src="/cfb/assets/sort-history.js"][defer]')
         self.assertIsNotNone(script)
         self.assertTrue((site / script["src"].lstrip("/")).is_file())
+        css = (site / "cfb/assets/record-book.css").read_bytes()
+        revision = sha256(css).hexdigest()[:12]
+        links = doc.select('link[rel="stylesheet"]')
+        self.assertEqual([link["href"] for link in links], [f"/cfb/assets/record-book.css?v={revision}"])
         download = doc.select_one("a[download]")
         self.assertEqual((sheet.parent / download["href"]).read_bytes(), original)
         self.assertEqual([c.text for c in doc.tbody.tr.find_all(["td", "th"])], list(row))
@@ -189,6 +194,10 @@ class SitewideRecordBookTests(unittest.TestCase):
                                   for entry in page.select("tbody tr")], [row])
                 self.assertEqual(page.select_one("tbody tr a")["href"], season_link)
                 self.assertIsNotNone(page.select_one('script[src="/cfb/assets/sort-history.js"][defer]'))
+                css = (site / "cfb/assets/record-book.css").read_bytes()
+                revision = sha256(css).hexdigest()[:12]
+                links = page.select('link[rel="stylesheet"]')
+                self.assertEqual([link["href"] for link in links], [f"/cfb/assets/record-book.css?v={revision}"])
                 archive = BeautifulSoup(source_bytes(path.read_bytes()), "html.parser")
                 self.assertIsNone(archive.find("script"))
                 self.assertIsNotNone(archive.select_one("tbody tr"))
