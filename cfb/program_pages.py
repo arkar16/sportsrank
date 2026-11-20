@@ -31,7 +31,9 @@ class _ProgramSeason:
 
 
 def build_program_pages(
-    seasons: list[Season], routes: dict[str, str]
+    seasons: list[Season], routes: dict[str, str], *, sport="football", directory_route=_DIRECTORY,
+    season_route=lambda year: f"/cfb/years/{year}/{year}_CFB.html",
+    year_label=str, directory_label=None,
 ) -> Iterator[tuple[str, str]]:
     """Yield the program index and one history and season page per ranked program."""
     histories: dict[str, list[_ProgramSeason]] = defaultdict(list)
@@ -52,10 +54,10 @@ def build_program_pages(
 
     schools = sorted(histories, key=lambda school: (school.casefold(), school))
     directory = '<ul class="program-list">' + "".join(
-        f"<li>{_link(routes[school], school)}</li>" for school in schools
+        f"<li>{directory_label(school) if directory_label else _link(routes[school], school)}</li>" for school in schools
     ) + "</ul>"
-    yield _DIRECTORY.lstrip("/"), _page(
-        "College football teams", "College football teams", [], directory, seasons[-1].updated_at if seasons else ""
+    yield directory_route.lstrip("/"), _page(
+        f"College {sport} teams", f"College {sport} teams", [], directory, seasons[-1].updated_at if seasons else ""
     )
 
     for school in schools:
@@ -64,16 +66,16 @@ def build_program_pages(
         name = escape(school)
         heading = f'<span data-program="{name}">{name}</span>'
         yield route.lstrip("/"), _page(
-            f"{school} football", heading, [],
+            f"{school} {sport}", heading, [],
             _rank_trend(route, history) + _history_table(route, history), history[0].season.updated_at,
         )
         for entry in history:
             year = entry.season.year
             yield _season_route(route, year).lstrip("/"), _page(
-                f"{year} {school} football", f"{year} {heading}",
+                f"{year_label(year)} {school} {sport}", f"{year_label(year)} {heading}",
                 [
                     (route, f"{school} history"),
-                    (f"/cfb/years/{year}/{year}_CFB.html", f"{year} season"),
+                    (season_route(year), f"{year_label(year)} season"),
                 ],
                 _season_table(school, entry, routes), entry.season.updated_at,
             )
@@ -282,4 +284,6 @@ def _game_cells(school: str, game: Game, routes: dict[str, str]) -> str:
         spread = format(handicap, "+f") if handicap else format(handicap.copy_abs(), "f")
 
     name = school_label(opponent, routes)
+    if game.tipoff_label:
+        name += f'<small>{escape(game.tipoff_label)}</small>'
     return f'<td>{name}</td><td>{side}</td><td class="num">{spread}</td><td class="num">{score}</td>'

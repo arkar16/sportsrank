@@ -24,3 +24,31 @@ class BasketballPageTest(unittest.TestCase):
         for image in images:
             self.assertEqual(image["src"], "/cbb/assets/team-logos/19.png")
             self.assertEqual(image["alt"], "")
+
+
+class PublishedLayoutTest(unittest.TestCase):
+    def test_basketball_uses_football_record_book_layouts(self):
+        from pathlib import Path
+        site = Path(__file__).resolve().parents[1] / "website"
+        def read(path):
+            return BeautifulSoup((site / path).read_bytes(), "lxml")
+        football = read("cfb/cfb.html")
+        basketball = read("cbb/index.html")
+        for selector in (".home-columns > section", ".year-archive"):
+            self.assertEqual(len(basketball.select(selector)), len(football.select(selector)), selector)
+        basketball_table = basketball.select_one(".home-columns table")
+        football_table = football.select_one(".home-columns table")
+        basketball_columns = [next(th.stripped_strings) for th in basketball_table.select("thead th")]
+        football_columns = [next(th.stripped_strings) for th in football_table.select("thead th")]
+        self.assertEqual(basketball_columns, ["Rank", "Team", "Record", "CORS rating", "Last Week"])
+        self.assertEqual([name for name in football_columns if name in basketball_columns], basketball_columns)
+        self.assertEqual(len(basketball_table.select("tbody tr")), 10)
+        self.assertTrue(basketball.select_one(".year-archive a"))
+        for path, selector in (("cbb/teams/index.html", ".program-list li"),
+                               ("cbb/teams/295/index.html", ".rank-trend svg a"),
+                               ("cbb/teams/295/2027.html", ".archive-nav + main table"),
+                               ("cbb/seasons/2027/index.html", ".season-standings #cors-upsets"),
+                               ("cbb/seasons/2027/weeks/1.html", ".week-links li"),
+                               ("cbb/current.html", ".sr-report #forecasts"),
+                               ("cbb/performance/index.html", ".sr-report-nav")):
+            self.assertIsNotNone(read(path).select_one(selector), path)

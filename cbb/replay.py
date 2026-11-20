@@ -37,6 +37,7 @@ class RankingRow(TypedDict):
     rank: int
     team_id: int
     school: str
+    conference: str
     cors: float
     wins: int
     losses: int
@@ -143,7 +144,7 @@ def _rankings(
         previous_term = previous_cors[team_id] / week
         cors = round(((win_points + margin_points) * scaled_sos + previous_term) / 2, 2)
         rows.append(RankingRow(
-            rank=0, team_id=team_id, school=team.school, cors=cors,
+            rank=0, team_id=team_id, school=team.school, conference=team.conference, cors=cors,
             wins=stats.wins, losses=played - stats.wins, win_pct=win_pct,
             mov=round(mov, 2), sos=sos, expected_wins=expected,
             wins_vs_expected=round(stats.wins - expected, 2),
@@ -163,7 +164,7 @@ def _preseason(
             adjusted = prior["cors"] - prior["wins_vs_expected"] * _REGRESSION_FACTOR
             cors = round(adjusted * carryover_strength, 2)
         rows.append(RankingRow(
-            rank=0, team_id=team_id, school=team.school, cors=cors,
+            rank=0, team_id=team_id, school=team.school, conference=team.conference, cors=cors,
             wins=0, losses=0, win_pct=0.0, mov=0.0, sos=0.0,
             expected_wins=0.0, wins_vs_expected=0.0,
         ))

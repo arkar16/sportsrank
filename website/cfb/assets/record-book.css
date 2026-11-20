@@ -190,6 +190,8 @@ main:has(> .home-columns) > h1 { font-size: 3.2rem; }
 }
 .home-columns h2 { margin: .25rem 0 .45rem; }
 .home-columns .table-scroll { margin-bottom: .55rem; }
+.home-columns table:not(.home-rankings) th:first-child { width: 1%; }
+.home-columns table:not(.home-rankings) :is(th, td):nth-child(3) { text-align: right; }
 .home-rankings {
   --rank-width: 3rem;
   table-layout: fixed;
@@ -216,7 +218,7 @@ main:has(> .home-columns) > h1 { font-size: 3.2rem; }
 }
 .home-all summary:hover { text-decoration: underline; }
 .home-result { border-inline-start: 1px solid var(--rule); }
-.home-rankings thead small {
+.home-result small, .home-rankings thead small {
   display: block;
   margin-top: .15rem;
   color: var(--muted);
@@ -456,6 +458,14 @@ html .metrics {
 }
 
 @media (max-width: 1120px) {
+  .home-columns:has(.home-rankings) { display: block; }
+  .home-columns:has(.home-rankings) > section:last-child {
+    margin-top: 1.25rem;
+    border-left: 0;
+    padding-left: 0;
+  }
+}
+@media (max-width: 820px) {
   .home-columns { display: block; }
   .home-columns > section:last-child { margin-top: 1.25rem; border-left: 0; padding-left: 0; }
 }
@@ -526,6 +536,26 @@ html .metrics {
   .dataframe thead th { white-space: nowrap; }
   .sortable-column { padding-inline: .25rem; }
   .sort-column { overflow-wrap: normal; }
+  .home-columns table:not(.home-rankings) { table-layout: fixed; white-space: normal; }
+  .home-columns table:not(.home-rankings) th:first-child { width: 2.5rem; }
+  .home-columns table:not(.home-rankings) th:nth-child(2) { width: 28%; }
+  .home-columns table:not(.home-rankings) th:nth-child(3),
+  .home-columns table:not(.home-rankings) th:nth-child(4) { width: 3rem; }
+  .home-columns table:not(.home-rankings) :is(td, th) { padding-inline: .35rem; }
+  .home-columns table:not(.home-rankings) .home-game { grid-template-columns: minmax(0, 1fr) auto; }
+  .home-columns table:not(.home-rankings) .home-game-score { grid-column: 2; grid-row: 1; }
+  .home-columns table:not(.home-rankings) .home-opponent { grid-column: 1 / -1; grid-row: 2; }
+  .home-columns table:not(.home-rankings) :is(th[scope="row"], .home-result) a {
+    display: inline-flex;
+    max-width: 100%;
+    align-items: center;
+    overflow-wrap: anywhere;
+  }
+  .home-columns table:not(.home-rankings) .school-mark {
+    flex: none;
+    width: 16px;
+    height: 16px;
+  }
   .home-rankings :is(td, th) { padding-inline: .35rem; }
   .home-rankings col.team { width: 7rem; }
   .home-rankings .school-mark { width: 16px; height: 16px; }

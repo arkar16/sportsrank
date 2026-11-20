@@ -62,6 +62,10 @@ def _home_game(
     return f'<div class="home-game"><span>{outcome}{site}</span> {matchup} {value}</div>'
 
 
+def _last_week_game(school: str, game: Game, ranks: dict[str, int], routes: dict[str, str]) -> str:
+    return _home_game(school, game, ranks, routes)
+
+
 def _home_table(rows: list[str], headings: str, label: str) -> str:
     return (
         f'<div class="table-scroll" role="region" aria-label="{label}" tabindex="0">'
@@ -113,7 +117,7 @@ def _home_rankings(season: Season, routes: dict[str, str], key: str) -> str:
             delta = previous_rank - entry.rank
             change = f"{delta:+d}" if delta else "0"
             movement = " rise" if delta > 0 else " fall" if delta < 0 else ""
-        last = "".join(_home_game(school, game, pregame_ranks, routes) for game in games[week, school])
+        last = "".join(_last_week_game(school, game, pregame_ranks, routes) for game in games[week, school])
         upcoming = "".join(
             _home_game(school, game, current_ranks, routes, forecast=True) for game in games[next_week, school]
         )
