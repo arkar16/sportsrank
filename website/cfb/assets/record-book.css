@@ -190,10 +190,33 @@ main:has(> .home-columns) > h1 { font-size: 3.2rem; }
 }
 .home-columns h2 { margin: .25rem 0 .45rem; }
 .home-columns .table-scroll { margin-bottom: .55rem; }
-.home-columns th:first-child { width: 1%; }
-.home-columns :is(th, td):nth-child(3) { text-align: right; }
+.home-rankings {
+  --rank-width: 3rem;
+  table-layout: fixed;
+  min-width: 46rem;
+  white-space: normal;
+}
+.home-rankings col.rank { width: var(--rank-width); }
+.home-rankings col.team { width: 8.5rem; }
+.home-rankings col.change { width: 5.5rem; }
+.home-rankings .rank-change { padding-inline: .35rem; white-space: nowrap; }
+.home-rankings col.record { width: 4rem; }
+.home-rankings col.rating { width: 4.5rem; }
+.home-rankings .rise { color: var(--link); }
+.home-rankings .fall { color: var(--rust); }
+.home-rankings :is(th[scope="row"], .home-opponent) { overflow-wrap: anywhere; }
+.home-scroll-hint { display: none; }
+.home-all summary {
+  width: fit-content;
+  padding: .35rem .4rem .35rem 0;
+  color: var(--link);
+  font-size: .875rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.home-all summary:hover { text-decoration: underline; }
 .home-result { border-inline-start: 1px solid var(--rule); }
-.home-result small {
+.home-rankings thead small {
   display: block;
   margin-top: .15rem;
   color: var(--muted);
@@ -432,9 +455,27 @@ html .metrics {
   font-size: .9375rem;
 }
 
-@media (max-width: 820px) {
+@media (max-width: 1120px) {
   .home-columns { display: block; }
   .home-columns > section:last-child { margin-top: 1.25rem; border-left: 0; padding-left: 0; }
+}
+
+@media (max-width: 790px) {
+  .home-columns > section > .home-scroll-hint {
+    display: block;
+    margin: 0;
+    color: var(--muted);
+    font-size: .8125rem;
+    font-weight: 400;
+  }
+  .home-rankings :is(th, td):nth-child(-n+2) {
+    position: sticky;
+    inset-inline-start: 0;
+  }
+  .home-rankings :is(th, td):nth-child(2) {
+    inset-inline-start: var(--rank-width);
+    border-inline-end: 1px solid var(--rule);
+  }
 }
 
 @media (max-width: 650px) {
@@ -485,25 +526,9 @@ html .metrics {
   .dataframe thead th { white-space: nowrap; }
   .sortable-column { padding-inline: .25rem; }
   .sort-column { overflow-wrap: normal; }
-  .home-columns table { table-layout: fixed; white-space: normal; }
-  .home-columns th:first-child { width: 2.5rem; }
-  .home-columns th:nth-child(2) { width: 28%; }
-  .home-columns th:nth-child(3), .home-columns th:nth-child(4) { width: 3rem; }
-  .home-columns td, .home-columns th { padding-inline: .35rem; }
-  .home-game { grid-template-columns: minmax(0, 1fr) auto; }
-  .home-game-score { grid-column: 2; grid-row: 1; }
-  .home-opponent { grid-column: 1 / -1; grid-row: 2; }
-  .home-columns :is(th[scope="row"], .home-result) a {
-    display: inline-flex;
-    max-width: 100%;
-    align-items: center;
-    overflow-wrap: anywhere;
-  }
-  .home-columns .school-mark {
-    flex: none;
-    width: 16px;
-    height: 16px;
-  }
+  .home-rankings :is(td, th) { padding-inline: .35rem; }
+  .home-rankings col.team { width: 7rem; }
+  .home-rankings .school-mark { width: 16px; height: 16px; }
   [aria-label="Season history"] td:nth-child(2) {
     min-width: 5.25rem;
     white-space: normal;
