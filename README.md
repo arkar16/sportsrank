@@ -282,3 +282,11 @@ their printed picks. After a deployment verifies the public current page, record
 the verification time and workflow URL in `cbb/issued.py` for the corresponding
 edition. The performance page grades its printed margins only for matching games
 that tipped after verification. Reconstructed performance is reported separately.
+
+The same build exports completed 2022–26 March Madness replays. It joins the
+weekly CORS forecast and final score to the retained opponent-adjusted margin
+model's weekly and pre-tipoff predictions in `cbb/tournament_margins.csv`.
+Both research columns are signed points for the designated home team. The
+archive checks game identity, teams, tipoff, weekly cutoff, and coverage against
+the cached NCAA tournament finals. A season becomes visible after its last
+tipoff clears the replay's six-hour result buffer.
