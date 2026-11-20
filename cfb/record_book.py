@@ -1,6 +1,7 @@
 """Build the static program record book from the published college football archive."""
 import argparse
 from collections import defaultdict
+from hashlib import sha256
 from html import escape
 import os
 from pathlib import Path
@@ -31,63 +32,133 @@ def _write_changed(path: Path, content: bytes) -> bool:
     return True
 
 
-def _last_week_game(school: str, game: Game, ranks: dict[str, int], routes: dict[str, str]) -> str:
-    if school == game.home:
-        opponent, site = game.away, "vs"
-        scored, allowed = game.home_score, game.away_score
-    else:
-        opponent, site = game.home, "@"
-        scored, allowed = game.away_score, game.home_score
-    if game.neutral_site:
-        site = "vs"
+def _home_game(
+    school: str, game: Game, ranks: dict[str, int], routes: dict[str, str], *, forecast: bool = False,
+) -> str:
+    at_home = school == game.home
+    opponent = game.away if at_home else game.home
+    site = "vs" if at_home or game.neutral_site else "@"
     rank = f"#{ranks[opponent]} " if opponent in ranks else ""
     neutral = " (neutral)" if game.neutral_site else ""
     label = school_label(opponent, routes)
     matchup = f'<span class="home-opponent">{rank}{label}{neutral}</span>'
     outcome = ""
-    if scored is None or allowed is None:
-        score = '<span class="home-game-score">No final score</span>'
+    if forecast:
+        handicap = game.home_handicap
+        if handicap is None or not handicap.is_finite():
+            value = '<span class="home-game-score">Spread unavailable</span>'
+        else:
+            spread = handicap if at_home else handicap.copy_negate()
+            line = format(spread.normalize(), "+f") if spread else "Pick’em"
+            value = f'<strong class="home-game-score">{line}</strong>'
     else:
-        letter, meaning = ("W", "Win") if scored > allowed else ("L", "Loss") if scored < allowed else ("T", "Tie")
-        outcome = f'<abbr title="{meaning}">{letter}</abbr> '
-        score = f'<strong class="home-game-score">{scored}–{allowed}</strong>'
-    return f'<div class="home-game"><span>{outcome}{site}</span> {matchup} {score}</div>'
+        scored, allowed = (game.home_score, game.away_score) if at_home else (game.away_score, game.home_score)
+        if scored is None or allowed is None:
+            value = '<span class="home-game-score">No final score</span>'
+        else:
+            letter, meaning = ("W", "Win") if scored > allowed else ("L", "Loss") if scored < allowed else ("T", "Tie")
+            outcome = f'<abbr title="{meaning}">{letter}</abbr> '
+            value = f'<strong class="home-game-score">{scored}–{allowed}</strong>'
+    return f'<div class="home-game"><span>{outcome}{site}</span> {matchup} {value}</div>'
 
 
-def _home(seasons: list[Season], routes: dict[str, str], *, is_root: bool) -> str:
+def _last_week_game(school: str, game: Game, ranks: dict[str, int], routes: dict[str, str]) -> str:
+    return _home_game(school, game, ranks, routes)
+
+
+def _home_table(rows: list[str], headings: str, label: str) -> str:
+    return (
+        f'<div class="table-scroll" role="region" aria-label="{label}" tabindex="0">'
+        '<table class="home-rankings"><colgroup><col class="rank"><col class="team">'
+        '<col class="change"><col class="record"><col class="rating"><col span="2"></colgroup>'
+        f'<thead><tr>{headings}</tr></thead><tbody>{"".join(rows)}</tbody></table></div>'
+    )
+
+
+def _home_rankings(season: Season, routes: dict[str, str], key: str) -> str:
+    if key == "FINAL":
+        week = max((game.week for game in season.games
+                    if game.home_score is not None and game.away_score is not None), default=None)
+        next_week = None
+    elif key == "PRESEASON":
+        week = None
+        next_week = min((game.week for game in season.games), default=None)
+    else:
+        week = int(key[1:])
+        next_week = week + 1
+
+    checkpoints = list(season.rankings)
+    previous = checkpoints[-2] if len(checkpoints) > 1 else None
+    previous_ranks = {row.school: row.rank for row in season.rankings.get(previous, ())}
+    earlier = (
+        next((rows for checkpoint, rows in reversed(season.rankings.items())
+              if checkpoint == "PRESEASON" or (checkpoint.startswith("W") and int(checkpoint[1:]) < week)), ())
+        if week is not None else ()
+    )
+    pregame_ranks = {row.school: row.rank for row in earlier}
+    entries = sorted(season.rankings[key], key=lambda row: row.rank)
+    current_ranks = {row.school: row.rank for row in entries}
+    games = defaultdict(list)
+    for game in season.games:
+        upcoming = game.week == next_week and (game.home_score is None or game.away_score is None)
+        if game.week == week or upcoming:
+            games[game.week, game.home].append(game)
+            games[game.week, game.away].append(game)
+
+    empty_result = "No games yet" if key == "PRESEASON" else "No game listed"
+    empty_forecast = "Season complete" if key == "FINAL" else "No game listed"
+    rows = []
+    for entry in entries:
+        school = entry.school
+        previous_rank = previous_ranks.get(school)
+        change = "—"
+        movement = ""
+        if previous_rank is not None:
+            delta = previous_rank - entry.rank
+            change = f"{delta:+d}" if delta else "0"
+            movement = " rise" if delta > 0 else " fall" if delta < 0 else ""
+        last = "".join(_last_week_game(school, game, pregame_ranks, routes) for game in games[week, school])
+        upcoming = "".join(
+            _home_game(school, game, current_ranks, routes, forecast=True) for game in games[next_week, school]
+        )
+        rows.append(
+            f'<tr><td class="num">{entry.rank}</td><th scope="row">{school_label(school, routes)}</th>'
+            f'<td class="num{movement}">{change}</td><td class="num">{escape(entry.record)}</td>'
+            f'<td class="num">{entry.rating:.2f}</td><td class="home-result">{last or empty_result}</td>'
+            f'<td class="home-result">{upcoming or empty_forecast}</td></tr>'
+        )
+
+    prior_label = ""
+    if previous is not None:
+        baseline = "Preseason" if previous == "PRESEASON" else f"Week {int(previous[1:])}"
+        prior_label = f"<small>vs {baseline}</small>"
+    last_label = f"<small>Week {week}</small>" if week is not None else ""
+    next_label = f"Week {next_week} · CORS spread" if next_week is not None else "CORS spread"
+    headings = (
+        '<th scope="col" class="num">Rank</th><th scope="col">Team</th>'
+        f'<th scope="col" class="num rank-change">Rank change{prior_label}</th>'
+        '<th scope="col" class="num">Record</th><th scope="col" class="num">CORS rating</th>'
+        f'<th scope="col" class="home-result">Last Week{last_label}</th>'
+        f'<th scope="col" class="home-result">Next Week<small>{next_label}</small></th>'
+    )
+    top = rows[:25]
+    top_label = f"CORS top {len(top)}"
+    tables = (
+        f'<h2>{top_label}</h2><p class="home-scroll-hint">Scroll across for scores and spreads.</p>'
+        + _home_table(top, headings, top_label)
+    )
+    if len(rows) > len(top):
+        remaining = _home_table(rows[25:], headings, "Remaining CORS rankings")
+        tables += f'<details class="home-all"><summary>Full rankings ({len(rows)} teams)</summary>{remaining}</details>'
+    return tables
+
+
+def _home(seasons: list[Season], routes: dict[str, str], stylesheet_revision: str, *, is_root: bool) -> str:
     latest = seasons[-1]
     key = next(reversed(latest.rankings))
     edition = "Final" if key == "FINAL" else "Preseason" if key == "PRESEASON" else f"Through Week {key[1:]}"
     year_link = f"/cfb/years/{latest.year}/{latest.year}_CFB.html"
-    week = None
-    if key == "FINAL":
-        week = max((game.week for game in latest.games
-                    if game.home_score is not None and game.away_score is not None), default=None)
-    elif key != "PRESEASON":
-        week = int(key[1:])
-    pregame_ranks = {}
-    games_by_school = defaultdict(list)
-    if week is not None:
-        # Rankings are in checkpoint order. Use the last edition before kickoff week.
-        prior = next((rows for checkpoint, rows in reversed(latest.rankings.items())
-                      if checkpoint == "PRESEASON" or (checkpoint.startswith("W") and int(checkpoint[1:]) < week)), ())
-        pregame_ranks = {row.school: row.rank for row in prior}
-        for game in latest.games:
-            if game.week == week:
-                games_by_school[game.home].append(game)
-                games_by_school[game.away].append(game)
-    empty_result = "No games yet" if key == "PRESEASON" else "No game listed"
-    week_label = f"<small>Week {week}</small>" if week is not None else ""
-    top = []
-    for entry in sorted(latest.rankings[key], key=lambda row: row.rank)[:10]:
-        games = games_by_school.get(entry.school, ())
-        result = "".join(_last_week_game(entry.school, game, pregame_ranks, routes) for game in games)
-        top.append(
-            f'<tr><td class="num">{entry.rank}</td><th scope="row"><a href="{routes[entry.school]}">'
-            f'{escape(entry.school)}</a></th><td>{escape(entry.record)}</td>'
-            f'<td class="num">{entry.rating:.2f}</td>'
-            f'<td class="home-result">{result or empty_result}</td></tr>'
-        )
+    rankings = _home_rankings(latest, routes, key)
     decades = defaultdict(list)
     for season in reversed(seasons):
         year = season.year
@@ -97,21 +168,32 @@ def _home(seasons: list[Season], routes: dict[str, str], *, is_root: bool) -> st
     record_links = f"""<p><a href="/cfb/teams/index.html">{len(routes)} program histories</a></p>
 <p><a href="/cfb/years/history/nc_FBS_CFB_output.html">National champions</a></p>
 <p><a href="/cfb/years/history/wt_FBS_CFB_output.html">Last-place finishers</a></p>"""
-    return home_document(title, "College football", f"{latest.year} FBS &middot; {edition}", top,
-                         week_label, year_link, f"{latest.year} standings", record_links, archive)
+    return _home_document(
+        title, "College football", f"{latest.year} FBS &middot; {edition}", rankings,
+        year_link, f"{latest.year} standings", record_links, archive,
+        stylesheet=f"/cfb/assets/record-book.css?v={stylesheet_revision}",
+    )
 
 
 def home_document(title, heading, edition, top, week_label, year_link, standings_label, record_links, archive):
-    return f"""<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{title}</title><link rel="stylesheet" href="/cfb/assets/record-book.css"></head>
-<body><main><h1>{heading}</h1>
-<p class="edition">{edition}</p>
-<div class="home-columns"><section><h2>CORS top {len(top)}</h2><div class="table-scroll">
+    rankings = f"""<h2>CORS top {len(top)}</h2><div class="table-scroll">
 <table><thead><tr><th scope="col" class="num">Rank</th><th scope="col">Team</th>
 <th scope="col">Record</th><th scope="col" class="num">CORS rating</th>
 <th scope="col" class="home-result">Last Week{week_label}</th></tr></thead>
-<tbody>{''.join(top)}</tbody></table></div><p><a href="{year_link}">{standings_label}</a></p>
+<tbody>{''.join(top)}</tbody></table></div>"""
+    return _home_document(title, heading, edition, rankings, year_link, standings_label, record_links, archive)
+
+
+def _home_document(
+    title: str, heading: str, edition: str, rankings: str, year_link: str, standings_label: str,
+    record_links: str, archive: str, *, stylesheet: str = "/cfb/assets/record-book.css",
+) -> str:
+    return f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{title}</title><link rel="stylesheet" href="{stylesheet}"></head>
+<body><main><h1>{heading}</h1>
+<p class="edition">{edition}</p>
+<div class="home-columns"><section>{rankings}<p><a href="{year_link}">{standings_label}</a></p>
 </section><section><h2>Record book</h2>{record_links}</section></div>
 <section><h2>Season archive</h2><div class="year-archive">{archive}</div></section>
 </main></body></html>
@@ -188,8 +270,9 @@ def build(site: Path) -> tuple[int, int, int]:
             path = site / relative
             changed += _write_changed(path, presentation.render(markup.encode(), archive=False))
             season_pages.add(path)
+    stylesheet_revision = sha256((site / "cfb/assets/record-book.css").read_bytes()).hexdigest()[:12]
     for relative in ("index.html", "cfb/cfb.html"):
-        markup = _home(seasons, routes, is_root=relative == "index.html")
+        markup = _home(seasons, routes, stylesheet_revision, is_root=relative == "index.html")
         changed += _write_changed(site / relative, presentation.render(markup.encode(), archive=False))
     changed += _write_changed(site / "404.html", presentation.render(_not_found(seasons[-1].year).encode(), archive=False))
     years = {season.year for season in seasons}
