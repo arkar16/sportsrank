@@ -5,24 +5,17 @@ from pathlib import Path
 import shutil
 
 from site_navigation import masthead
+from .record_book import SECTIONS, build, team_label
 
 
-def _team_label(name, team_id, logo_ids):
-    label = escape(name)
-    if team_id not in logo_ids:
-        return label
-    return (f'<img class="school-mark" src="/cbb/assets/team-logos/{team_id}.png" '
-            f'alt="" width="20" height="20" loading="lazy">{label}')
-
-
-def render_rankings(season, cutoff, rankings, forecasts, prepared_at, *, logo_ids=frozenset()):
+def render_rankings(season, cutoff, rankings, forecasts, prepared_at, *, logo_ids=frozenset(), current=False):
     """Rows use team, wins, losses, rating; forecast margins favor the home team."""
     cutoff_local = datetime.fromisoformat(cutoff)
     edition = f"{season - 1}–{str(season)[-2:]}"
     ranking_rows = []
     for row in rankings:
         ranking_rows.append(
-            f'<tr><td class="num">{row["rank"]}</td><th scope="row">{_team_label(row["team"], row.get("team_id"), logo_ids)}</th>'
+            f'<tr><td class="num">{row["rank"]}</td><th scope="row">{team_label(row["team"], row.get("team_id"), logo_ids, linked=current)}</th>'
             f'<td>{row["wins"]}–{row["losses"]}</td><td class="num">{row["rating"]:.2f}</td></tr>'
         )
     forecast_rows = []
@@ -30,22 +23,24 @@ def render_rankings(season, cutoff, rankings, forecasts, prepared_at, *, logo_id
         margin = row["predicted_home_margin"]
         pick = "Pick’em" if margin == 0 else escape(row["home"] if margin > 0 else row["away"])
         forecast_rows.append(
-            f'<tr><td>{escape(row["tipoff"])}</td><td>{_team_label(row["away"], row.get("away_id"), logo_ids)}</td>'
-            f'<td>{_team_label(row["home"], row.get("home_id"), logo_ids)}</td><td>{pick}</td><td class="num">{abs(margin):.2f}</td></tr>'
+            f'<tr><td>{escape(row["tipoff"])}</td><td>{team_label(row["away"], row.get("away_id"), logo_ids, linked=current)}</td>'
+            f'<td>{team_label(row["home"], row.get("home_id"), logo_ids, linked=current)}</td><td>{pick}</td><td class="num">{abs(margin):.2f}</td></tr>'
         )
+    forecast_shortcut = '<p><a href="#forecasts">Upcoming game forecasts</a></p>' if current and forecast_rows else ""
+    section_id = ' id="forecasts"' if current else ""
     forecast_section = ""
     if forecast_rows:
         forecast_section = f"""
-<section><h2>Game forecasts</h2><p>Prepared {prepared_at:%B %d, %Y at %H:%M %Z}. Tipoffs reflect the schedule at preparation.</p><div class="table-scroll"><table>
+<section{section_id}><h2>Game forecasts</h2><p>Prepared {prepared_at:%B %d, %Y at %H:%M %Z}. Tipoffs reflect the schedule at preparation.</p><div class="table-scroll"><table>
 <thead><tr><th>Tipoff (Eastern)</th><th>Away</th><th>Home</th><th>CORS pick</th><th>Margin</th></tr></thead>
 <tbody>{''.join(forecast_rows)}</tbody></table></div></section>"""
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{edition} men's college basketball rankings | SportsRank</title>
 <link rel="stylesheet" href="/cfb/assets/record-book.css"></head><body>
-{masthead()}
+{masthead(SECTIONS if current else "")}
 <main><h1>Men’s college basketball</h1>
-<p class="edition">{edition} Division I · Rankings for {cutoff_local:%B %d, %Y}</p>
+<p class="edition">{edition} Division I · Rankings for {cutoff_local:%B %d, %Y}</p>{forecast_shortcut}
 <section><h2>CORS rankings</h2><p>Records count games between Division I teams. Ratings update on Mondays.</p>
 <div class="table-scroll"><table><thead><tr><th scope="col">Rank</th><th scope="col">Team</th>
 <th scope="col">Record</th><th scope="col">CORS rating</th></tr></thead>
@@ -69,7 +64,8 @@ def main():
     as_of = datetime.fromisoformat(args.as_of)
     if as_of.utcoffset() is None:
         parser.error("--as-of requires a timezone")
-    season = replay_seasons(args.database, args.season)[-1]
+    seasons = replay_seasons(args.database, args.season)
+    season = seasons[-1]
     checkpoints = [c for c in season["rankings"] if datetime.fromisoformat(c["cutoff_utc"]) <= as_of]
     if not checkpoints:
         parser.error("No ranking checkpoint precedes this timestamp")
@@ -96,10 +92,23 @@ def main():
     stamp = as_of.astimezone(ZoneInfo("UTC")).strftime("%Y-%m-%dT%H%M%SZ")
     archive = args.output / "editions" / f"{stamp}.html"
     archive.parent.mkdir(parents=True, exist_ok=True)
+    retained = logo_dir.parents[1] / "editions"
+    if retained.resolve() != archive.parent.resolve():
+        for original in retained.glob("*.html"):
+            if original.stem > stamp:
+                continue
+            target = archive.parent / original.name
+            if target.exists() and target.read_bytes() != original.read_bytes():
+                raise ValueError(f"Conflicting retained basketball edition: {original.name}")
+            if not target.exists():
+                shutil.copyfile(original, target)
     if archive.exists() and archive.read_text() != page:
         raise ValueError("A different basketball edition exists for that timestamp")
     archive.write_text(page)
-    current = page.replace("</main>", f'<p><a href="editions/{archive.name}">Dated edition</a></p></main>')
+    build(args.output, seasons, as_of, logo_ids)
+    current = render_rankings(args.season, cutoff, rankings, upcoming, as_of.astimezone(et),
+                              logo_ids=logo_ids, current=True)
+    current = current.replace("</main>", f'<p><a href="editions/{archive.name}">Dated edition</a></p></main>')
     (args.output / "index.html").write_text(current)
 
 
