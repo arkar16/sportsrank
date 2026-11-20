@@ -2,6 +2,12 @@
 from collections import defaultdict
 from datetime import datetime, timedelta
 from html import escape
+from decimal import Decimal
+
+from cfb.program_pages import build_program_pages
+from cfb.reference_archive import Game, Season, Standing
+from cfb.reference_markup import PagePresentation
+from cfb.season_pages import _document, _standings, _rankings as standings_table, _upsets
 from zoneinfo import ZoneInfo
 
 from site_navigation import masthead
@@ -11,7 +17,6 @@ from .issued import VERIFIED_EDITIONS, grade_edition
 EASTERN = ZoneInfo("America/New_York")
 SECTIONS = (
     '<a href="/cbb/teams/index.html">Teams</a>'
-    '<a href="/cbb/seasons/index.html">Seasons</a>'
     '<a href="/cbb/performance/index.html">Model performance</a>'
 )
 
@@ -34,8 +39,10 @@ def _page(title, body):
     return (f'<!doctype html>\n<html lang="en"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
             f'<title>{title} | SportsRank basketball</title>'
+            '<link rel="stylesheet" href="/cfb/assets/report-pages.css">'
             '<link rel="stylesheet" href="/cfb/assets/record-book.css"></head><body>'
-            f'{masthead(SECTIONS)}<main><h1>{title}</h1>{body}</main></body></html>\n')
+            f'{masthead(SECTIONS)}<main class="archive-content"><h1>{title}</h1>'
+            f'<div class="sr-report sr-report-index">{body}</div></main></body></html>\n')
 
 
 def _write(root, path, title, body):
@@ -47,7 +54,7 @@ def _write(root, path, title, body):
 def _table(headers, rows):
     head = ''.join(f'<th scope="col">{header}</th>' for header in headers)
     body = ''.join('<tr>' + ''.join(f'<td>{cell}</td>' for cell in row) + '</tr>' for row in rows)
-    return f'<div class="table-scroll"><table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>'
+    return f'<div class="table-scroll" tabindex="0"><table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>'
 
 
 def _season_link(year):
@@ -60,13 +67,6 @@ def _week_link(year, week, label):
 
 def _record(row):
     return f'{row["wins"]}–{row["losses"]}'
-
-
-def _rankings(rows, logos):
-    return _table(("Rank", "Team", "Record", "CORS", "Average margin", "Schedule strength"), (
-        (r["rank"], team_label(r["school"], r["team_id"], logos), _record(r),
-         f'{r["cors"]:.2f}', f'{r["mov"]:+.2f}', f'{r["sos"]:.2f}') for r in rows
-    ))
 
 
 def _tipoff(game):
@@ -114,13 +114,14 @@ def _performance(root, by_season, editions, fixtures, as_of, tournament_years):
     pairs = [pair for _, season_pairs in by_season for pair in season_pairs]
     rows = [_grade_row(_season_link(year), season_pairs) for year, season_pairs in reversed(by_season)]
     rows.append(_grade_row("All seasons", pairs))
-    body = (f'<p>Scores through {as_of.astimezone(EASTERN):%b %d, %Y at %H:%M %Z}.</p>'
-            '<h2>Reconstructed forecasts</h2><p>CORS v0.4.0, evaluated against final Division I scores. '
+    body = ('<nav class="sr-report-nav" aria-label="Performance reports"><a href="#reconstructed">Season summaries</a>'
+            '<a href="#issued">Dated pregame forecasts</a></nav>' + f'<p>Scores through {as_of.astimezone(EASTERN):%b %d, %Y at %H:%M %Z}.</p>'
+            '<h2 id="reconstructed">Reconstructed forecasts</h2><p>CORS v0.4.0, evaluated against final Division I scores. '
             'Each margin uses the Monday ratings preceding tipoff. RMSE includes pick’ems. Winner accuracy '
             'counts games with a predicted winner.</p>' + _table(headers, rows))
     if tournament_years:
         body += '<p><a href="/cbb/tournaments/index.html">March Madness picks and model comparisons</a></p>'
-    body += ('<h2>Dated pregame forecasts</h2><p>Each edition is graded separately using its printed '
+    body += ('<h2 id="issued">Dated pregame forecasts</h2><p>Each edition is graded separately using its printed '
              'pick and margin. A game qualifies only if the edition was verified public before tipoff. '
              'Unmatched games and games awaiting a score stay ungraded.</p>')
     issued_rows = []
@@ -142,10 +143,32 @@ def _performance(root, by_season, editions, fixtures, as_of, tournament_years):
     _write(root, "performance/index.html", "Basketball model performance", body)
 
 
+def _standings_table(rankings, key, prior, routes, rows, names):
+    values = {names[r["team_id"]]: (f'{r["mov"]:+.2f}', f'{r["sos"]:.2f}') for r in rows}
+    return standings_table(rankings[key], rankings.get(prior, []), prior, key, routes,
+                           extra_columns=("Average margin", "Schedule strength"), extra_values=values)
+
+
 def build(root, seasons, as_of, logos, *, tournament_years=()):
     """Export only checkpoints available by as_of and their corresponding slates."""
-    history = defaultdict(list)
-    latest_names = {}
+    archives = []
+    names = {}
+    for season in seasons:
+        for c in season["rankings"]:
+            if datetime.fromisoformat(c["cutoff_utc"]) <= as_of:
+                names.update((r["team_id"], r["school"]) for r in c["rows"])
+    routes = {name: f"/cbb/teams/{i}/index.html" for i, name in names.items()}
+    if len(routes) != len(names):
+        raise ValueError("Ambiguous basketball school name in the program directory")
+    ids = {name: i for i, name in names.items()}
+    marks = {name: f"/cbb/assets/team-logos/{i}.png" for i, name in names.items() if i in logos}
+    presentation = PagePresentation(routes, marks, header=masthead(SECTIONS))
+
+    def publish(path, markup):
+        target = root / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(presentation.render(markup.encode(), archive=False))
+
     performance = []
     fixtures = defaultdict(lambda: defaultdict(list))
     season_index = []
@@ -155,75 +178,79 @@ def build(root, seasons, as_of, logos, *, tournament_years=()):
         if not checkpoints:
             continue
         last = checkpoints[-1]
+        weeks = {c["cutoff_utc"]: c["week"] for c in checkpoints}
+        rankings = {}
+        for c in checkpoints:
+            rankings[f'W{c["week"]}'] = [
+                Standing(names[r["team_id"]], r["rank"], Decimal(f'{r["cors"]:.2f}'),
+                         _record(r), r["conference"] or "—") for r in c["rows"]]
+        finals = year < seasons[-1]["season"] and season["final_cutoff_utc"] in weeks
+        if finals:
+            rankings["FINAL"] = rankings[f'W{weeks[season["final_cutoff_utc"]]}']
+        games = []
         slates = defaultdict(list)
-        logs = defaultdict(list)
+        weekly_games = defaultdict(list)
         pairs = []
         for g in season["forecasts"]:
-            if g["cutoff_utc"] > last["cutoff_utc"]:
+            if g["cutoff_utc"] not in weeks:
                 continue
-            slates[g["cutoff_utc"]].append(g)
-            for key in ("away_team_id", "home_team_id"):
-                logs[g[key]].append(g)
-            key = (_tipoff(g).strftime("%b %d, %I:%M %p"), g["away_team"], g["home_team"])
-            score_available = _has_score(g, as_of)
-            fixtures[year][key].append((g, score_available))
-            if score_available:
+            week = weeks[g["cutoff_utc"]]
+            slates[week].append(g)
+            visible = _has_score(g, as_of)
+            fixture = (_tipoff(g).strftime("%b %d, %I:%M %p"), g["away_team"], g["home_team"])
+            fixtures[year][fixture].append((g, visible))
+            if visible:
                 pairs.append((g["home_margin"], g["actual_home_margin"]))
+            game = Game(week, names[g["home_team_id"]], names[g["away_team_id"]],
+                        g["home_points"] if visible else None, g["away_points"] if visible else None,
+                        -Decimal(str(g["home_margin"])), g["neutral_site"],
+                        _tipoff(g).strftime("%b %d · %I:%M %p ET"))
+            games.append(game)
+            weekly_games[week].append(game)
+        archives.append(Season(year, rankings, games, last["cutoff_utc"]))
         performance.append((year, pairs))
-        weeks = []
-        trajectories = defaultdict(list)
+        season_index.append((_season_link(year), len(last["rows"]), len(checkpoints), len(pairs)))
+        week_links = "".join(f'<li>{_week_link(year, w, "Preseason" if w == 0 else f"Week {w}")}</li>'
+                             for w in weeks.values())
+        nav = f'<nav aria-label="Ranking checkpoints"><ul class="week-links">{week_links}</ul></nav>'
         for c in checkpoints:
-            date = datetime.fromisoformat(c["cutoff_utc"]).astimezone(EASTERN).strftime("%b %d, %Y")
-            label = "Preseason" if c["week"] == 0 else f'Week {c["week"]}'
-            weekly_games = slates[c["cutoff_utc"]]
-            for row in c["rows"]:
-                trajectories[row["team_id"]].append((_week_link(year, c["week"], label), date,
-                                                     row["rank"], _record(row), f'{row["cors"]:.2f}'))
-            games_link = f'<a href="/cbb/seasons/{year}/weeks/{c["week"]}.html#games">Scores and forecasts</a>'
-            weeks.append((_week_link(year, c["week"], label), date, len(weekly_games), games_link))
-            body = (f'<p>{_season_link(year)} · Ratings at {date}, 6 a.m. Eastern</p>'
-                    '<p><a href="#rankings">Rankings</a> · <a href="#games">Scores and forecasts</a></p>'
-                    '<h2 id="rankings">CORS rankings</h2>' + _rankings(c["rows"], logos)
-                    + '<h2 id="games">Scores and reconstructed forecasts</h2>' + _games(weekly_games, logos, as_of))
-            _write(root, f'seasons/{year}/weeks/{c["week"]}.html', f'{season_name(year)} basketball · {label}', body)
-        # Use the checkpoint containing the last final for completed seasons. The active
-        # season's latest eligible Monday can precede games in the current week.
-        standings, rating_cutoff = last["rows"], last["cutoff_utc"]
-        if year < seasons[-1]["season"] and season["final_cutoff_utc"] <= rating_cutoff:
-            standings, rating_cutoff = season["final_rankings"], season["final_cutoff_utc"]
-        rating_date = datetime.fromisoformat(rating_cutoff).astimezone(EASTERN).strftime("%b %d, %Y")
-        season_index.append((_season_link(year), len(standings), len(checkpoints), len(pairs)))
-        body = ('<h2>Weekly archive</h2>' + _table(("Checkpoint", "Monday", "Games on slate", "Game log"), reversed(weeks))
-                + f'<h2>Season standings</h2><p>Records and ratings at {rating_date}.</p>' + _rankings(standings, logos))
+            week = c["week"]
+            key = f"W{week}"
+            previous = f"W{week-1}" if week else None
+            label = "Preseason" if week == 0 else f"Week {week}"
+            title = f"{season_name(year)} basketball · {label}"
+            table = _standings_table(rankings, key, previous, routes, c["rows"], names)
+            standings = _standings("CORS rankings", table, _upsets(weekly_games[week], routes))
+            body = (f'<p>{_season_link(year)} season · <a href="#games">Scores and forecasts</a></p>'
+                    + nav + '<div id="rankings">' + standings + "</div>" + '<h2 id="games">Scores and reconstructed forecasts</h2>'
+                    + _games(slates[week], logos, as_of))
+            publish(f"seasons/{year}/weeks/{week}.html", _document(title, title, body))
+        key = next(reversed(rankings))
+        prior = "W0" if finals else previous
+        title = f"{season_name(year)} Division I basketball"
+        table = _standings_table(rankings, key, prior, routes, season["final_rankings"] if finals else last["rows"], names)
+        standings = _standings(f'{"Final" if finals else label} CORS rankings', table,
+                               _upsets(games if finals else weekly_games[week], routes))
+        jumps = '<a href="#season-archive">Season archive</a>'
         if year in tournament_years:
-            body = f'<p><a href="/cbb/tournaments/{year}.html">March Madness picks and results</a></p>' + body
-        _write(root, f'seasons/{year}/index.html', f'{season_name(year)} basketball', body)
-        for row in standings:
-            team_id = row["team_id"]
-            name = row["school"]
-            latest_names[team_id] = name
-            season_page = f'/cbb/teams/{team_id}/{year}.html'
-            history[team_id].append((f'<a href="{season_page}">{season_name(year)}</a>', row["rank"],
-                                     _record(row), f'{row["cors"]:.2f}'))
-            body = (f'<p>{team_label(name, team_id, logos)} · {_season_link(year)}</p>'
-                    f'<p>{rating_date} · Rank {row["rank"]} · {_record(row)} · CORS {row["cors"]:.2f}</p>'
-                    '<h2>Game log</h2>' + _games(logs[team_id], logos, as_of)
-                    + '<h2>Weekly rankings</h2>' + _table(("Checkpoint", "Monday", "Rank", "Record", "CORS"),
-                                                          reversed(trajectories[team_id])))
-            _write(root, f'teams/{team_id}/{year}.html', f'{escape(name)} · {season_name(year)}', body)
-    if not history:
+            jumps += f' · <a href="/cbb/tournaments/{year}.html">March Madness</a>'
+        archive = '<section id="season-archive"><h2>Season archive</h2>' + "".join(
+            f'<h3>Week {w}</h3><ul class="week-links"><li>{_week_link(year, w, "Rankings")}</li>'
+            f'<li><a href="/cbb/seasons/{year}/weeks/{w}.html#games">Scores and forecasts</a></li></ul>'
+            for w in reversed(weeks.values())) + '</section>'
+        publish(f"seasons/{year}/index.html", _document(title, title, nav + f"<p>{jumps}</p>" + standings + archive))
+    if not archives:
         raise ValueError("No basketball checkpoints available at this publication cutoff")
     _write(root, "seasons/index.html", "Basketball season archive",
            _table(("Season", "Teams", "Weekly checkpoints", "Completed games"), reversed(season_index)))
-    ordered = sorted(latest_names, key=lambda i: (latest_names[i].casefold(), i))
-    for team_id in ordered:
-        body = _table(("Season and game log", "Rank", "Record", "CORS"), reversed(history[team_id]))
-        _write(root, f'teams/{team_id}/index.html', f'{escape(latest_names[team_id])} basketball history', body)
-    _write(root, "teams/index.html", "Basketball team histories",
-           _table(("Program", "Seasons"), ((team_label(latest_names[i], i, logos), len(history[i])) for i in ordered)))
+    for path, markup in build_program_pages(archives, routes, sport="basketball", directory_route="/cbb/teams/index.html",
+                                            season_route=lambda y: f"/cbb/seasons/{y}/index.html", year_label=season_name,
+                                            directory_label=lambda school: team_label(school, ids[school], logos)):
+        publish(path.removeprefix("cbb/"), markup)
     editions = []
     for path in sorted((root / "editions").glob("*.html"), reverse=True):
         stamp = datetime.strptime(path.stem, "%Y-%m-%dT%H%M%SZ").replace(tzinfo=ZoneInfo("UTC"))
         if stamp <= as_of:
             editions.append((stamp, path))
     _performance(root, performance, editions, fixtures, as_of, tournament_years)
+    return archives, routes, presentation
