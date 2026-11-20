@@ -13,7 +13,7 @@ _MARK = re.compile(rb'<img class="school-mark(?: large)?" [^<>]*>')
 _SCHOOL_LINK = re.compile(rb'<a data-sr-team href="[^"<>]+">([^<>]*)</a>')
 _CELL = re.compile(r'(<(?P<tag>td|th)\b[^>]*>)(?P<value>[^<>]+)(</(?P=tag)>)', re.I)
 _SCHOOL_LABEL = re.compile(
-    r'(?P<start><a(?: data-sr-team)? href="(?P<route>/cfb/teams/[^"/]+/index\.html)"[^>]*>|<span data-school>)'
+    r'(?P<start><a(?: data-sr-team)? href="(?P<directory>/cfb/teams/[^"/]+)/(?:index|[0-9]{4})\.html"[^>]*>|<span data-school>)'
     r'(?P<name>[^<>]+)(?P<end></(?:a|span)>)'
 )
 _HEADING = re.compile(r'(<span data-program="([^"]+)">)')
@@ -60,7 +60,7 @@ class PagePresentation:
     def __init__(self, routes: dict[str, str], marks: dict[str, str]):
         self.routes = routes
         self.marks = marks
-        self.by_route = {route: name for name, route in routes.items()}
+        self.by_directory = {route.rsplit("/", 1)[0]: name for name, route in routes.items()}
 
     @lru_cache(maxsize=4096)
     def _school(self, raw_label: str) -> str:
@@ -79,7 +79,7 @@ class PagePresentation:
         name = _school_text(match["name"])
         if name in seen or name not in self.marks:
             return match[0]
-        if match["route"] and self.by_route.get(match["route"]) != name:
+        if match["directory"] and self.by_directory.get(match["directory"]) != name:
             return match[0]
         seen.add(name)
         return match["start"] + _image(self.marks[name]) + match["name"] + match["end"]
@@ -100,7 +100,7 @@ class PagePresentation:
         if not _BODY.search(markup):
             return original
         if archive and relative and targets is not None:
-            markup = decorate_archive(markup, relative, targets)
+            markup = decorate_archive(markup, relative, targets, self.routes)
         head = ""
         if 'name="viewport"' not in markup[:1500]:
             head += '<meta name="viewport" content="width=device-width, initial-scale=1">'

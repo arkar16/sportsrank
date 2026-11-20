@@ -145,7 +145,7 @@ def _archive_title(markup: str, title: str) -> str:
     return markup[:old.start()] + replace_copy(old[0], f"<title>{escape(title)}</title>") + markup[old.end():]
 
 
-def decorate_archive(markup: str, relative: str, targets: set[str]) -> str:
+def decorate_archive(markup: str, relative: str, targets: set[str], routes: dict[str, str]) -> str:
     """Decorate a document from its route and the real destinations in this export."""
     name = PurePosixPath(relative).name
     season = _SEASON.match(relative)
@@ -189,11 +189,18 @@ def decorate_archive(markup: str, relative: str, targets: set[str]) -> str:
 
         def link_year(match: re.Match) -> str:
             year_url = f"/cfb/years/{match[2]}/{match[2]}_CFB.html"
-            if year_url not in targets:
-                return match[0]
-            return match[1] + ui(f'<a href="{year_url}">') + match[2] + ui("</a>") + "</td>"
+            year = match[2]
+            school = match[3]
+            route = routes.get(unescape(school))
+            if route:
+                team_year = f"{route.rsplit('/', 1)[0]}/{year}.html"
+                if team_year in targets:
+                    school = f'<a data-sr-team href="{escape(team_year)}">{school}</a>'
+            if year_url in targets:
+                year = ui(f'<a href="{year_url}">') + year + ui("</a>")
+            return match[1] + year + "</td><td>" + school + "</td>"
 
-        markup = re.sub(r"(<tr>\s*<td>)([0-9]{4})</td>", link_year, markup)
+        markup = re.sub(r"(<tr>\s*<td>)([0-9]{4})</td><td>([^<>]+)</td>", link_year, markup)
 
     # Some early generators closed the document before writing its actual table.
     end = _END.search(markup)

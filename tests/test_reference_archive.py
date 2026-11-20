@@ -52,13 +52,15 @@ class ArchiveTests(unittest.TestCase):
         self.assertIsNone(games[2].home_score)
         mark = "/cfb/assets/program-marks/town.png"
         pages = dict(build_program_pages(seasons, routes))
-        view = PagePresentation(routes, {"Town College": mark})
+        miami_mark = "/cfb/assets/program-marks/miami-oh.png"
+        view = PagePresentation(routes, {"Town College": mark, "Miami (OH)": miami_mark})
         log = html.fromstring(view.render(pages["cfb/teams/miami/2026.html"].encode(), archive=False))
         opponents = log.xpath('//td[normalize-space(.)="Town College"]')
         self.assertEqual(len(opponents), 2)
         self.assertEqual(opponents[0].xpath('.//img/@src'), [mark])
         self.assertFalse(opponents[1].xpath('.//img'))
         self.assertFalse(any(cell.xpath('.//a') for cell in opponents))
+        self.assertEqual(log.xpath('//a[@href="/cfb/teams/miami-oh/2026.html"]/img/@src'), [miami_mark])
 
     def test_presentation_round_trip_preserves_archival_bytes_and_numeric_values(self):
         routes = {"San José State": "/cfb/teams/san-jose-state/index.html"}

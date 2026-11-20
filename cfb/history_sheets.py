@@ -20,7 +20,8 @@ _STAT_COLUMNS = (
 )
 
 
-def render_history_sheet(filename: str, original: bytes, routes: dict[str, str], years: set[int]) -> str:
+def render_history_sheet(filename: str, original: bytes, routes: dict[str, str], years: set[int],
+                         year_routes: dict[int, dict[str, str]] | None = None) -> str:
     """Render a legacy fragment in source order, including repeated seasons."""
     if filename not in _SHEETS:
         raise ValueError(f"unknown history sheet: {filename}")
@@ -48,7 +49,7 @@ def render_history_sheet(filename: str, original: bytes, routes: dict[str, str],
                           for column, value in zip(_STAT_COLUMNS, stats, strict=True))
         rows.append(
             f'<tr>{row_index}<th scope="row" class="num">{season_label}</th>'
-            f'<td>{school_label(school, routes)}</td><td class="history-detail">{escape(conference)}</td>'
+            f'<td>{school_label(school, (year_routes or {}).get(year, routes))}</td><td class="history-detail">{escape(conference)}</td>'
             f'<td>{escape(record)}</td>{numbers}</tr>'
         )
 
