@@ -33,11 +33,14 @@ class _ProgramSeason:
 
 
 def build_program_pages(
-    seasons: list[Season], routes: dict[str, str]
+    seasons: list[Season], routes: dict[str, str], *, sport="football", directory_route=_DIRECTORY,
+    season_route=lambda year: f"/cfb/years/{year}/{year}_CFB.html",
+    year_label=str, directory_label=None,
 ) -> Iterator[tuple[str, str]]:
     """Yield the program index and one history and season page per ranked program."""
     histories: dict[str, list[_ProgramSeason]] = defaultdict(list)
-    opponent_routes = {season.year: season_team_routes(season, routes) for season in seasons}
+    opponent_routes = {season.year: season_team_routes(season, routes) if sport == "football" else routes
+                       for season in seasons}
     for season in sorted(seasons, key=lambda season: season.year, reverse=True):
         standings: dict[str, dict[str, Standing]] = defaultdict(dict)
         for checkpoint, rows in season.rankings.items():
@@ -55,10 +58,10 @@ def build_program_pages(
 
     schools = sorted(histories, key=lambda school: (school.casefold(), school))
     directory = '<ul class="program-list">' + "".join(
-        f"<li>{_link(routes[school], school)}</li>" for school in schools
+        f"<li>{directory_label(school) if directory_label else _link(routes[school], school)}</li>" for school in schools
     ) + "</ul>"
-    yield _DIRECTORY.lstrip("/"), _page(
-        "College football teams", "College football teams", [], directory, seasons[-1].updated_at if seasons else ""
+    yield directory_route.lstrip("/"), _page(
+        f"College {sport} teams", f"College {sport} teams", [], directory, seasons[-1].updated_at if seasons else ""
     )
 
     for school in schools:
@@ -67,17 +70,17 @@ def build_program_pages(
         name = escape(school)
         heading = f'<span data-program="{name}">{name}</span>'
         yield route.lstrip("/"), _page(
-            f"{school} football", heading, [],
-            _rank_trend(route, history) + _history_table(route, history), history[0].season.updated_at,
+            f"{school} {sport}", heading, [],
+            _rank_trend(route, history) + _history_table(route, history, sport), history[0].season.updated_at,
         )
         for entry in history:
             year = entry.season.year
-            links = [(route, f"{school} history"), (f"/cfb/years/{year}/{year}_CFB.html", f"{year} season")]
+            links = [(route, f"{school} history"), (season_route(year), f"{year_label(year)} season")]
             standing = entry.standings.get(entry.latest_checkpoint)
-            if standing and standing.conference:
+            if sport == "football" and standing and standing.conference:
                 links.append((conference_route(standing.conference, year), f"{year} {standing.conference}"))
             yield program_season_route(route, year).lstrip("/"), _page(
-                f"{year} {school} football", f"{year} {heading}",
+                f"{year_label(year)} {school} {sport}", f"{year_label(year)} {heading}",
                 links,
                 _season_table(school, entry, opponent_routes[year]), entry.season.updated_at,
             )
@@ -127,7 +130,7 @@ def _table(label: str, headers: tuple[str, ...], body: str, *, caption: str = ""
     )
 
 
-def _history_table(route: str, history: list[_ProgramSeason]) -> str:
+def _history_table(route: str, history: list[_ProgramSeason], sport: str) -> str:
     rows = []
     for entry in history:
         year = entry.season.year
@@ -135,7 +138,9 @@ def _history_table(route: str, history: list[_ProgramSeason]) -> str:
         standing = entry.standings.get(checkpoint)
         through = "Through " if checkpoint.startswith("W") else ""
         best_rank = min(row.rank for row in entry.standings.values())
-        conference = _link(conference_route(standing.conference, year), standing.conference) if standing and standing.conference else _MISSING
+        conference = escape(standing.conference) if standing else _MISSING
+        if sport == "football" and standing and standing.conference:
+            conference = _link(conference_route(standing.conference, year), standing.conference)
         rows.append(
             f'<tr><th scope="row">{_link(program_season_route(route, year), str(year))}</th>'
             f"<td>{through}{_checkpoint_label(checkpoint)}</td>"
@@ -283,4 +288,6 @@ def _game_cells(school: str, game: Game, routes: dict[str, str]) -> str:
         spread = format(handicap, "+f") if handicap else format(handicap.copy_abs(), "f")
 
     name = school_label(opponent, routes)
+    if game.tipoff_label:
+        name += f'<small>{escape(game.tipoff_label)}</small>'
     return f'<td>{name}</td><td>{side}</td><td class="num">{spread}</td><td class="num">{score}</td>'

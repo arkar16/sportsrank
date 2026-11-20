@@ -137,8 +137,8 @@ def _rankings(
     comparison: list[Standing],
     baseline: str | None,
     checkpoint: str,
-    conference_links: dict[str, str],
     routes: dict[str, str],
+    *, conference_links=None, extra_columns=(), extra_values=None,
 ) -> str:
     prior = {row.school: row for row in comparison}
     if baseline is None:
@@ -150,7 +150,7 @@ def _rankings(
 
     body = []
     for row in sorted(rows, key=lambda row: row.rank):
-        conference = conference_links.get(row.conference)
+        conference = conference_links.get(row.conference) if conference_links else None
         label = _anchor(conference, row.conference) if conference else escape(row.conference)
         previous = prior.get(row.school)
         rank_change = rating_change = "—"
@@ -163,7 +163,9 @@ def _rankings(
             f'<tr><td class="num">{row.rank}</td><th scope="row">{school_label(row.school, routes)}</th>'
             f'<td class="num">{rank_change}</td><td class="num">{rating_change}</td>'
             f'<td class="num">{row.rating:.2f}</td><td class="num">{escape(row.record)}</td>'
-            f'<td>{label}</td></tr>'
+            f'<td>{label}</td>'
+            + "".join(f'<td class="num">{escape(value)}</td>' for value in
+                      (extra_values[row.school] if extra_values else ())) + "</tr>"
         )
     return (
         (f"<p>{note}</p>" if note else "")
@@ -173,7 +175,8 @@ def _rankings(
         '<th scope="col" class="num">Rank change</th><th scope="col" class="num">Rating change</th>'
         '<th scope="col" class="num">CORS rating</th><th scope="col" class="num">Record</th>'
         '<th scope="col">Conference</th>'
-        f'</tr></thead><tbody>{"".join(body)}</tbody></table></div>'
+        + "".join(f'<th scope="col" class="num">{escape(column)}</th>' for column in extra_columns)
+        + f'</tr></thead><tbody>{"".join(body)}</tbody></table></div>'
     )
 
 
@@ -291,7 +294,8 @@ def build_season_pages(site: Path, season: Season, routes: dict[str, str]) -> It
         if index:
             baseline = checkpoints[0] if checkpoint == "FINAL" else checkpoints[index - 1]
         standings = _rankings(
-            season.rankings[checkpoint], season.rankings[baseline] if baseline else [], baseline, checkpoint, conference_links, routes
+            season.rankings[checkpoint], season.rankings[baseline] if baseline else [], baseline, checkpoint, routes,
+            conference_links=conference_links,
         )
         upsets = ""
         if checkpoint == "FINAL":

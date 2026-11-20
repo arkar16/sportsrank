@@ -97,20 +97,26 @@ def _home(seasons: list[Season], routes: dict[str, str], *, is_root: bool) -> st
         decades[year // 10 * 10].append(f'<a href="/cfb/years/{year}/{year}_CFB.html">{year}</a>')
     archive = "".join(f'<div><h3>{decade}s</h3><p>{" ".join(links)}</p></div>' for decade, links in decades.items())
     title = "SportsRank" if is_root else "College Football | SportsRank"
+    record_links = f"""<p><a href="/cfb/teams/index.html">{program_count} program histories</a></p>
+<p><a href="/cfb/conferences/index.html">Conference histories</a></p>
+<p><a href="/cfb/years/history/nc_FBS_CFB_output.html">National champions</a></p>
+<p><a href="/cfb/years/history/wt_FBS_CFB_output.html">Last-place finishers</a></p>"""
+    return home_document(title, "College football", f"{latest.year} FBS &middot; {edition}", top,
+                         week_label, year_link, f"{latest.year} standings", record_links, archive)
+
+
+def home_document(title, heading, edition, top, week_label, year_link, standings_label, record_links, archive):
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{title}</title><link rel="stylesheet" href="/cfb/assets/record-book.css"></head>
-<body><main><h1>College football</h1>
-<p class="edition">{latest.year} FBS &middot; {edition}</p>
+<body><main><h1>{heading}</h1>
+<p class="edition">{edition}</p>
 <div class="home-columns"><section><h2>CORS top {len(top)}</h2><div class="table-scroll">
 <table><thead><tr><th scope="col" class="num">Rank</th><th scope="col">Team</th>
 <th scope="col">Record</th><th scope="col" class="num">CORS rating</th>
 <th scope="col" class="home-result">Last Week{week_label}</th></tr></thead>
-<tbody>{''.join(top)}</tbody></table></div><p><a href="{year_link}">{latest.year} standings</a></p>
-</section><section><h2>Record book</h2><p><a href="/cfb/teams/index.html">{program_count} program histories</a></p>
-<p><a href="/cfb/conferences/index.html">Conference histories</a></p>
-<p><a href="/cfb/years/history/nc_FBS_CFB_output.html">National champions</a></p>
-<p><a href="/cfb/years/history/wt_FBS_CFB_output.html">Last-place finishers</a></p></section></div>
+<tbody>{''.join(top)}</tbody></table></div><p><a href="{year_link}">{standings_label}</a></p>
+</section><section><h2>Record book</h2>{record_links}</section></div>
 <section><h2>Season archive</h2><div class="year-archive">{archive}</div></section>
 </main></body></html>
 """
