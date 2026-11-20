@@ -5,10 +5,11 @@ from pathlib import Path
 import shutil
 
 from site_navigation import masthead
+from .march_archive import build_tournaments
 from .record_book import SECTIONS, build, team_label
 
 
-def render_rankings(season, cutoff, rankings, forecasts, prepared_at, *, logo_ids=frozenset(), current=False):
+def render_rankings(season, cutoff, rankings, forecasts, prepared_at, *, logo_ids=frozenset(), current=False, tournaments=False):
     """Rows use team, wins, losses, rating; forecast margins favor the home team."""
     cutoff_local = datetime.fromisoformat(cutoff)
     edition = f"{season - 1}–{str(season)[-2:]}"
@@ -27,6 +28,8 @@ def render_rankings(season, cutoff, rankings, forecasts, prepared_at, *, logo_id
             f'<td>{team_label(row["home"], row.get("home_id"), logo_ids, linked=current)}</td><td>{pick}</td><td class="num">{abs(margin):.2f}</td></tr>'
         )
     forecast_shortcut = '<p><a href="#forecasts">Upcoming game forecasts</a></p>' if current and forecast_rows else ""
+    if current and tournaments:
+        forecast_shortcut += '<p><a href="/cbb/tournaments/index.html">March Madness picks and results</a></p>'
     section_id = ' id="forecasts"' if current else ""
     forecast_section = ""
     if forecast_rows:
@@ -105,9 +108,10 @@ def main():
     if archive.exists() and archive.read_text() != page:
         raise ValueError("A different basketball edition exists for that timestamp")
     archive.write_text(page)
-    build(args.output, seasons, as_of, logo_ids)
+    years = build_tournaments(args.output, seasons, as_of, logo_ids)
+    build(args.output, seasons, as_of, logo_ids, tournament_years=years)
     current = render_rankings(args.season, cutoff, rankings, upcoming, as_of.astimezone(et),
-                              logo_ids=logo_ids, current=True)
+                              logo_ids=logo_ids, current=True, tournaments=bool(years))
     current = current.replace("</main>", f'<p><a href="editions/{archive.name}">Dated edition</a></p></main>')
     (args.output / "index.html").write_text(current)
 

@@ -69,6 +69,7 @@ class ForecastRow(TypedDict):
     status: str
     home_points: int | None
     away_points: int | None
+    ncaa_round: str | None
     actual_home_margin: int | None
 
 
@@ -186,7 +187,7 @@ def _forecast(
         neutral_site=game.neutral_site, home_cors=home, away_cors=away,
         home_margin=round(home - away + (0.0 if game.neutral_site else home_advantage), 2),
         status=game.status, home_points=home_points, away_points=away_points,
-        actual_home_margin=actual_margin,
+        actual_home_margin=actual_margin, ncaa_round=game.ncaa_round,
     )
 
 

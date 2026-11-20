@@ -109,7 +109,7 @@ def _grade_row(label, pairs):
             accuracy, grade.pick_ems)
 
 
-def _performance(root, by_season, editions, fixtures, as_of):
+def _performance(root, by_season, editions, fixtures, as_of, tournament_years):
     headers = ("Season", "Graded games", "Margin RMSE (points)", "Correct / picks", "Winner accuracy", "Pick’ems")
     pairs = [pair for _, season_pairs in by_season for pair in season_pairs]
     rows = [_grade_row(_season_link(year), season_pairs) for year, season_pairs in reversed(by_season)]
@@ -118,6 +118,8 @@ def _performance(root, by_season, editions, fixtures, as_of):
             '<h2>Reconstructed forecasts</h2><p>CORS v0.4.0, evaluated against final Division I scores. '
             'Each margin uses the Monday ratings preceding tipoff. RMSE includes pick’ems. Winner accuracy '
             'counts games with a predicted winner.</p>' + _table(headers, rows))
+    if tournament_years:
+        body += '<p><a href="/cbb/tournaments/index.html">March Madness picks and model comparisons</a></p>'
     body += ('<h2>Dated pregame forecasts</h2><p>Each edition is graded separately using its printed '
              'pick and margin. A game qualifies only if the edition was verified public before tipoff. '
              'Unmatched games and games awaiting a score stay ungraded.</p>')
@@ -140,7 +142,7 @@ def _performance(root, by_season, editions, fixtures, as_of):
     _write(root, "performance/index.html", "Basketball model performance", body)
 
 
-def build(root, seasons, as_of, logos):
+def build(root, seasons, as_of, logos, *, tournament_years=()):
     """Export only checkpoints available by as_of and their corresponding slates."""
     history = defaultdict(list)
     latest_names = {}
@@ -193,6 +195,8 @@ def build(root, seasons, as_of, logos):
         season_index.append((_season_link(year), len(standings), len(checkpoints), len(pairs)))
         body = ('<h2>Weekly archive</h2>' + _table(("Checkpoint", "Monday", "Games on slate", "Game log"), reversed(weeks))
                 + f'<h2>Season standings</h2><p>Records and ratings at {rating_date}.</p>' + _rankings(standings, logos))
+        if year in tournament_years:
+            body = f'<p><a href="/cbb/tournaments/{year}.html">March Madness picks and results</a></p>' + body
         _write(root, f'seasons/{year}/index.html', f'{season_name(year)} basketball', body)
         for row in standings:
             team_id = row["team_id"]
@@ -222,4 +226,4 @@ def build(root, seasons, as_of, logos):
         stamp = datetime.strptime(path.stem, "%Y-%m-%dT%H%M%SZ").replace(tzinfo=ZoneInfo("UTC"))
         if stamp <= as_of:
             editions.append((stamp, path))
-    _performance(root, performance, editions, fixtures, as_of)
+    _performance(root, performance, editions, fixtures, as_of, tournament_years)
