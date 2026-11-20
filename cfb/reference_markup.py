@@ -3,6 +3,8 @@ from functools import lru_cache
 from html import escape, unescape
 import re
 
+from site_navigation import masthead
+
 from .archive_markup import strip_ui, ui as _ui
 from .archive_presentation import decorate_archive, restore_chrome
 
@@ -48,11 +50,9 @@ def _school_text(raw: str) -> str:
     return unescape(raw).strip().replace("San Jos\ufffd State", "San José State")
 
 
-MASTHEAD = (
-    '<header class="masthead"><a class="nameplate" href="/">SportsRank</a>'
-    '<nav aria-label="Site"><a href="/cfb/cfb.html">College football</a>'
+MASTHEAD = masthead(
     '<a href="/cfb/teams/index.html">Teams</a>'
-    '<a href="/cfb/performance/index.html">Model performance</a></nav></header>'
+    '<a href="/cfb/performance/index.html">Model performance</a>'
 )
 
 

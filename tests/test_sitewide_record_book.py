@@ -80,7 +80,8 @@ class SitewideRecordBookTests(unittest.TestCase):
         self.assertEqual([h.get_text() for h in doc.find_all("h1")], ["Week 7 scores"])
         self.assertEqual(doc.title.text, "1897 Week 7 scores")
         self.assertEqual([a["href"] for a in doc.select('.archive-nav a')], [season, week])
-        self.assertIn("/cfb/cfb.html", [a["href"] for a in doc.select('.masthead a')])
+        self.assertEqual([a["href"] for a in doc.select(".masthead nav a")][:2],
+                         ["/cfb/cfb.html", "/cbb/index.html"])
         self.assertEqual(doc.select_one("time")["datetime"], "2024-12-09T19:01:23")
         self.assertIsNotNone(doc.main.select_one('input[type="checkbox"]'))
         headers = doc.main.table.thead.find_all("th")

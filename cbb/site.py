@@ -4,6 +4,8 @@ from html import escape
 from pathlib import Path
 import shutil
 
+from site_navigation import masthead
+
 
 def _team_label(name, team_id, logo_ids):
     label = escape(name)
@@ -41,7 +43,7 @@ def render_rankings(season, cutoff, rankings, forecasts, prepared_at, *, logo_id
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{edition} men's college basketball rankings | SportsRank</title>
 <link rel="stylesheet" href="/cfb/assets/record-book.css"></head><body>
-<header class="masthead"><a class="nameplate" href="/">SportsRank</a><nav aria-label="Site"><a href="/cfb/cfb.html">College football</a></nav></header>
+{masthead()}
 <main><h1>Men’s college basketball</h1>
 <p class="edition">{edition} Division I · Rankings for {cutoff_local:%B %d, %Y}</p>
 <section><h2>CORS rankings</h2><p>Records count games between Division I teams. Ratings update on Mondays.</p>
