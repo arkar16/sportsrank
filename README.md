@@ -131,9 +131,10 @@ env -u CFBD_API -u CFBD_API_KEY -u CFBD_PRED_API uv run --locked python -m cfb.r
 
 The command reads `website/` and retains the original forecast values and
 their source identities. Use `--site DIRECTORY` to build on a review copy.
-The original champion and last-place tables are available as `.source.txt`
-downloads beside their historical sheets in `website/cfb/years/history/`.
-The offline build reads those originals when refreshing the sheets.
+The CORS champion and last-place lists use the first and last ranked teams
+from each season's published FBS FINAL standings. The separately labeled
+historical sheets retain their original tables as `.source.txt` downloads
+in `website/cfb/years/history/`.
 The [program and season page spec](docs/plans/cfb-team-and-season-pages.md)
 describes what each page shows.
 

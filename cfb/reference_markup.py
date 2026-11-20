@@ -20,6 +20,7 @@ _HEADING = re.compile(r'(<span data-program="([^"]+)">)')
 _BODY = re.compile(r"<body\b[^>]*>", re.I)
 _HEAD_END = re.compile(r"</head\s*>", re.I)
 _ASSET = "/cfb/assets/record-book.css"
+_SORT_SCRIPT = '<script src="/cfb/assets/sort-history.js" defer></script>'
 
 
 def source_bytes(raw: bytes) -> bytes:
@@ -87,7 +88,8 @@ class PagePresentation:
         path = self.marks.get(unescape(match[2]))
         return match[0] + (_image(path, large=True) if path else "")
 
-    def render(self, raw: bytes, *, archive: bool, relative: str = "", targets: set[str] | None = None) -> bytes:
+    def render(self, raw: bytes, *, archive: bool, relative: str = "", targets: set[str] | None = None,
+               sortable: bool = False) -> bytes:
         original = source_bytes(raw)
         try:
             markup = original.decode("utf-8")
@@ -106,6 +108,8 @@ class PagePresentation:
             head += f'<meta charset="{encoding}">'
         if _ASSET not in markup[:2500]:
             head += f'<link rel="stylesheet" href="{_ASSET}">'
+        if sortable:
+            head += _SORT_SCRIPT
         if head:
             markup = _HEAD_END.sub(lambda m: _ui(head) + m[0], markup, count=1)
         markup = _BODY.sub(lambda m: m[0] + _ui(MASTHEAD), markup, count=1)
