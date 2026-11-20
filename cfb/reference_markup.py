@@ -1,11 +1,13 @@
 """Apply the shared record-book presentation while retaining archive source bytes."""
-from functools import lru_cache
+from functools import cached_property, lru_cache
+from hashlib import sha256
 from html import escape, unescape
+from pathlib import Path
 import re
 
 from site_navigation import masthead
 
-from .archive_markup import strip_ui, ui as _ui
+from .archive_markup import replace_copy, strip_ui, ui as _ui
 from .archive_presentation import decorate_archive, restore_chrome
 
 
@@ -20,6 +22,7 @@ _HEADING = re.compile(r'(<span data-program="([^"]+)">)')
 _BODY = re.compile(r"<body\b[^>]*>", re.I)
 _HEAD_END = re.compile(r"</head\s*>", re.I)
 _ASSET = "/cfb/assets/record-book.css"
+_STYLESHEET = f'<link rel="stylesheet" href="{_ASSET}">'
 _SORT_SCRIPT = '<script src="/cfb/assets/sort-history.js" defer></script>'
 
 
@@ -61,6 +64,12 @@ class PagePresentation:
         self.routes = routes
         self.marks = marks
         self.by_route = {route: name for name, route in routes.items()}
+
+    @cached_property
+    def _sort_stylesheet(self) -> str:
+        content = (Path(__file__).parent / "assets" / "record-book.css").read_bytes()
+        revision = sha256(content).hexdigest()[:12]
+        return _STYLESHEET.replace(_ASSET, f"{_ASSET}?v={revision}")
 
     @lru_cache(maxsize=4096)
     def _school(self, raw_label: str) -> str:
@@ -106,10 +115,15 @@ class PagePresentation:
             head += '<meta name="viewport" content="width=device-width, initial-scale=1">'
         if "charset=" not in markup[:1500].lower():
             head += f'<meta charset="{encoding}">'
-        if _ASSET not in markup[:2500]:
-            head += f'<link rel="stylesheet" href="{_ASSET}">'
         if sortable:
+            # A cached pre-sort stylesheet exposes native buttons and duplicate labels.
+            if _STYLESHEET in markup:
+                markup = markup.replace(_STYLESHEET, replace_copy(_STYLESHEET, self._sort_stylesheet), 1)
+            else:
+                head += self._sort_stylesheet
             head += _SORT_SCRIPT
+        elif _ASSET not in markup[:2500]:
+            head += _STYLESHEET
         if head:
             markup = _HEAD_END.sub(lambda m: _ui(head) + m[0], markup, count=1)
         markup = _BODY.sub(lambda m: m[0] + _ui(MASTHEAD), markup, count=1)
