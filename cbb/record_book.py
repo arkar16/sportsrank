@@ -1,5 +1,6 @@
 """Build the basketball record book from frozen weekly replays."""
 from collections import defaultdict
+from dataclasses import replace
 from datetime import datetime, timedelta
 from html import escape
 from decimal import Decimal
@@ -153,9 +154,10 @@ def _standings_table(rankings, key, prior, routes, rows, names):
                            extra_columns=("Average margin", "Schedule strength"), extra_values=values)
 
 
-def build(root, seasons, as_of, logos, *, tournament_years=(), model="CORS v0.4.0"):
+def build(root, seasons, as_of, logos, *, tournament_years=(), model="CORS v0.4.0", schedules=None, upcoming_ids=()):
     """Export only checkpoints available by as_of and their corresponding slates."""
     archives = []
+    program_archives = []
     names = {}
     for season in seasons:
         for c in season["rankings"]:
@@ -192,6 +194,7 @@ def build(root, seasons, as_of, logos, *, tournament_years=(), model="CORS v0.4.
         if finals:
             rankings["FINAL"] = rankings[f'W{weeks[season["final_cutoff_utc"]]}']
         games = []
+        logged_games = []
         slates = defaultdict(list)
         weekly_games = defaultdict(list)
         pairs = []
@@ -210,8 +213,11 @@ def build(root, seasons, as_of, logos, *, tournament_years=(), model="CORS v0.4.
                         -Decimal(str(g["home_margin"])), g["neutral_site"],
                         _tipoff(g).strftime("%b %d · %I:%M %p ET"))
             games.append(game)
+            if year != seasons[-1]["season"] or g["game_id"] not in upcoming_ids:
+                logged_games.append(game)
             weekly_games[week].append(game)
         archives.append(Season(year, rankings, games, last["cutoff_utc"]))
+        program_archives.append(replace(archives[-1], games=logged_games))
         performance.append((year, pairs))
         season_index.append((_season_link(year), len(last["rows"]), len(checkpoints), len(pairs)))
         week_links = "".join(f'<li>{_week_link(year, w, "Preseason" if w == 0 else f"Week {w}")}</li>'
@@ -247,7 +253,7 @@ def build(root, seasons, as_of, logos, *, tournament_years=(), model="CORS v0.4.
         raise ValueError("No basketball checkpoints available at this publication cutoff")
     _write(root, "seasons/index.html", "Basketball season archive",
            _table(("Season", "Teams", "Weekly checkpoints", "Completed games"), reversed(season_index)))
-    for path, markup in build_program_pages(archives, routes, sport="basketball", directory_route="/cbb/teams/index.html",
+    for path, markup in build_program_pages(program_archives, routes, sport="basketball", remaining_schedules=schedules, directory_route="/cbb/teams/index.html",
                                             season_route=lambda y: f"/cbb/seasons/{y}/index.html", year_label=season_name,
                                             directory_label=lambda school: team_label(school, ids[school], logos)):
         publish(path.removeprefix("cbb/"), markup)

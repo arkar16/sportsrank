@@ -135,6 +135,7 @@ def blend_seasons(database, seasons):
         member[played>0] = year
         cors, adj, wve = end_state
         xx, xy = .9191*xx+ys_xx, .9191*xy+ys_xy
-        output.append({**season, "rankings": tuple(rankings), "final_rankings": final_rows,
+        output.append({**season, "home_advantages": {t: float(HFA + effect[i]) for t, i in lookup.items()},
+                       "rankings": tuple(rankings), "final_rankings": final_rows,
                        "forecasts": tuple(forecasts)})
     return tuple(output)
