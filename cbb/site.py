@@ -7,7 +7,10 @@ import shutil
 from site_navigation import masthead
 from .blend import VERSION, blend_seasons
 from .team_schedule import remaining_schedules
+from .program_records import read_program_records
+from .early_records import read_early_records
 from .home import landing_page
+from .honors import write_honors
 from .march_archive import build_tournaments
 from .record_book import SECTIONS, _games, _write, build, season_name, team_label
 
@@ -125,8 +128,14 @@ def main():
     archive.write_text(page)
     years = build_tournaments(args.output, baseline, as_of, logo_ids, blends=seasons if blended else ())
     schedules, upcoming_ids = remaining_schedules(args.database, season, checkpoint, as_of) if blended else ({}, set())
+    first_replay = min(as_of.year + (as_of.month >= 7), seasons[0]["season"])
+    program_records = read_program_records(first_replay)
+    early_records = read_early_records(first_replay)
+    earlier_years = early_records.keys() | program_records.keys()
     archives, routes, presentation = build(args.output, seasons, as_of, logo_ids, tournament_years=years, model=model,
-                                           schedules=schedules, upcoming_ids=upcoming_ids)
+                                           schedules=schedules, upcoming_ids=upcoming_ids, include_early_finals=True, early_records=early_records,
+                                           program_records=program_records)
+    write_honors(args.output, archives, routes, presentation, as_of, earlier_years=earlier_years)
     edition_link = f'<nav class="sr-report-nav"><a href="editions/{archive.name}">Dated edition</a></nav>'
     report = _forecasts(edition_games, as_of.astimezone(et), logo_ids, True)
     if not report:
@@ -136,7 +145,7 @@ def main():
         report = (f'<section id="forecasts"><h2>{model} weekly picks</h2>'
                   + _games(slate, logo_ids, as_of) + '</section>')
     _write(args.output, "current.html", f"{season_name(args.season)} basketball forecasts", edition_link + report)
-    (args.output / "index.html").write_bytes(landing_page(archives, routes, presentation, checkpoint, archive, years, model=model))
+    (args.output / "index.html").write_bytes(landing_page(archives, routes, presentation, checkpoint, archive, years, model=model, earlier_years=earlier_years))
 
 
 if __name__ == "__main__":

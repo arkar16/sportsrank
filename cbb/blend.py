@@ -26,6 +26,11 @@ def blend_seasons(database, seasons):
     with closing(sqlite3.connect(Path(database).resolve().as_uri() + "?mode=ro", uri=True)) as con:
         keys = {(year, team): int(source) for year, team, source in con.execute(
             "SELECT season,id,json_extract(raw_json,'$.sourceId') FROM teams")}
+    return tuple(iter_blended_seasons(seasons, keys, seed))
+
+
+def iter_blended_seasons(seasons, keys, seed):
+    """Replay consecutive seasons from a seed, carrying model state forward each year."""
     sources = sorted(set(keys.values()) | {int(k) for k in seed["teams"]})
     index = {source: i for i, source in enumerate(sources)}
     member, cors, adj, wve, hsum, asum, hn, an = np.array(
@@ -33,7 +38,6 @@ def blend_seasons(database, seasons):
     xx, xy = seed["xx"], seed["xy"]
     # All arrays use stable provider identities, including teams absent for a season.
     nteams = len(index)
-    output = []
     for season in seasons:
         year = season["season"]
         lookup = {team: index[source] for (sy, team), source in keys.items() if sy == year}
@@ -135,7 +139,7 @@ def blend_seasons(database, seasons):
         member[played>0] = year
         cors, adj, wve = end_state
         xx, xy = .9191*xx+ys_xx, .9191*xy+ys_xy
-        output.append({**season, "home_advantages": {t: float(HFA + effect[i]) for t, i in lookup.items()},
-                       "rankings": tuple(rankings), "final_rankings": final_rows,
-                       "forecasts": tuple(forecasts)})
-    return tuple(output)
+        yield {
+            **season, "home_advantages": {t: float(HFA + effect[i]) for t, i in lookup.items()},
+            "rankings": tuple(rankings), "final_rankings": final_rows, "forecasts": tuple(forecasts),
+        }

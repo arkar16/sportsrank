@@ -77,8 +77,8 @@ def build_program_pages(
             year = entry.season.year
             links = [(route, f"{school} history"), (season_route(year), f"{year_label(year)} season")]
             standing = entry.standings.get(entry.latest_checkpoint)
-            if sport == "football" and standing and standing.conference:
-                links.append((conference_route(standing.conference, year), f"{year} {standing.conference}"))
+            if standing and standing.conference and standing.conference != "—":
+                links.append((conference_route(standing.conference, year, sport=sport), f"{year} {standing.conference}"))
             remaining = (remaining_schedules or {}).get((year, school), "")
             log = _season_table(school, entry, opponent_routes[year], has_schedule=bool(remaining))
             if remaining:
@@ -144,8 +144,8 @@ def _history_table(route: str, history: list[_ProgramSeason], sport: str) -> str
         through = "Through " if checkpoint.startswith("W") else ""
         best_rank = min(row.rank for row in entry.standings.values())
         conference = escape(standing.conference) if standing else _MISSING
-        if sport == "football" and standing and standing.conference:
-            conference = _link(conference_route(standing.conference, year), standing.conference)
+        if standing and standing.conference and standing.conference != "—":
+            conference = _link(conference_route(standing.conference, year, sport=sport), standing.conference)
         rows.append(
             f'<tr><th scope="row">{_link(program_season_route(route, year), str(year))}</th>'
             f"<td>{through}{_checkpoint_label(checkpoint)}</td>"
