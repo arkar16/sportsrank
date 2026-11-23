@@ -34,9 +34,15 @@ class PublishedLayoutTest(unittest.TestCase):
             return BeautifulSoup((site / path).read_bytes(), "lxml")
         football = read("cfb/cfb.html")
         basketball = read("cbb/index.html")
-        for selector in (".home-columns > section", ".home-columns tbody tr", ".home-result",
-                         ".year-archive", ".home-columns th[scope=col]"):
+        for selector in (".home-columns > section", ".year-archive"):
             self.assertEqual(len(basketball.select(selector)), len(football.select(selector)), selector)
+        basketball_table = basketball.select_one(".home-columns table")
+        football_table = football.select_one(".home-columns table")
+        basketball_columns = [next(th.stripped_strings) for th in basketball_table.select("thead th")]
+        football_columns = [next(th.stripped_strings) for th in football_table.select("thead th")]
+        self.assertEqual(basketball_columns, ["Rank", "Team", "Record", "CORS rating", "Last Week"])
+        self.assertEqual([name for name in football_columns if name in basketball_columns], basketball_columns)
+        self.assertEqual(len(basketball_table.select("tbody tr")), 10)
         self.assertTrue(basketball.select_one(".year-archive a"))
         for path, selector in (("cbb/teams/index.html", ".program-list li"),
                                ("cbb/teams/295/index.html", ".rank-trend svg a"),
