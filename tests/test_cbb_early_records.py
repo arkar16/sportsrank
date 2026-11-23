@@ -29,8 +29,8 @@ class EarlyRecordsTest(unittest.TestCase):
             path = f"/cbb/seasons/{year}/index.html"
             self.assertIn(path, links["index.html"])
             self.assertIn(path, links["seasons/index.html"])
-            self.assertNotIn(path, links["history/champions.html"])
-            self.assertNotIn(path, links["history/last-place.html"])
+            self.assertEqual(path in links["history/champions.html"], year == 1984)
+            self.assertEqual(path in links["history/last-place.html"], year == 1984)
             self.assertEqual(len({r[0] for r in records}), len(records))
             for i in (1, 3, 5):
                 self.assertEqual(sum(r[i] for r in records), sum(r[i + 1] for r in records))

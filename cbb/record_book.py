@@ -191,15 +191,20 @@ def build(root, seasons, as_of, logos, *, tournament_years=(), model="CORS v0.4.
         table = _table(("Team", "Record", "Conference", "Record book"), program_record_rows(records, routes))
         publish(f"seasons/{year}/index.html", _document(title, title, context + table))
         season_index.append((_season_link(year), len(records), "Team records only", "—"))
+    record_tables = {}
+    final_years = {s.year for s in archives}
     for year, records in sorted((early_records or {}).items()):
         title = f"{season_name(year)} basketball team records"
-        context = ('<nav class="archive-nav"><a href="/cbb/seasons/index.html">Season archive</a></nav>'
-                   '<p>Records count games listed in the historical score archive. Some schools appear '
+        context = ('<p>Records count games listed in the historical score archive. Some schools appear '
                    'only in a tournament. Other games include the regular season, conference tournaments '
                    f'and other invitationals. <a href="{EARLY_SOURCE}">Source and coverage</a></p>')
         table = _table(("Team", "Covered record", "Other games", "NCAA tournament", "NIT"),
                        record_rows(records, routes))
-        publish(f"seasons/{year}/index.html", _document(title, title, context + table))
+        if year in final_years:
+            record_tables[year] = "<h2>Team records by competition</h2>" + context + table
+            continue
+        nav = '<nav class="archive-nav"><a href="/cbb/seasons/index.html">Season archive</a></nav>'
+        publish(f"seasons/{year}/index.html", _document(title, title, nav + context + table))
         completed = sum(w + nw + iw for _, w, _, nw, _, iw, _ in records)
         season_index.append((_season_link(year), len(records), "Team records only", completed))
     for season in archives:
@@ -212,7 +217,7 @@ def build(root, seasons, as_of, logos, *, tournament_years=(), model="CORS v0.4.
         context = ('<p>Final CORS v0.6.0 standings. Records count games between Division I teams. '
                    '<a href="/cbb/seasons/index.html">Season archive</a></p>')
         body = '<div class="season-standings">' + _standings("Final CORS rankings", table, "") + "</div>"
-        publish(f"seasons/{year}/index.html", _document(title, title, context + body))
+        publish(f"seasons/{year}/index.html", _document(title, title, context + body + record_tables.get(year, "")))
         completed = sum(int(r.record.split("–")[0]) for r in final)
         season_index.append((_season_link(year), len(final), "Final only", completed))
     for season in seasons:
@@ -290,9 +295,10 @@ def build(root, seasons, as_of, logos, *, tournament_years=(), model="CORS v0.4.
         raise ValueError("No basketball checkpoints available at this publication cutoff")
     history_note = ""
     if include_early_finals:
-        history_note = ('<p>Final standings for 1984–85 through 2018–19 use Division I results and the '
-                        'CORS v0.6.0 model. Teams start level in 1984–85. The weekly archive begins in '
+        history_note = ('<p>Final standings for 1983–84 through 2018–19 use Division I results and the '
+                        'CORS v0.6.0 model. Teams start level in 1983–84. The weekly archive begins in '
                         '2019–20 with its original preseason ratings. '
+                        '<a href="https://academics.smcvt.edu/jtrono/BBallArchive.htm">1983–84 game archive</a> · '
                         '<a href="https://github.com/Nate-Cheney/March-Machine-Learning-Mania-2026/tree/'
                         'b12a81c1201bb88b1d2010210116559d1fa03851/raw_data">Historical game data</a></p>')
     _write(root, "seasons/index.html", "Basketball season archive",
