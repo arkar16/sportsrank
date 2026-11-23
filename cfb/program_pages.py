@@ -35,7 +35,7 @@ class _ProgramSeason:
 def build_program_pages(
     seasons: list[Season], routes: dict[str, str], *, sport="football", directory_route=_DIRECTORY,
     season_route=lambda year: f"/cfb/years/{year}/{year}_CFB.html",
-    year_label=str, directory_label=None,
+    year_label=str, directory_label=None, remaining_schedules=None,
 ) -> Iterator[tuple[str, str]]:
     """Yield the program index and one history and season page per ranked program."""
     histories: dict[str, list[_ProgramSeason]] = defaultdict(list)
@@ -79,10 +79,15 @@ def build_program_pages(
             standing = entry.standings.get(entry.latest_checkpoint)
             if sport == "football" and standing and standing.conference:
                 links.append((conference_route(standing.conference, year), f"{year} {standing.conference}"))
+            remaining = (remaining_schedules or {}).get((year, school), "")
+            log = _season_table(school, entry, opponent_routes[year], has_schedule=bool(remaining))
+            if remaining:
+                log = ('<p><a href="#remaining-schedule">Remaining schedule</a></p>'
+                       '<h2>Weekly rankings and results</h2>' + log + remaining)
             yield program_season_route(route, year).lstrip("/"), _page(
                 f"{year_label(year)} {school} {sport}", f"{year_label(year)} {heading}",
                 links,
-                _season_table(school, entry, opponent_routes[year]), entry.season.updated_at,
+                log, entry.season.updated_at,
             )
 
 
@@ -229,7 +234,7 @@ def _rank_trend(route: str, history: list[_ProgramSeason]) -> str:
     )
 
 
-def _season_table(school: str, entry: _ProgramSeason, routes: dict[str, str]) -> str:
+def _season_table(school: str, entry: _ProgramSeason, routes: dict[str, str], *, has_schedule=False) -> str:
     rankings = entry.season.rankings
     weeks = {int(key[1:]) for key, rows in rankings.items() if rows and key.startswith("W")}
     checkpoints = ["PRESEASON"] if rankings.get("PRESEASON") else []
@@ -246,6 +251,8 @@ def _season_table(school: str, entry: _ProgramSeason, routes: dict[str, str]) ->
             game_rows = [_game_cells(school, game, routes) for game in games]
         else:
             opponent = "No game listed" if checkpoint.startswith("W") else _MISSING
+            if has_schedule and checkpoint == entry.latest_checkpoint:
+                opponent = "No result yet"
             game_rows = [f"<td>{opponent}</td>" + f"<td>{_MISSING}</td>" * 3]
         groups.append(
             f'<tbody><tr><th scope="rowgroup"{span}>{_checkpoint_label(checkpoint)}</th>'

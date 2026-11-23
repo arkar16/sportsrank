@@ -277,11 +277,23 @@ uv run --locked python -m cbb.site --database .sportsrank/cbb/history.sqlite3 \
   --season 2027 --as-of 2026-11-19T18:58:00Z --output website/cbb
 ```
 
-Basketball v0.6.0 replays completed games as well as scheduled matchups. Every
-pick uses ratings from the preceding Monday checkpoint. Final scores can be
+Basketball v0.6.0 replays completed games as well as scheduled matchups. Each
+weekly pick uses ratings from the preceding Monday checkpoint. Final scores can be
 shown alongside picks and used for grading whenever the page is built.
 Dated editions preserve the original printed picks for readers interested in
 publication history. See the reconstructed-picks rule in AGENTS.md.
+
+Team-season pages also show the remaining announced games from the latest
+schedule snapshot on or before the build date. Later matchups use the displayed
+checkpoint’s ratings and home-court adjustment. Weekly picks appear with their
+original spread. To refresh the public ESPN schedule, use the acquisition date
+as the first day and a separate cache directory for each acquisition, then run
+the basketball build. For example:
+
+```sh
+uv run --locked python -m scripts.collect_cbb_schedule --season 2027 \
+  --from-date 2026-11-23 --through-date 2027-04-06 --cache .sportsrank/cbb/schedules/2026-11-23
+```
 
 The same build exports completed 2022–26 March Madness replays. It joins the
 weekly CORS forecast and final score to the retained opponent-adjusted margin
