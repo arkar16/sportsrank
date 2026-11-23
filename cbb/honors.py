@@ -16,7 +16,7 @@ PROGRAM_NAMES = {
 }
 
 
-def write_honors(root, archives, routes, presentation, as_of):
+def write_honors(root, archives, routes, presentation, as_of, *, earlier_years=()):
     finals = {s.year: s for s in archives if s.rankings.get("FINAL")}
     team_routes = {year: season_team_routes(s, routes) for year, s in finals.items()}
     tournament = []
@@ -27,7 +27,7 @@ def write_honors(root, archives, routes, presentation, as_of):
             # tournaments once their season ends, including when rebuilding an older edition.
             if year >= as_of.year + (as_of.month >= 7):
                 continue
-            season = _season_link(year) if year in finals else season_name(year)
+            season = _season_link(year) if year in finals or year in earlier_years else season_name(year)
             labels = {name: school_label(PROGRAM_NAMES.get(name, name), team_routes.get(year, routes))
                       for name in (game["winner"], game["runner_up"]) if name}
             if game["status"] == "canceled":

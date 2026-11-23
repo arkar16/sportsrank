@@ -7,12 +7,15 @@ from decimal import Decimal
 
 from cfb.conference_pages import build_conference_pages, conference_route
 from cfb.program_pages import build_program_pages
-from cfb.reference_archive import Game, Season, Standing
+from cfb.reference_archive import Game, Season, Standing, season_team_routes
 from cfb.reference_markup import PagePresentation
 from cfb.season_pages import _document, _standings, _rankings as standings_table, _upsets
 from zoneinfo import ZoneInfo
 
 from site_navigation import masthead
+from .archive_finals import read_archive
+from .early_records import SOURCE as EARLY_SOURCE, record_rows
+from .program_records import program_record_rows
 from .grade import grade_margins
 from .issued import VERIFIED_EDITIONS, grade_edition
 
@@ -157,11 +160,10 @@ def _standings_table(rankings, key, prior, routes, rows, names, year):
                            conference_links=conferences, extra_columns=("Average margin", "Schedule strength"), extra_values=values)
 
 
-def build(root, seasons, as_of, logos, *, tournament_years=(), model="CORS v0.4.0", schedules=None, upcoming_ids=()):
+def build(root, seasons, as_of, logos, *, tournament_years=(), model="CORS v0.4.0", schedules=None, upcoming_ids=(), include_early_finals=False, early_records=None, program_records=None):
     """Export only checkpoints available by as_of and their corresponding slates."""
-    archives = []
-    program_archives = []
-    names = {}
+    archives, names = read_archive(min(as_of.year + (as_of.month >= 7), seasons[0]["season"])) if include_early_finals else ([], {})
+    program_archives = list(archives)
     for season in seasons:
         for c in season["rankings"]:
             if datetime.fromisoformat(c["cutoff_utc"]) <= as_of:
@@ -181,6 +183,43 @@ def build(root, seasons, as_of, logos, *, tournament_years=(), model="CORS v0.4.
     performance = []
     fixtures = defaultdict(lambda: defaultdict(list))
     season_index = []
+    for year, records in sorted((program_records or {}).items()):
+        title = f"{season_name(year)} basketball team records"
+        context = ('<nav class="archive-nav"><a href="/cbb/seasons/index.html">Season archive</a></nav>'
+                   '<p>Season records for the programs covered by the linked sources. '
+                   'Records include ties when reported.</p>')
+        table = _table(("Team", "Record", "Conference", "Record book"), program_record_rows(records, routes))
+        publish(f"seasons/{year}/index.html", _document(title, title, context + table))
+        season_index.append((_season_link(year), len(records), "Team records only", "—"))
+    record_tables = {}
+    final_years = {s.year for s in archives}
+    for year, records in sorted((early_records or {}).items()):
+        title = f"{season_name(year)} basketball team records"
+        context = ('<p>Records count games listed in the historical score archive. Some schools appear '
+                   'only in a tournament. Other games include the regular season, conference tournaments '
+                   f'and other invitationals. <a href="{EARLY_SOURCE}">Source and coverage</a></p>')
+        table = _table(("Team", "Covered record", "Other games", "NCAA tournament", "NIT"),
+                       record_rows(records, routes))
+        if year in final_years:
+            record_tables[year] = "<h2>Team records by competition</h2>" + context + table
+            continue
+        nav = '<nav class="archive-nav"><a href="/cbb/seasons/index.html">Season archive</a></nav>'
+        publish(f"seasons/{year}/index.html", _document(title, title, nav + context + table))
+        completed = sum(w + nw + iw for _, w, _, nw, _, iw, _ in records)
+        season_index.append((_season_link(year), len(records), "Team records only", completed))
+    for season in archives:
+        year = season.year
+        final = season.rankings["FINAL"]
+        conferences = {r.conference: conference_route(r.conference, year, sport="basketball") for r in final}
+        table = standings_table(final, [], None, "FINAL", season_team_routes(season, routes),
+                                conference_links=conferences)
+        title = f"{season_name(year)} Division I basketball"
+        context = ('<p>Final CORS v0.6.0 standings. Records count games between Division I teams. '
+                   '<a href="/cbb/seasons/index.html">Season archive</a></p>')
+        body = '<div class="season-standings">' + _standings("Final CORS rankings", table, "") + "</div>"
+        publish(f"seasons/{year}/index.html", _document(title, title, context + body + record_tables.get(year, "")))
+        completed = sum(int(r.record.split("–")[0]) for r in final)
+        season_index.append((_season_link(year), len(final), "Final only", completed))
     for season in seasons:
         year = season["season"]
         checkpoints = [c for c in season["rankings"] if datetime.fromisoformat(c["cutoff_utc"]) <= as_of]
@@ -254,8 +293,16 @@ def build(root, seasons, as_of, logos, *, tournament_years=(), model="CORS v0.4.
         publish(f"seasons/{year}/index.html", _document(title, title, nav + f"<p>{jumps}</p>" + standings + archive))
     if not archives:
         raise ValueError("No basketball checkpoints available at this publication cutoff")
+    history_note = ""
+    if include_early_finals:
+        history_note = ('<p>Final standings for 1980–81 through 2018–19 use Division I results and the '
+                        'CORS v0.6.0 model. Teams start level in 1980–81. The weekly archive begins in '
+                        '2019–20 with its original preseason ratings. '
+                        '<a href="https://academics.smcvt.edu/jtrono/BBallArchive.htm">1980–84 game archive</a> · '
+                        '<a href="https://github.com/Nate-Cheney/March-Machine-Learning-Mania-2026/tree/'
+                        'b12a81c1201bb88b1d2010210116559d1fa03851/raw_data">Historical game data</a></p>')
     _write(root, "seasons/index.html", "Basketball season archive",
-           _table(("Season", "Teams", "Weekly checkpoints", "Completed games"), reversed(season_index)))
+           history_note + _table(("Season", "Teams", "Weekly checkpoints", "Completed games"), reversed(season_index)))
     for path, markup in build_program_pages(program_archives, routes, sport="basketball", remaining_schedules=schedules, directory_route="/cbb/teams/index.html",
                                             season_route=lambda y: f"/cbb/seasons/{y}/index.html", year_label=season_name,
                                             directory_label=lambda school: team_label(school, ids[school], logos)):
