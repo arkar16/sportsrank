@@ -30,7 +30,7 @@ def landing_page(archives, routes, presentation, checkpoint, edition_path, tourn
         forecast_link=f'<p><a href="/cbb/current.html#forecasts">Week {week} forecasts</a></p>',
     )
     decades = defaultdict(list)
-    for year in sorted([s.year for s in archives] + list(earlier_years), reverse=True):
+    for year in sorted({s.year for s in archives}.union(earlier_years), reverse=True):
         decades[year // 10 * 10].append(
             f'<a href="/cbb/seasons/{year}/index.html">{season_name(year)}</a>')
     archive = "".join(f'<div><h3>{d}s</h3><p>{" ".join(links)}</p></div>' for d, links in decades.items())
