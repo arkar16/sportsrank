@@ -1,9 +1,11 @@
 """Basketball inputs for the shared football landing-page layout."""
 from collections import defaultdict
 from datetime import datetime
-from html import escape
+from hashlib import sha256
+from pathlib import Path
 
-from cfb.record_book import _last_week_game, home_document
+from cfb.record_book import home_document, home_rankings
+from cfb.reference_archive import season_team_routes
 from .record_book import EASTERN, season_name
 
 
@@ -12,17 +14,20 @@ def landing_page(archives, routes, presentation, checkpoint, edition_path, tourn
     week = checkpoint["week"]
     previous = week - 1
     prior = {r.school: r.rank for r in season.rankings.get(f"W{previous}", ())}
-    results = defaultdict(list)
+    games = defaultdict(list)
     for game in season.games:
-        if game.week == previous and game.home_score is not None:
+        if game.week == week or (game.week == previous and game.home_score is not None):
             for school in (game.home, game.away):
-                results[school].append(_last_week_game(school, game, prior, routes))
-    rows = []
-    for r in season.rankings[f"W{week}"][:10]:
-        result = "".join(results[r.school]) or ("No games yet" if not week else "No game listed")
-        rows.append(f'<tr><td class="num">{r.rank}</td><th scope="row"><a href="{routes[r.school]}">'
-                    f'{escape(r.school)}</a></th><td>{r.record}</td><td class="num">{r.rating:.2f}</td>'
-                    f'<td class="home-result">{result}</td></tr>')
+                games[game.week, school].append(game)
+    # Basketball ratings are issued at the start of a slate. Last week's opponents
+    # use last week's ranks, and this week's spreads use the displayed checkpoint.
+    rankings = home_rankings(
+        season.rankings[f"W{week}"], season_team_routes(season, routes), games,
+        previous=f"W{previous}" if week else None, previous_ranks=prior, pregame_ranks=prior,
+        week=previous if week else None, next_week=week,
+        empty_result="No game listed" if week else "No games yet", empty_forecast="No game listed",
+        forecast_link=f'<p><a href="/cbb/current.html#forecasts">Week {week} forecasts</a></p>',
+    )
     decades = defaultdict(list)
     for s in reversed(archives):
         decades[s.year // 10 * 10].append(
@@ -36,8 +41,10 @@ def landing_page(archives, routes, presentation, checkpoint, edition_path, tourn
         links += '<p><a href="/cbb/tournaments/index.html">March Madness picks and results</a></p>'
     date = datetime.fromisoformat(checkpoint["cutoff_utc"]).astimezone(EASTERN)
     label = season_name(season.year)
+    stylesheet = Path(__file__).resolve().parents[1] / "cfb/assets/record-book.css"
+    revision = sha256(stylesheet.read_bytes()).hexdigest()[:12]
     page = home_document("College Basketball | SportsRank", "Men’s college basketball",
-                         f"{label} Division I &middot; {model} &middot; Rankings for {date:%B %d, %Y}", rows,
-                         f"<small>Week {previous}</small>" if week else "",
-                         f"/cbb/seasons/{season.year}/index.html", f"{label} standings", links, archive)
+                         f"{label} Division I &middot; {model} &middot; Rankings for {date:%B %d, %Y}", rankings,
+                         f"/cbb/seasons/{season.year}/index.html", f"{label} standings", links, archive,
+                         stylesheet=f"/cfb/assets/record-book.css?v={revision}", layout_class="basketball-home")
     return presentation.render(page.encode(), archive=False)

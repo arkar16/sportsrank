@@ -40,9 +40,18 @@ class PublishedLayoutTest(unittest.TestCase):
         football_table = football.select_one(".home-columns table")
         basketball_columns = [next(th.stripped_strings) for th in basketball_table.select("thead th")]
         football_columns = [next(th.stripped_strings) for th in football_table.select("thead th")]
-        self.assertEqual(basketball_columns, ["Rank", "Team", "Record", "CORS rating", "Last Week"])
-        self.assertEqual([name for name in football_columns if name in basketball_columns], basketball_columns)
-        self.assertEqual(len(basketball_table.select("tbody tr")), 10)
+        self.assertEqual(basketball_columns, football_columns)
+        rows = basketball_table.select("tbody tr")
+        self.assertEqual([int(row.td.text) for row in rows], list(range(1, 26)))
+        self.assertTrue(basketball.select_one("details.home-all table.home-rankings"))
+        self.assertTrue(basketball.select_one('a[href="/cbb/current.html#forecasts"]'))
+        for row in rows:
+            self.assertRegex(row.th.a["href"], r"^/cbb/teams/\d+/\d{4}\.html$")
+            self.assertTrue((site / row.th.a["href"].lstrip("/")).is_file())
+            program = row.th.a["href"].split("/")[3]
+            if (site / f"cbb/assets/team-logos/{program}.png").is_file():
+                self.assertEqual(row.th.img["src"], f"/cbb/assets/team-logos/{program}.png")
+        self.assertTrue(basketball_table.select_one(".home-result:last-child .home-game-score"))
         self.assertTrue(basketball.select_one(".year-archive a"))
         for path, selector in (("cbb/teams/index.html", ".program-list li"),
                                ("cbb/teams/295/index.html", ".rank-trend svg a"),

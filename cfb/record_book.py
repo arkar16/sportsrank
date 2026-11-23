@@ -101,7 +101,6 @@ def _home_rankings(directory: Path, season: Season, routes: dict[str, str], key:
     )
     pregame_ranks = {row.school: row.rank for row in earlier}
     entries = sorted(season.rankings[key], key=lambda row: row.rank)
-    current_ranks = {row.school: row.rank for row in entries}
     games = defaultdict(list)
     for game in season.games:
         upcoming = game.week == next_week and (game.home_score is None or game.away_score is None)
@@ -111,12 +110,29 @@ def _home_rankings(directory: Path, season: Season, routes: dict[str, str], key:
 
     empty_result = "No games yet" if key == "PRESEASON" else "Bye"
     empty_forecast = "Season complete" if key == "FINAL" else "Bye"
+    forecast_link = ""
+    if next_week is not None:
+        path = weekly_forecast_path(directory, season.year, next_week)
+        if path:
+            kind = "reconstructed forecasts" if path.startswith("reconstructed/") else "forecasts"
+            forecast_link = f'<p><a href="/cfb/years/{season.year}/{path}">Week {next_week} {kind}</a></p>'
+    return home_rankings(
+        entries, routes, games, previous=previous, previous_ranks=previous_ranks, pregame_ranks=pregame_ranks,
+        week=week, next_week=next_week, empty_result=empty_result, empty_forecast=empty_forecast,
+        forecast_link=forecast_link, conference_year=season.year,
+    )
+
+
+def home_rankings(entries, routes, games, *, previous, previous_ranks, pregame_ranks, week, next_week,
+                  empty_result, empty_forecast, forecast_link, conference_year=None):
+    """Render both sports' Top 25, with the rest of the standings available on demand."""
+    current_ranks = {row.school: row.rank for row in entries}
     rows = []
     for entry in entries:
         school = entry.school
-        conference = "—"
-        if entry.conference:
-            href = conference_route(entry.conference, season.year)
+        conference = escape(entry.conference or "—")
+        if conference_year is not None and entry.conference:
+            href = conference_route(entry.conference, conference_year)
             conference = f'<a href="{href}">{escape(entry.conference)}</a>'
         previous_rank = previous_ranks.get(school)
         change = "—"
@@ -152,12 +168,6 @@ def _home_rankings(directory: Path, season: Season, routes: dict[str, str], key:
     )
     top = rows[:25]
     top_label = f"CORS top {len(top)}"
-    forecast_link = ""
-    if next_week is not None:
-        path = weekly_forecast_path(directory, season.year, next_week)
-        if path:
-            kind = "reconstructed forecasts" if path.startswith("reconstructed/") else "forecasts"
-            forecast_link = f'<p><a href="/cfb/years/{season.year}/{path}">Week {next_week} {kind}</a></p>'
     tables = (
         f'<h2>{top_label}</h2>{forecast_link}<p class="home-scroll-hint">Scroll across for scores and spreads.</p>'
         + _home_table(top, headings, top_label)
@@ -186,32 +196,23 @@ def _home(site: Path, seasons: list[Season], routes: dict[str, str], stylesheet_
 <p><a href="/cfb/conferences/index.html">Conference histories</a></p>
 <p><a href="/cfb/years/history/nc_FBS_CFB_output.html">National champions</a></p>
 <p><a href="/cfb/years/history/wt_FBS_CFB_output.html">Last-place finishers</a></p>"""
-    return _home_document(
+    return home_document(
         title, "College football", f"{latest.year} FBS &middot; {edition}", rankings,
         year_link, f"{latest.year} standings", record_links, archive,
         stylesheet=f"/cfb/assets/record-book.css?v={stylesheet_revision}",
     )
 
 
-def home_document(title, heading, edition, top, week_label, year_link, standings_label, record_links, archive):
-    rankings = f"""<h2>CORS top {len(top)}</h2><div class="table-scroll">
-<table><thead><tr><th scope="col" class="num">Rank</th><th scope="col">Team</th>
-<th scope="col">Record</th><th scope="col" class="num">CORS rating</th>
-<th scope="col" class="home-result">Last Week{week_label}</th></tr></thead>
-<tbody>{''.join(top)}</tbody></table></div>"""
-    return _home_document(title, heading, edition, rankings, year_link, standings_label, record_links, archive)
-
-
-def _home_document(
+def home_document(
     title: str, heading: str, edition: str, rankings: str, year_link: str, standings_label: str,
-    record_links: str, archive: str, *, stylesheet: str = "/cfb/assets/record-book.css",
+    record_links: str, archive: str, *, stylesheet: str, layout_class: str = "",
 ) -> str:
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{title}</title><link rel="stylesheet" href="{stylesheet}"></head>
 <body><main><h1>{heading}</h1>
 <p class="edition">{edition}</p>
-<div class="home-columns"><section>{rankings}<p><a href="{year_link}">{standings_label}</a></p>
+<div class="home-columns{(" " + escape(layout_class)) if layout_class else ""}"><section>{rankings}<p><a href="{year_link}">{standings_label}</a></p>
 </section><section><h2>Record book</h2>{record_links}</section></div>
 <section><h2>Season archive</h2><div class="year-archive">{archive}</div></section>
 </main></body></html>
