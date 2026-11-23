@@ -1,4 +1,4 @@
-"""Rebuild final 1984–2019 CORS standings from pinned historical compact results."""
+"""Rebuild final 1981–2019 CORS standings from pinned historical compact results."""
 import argparse
 from collections import Counter, defaultdict
 import csv
@@ -13,11 +13,13 @@ from cbb.replay import _replay, CARRYOVER_STRENGTH, HOME_ADVANTAGE, MARGIN_WEIGH
 from cbb.source import Game, Season, Team
 
 ROOT = Path(__file__).resolve().parents[1] / "cbb"
-FIRST, LAST = 1984, 2019
+FIRST, LAST = 1981, 2019
 # Calendar-day results are grouped in their Eastern week. Noon is a grouping
 # convention only and never appears as a historical tipoff on the website.
 EASTERN = ZoneInfo("America/New_York")
 HASHES = {
+    "1981-83/teams": "e60d2aba0ed022f287f38bf88e60b4b607b66926aa9e332a8987e10178844078",
+    "1981-83/results": "36634d77e396811cbd5f35fe9fa0320f9503204f68964aa850bcb340f6fd031d",
     "1984/teams": "ea3577ae279e4f4304093558e878e49035b1dae2191114d9273f6e56c1a617d7",
     "1984/results": "c336ea6c06d7aa5aa127467e0a326d49d226b62fc30bc4461bbb2c83e9d194d7",
     "MNCAATourneyCompactResults": "5260a076b4e0937aa0420fd5eb72789b9931c662ed071c5060407458d8de8a05",
@@ -38,20 +40,22 @@ def calculate(directory):
             yield from csv.DictReader(f)
 
     names = {int(r["TeamID"]): r["TeamName"] for r in rows("MTeams")}
+    # These programs left Division I before the March Mania series begins.
+    names.update({10001: "Baltimore", 10002: "West Chester State", 10003: "Catholic"})
     with (ROOT / "archive_programs.csv").open() as f:
         names.update((int(r["historical_id"]), r["school"]) for r in csv.DictReader(f))
     starts = {int(r["Season"]): datetime.strptime(r["DayZero"], "%m/%d/%Y").date() for r in rows("MSeasons")}
-    starts[1984] = datetime(1983, 10, 31).date()
+    starts.update((year, datetime(year - 1, 10, 31).date()) for year in range(FIRST, 1985))
     historical_inputs = ROOT / "historical_inputs"
     rosters = defaultdict(dict)
-    for r in chain(rows("1984/teams", historical_inputs), rows("MTeamConferences")):
+    for r in chain(rows("1981-83/teams", historical_inputs), rows("1984/teams", historical_inputs), rows("MTeamConferences")):
         year, tid = int(r["Season"]), int(r["TeamID"])
         if FIRST <= year <= LAST:
             rosters[year][tid] = Team(tid, names[tid], r["ConfAbbrev"])
     games = defaultdict(list)
     records = defaultdict(Counter)
     seen = set()
-    for results in (rows("1984/results", historical_inputs), rows("MRegularSeasonCompactResults"),
+    for results in (rows("1981-83/results", historical_inputs), rows("1984/results", historical_inputs), rows("MRegularSeasonCompactResults"),
                     rows("MNCAATourneyCompactResults"), rows("MSecondaryTourneyCompactResults")):
         for r in results:
             year = int(r["Season"])

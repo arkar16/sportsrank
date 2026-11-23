@@ -27,7 +27,7 @@ prospective comparison is recorded in [experiment #100](https://github.com/arkar
 
 ## Earlier final standings
 
-The historical backfill begins with level ratings in 1983–84 and carries the
+The historical backfill begins with level ratings in 1980–81 and carries the
 v0.6.0 state forward through 2018–19. Each season uses its own Division I
 roster and games between two members, including postseason tournaments. The
 source gives game dates, so each date belongs to its Eastern calendar week.
