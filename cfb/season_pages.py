@@ -107,6 +107,15 @@ def _checkpoint_navigation(checkpoints: list[str], current: str | None = None) -
     return '<nav aria-label="Ranking checkpoints"><ul class="week-links">' + "".join(links) + "</ul></nav>"
 
 
+def weekly_forecast_path(directory: Path, year: int, week: int) -> str | None:
+    filename = f"{year}_W{week}_FBS_spread.html"
+    for folder in ("spread", "reconstructed"):
+        relative = f"{folder}/{filename}"
+        if (directory / relative).is_file():
+            return relative
+    return None
+
+
 def _matchup_navigation(directory: Path, year: int, checkpoint: str, prefix: str) -> str:
     if checkpoint == "FINAL":
         return ""
@@ -116,12 +125,10 @@ def _matchup_navigation(directory: Path, year: int, checkpoint: str, prefix: str
     if week >= 0:
         candidates.append((f"data/results/weekly_results/{year}_W{week}_FBS_results.html", f"Week {week} scores"))
     candidates.append((f"data/slate/weekly_slate/{following}_slate.html", f"Week {week + 1} schedule"))
-    forecast = f"spread/{following}_spread.html"
-    label = f"Week {week + 1} spreads"
-    if not (directory / forecast).is_file():
-        forecast = f"reconstructed/{following}_spread.html"
-        label = f"Week {week + 1} reconstructed spreads"
-    candidates.append((forecast, label))
+    forecast = weekly_forecast_path(directory, year, week + 1)
+    if forecast:
+        kind = "reconstructed spreads" if forecast.startswith("reconstructed/") else "spreads"
+        candidates.append((forecast, f"Week {week + 1} {kind}"))
     links = [
         f"<li>{_anchor(prefix + path, label)}</li>"
         for path, label in candidates

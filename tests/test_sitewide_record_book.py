@@ -32,7 +32,7 @@ class SitewideRecordBookTests(unittest.TestCase):
         featured = ("Iowa State", "Kansas State", "Texas Tech", "Utah", "Kansas")
         teams = featured + tuple(f"School {rank:02d}" for rank in range(6, 28))
         write_table("rankings/2026_W11_FBS_cors.html", headers, [
-            (rank, school, "Big 12", "7-3", 20)
+            (rank, school, "ACC" if rank == 27 else "Big 12", "7-3", 20)
             for rank, school in enumerate(teams, 1)
         ])
         write_table("data/results/2026_FBS_results.html",
@@ -49,6 +49,9 @@ class SitewideRecordBookTests(unittest.TestCase):
                         (12, "Utah", "Samford", "false", "fbs", "fcs"),
                         (12, "School 26", "Other School", "false", "fbs", ""),
                     ])
+        forecast = "spread/2026_W12_FBS_spread.html"
+        write_table(forecast, ("week", "home_team", "away_team", "neutral_site", "spread"),
+                    [(12, "Iowa State", "Kansas State", "false", "Iowa State -3.5")])
         report = site / "cfb/performance/2026/report.json"
         report.parent.mkdir(parents=True)
         report.write_text(json.dumps({"upcoming": [
@@ -64,16 +67,23 @@ class SitewideRecordBookTests(unittest.TestCase):
                 page = BeautifulSoup((site / relative).read_bytes(), "html.parser")
                 top, remaining = page.select("table.home-rankings")
                 self.assertEqual([th.get_text(" ", strip=True) for th in top.select("thead th")], [
-                    "Rank", "Team", "Rank change vs Week 10", "Record", "CORS rating",
+                    "Rank", "Team", "Conference", "Rank change vs Week 10", "Record", "CORS rating",
                     "Last Week Week 11", "Next Week Week 12 · CORS spread",
                 ])
                 self.assertEqual([row.th.get_text(strip=True) for row in top.select("tbody tr")], list(teams[:25]))
+                self.assertEqual(page.find("a", string="Week 12 forecasts")["href"], f"/cfb/years/2026/{forecast}")
+                for row in page.select(".home-rankings tbody tr"):
+                    conference = row.th.find_next_sibling("td").a
+                    name, slug = ("ACC", "acc") if row.th.get_text(strip=True) == "School 27" else ("Big 12", "big-12")
+                    self.assertEqual(conference.get_text(), name)
+                    self.assertEqual(conference["href"], f"/cfb/conferences/{slug}/2026.html")
+                    self.assertTrue((site / conference["href"].lstrip("/")).is_file())
                 disclosure = remaining.find_parent("details")
                 self.assertFalse(disclosure.has_attr("open"))
                 self.assertEqual(disclosure.summary.get_text(strip=True), "Full rankings (27 teams)")
                 self.assertEqual([row.th.get_text(strip=True) for row in remaining.select("tbody tr")], list(teams[25:]))
                 rows = top.select("tbody tr")[:5]
-                self.assertEqual([row.find_all("td")[1].get_text(strip=True) for row in rows],
+                self.assertEqual([row.find_all("td")[2].get_text(strip=True) for row in rows],
                                  ["+11", "+20", "-1", "0", "—"])
                 self.assertEqual([row.select(".home-result")[0].get_text(" ", strip=True) for row in rows], [
                     "W vs #22 Kansas State 49–17",
@@ -96,6 +106,18 @@ class SitewideRecordBookTests(unittest.TestCase):
                 self.assertEqual([row.select(".home-result")[1].get_text(" ", strip=True)
                                   for row in remaining.select("tbody tr")],
                                  ["vs Other School --", "Bye"])
+
+        reconstructed = season / forecast.replace("spread/", "reconstructed/")
+        reconstructed.parent.mkdir()
+        (season / forecast).rename(reconstructed)
+        build(site)
+        home = BeautifulSoup((site / "index.html").read_bytes(), "html.parser")
+        self.assertEqual(home.find("a", string="Week 12 reconstructed forecasts")["href"],
+                         "/cfb/years/2026/reconstructed/2026_W12_FBS_spread.html")
+        reconstructed.unlink()
+        build(site)
+        home = BeautifulSoup((site / "index.html").read_bytes(), "html.parser")
+        self.assertIsNone(home.select_one('a[href$="_FBS_spread.html"]'))
 
     def test_archived_week_has_context_and_keeps_its_machine_readable_score_table(self):
         raw = (

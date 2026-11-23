@@ -7,14 +7,14 @@ import os
 from pathlib import Path
 import tempfile
 
-from .conference_pages import build_conference_pages
+from .conference_pages import build_conference_pages, conference_route
 from .history_sheets import render_history_sheet
 from .program_marks import program_logo_paths
 from .program_pages import build_program_pages
 from .reference_archive import Game, Season, final_history_rows, program_routes, read_archive, season_team_routes
 from .reference_markup import PagePresentation, school_label
 from .release import _page, _row_table
-from .season_pages import build_season_pages
+from .season_pages import build_season_pages, weekly_forecast_path
 
 
 def _write_changed(path: Path, content: bytes) -> bool:
@@ -74,12 +74,12 @@ def _home_table(rows: list[str], headings: str, label: str) -> str:
     return (
         f'<div class="table-scroll" role="region" aria-label="{label}" tabindex="0">'
         '<table class="home-rankings"><colgroup><col class="rank"><col class="team">'
-        '<col class="change"><col class="record"><col class="rating"><col span="2"></colgroup>'
+        '<col><col class="change"><col class="record"><col class="rating"><col span="2"></colgroup>'
         f'<thead><tr>{headings}</tr></thead><tbody>{"".join(rows)}</tbody></table></div>'
     )
 
 
-def _home_rankings(season: Season, routes: dict[str, str], key: str) -> str:
+def _home_rankings(directory: Path, season: Season, routes: dict[str, str], key: str) -> str:
     if key == "FINAL":
         week = max((game.week for game in season.games
                     if game.home_score is not None and game.away_score is not None), default=None)
@@ -114,6 +114,10 @@ def _home_rankings(season: Season, routes: dict[str, str], key: str) -> str:
     rows = []
     for entry in entries:
         school = entry.school
+        conference = "—"
+        if entry.conference:
+            href = conference_route(entry.conference, season.year)
+            conference = f'<a href="{href}">{escape(entry.conference)}</a>'
         previous_rank = previous_ranks.get(school)
         change = "—"
         movement = ""
@@ -127,7 +131,7 @@ def _home_rankings(season: Season, routes: dict[str, str], key: str) -> str:
         )
         rows.append(
             f'<tr><td class="num">{entry.rank}</td><th scope="row">{school_label(school, routes)}</th>'
-            f'<td class="num{movement}">{change}</td><td class="num">{escape(entry.record)}</td>'
+            f'<td>{conference}</td><td class="num{movement}">{change}</td><td class="num">{escape(entry.record)}</td>'
             f'<td class="num">{entry.rating:.2f}</td><td class="home-result">{last or empty_result}</td>'
             f'<td class="home-result">{upcoming or empty_forecast}</td></tr>'
         )
@@ -140,6 +144,7 @@ def _home_rankings(season: Season, routes: dict[str, str], key: str) -> str:
     next_label = f"Week {next_week} · CORS spread" if next_week is not None else "CORS spread"
     headings = (
         '<th scope="col" class="num">Rank</th><th scope="col">Team</th>'
+        '<th scope="col">Conference</th>'
         f'<th scope="col" class="num rank-change">Rank change{prior_label}</th>'
         '<th scope="col" class="num">Record</th><th scope="col" class="num">CORS rating</th>'
         f'<th scope="col" class="home-result">Last Week{last_label}</th>'
@@ -147,8 +152,14 @@ def _home_rankings(season: Season, routes: dict[str, str], key: str) -> str:
     )
     top = rows[:25]
     top_label = f"CORS top {len(top)}"
+    forecast_link = ""
+    if next_week is not None:
+        path = weekly_forecast_path(directory, season.year, next_week)
+        if path:
+            kind = "reconstructed forecasts" if path.startswith("reconstructed/") else "forecasts"
+            forecast_link = f'<p><a href="/cfb/years/{season.year}/{path}">Week {next_week} {kind}</a></p>'
     tables = (
-        f'<h2>{top_label}</h2><p class="home-scroll-hint">Scroll across for scores and spreads.</p>'
+        f'<h2>{top_label}</h2>{forecast_link}<p class="home-scroll-hint">Scroll across for scores and spreads.</p>'
         + _home_table(top, headings, top_label)
     )
     if len(rows) > len(top):
@@ -157,14 +168,14 @@ def _home_rankings(season: Season, routes: dict[str, str], key: str) -> str:
     return tables
 
 
-def _home(seasons: list[Season], routes: dict[str, str], stylesheet_revision: str, *, is_root: bool) -> str:
+def _home(site: Path, seasons: list[Season], routes: dict[str, str], stylesheet_revision: str, *, is_root: bool) -> str:
     latest = seasons[-1]
     program_count = len(routes)
     routes = season_team_routes(latest, routes)
     key = next(reversed(latest.rankings))
     edition = "Final" if key == "FINAL" else "Preseason" if key == "PRESEASON" else f"Through Week {key[1:]}"
     year_link = f"/cfb/years/{latest.year}/{latest.year}_CFB.html"
-    rankings = _home_rankings(latest, routes, key)
+    rankings = _home_rankings(site / f"cfb/years/{latest.year}", latest, routes, key)
     decades = defaultdict(list)
     for season in reversed(seasons):
         year = season.year
@@ -284,7 +295,7 @@ def build(site: Path) -> tuple[int, int, int]:
             season_pages.add(path)
     stylesheet_revision = sha256((site / "cfb/assets/record-book.css").read_bytes()).hexdigest()[:12]
     for relative in ("index.html", "cfb/cfb.html"):
-        markup = _home(seasons, routes, stylesheet_revision, is_root=relative == "index.html")
+        markup = _home(site, seasons, routes, stylesheet_revision, is_root=relative == "index.html")
         changed += _write_changed(site / relative, presentation.render(markup.encode(), archive=False))
     changed += _write_changed(site / "404.html", presentation.render(_not_found(seasons[-1].year).encode(), archive=False))
     targets = {"/" + path.relative_to(site).as_posix() for path in site.rglob("*.html")}
