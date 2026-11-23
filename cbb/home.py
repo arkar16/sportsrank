@@ -26,6 +26,7 @@ def landing_page(archives, routes, presentation, checkpoint, edition_path, tourn
         previous=f"W{previous}" if week else None, previous_ranks=prior, pregame_ranks=prior,
         week=previous if week else None, next_week=week,
         empty_result="No game listed" if week else "No games yet", empty_forecast="No game listed",
+        conference_year=season.year, sport="basketball",
         forecast_link=f'<p><a href="/cbb/current.html#forecasts">Week {week} forecasts</a></p>',
     )
     decades = defaultdict(list)
@@ -35,6 +36,7 @@ def landing_page(archives, routes, presentation, checkpoint, edition_path, tourn
     archive = "".join(f'<div><h3>{d}s</h3><p>{" ".join(links)}</p></div>' for d, links in decades.items())
     links = (f'<p><a href="/cbb/teams/index.html">{len(routes)} program histories</a></p>'
              '<p><a href="/cbb/seasons/index.html">Season summaries</a></p>'
+             '<p><a href="/cbb/conferences/index.html">Conference histories</a></p>'
              '<p><a href="/cbb/history/champions.html">CORS national champions</a></p>'
              '<p><a href="/cbb/history/last-place.html">Last-place finishers</a></p>'
              f'<p id="forecasts"><a href="current.html#forecasts">Game forecasts</a></p>'

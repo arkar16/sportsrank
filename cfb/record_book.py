@@ -124,15 +124,15 @@ def _home_rankings(directory: Path, season: Season, routes: dict[str, str], key:
 
 
 def home_rankings(entries, routes, games, *, previous, previous_ranks, pregame_ranks, week, next_week,
-                  empty_result, empty_forecast, forecast_link, conference_year=None):
+                  empty_result, empty_forecast, forecast_link, conference_year=None, sport="football"):
     """Render both sports' Top 25, with the rest of the standings available on demand."""
     current_ranks = {row.school: row.rank for row in entries}
     rows = []
     for entry in entries:
         school = entry.school
         conference = escape(entry.conference or "—")
-        if conference_year is not None and entry.conference:
-            href = conference_route(entry.conference, conference_year)
+        if conference_year is not None and entry.conference and entry.conference != "—":
+            href = conference_route(entry.conference, conference_year, sport=sport)
             conference = f'<a href="{href}">{escape(entry.conference)}</a>'
         previous_rank = previous_ranks.get(school)
         change = "—"

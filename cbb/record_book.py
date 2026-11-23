@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from html import escape
 from decimal import Decimal
 
+from cfb.conference_pages import build_conference_pages, conference_route
 from cfb.program_pages import build_program_pages
 from cfb.reference_archive import Game, Season, Standing
 from cfb.reference_markup import PagePresentation
@@ -148,10 +149,12 @@ def _performance(root, by_season, editions, fixtures, as_of, tournament_years, m
     _write(root, "performance/index.html", "Basketball model performance", body)
 
 
-def _standings_table(rankings, key, prior, routes, rows, names):
+def _standings_table(rankings, key, prior, routes, rows, names, year):
     values = {names[r["team_id"]]: (f'{r["mov"]:+.2f}', f'{r["sos"]:.2f}') for r in rows}
+    conferences = {r.conference: conference_route(r.conference, year, sport="basketball")
+                   for r in rankings[key] if r.conference and r.conference != "—"}
     return standings_table(rankings[key], rankings.get(prior, []), prior, key, routes,
-                           extra_columns=("Average margin", "Schedule strength"), extra_values=values)
+                           conference_links=conferences, extra_columns=("Average margin", "Schedule strength"), extra_values=values)
 
 
 def build(root, seasons, as_of, logos, *, tournament_years=(), model="CORS v0.4.0", schedules=None, upcoming_ids=()):
@@ -229,7 +232,7 @@ def build(root, seasons, as_of, logos, *, tournament_years=(), model="CORS v0.4.
             previous = f"W{week-1}" if week else None
             label = "Preseason" if week == 0 else f"Week {week}"
             title = f"{season_name(year)} basketball · {label}"
-            table = _standings_table(rankings, key, previous, routes, c["rows"], names)
+            table = _standings_table(rankings, key, previous, routes, c["rows"], names, year)
             standings = _standings("CORS rankings", table, _upsets(weekly_games[week], routes))
             body = (f'<p>{_season_link(year)} season · <a href="#games">Scores and forecasts</a></p>'
                     + nav + '<div id="rankings">' + standings + "</div>" + '<h2 id="games">Scores and reconstructed forecasts</h2>'
@@ -238,7 +241,7 @@ def build(root, seasons, as_of, logos, *, tournament_years=(), model="CORS v0.4.
         key = next(reversed(rankings))
         prior = "W0" if finals else previous
         title = f"{season_name(year)} Division I basketball"
-        table = _standings_table(rankings, key, prior, routes, season["final_rankings"] if finals else last["rows"], names)
+        table = _standings_table(rankings, key, prior, routes, season["final_rankings"] if finals else last["rows"], names, year)
         standings = _standings(f'{"Final" if finals else label} CORS rankings', table,
                                _upsets(games if finals else weekly_games[week], routes))
         jumps = '<a href="#season-archive">Season archive</a>'
@@ -256,6 +259,9 @@ def build(root, seasons, as_of, logos, *, tournament_years=(), model="CORS v0.4.
     for path, markup in build_program_pages(program_archives, routes, sport="basketball", remaining_schedules=schedules, directory_route="/cbb/teams/index.html",
                                             season_route=lambda y: f"/cbb/seasons/{y}/index.html", year_label=season_name,
                                             directory_label=lambda school: team_label(school, ids[school], logos)):
+        publish(path.removeprefix("cbb/"), markup)
+    for path, markup in build_conference_pages(archives, routes, sport="basketball", year_label=season_name,
+                                               season_route=lambda y: f"/cbb/seasons/{y}/index.html"):
         publish(path.removeprefix("cbb/"), markup)
     editions = []
     for path in sorted((root / "editions").glob("*.html"), reverse=True):
