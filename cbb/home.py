@@ -7,7 +7,7 @@ from cfb.record_book import _last_week_game, home_document
 from .record_book import EASTERN, season_name
 
 
-def landing_page(archives, routes, presentation, checkpoint, edition_path, tournaments):
+def landing_page(archives, routes, presentation, checkpoint, edition_path, tournaments, *, model="CORS v0.4.0"):
     season = archives[-1]
     week = checkpoint["week"]
     previous = week - 1
@@ -37,7 +37,7 @@ def landing_page(archives, routes, presentation, checkpoint, edition_path, tourn
     date = datetime.fromisoformat(checkpoint["cutoff_utc"]).astimezone(EASTERN)
     label = season_name(season.year)
     page = home_document("College Basketball | SportsRank", "Men’s college basketball",
-                         f"{label} Division I &middot; Rankings for {date:%B %d, %Y}", rows,
+                         f"{label} Division I &middot; {model} &middot; Rankings for {date:%B %d, %Y}", rows,
                          f"<small>Week {previous}</small>" if week else "",
                          f"/cbb/seasons/{season.year}/index.html", f"{label} standings", links, archive)
     return presentation.render(page.encode(), archive=False)

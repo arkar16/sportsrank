@@ -5,9 +5,10 @@ from pathlib import Path
 import shutil
 
 from site_navigation import masthead
+from .blend import VERSION, blend_seasons
 from .home import landing_page
 from .march_archive import build_tournaments
-from .record_book import SECTIONS, _write, build, season_name, team_label
+from .record_book import SECTIONS, _games, _write, build, season_name, team_label
 
 
 def _forecasts(forecasts, prepared_at, logo_ids, current):
@@ -74,6 +75,11 @@ def main():
     if as_of.utcoffset() is None:
         parser.error("--as-of requires a timezone")
     seasons = replay_seasons(args.database, args.season)
+    baseline = seasons
+    blended = as_of >= datetime.fromisoformat("2026-11-23T11:00:00+00:00")
+    model = VERSION if blended else "CORS v0.4.0"
+    if blended:
+        seasons = blend_seasons(args.database, baseline)
     season = seasons[-1]
     checkpoints = [c for c in season["rankings"] if datetime.fromisoformat(c["cutoff_utc"]) <= as_of]
     if not checkpoints:
@@ -81,11 +87,11 @@ def main():
     checkpoint = checkpoints[-1]
     cutoff = checkpoint["cutoff_utc"]
     et = ZoneInfo("America/New_York")
-    upcoming = []
+    edition_games = []
     for row in season["forecasts"]:
         tipoff = datetime.fromisoformat(row["start_utc"])
-        if row["cutoff_utc"] == cutoff and row["status"] == "scheduled" and tipoff > as_of:
-            upcoming.append({"tipoff": tipoff.astimezone(et).strftime("%b %d, %I:%M %p"),
+        if row["cutoff_utc"] == cutoff and (blended or (row["status"] == "scheduled" and tipoff > as_of)):
+            edition_games.append({"tipoff": tipoff.astimezone(et).strftime("%b %d, %I:%M %p"),
                              "home": row["home_team"], "away": row["away_team"],
                              "home_id": row["home_team_id"], "away_id": row["away_team_id"],
                              "predicted_home_margin": row["home_margin"]})
@@ -96,8 +102,10 @@ def main():
     if output_logos.resolve() != logo_dir:
         shutil.copytree(logo_dir, output_logos, dirs_exist_ok=True)
     logo_ids = {int(path.stem) for path in logo_dir.glob("*.png")}
-    page = render_rankings(args.season, cutoff, rankings, upcoming, as_of.astimezone(et),
+    page = render_rankings(args.season, cutoff, rankings, edition_games, as_of.astimezone(et),
                            logo_ids=logo_ids)
+    if blended:
+        page = page.replace("Division I · Rankings", f"Division I · {model} · Rankings")
     stamp = as_of.astimezone(ZoneInfo("UTC")).strftime("%Y-%m-%dT%H%M%SZ")
     archive = args.output / "editions" / f"{stamp}.html"
     archive.parent.mkdir(parents=True, exist_ok=True)
@@ -114,14 +122,18 @@ def main():
     if archive.exists() and archive.read_text() != page:
         raise ValueError("A different basketball edition exists for that timestamp")
     archive.write_text(page)
-    years = build_tournaments(args.output, seasons, as_of, logo_ids)
-    archives, routes, presentation = build(args.output, seasons, as_of, logo_ids, tournament_years=years)
+    years = build_tournaments(args.output, baseline, as_of, logo_ids, blends=seasons if blended else ())
+    archives, routes, presentation = build(args.output, seasons, as_of, logo_ids, tournament_years=years, model=model)
     edition_link = f'<nav class="sr-report-nav"><a href="editions/{archive.name}">Dated edition</a></nav>'
-    report = _forecasts(upcoming, as_of.astimezone(et), logo_ids, True)
+    report = _forecasts(edition_games, as_of.astimezone(et), logo_ids, True)
     if not report:
         report = '<p id="forecasts">No upcoming games in this edition.</p>'
+    if blended:
+        slate = [g for g in season["forecasts"] if g["cutoff_utc"] == cutoff]
+        report = (f'<section id="forecasts"><h2>{model} weekly picks</h2>'
+                  + _games(slate, logo_ids, as_of) + '</section>')
     _write(args.output, "current.html", f"{season_name(args.season)} basketball forecasts", edition_link + report)
-    (args.output / "index.html").write_bytes(landing_page(archives, routes, presentation, checkpoint, archive, years))
+    (args.output / "index.html").write_bytes(landing_page(archives, routes, presentation, checkpoint, archive, years, model=model))
 
 
 if __name__ == "__main__":
