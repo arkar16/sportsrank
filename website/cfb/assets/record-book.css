@@ -182,22 +182,19 @@ body > nav:not([aria-label]) a { padding-block: .2rem; }
   letter-spacing: .0625em;
   text-transform: uppercase;
 }
+body:has(.home-rankings) { max-width: 96rem; }
 main:has(> .home-columns) > h1 { font-size: 3.2rem; }
 .home-columns {
   display: grid;
   grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
   gap: 1.6rem;
 }
+.home-columns:has(.home-rankings) { grid-template-columns: minmax(0, 1fr) 12.5rem; }
 .home-columns h2 { margin: .25rem 0 .45rem; }
 .home-columns .table-scroll { margin-bottom: .55rem; }
 .home-columns table:not(.home-rankings) th:first-child { width: 1%; }
 .home-columns table:not(.home-rankings) :is(th, td):nth-child(3) { text-align: right; }
-.home-rankings {
-  --rank-width: 3rem;
-  table-layout: fixed;
-  min-width: 46rem;
-  white-space: normal;
-}
+.home-rankings { --rank-width: 3rem; }
 .home-rankings col.rank { width: var(--rank-width); }
 .home-rankings col.team { width: 8.5rem; }
 .home-rankings col.change { width: 5.5rem; }
@@ -206,7 +203,10 @@ main:has(> .home-columns) > h1 { font-size: 3.2rem; }
 .home-rankings col.rating { width: 4.5rem; }
 .home-rankings .rise { color: var(--link); }
 .home-rankings .fall { color: var(--rust); }
-.home-rankings :is(th[scope="row"], .home-opponent) { overflow-wrap: anywhere; }
+.home-rankings .home-game {
+  grid-template-columns: auto minmax(max-content, 1fr) auto;
+  white-space: nowrap;
+}
 .home-scroll-hint { display: none; }
 .home-all summary {
   width: fit-content;
@@ -457,7 +457,7 @@ html .metrics {
   font-size: .9375rem;
 }
 
-@media (max-width: 1120px) {
+@media (max-width: 96rem) {
   .home-columns:has(.home-rankings) { display: block; }
   .home-columns:has(.home-rankings) > section:last-child {
     margin-top: 1.25rem;
@@ -470,7 +470,7 @@ html .metrics {
   .home-columns > section:last-child { margin-top: 1.25rem; border-left: 0; padding-left: 0; }
 }
 
-@media (max-width: 790px) {
+@media (max-width: 80rem) {
   .home-columns > section > .home-scroll-hint {
     display: block;
     margin: 0;
@@ -481,6 +481,10 @@ html .metrics {
   .home-rankings :is(th, td):nth-child(-n+2) {
     position: sticky;
     inset-inline-start: 0;
+  }
+  .home-rankings :is(th, td):first-child {
+    min-inline-size: var(--rank-width);
+    padding-inline: .35rem;
   }
   .home-rankings :is(th, td):nth-child(2) {
     inset-inline-start: var(--rank-width);
