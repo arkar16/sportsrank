@@ -45,7 +45,7 @@ _STAMP = re.compile(
 )
 _DATA_TABLE = re.compile(r'<table\b[^>]*class="dataframe"[^>]*>\s*<thead>\s*<tr[^>]*>(.*?)</tr>', re.S)
 _PRIMARY_FIELDS = {
-    "honors": {"year", "school", "record", "cors"},
+    "honors": {"year", "school", "conference", "record", "cors"},
     "cors": {"rank", "school", "record", "cors"},
     "results": {"week", "home_team", "home_score", "away_team", "away_score"},
     "records": {"school", "wins", "losses", "ties", "record"},
@@ -187,7 +187,9 @@ def decorate_archive(markup: str, relative: str, targets: set[str], routes: dict
         heading = "CORS national champions" if prefix == "NC" else "CORS last-place finishers"
         link(f"/cfb/years/history/CORS_{prefix}_FBS_CFB.html", "Archived record sheet")
 
-        def link_year(match: re.Match) -> str:
+        from .conference_pages import conference_route
+
+        def link_honors_row(match: re.Match) -> str:
             year_url = f"/cfb/years/{match[2]}/{match[2]}_CFB.html"
             year = match[2]
             school = match[3]
@@ -196,11 +198,16 @@ def decorate_archive(markup: str, relative: str, targets: set[str], routes: dict
                 team_year = f"{route.rsplit('/', 1)[0]}/{year}.html"
                 if team_year in targets:
                     school = f'<a data-sr-team href="{escape(team_year)}">{school}</a>'
+            conference = match[4]
+            if conference:
+                url = conference_route(unescape(conference), int(year))
+                if url in targets:
+                    conference = ui(f'<a href="{url}">') + conference + ui("</a>")
             if year_url in targets:
                 year = ui(f'<a href="{year_url}">') + year + ui("</a>")
-            return match[1] + year + "</td><td>" + school + "</td>"
+            return match[1] + year + "</td><td>" + school + "</td><td>" + conference + "</td>"
 
-        markup = re.sub(r"(<tr>\s*<td>)([0-9]{4})</td><td>([^<>]+)</td>", link_year, markup)
+        markup = re.sub(r"(<tr>\s*<td>)([0-9]{4})</td><td>([^<>]+)</td><td>([^<>]*)</td>", link_honors_row, markup)
 
     # Some early generators closed the document before writing its actual table.
     end = _END.search(markup)
