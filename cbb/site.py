@@ -8,6 +8,7 @@ from site_navigation import masthead
 from .blend import VERSION, blend_seasons
 from .team_schedule import remaining_schedules
 from .home import landing_page
+from .honors import write_honors
 from .march_archive import build_tournaments
 from .record_book import SECTIONS, _games, _write, build, season_name, team_label
 
@@ -127,6 +128,7 @@ def main():
     schedules, upcoming_ids = remaining_schedules(args.database, season, checkpoint, as_of) if blended else ({}, set())
     archives, routes, presentation = build(args.output, seasons, as_of, logo_ids, tournament_years=years, model=model,
                                            schedules=schedules, upcoming_ids=upcoming_ids)
+    write_honors(args.output, archives, routes, presentation, as_of)
     edition_link = f'<nav class="sr-report-nav"><a href="editions/{archive.name}">Dated edition</a></nav>'
     report = _forecasts(edition_games, as_of.astimezone(et), logo_ids, True)
     if not report:
