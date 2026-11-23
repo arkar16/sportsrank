@@ -295,10 +295,10 @@ def build(root, seasons, as_of, logos, *, tournament_years=(), model="CORS v0.4.
         raise ValueError("No basketball checkpoints available at this publication cutoff")
     history_note = ""
     if include_early_finals:
-        history_note = ('<p>Final standings for 1983–84 through 2018–19 use Division I results and the '
-                        'CORS v0.6.0 model. Teams start level in 1983–84. The weekly archive begins in '
+        history_note = ('<p>Final standings for 1980–81 through 2018–19 use Division I results and the '
+                        'CORS v0.6.0 model. Teams start level in 1980–81. The weekly archive begins in '
                         '2019–20 with its original preseason ratings. '
-                        '<a href="https://academics.smcvt.edu/jtrono/BBallArchive.htm">1983–84 game archive</a> · '
+                        '<a href="https://academics.smcvt.edu/jtrono/BBallArchive.htm">1980–84 game archive</a> · '
                         '<a href="https://github.com/Nate-Cheney/March-Machine-Learning-Mania-2026/tree/'
                         'b12a81c1201bb88b1d2010210116559d1fa03851/raw_data">Historical game data</a></p>')
     _write(root, "seasons/index.html", "Basketball season archive",

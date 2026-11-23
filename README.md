@@ -295,10 +295,11 @@ uv run --locked python -m scripts.collect_cbb_schedule --season 2027 \
   --from-date 2026-11-23 --through-date 2027-04-06 --cache .sportsrank/cbb/schedules/2026-11-23
 ```
 
-The same build includes 1983–84 through 2018–19 final standings from
+The same build includes 1980–81 through 2018–19 final standings from
 `cbb/archive_finals.csv`. To reproduce these derived records, place the six
 CSV inputs listed in `scripts/backfill_cbb_finals.py` together in a directory.
-The 1983–84 roster and dated results are included in the repository.
+The rosters and dated results for the first four years are included in the repository.
+[1980–81 through 1982–83 sources](cbb/historical_inputs/1981-83/README.md) ·
 [1983–84 sources](cbb/historical_inputs/1984/README.md)
 
 The importer verifies input hashes, season rosters and win/loss totals. The
