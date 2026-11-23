@@ -36,16 +36,19 @@ class SitewideRecordBookTests(unittest.TestCase):
             for rank, school in enumerate(teams, 1)
         ])
         write_table("data/results/2026_FBS_results.html",
-                    ("week", "home_team", "away_team", "home_score", "away_score", "neutral_site"), [
-                        (10, "Utah", "Iowa State", 14, 0, "false"),
-                        (11, "Iowa State", "Kansas State", 49, 17, "false"),
-                        (11, "Visitors", "Texas Tech", 0, 0, "true"),
-                        (11, "Kansas", "Other School", "", "", "false"),
-                        (12, "Utah", "Kansas", 42, 7, "false"),
+                    ("week", "home_team", "away_team", "home_score", "away_score",
+                     "neutral_site", "home_division", "away_division"), [
+                        (10, "Utah", "Iowa State", 14, 0, "false", "fbs", "fbs"),
+                        (11, "Iowa State", "Kansas State", 49, 17, "false", "fbs", "fbs"),
+                        (11, "Visitors", "Texas Tech", 0, 0, "true", "fcs", "fbs"),
+                        (11, "Kansas", "Other School", "", "", "false", "fbs", ""),
+                        (12, "Utah", "Kansas", 42, 7, "false", "fbs", "fbs"),
                     ])
         write_table("data/slate/weekly_slate/2026_W12_FBS_slate.html",
-                    ("week", "home_team", "away_team", "neutral_site"),
-                    [(12, "Utah", "Other School", "false")])
+                    ("week", "home_team", "away_team", "neutral_site", "home_division", "away_division"), [
+                        (12, "Utah", "Samford", "false", "fbs", "fcs"),
+                        (12, "School 26", "Other School", "false", "fbs", ""),
+                    ])
         report = site / "cfb/performance/2026/report.json"
         report.parent.mkdir(parents=True)
         report.write_text(json.dumps({"upcoming": [
@@ -75,23 +78,24 @@ class SitewideRecordBookTests(unittest.TestCase):
                 self.assertEqual([row.select(".home-result")[0].get_text(" ", strip=True) for row in rows], [
                     "W vs #22 Kansas State 49–17",
                     "L @ #12 Iowa State 17–49",
-                    "T vs Visitors (neutral) 0–0",
-                    "No game listed",
+                    "T vs (FCS) Visitors (neutral) 0–0",
+                    "Bye",
                     "vs Other School No final score",
                 ])
                 self.assertEqual([row.select(".home-result")[1].get_text(" ", strip=True) for row in rows], [
                     "vs #2 Kansas State -3.5",
                     "@ #1 Iowa State +3.5",
                     "vs Visitors (neutral) Pick’em",
-                    "vs Other School Spread unavailable",
-                    "No game listed",
+                    "vs (FCS) Samford --",
+                    "Bye",
                 ])
                 link = rows[0].select(".home-result")[0].a["href"]
                 self.assertEqual(link, "/cfb/teams/kansas-state/2026.html")
                 self.assertTrue((site / link.lstrip("/")).is_file())
                 self.assertIsNone(rows[2].select(".home-result")[0].find("a"))
-                self.assertEqual(remaining.select("tbody tr")[-1].select(".home-result")[1].get_text(strip=True),
-                                 "No game listed")
+                self.assertEqual([row.select(".home-result")[1].get_text(" ", strip=True)
+                                  for row in remaining.select("tbody tr")],
+                                 ["vs Other School --", "Bye"])
 
     def test_archived_week_has_context_and_keeps_its_machine_readable_score_table(self):
         raw = (

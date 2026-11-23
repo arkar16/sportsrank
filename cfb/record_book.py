@@ -39,15 +39,18 @@ def _home_game(
     at_home = school == game.home
     opponent = game.away if at_home else game.home
     site = "vs" if at_home or game.neutral_site else "@"
-    rank = f"#{ranks[opponent]} " if opponent in ranks else ""
+    division = game.away_division if at_home else game.home_division
+    opponent_prefix = f"#{ranks[opponent]} " if opponent in ranks else ""
+    if division.strip().casefold() == "fcs":
+        opponent_prefix = "(FCS) "
     neutral = " (neutral)" if game.neutral_site else ""
     label = school_label(opponent, routes)
-    matchup = f'<span class="home-opponent">{rank}{label}{neutral}</span>'
+    matchup = f'<span class="home-opponent">{opponent_prefix}{label}{neutral}</span>'
     outcome = ""
     if forecast:
         handicap = game.home_handicap
         if handicap is None or not handicap.is_finite():
-            value = '<span class="home-game-score">Spread unavailable</span>'
+            value = '<span class="home-game-score" title="Spread unavailable">--</span>'
         else:
             spread = handicap if at_home else handicap.copy_negate()
             line = format(spread.normalize(), "+f") if spread else "Pick’em"
@@ -106,8 +109,8 @@ def _home_rankings(season: Season, routes: dict[str, str], key: str) -> str:
             games[game.week, game.home].append(game)
             games[game.week, game.away].append(game)
 
-    empty_result = "No games yet" if key == "PRESEASON" else "No game listed"
-    empty_forecast = "Season complete" if key == "FINAL" else "No game listed"
+    empty_result = "No games yet" if key == "PRESEASON" else "Bye"
+    empty_forecast = "Season complete" if key == "FINAL" else "Bye"
     rows = []
     for entry in entries:
         school = entry.school
