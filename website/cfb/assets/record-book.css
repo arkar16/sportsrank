@@ -457,6 +457,11 @@ html .metrics {
   font-size: .9375rem;
 }
 
+@media (min-width: 80.01rem) {
+  .basketball-home .home-rankings :is(th[scope="row"], td:nth-child(3)) { white-space: normal; }
+  .basketball-home .home-game { grid-template-columns: auto minmax(min-content, 1fr) auto; }
+  .basketball-home .home-opponent { white-space: normal; }
+}
 @media (max-width: 96rem) {
   .home-columns:has(.home-rankings) { display: block; }
   .home-columns:has(.home-rankings) > section:last-child {
