@@ -35,6 +35,8 @@ class Game:
     home_handicap: Decimal | None
     neutral_site: bool = False
     tipoff_label: str = ""
+    home_division: str = ""
+    away_division: str = ""
 
 
 @dataclass(slots=True)
@@ -156,7 +158,10 @@ def _games(site: Path, directory: Path, year: int, *, active: bool) -> list[Game
         key = _key(row["week"], row["home_team"], row["away_team"], row.get("home_score"),
                    row.get("away_score"), row["neutral_site"].lower() == "true")
         handicap = forecasts[key].popleft() if forecasts.get(key) else None
-        games.append(Game(*key[:5], Decimal(str(handicap)) if handicap is not None else None, key[5]))
+        games.append(Game(
+            *key[:5], Decimal(str(handicap)) if handicap is not None else None, key[5],
+            home_division=row.get("home_division", ""), away_division=row.get("away_division", ""),
+        ))
     # A newly retained weekly report can precede the aggregate results page.
     for key, handicaps in forecasts.items():
         for handicap in handicaps:
@@ -168,8 +173,11 @@ def _games(site: Path, directory: Path, year: int, *, active: bool) -> list[Game
         known = Counter(map(_matchup, games))
         for path in sorted((directory / "data/slate/weekly_slate").glob(f"{year}_W*_FBS_slate.html")):
             for row in _rows(path):
-                game = Game(int(row["week"]), _school(row["home_team"]), _school(row["away_team"]),
-                            None, None, None, row["neutral_site"].lower() == "true")
+                game = Game(
+                    int(row["week"]), _school(row["home_team"]), _school(row["away_team"]),
+                    None, None, None, row["neutral_site"].lower() == "true",
+                    home_division=row.get("home_division", ""), away_division=row.get("away_division", ""),
+                )
                 key = _matchup(game)
                 if known[key]:
                     known[key] -= 1
