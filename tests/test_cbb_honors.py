@@ -14,7 +14,8 @@ class BasketballHonorsTest(unittest.TestCase):
                 self.assertTrue((SITE / link["href"].lstrip("/")).is_file(), link["href"])
             return [table.select("tbody tr") for table in page.select("main table")]
 
-        championships, leaders = tables("cbb/history/champions.html")
+        championships, = tables("cbb/history/ncaa-champions.html")
+        leaders, = tables("cbb/history/champions.html")
         last, = tables("cbb/history/last-place.html")
         by_year = {row.td.get_text(): row for row in championships}
         self.assertEqual(len(by_year), len(championships))

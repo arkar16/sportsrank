@@ -39,21 +39,25 @@ def write_honors(root, archives, routes, presentation, as_of):
             tournament.append((season, winner, escape(game["record"]), labels[game["runner_up"]], escape(game["score"])))
 
     nav = '<nav class="archive-nav"><a href="/cbb/index.html">Basketball record book</a></nav>'
+    def publish(name, title, body):
+        path = root / "history" / f"{name}.html"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(presentation.render(_document(title, title, nav + body).encode(), archive=False))
+
+    publish("ncaa-champions", "NCAA tournament champions",
+            _table(("Season", "Tournament champion", "Record", "Runner-up", "Final score"), tournament)
+            + f'<p><a href="{NCAA}">NCAA championship history</a></p>')
     for last in (False, True):
-        title = "Last-place CORS finishers" if last else "National champions"
-        body = nav
-        if not last:
-            body += ('<h2>NCAA tournament</h2>' + _table(("Season", "Champion", "Record", "Runner-up", "Final score"), tournament)
-                     + f'<p><a href="{NCAA}">NCAA championship history</a></p><h2>Final CORS leaders</h2>')
+        title = "Last-place CORS finishers" if last else "CORS national champions"
+        body = "<p>Each season’s champion is the team ranked No. 1 in the final CORS standings.</p>" if not last else ""
         rows = []
         for year, s in sorted(finals.items(), reverse=True):
             standings = s.rankings["FINAL"]
             entry = max(standings, key=lambda r: r.rank) if last else min(standings, key=lambda r: r.rank)
             rows.append((_season_link(year), school_label(entry.school, team_routes[year]), str(entry.rank),
                          escape(entry.record), escape(entry.conference), f"{entry.rating:.2f}"))
-        body += ('<p>Based on the published final Division I ranking for each completed CORS season.</p>'
-                 + _table(("Season", "Team", "Final rank", "Record", "Conference", "CORS rating"), rows))
+        body += _table(("Season", "Team", "Final rank", "Record", "Conference", "CORS rating"), rows)
+        if not last:
+            body += '<p><a href="/cbb/history/ncaa-champions.html">NCAA tournament champions</a></p>'
         name = "last-place" if last else "champions"
-        path = root / "history" / f"{name}.html"
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(presentation.render(_document(title, title, body).encode(), archive=False))
+        publish(name, title, body)
