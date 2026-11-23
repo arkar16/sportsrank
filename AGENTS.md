@@ -55,3 +55,7 @@ see `docs/agents/triage-labels.md`.
 ### Domain docs
 
 Use the single-context glossary and ADR layout; see `docs/agents/domain.md`.
+
+## Reconstructed picks
+
+SportsRank is a fun project for exploring what CORS would have predicted. Generate and grade spreads for completed games whenever useful. Use only results available at the game's pregame rating checkpoint. The game's own result and later results cannot enter its prediction. Publication before tipoff is optional. Use preserved issued editions only when the question specifically asks what was published.

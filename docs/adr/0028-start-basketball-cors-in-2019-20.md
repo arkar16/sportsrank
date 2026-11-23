@@ -9,3 +9,18 @@ SportsRank will add men's Division I basketball alongside FBS football. The owne
 The basketball baseline starts all teams at zero in 2019–20. Returning teams carry their preceding final ratings and wins-versus-expected adjustment into the next season. The baseline copies the CFB v0.4.0 scoring formula and uses weekly Monday rankings and a two-point home advantage, with no home advantage on a neutral court. Games between two season members count toward the baseline.
 
 Historical forecasts reconstruct the margin for a matchup using the preceding checkpoint. Issued forecasts retain the prediction actually made before tipoff. Test candidate changes on the same games in chronological order, using pooled margin RMSE as the primary criterion and straight-up accuracy as a companion. Each sport has its own selection and promotion decision. A historical comparison alone does not change the published model.
+
+On November 23 the owner promoted basketball’s opponent-adjusted margin blend
+(configuration 3578) to v0.6.0. The v0.5.0 label identifies the earlier spread
+calibration experiment. The record book replays the promoted model across the
+available seasons using each matchup’s preceding Monday checkpoint. Scores can
+be displayed and used for grading after the game. Dated editions retain the
+figures actually shown at preparation. The project-wide rule for reconstructed
+picks is in AGENTS.md.
+
+The replay starts with the retained end-of-2018–19 model state in
+`cbb/blend_seed.json`. For each ESPN team ID its row contains the last season
+played, final CORS component, adjusted margin rating, wins versus expected,
+home and away residual sums, and corresponding game counts. The two global
+sums carry the spread calibration into the next year. The historical and
+prospective comparison is recorded in [experiment #100](https://github.com/arkar16/sportsrank/issues/100).

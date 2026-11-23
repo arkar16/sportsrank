@@ -277,11 +277,11 @@ uv run --locked python -m cbb.site --database .sportsrank/cbb/history.sqlite3 \
   --season 2027 --as-of 2026-11-19T18:58:00Z --output website/cbb
 ```
 
-Use the actual preparation timestamp for a new edition. Earlier editions retain
-their printed picks. After a deployment verifies the public current page, record
-the verification time and workflow URL in `cbb/issued.py` for the corresponding
-edition. The performance page grades its printed margins only for matching games
-that tipped after verification. Reconstructed performance is reported separately.
+Basketball v0.6.0 replays completed games as well as scheduled matchups. Every
+pick uses ratings from the preceding Monday checkpoint. Final scores can be
+shown alongside picks and used for grading whenever the page is built.
+Dated editions preserve the original printed picks for readers interested in
+publication history. See the reconstructed-picks rule in AGENTS.md.
 
 The same build exports completed 2022–26 March Madness replays. It joins the
 weekly CORS forecast and final score to the retained opponent-adjusted margin

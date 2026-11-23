@@ -109,16 +109,20 @@ def _grade_row(label, pairs):
             accuracy, grade.pick_ems)
 
 
-def _performance(root, by_season, editions, fixtures, as_of, tournament_years):
+def _performance(root, by_season, editions, fixtures, as_of, tournament_years, model):
     headers = ("Season", "Graded games", "Margin RMSE (points)", "Correct / picks", "Winner accuracy", "Pick’ems")
     pairs = [pair for _, season_pairs in by_season for pair in season_pairs]
     rows = [_grade_row(_season_link(year), season_pairs) for year, season_pairs in reversed(by_season)]
     rows.append(_grade_row("All seasons", pairs))
     body = ('<nav class="sr-report-nav" aria-label="Performance reports"><a href="#reconstructed">Season summaries</a>'
             '<a href="#issued">Dated pregame forecasts</a></nav>' + f'<p>Scores through {as_of.astimezone(EASTERN):%b %d, %Y at %H:%M %Z}.</p>'
-            '<h2 id="reconstructed">Reconstructed forecasts</h2><p>CORS v0.4.0, evaluated against final Division I scores. '
+            f'<h2 id="reconstructed">Reconstructed forecasts</h2><p>{model}, evaluated against final Division I scores. '
             'Each margin uses the Monday ratings preceding tipoff. RMSE includes pick’ems. Winner accuracy '
             'counts games with a predicted winner.</p>' + _table(headers, rows))
+    if model == "CORS v0.6.0":
+        body += ('<p>November 19–22 comparison on 153 games: the blend picked 100 winners '
+                 '(65.36%) with 13.48 points RMSE. The original v0.4.0 picked 90 (58.82%) '
+                 'with 16.77 points RMSE. <a href="https://github.com/arkar16/sportsrank/issues/100#issuecomment-7104093506">Experiment results</a></p>')
     if tournament_years:
         body += '<p><a href="/cbb/tournaments/index.html">March Madness picks and model comparisons</a></p>'
     body += ('<h2 id="issued">Dated pregame forecasts</h2><p>Each edition is graded separately using its printed '
@@ -149,7 +153,7 @@ def _standings_table(rankings, key, prior, routes, rows, names):
                            extra_columns=("Average margin", "Schedule strength"), extra_values=values)
 
 
-def build(root, seasons, as_of, logos, *, tournament_years=()):
+def build(root, seasons, as_of, logos, *, tournament_years=(), model="CORS v0.4.0"):
     """Export only checkpoints available by as_of and their corresponding slates."""
     archives = []
     names = {}
@@ -252,5 +256,5 @@ def build(root, seasons, as_of, logos, *, tournament_years=()):
         stamp = datetime.strptime(path.stem, "%Y-%m-%dT%H%M%SZ").replace(tzinfo=ZoneInfo("UTC"))
         if stamp <= as_of:
             editions.append((stamp, path))
-    _performance(root, performance, editions, fixtures, as_of, tournament_years)
+    _performance(root, performance, editions, fixtures, as_of, tournament_years, model)
     return archives, routes, presentation
