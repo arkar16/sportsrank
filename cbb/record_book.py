@@ -14,6 +14,7 @@ from zoneinfo import ZoneInfo
 
 from site_navigation import masthead
 from .archive_finals import read_archive
+from .early_records import SOURCE as EARLY_SOURCE, record_rows
 from .grade import grade_margins
 from .issued import VERIFIED_EDITIONS, grade_edition
 
@@ -158,7 +159,7 @@ def _standings_table(rankings, key, prior, routes, rows, names, year):
                            conference_links=conferences, extra_columns=("Average margin", "Schedule strength"), extra_values=values)
 
 
-def build(root, seasons, as_of, logos, *, tournament_years=(), model="CORS v0.4.0", schedules=None, upcoming_ids=(), include_early_finals=False):
+def build(root, seasons, as_of, logos, *, tournament_years=(), model="CORS v0.4.0", schedules=None, upcoming_ids=(), include_early_finals=False, early_records=None):
     """Export only checkpoints available by as_of and their corresponding slates."""
     archives, names = read_archive(min(as_of.year + (as_of.month >= 7), seasons[0]["season"])) if include_early_finals else ([], {})
     program_archives = list(archives)
@@ -181,6 +182,17 @@ def build(root, seasons, as_of, logos, *, tournament_years=(), model="CORS v0.4.
     performance = []
     fixtures = defaultdict(lambda: defaultdict(list))
     season_index = []
+    for year, records in sorted((early_records or {}).items()):
+        title = f"{season_name(year)} basketball team records"
+        context = ('<nav class="archive-nav"><a href="/cbb/seasons/index.html">Season archive</a></nav>'
+                   '<p>Records count games listed in the historical score archive. Some schools appear '
+                   'only in a tournament. Other games include the regular season, conference tournaments '
+                   f'and other invitationals. <a href="{EARLY_SOURCE}">Source and coverage</a></p>')
+        table = _table(("Team", "Covered record", "Other games", "NCAA tournament", "NIT"),
+                       record_rows(records, routes))
+        publish(f"seasons/{year}/index.html", _document(title, title, context + table))
+        completed = sum(w + nw + iw for _, w, _, nw, _, iw, _ in records)
+        season_index.append((_season_link(year), len(records), "Team records only", completed))
     for season in archives:
         year = season.year
         final = season.rankings["FINAL"]
