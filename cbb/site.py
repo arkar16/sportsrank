@@ -127,7 +127,7 @@ def main():
     years = build_tournaments(args.output, baseline, as_of, logo_ids, blends=seasons if blended else ())
     schedules, upcoming_ids = remaining_schedules(args.database, season, checkpoint, as_of) if blended else ({}, set())
     archives, routes, presentation = build(args.output, seasons, as_of, logo_ids, tournament_years=years, model=model,
-                                           schedules=schedules, upcoming_ids=upcoming_ids)
+                                           schedules=schedules, upcoming_ids=upcoming_ids, include_early_finals=True)
     write_honors(args.output, archives, routes, presentation, as_of)
     edition_link = f'<nav class="sr-report-nav"><a href="editions/{archive.name}">Dated edition</a></nav>'
     report = _forecasts(edition_games, as_of.astimezone(et), logo_ids, True)

@@ -24,3 +24,14 @@ played, final CORS component, adjusted margin rating, wins versus expected,
 home and away residual sums, and corresponding game counts. The two global
 sums carry the spread calibration into the next year. The historical and
 prospective comparison is recorded in [experiment #100](https://github.com/arkar16/sportsrank/issues/100).
+
+## Earlier final standings
+
+The historical backfill begins with level ratings in 1984–85 and carries the
+v0.6.0 state forward through 2018–19. Each season uses its own Division I
+roster and games between two members, including postseason tournaments. The
+source gives game dates, so each date belongs to its Eastern calendar week.
+The site publishes final standings from this replay. The modern weekly series
+retains its original 2019–20 initialization. This preserves previously published
+rankings and spreads as the historical archive grows. The basketball CORS
+championship belongs to the team ranked first in the published final standings.
