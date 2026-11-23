@@ -72,7 +72,7 @@ The scoring margin forecast by CORS for one Game.
 The time boundary before a matchup's kickoff that limits the information eligible for its Model Spread. A later recalculation does not move that boundary.
 
 **Graded Forecast**:
-The last CORS forecast published before a Game's kickoff, preserved as the basis for evaluating that Game.
+A CORS pick compared with the final score. A reconstructed pick uses the information available at its Forecast Cutoff and can be calculated after the Game. When reporting issued performance, grade the pick actually published before play.
 
 **Market Line**:
 A bookmaker's published point spread for one Game, used as a reference for evaluating CORS forecasts.

@@ -57,9 +57,9 @@ def _completed_games(forecasts, margins, as_of):
     return sorted(games, key=lambda g: (g["start_utc"], g["game_id"]))
 
 
-def _grades(games):
+def _grades(games, models=MODELS):
     rows = [_grade_row(label, [(g[key], g["actual_home_margin"]) for g in games])
-            for key, label in MODELS]
+            for key, label in models]
     return _table(("Model and cutoff", "Games", "RMSE (points)", "Correct / picks", "Winner accuracy", "Pick’ems"), rows)
 
 
@@ -71,7 +71,7 @@ def _pick(game, key):
     return f"{escape(school)} by {abs(margin):.2f}"
 
 
-def _year_body(year, games, logos):
+def _year_body(year, games, logos, models):
     rounds = defaultdict(list)
     for g in games:
         sides = []
@@ -80,18 +80,20 @@ def _year_body(year, games, logos):
             sides.append(f'{school} {g[f"{side}_points"]}')
         tip = datetime.fromisoformat(g["start_utc"]).astimezone(EASTERN)
         rounds[g["ncaa_round"]].append((f"{tip:%b %d · %I:%M %p}", "<br>".join(sides),
-                                         *(_pick(g, key) for key, _ in MODELS)))
+                                         *(_pick(g, key) for key, _ in models)))
     body = (f'<p><a href="/cbb/tournaments/index.html">Tournament archive</a> · {_season_link(year)} season</p>'
-            + METHOD + _grades(games))
+            + METHOD + _grades(games, models))
     links = [f'<a href="#round-{i}">{escape(name)}</a>' for i, name in enumerate(rounds, 1)]
     body += '<nav aria-label="Tournament rounds"><p>' + ' · '.join(links) + '</p></nav>'
     for i, (name, rows) in enumerate(rounds.items(), 1):
         body += f'<h2 id="round-{i}">{escape(name)}</h2>' + _table(
-            ("Tipoff (Eastern)", "Final score", "CORS pick", "Weekly margin pick", "Pre-tipoff margin pick"), rows)
+            ("Tipoff (Eastern)", "Final score", *(label for _, label in models)), rows)
     return body
 
 
-def build_tournaments(root, seasons, as_of, logos):
+def build_tournaments(root, seasons, as_of, logos, *, blends=()):
+    by_year = {s["season"]: s for s in blends}
+    models = MODELS + ((("blend", "CORS v0.6.0 · Monday"),) if blends else ())
     margins = _load_margins()
     archive = {}
     for season in seasons:
@@ -99,16 +101,20 @@ def build_tournaments(root, seasons, as_of, logos):
         if year in margins:
             games = _completed_games(season["forecasts"], margins[year], as_of)
             if games:
+                if blends:
+                    predictions = {g["game_id"]: g["home_margin"] for g in by_year[year]["forecasts"]}
+                    for g in games:
+                        g["blend"] = predictions[g["game_id"]]
                 archive[year] = games
     if archive:
         rows = []
         for year, games in sorted(archive.items(), reverse=True):
             _write(root, f"tournaments/{year}.html", f"{year} March Madness picks and results",
-                   _year_body(year, games, logos))
+                   _year_body(year, games, logos, models))
             rows.append((f'<a href="/cbb/tournaments/{year}.html">{year} tournament</a>', len(games)))
         all_games = [g for games in archive.values() for g in games]
         _write(root, "tournaments/index.html", "March Madness picks and results",
                _table(("Men’s NCAA tournament", "Games"), rows) + "<h2>Across tournaments</h2>"
                + METHOD + "<p>RMSE measures margin error in points. Lower is better. Winner accuracy "
-               "counts games with a predicted winner.</p>" + _grades(all_games))
+               "counts games with a predicted winner.</p>" + _grades(all_games, models))
     return set(archive)
