@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo
 from site_navigation import masthead
 from .archive_finals import read_archive
 from .early_records import SOURCE as EARLY_SOURCE, record_rows
+from .program_records import program_record_rows
 from .grade import grade_margins
 from .issued import VERIFIED_EDITIONS, grade_edition
 
@@ -159,7 +160,7 @@ def _standings_table(rankings, key, prior, routes, rows, names, year):
                            conference_links=conferences, extra_columns=("Average margin", "Schedule strength"), extra_values=values)
 
 
-def build(root, seasons, as_of, logos, *, tournament_years=(), model="CORS v0.4.0", schedules=None, upcoming_ids=(), include_early_finals=False, early_records=None):
+def build(root, seasons, as_of, logos, *, tournament_years=(), model="CORS v0.4.0", schedules=None, upcoming_ids=(), include_early_finals=False, early_records=None, program_records=None):
     """Export only checkpoints available by as_of and their corresponding slates."""
     archives, names = read_archive(min(as_of.year + (as_of.month >= 7), seasons[0]["season"])) if include_early_finals else ([], {})
     program_archives = list(archives)
@@ -182,6 +183,14 @@ def build(root, seasons, as_of, logos, *, tournament_years=(), model="CORS v0.4.
     performance = []
     fixtures = defaultdict(lambda: defaultdict(list))
     season_index = []
+    for year, records in sorted((program_records or {}).items()):
+        title = f"{season_name(year)} basketball team records"
+        context = ('<nav class="archive-nav"><a href="/cbb/seasons/index.html">Season archive</a></nav>'
+                   '<p>Season records for the programs covered by the linked sources. '
+                   'Records include ties when reported.</p>')
+        table = _table(("Team", "Record", "Conference", "Record book"), program_record_rows(records, routes))
+        publish(f"seasons/{year}/index.html", _document(title, title, context + table))
+        season_index.append((_season_link(year), len(records), "Team records only", "—"))
     for year, records in sorted((early_records or {}).items()):
         title = f"{season_name(year)} basketball team records"
         context = ('<nav class="archive-nav"><a href="/cbb/seasons/index.html">Season archive</a></nav>'
