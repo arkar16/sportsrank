@@ -87,6 +87,7 @@ class SitewideRecordBookTests(unittest.TestCase):
                     "No game listed",
                 ])
                 link = rows[0].select(".home-result")[0].a["href"]
+                self.assertEqual(link, "/cfb/teams/kansas-state/2026.html")
                 self.assertTrue((site / link.lstrip("/")).is_file())
                 self.assertIsNone(rows[2].select(".home-result")[0].find("a"))
                 self.assertEqual(remaining.select("tbody tr")[-1].select(".home-result")[1].get_text(strip=True),
@@ -193,7 +194,7 @@ class SitewideRecordBookTests(unittest.TestCase):
         champion = ("1", "Alpha State", "West", "2-1", "0.67", "20.00")
         for year, checkpoint, rows in (
             (2025, "FINAL", (last_place, champion)),
-            (2026, "W1", (champion,)),
+            (2026, "W1", (("1", "Alpha State", "East", "1-0", "1", "24.50"),)),
         ):
             rankings = site / f"cfb/years/{year}/rankings"
             rankings.mkdir(parents=True)
@@ -215,12 +216,21 @@ class SitewideRecordBookTests(unittest.TestCase):
 
         build(site)
         self.assertEqual(build(site), (2, 2, 0))
+        for year, conference, edition in [(2025, "West", "Final"), (2026, "East", "Through Week 1")]:
+            landing = BeautifulSoup((site / f"cfb/years/{year}/{year}_CFB.html").read_bytes(), "html.parser")
+            link = landing.find("a", string=conference)["href"]
+            page = BeautifulSoup((site / link.lstrip("/")).read_bytes(), "html.parser")
+            self.assertEqual(page.h1.text, f"{year} {conference}")
+            self.assertEqual(page.select_one(".edition").text, edition)
+            self.assertEqual(page.find("a", string="Alpha State")["href"], f"/cfb/teams/alpha-state/{year}.html")
+        self.assertFalse((site / "cfb/conferences/west/2026.html").exists())
         for path, (row, season_link) in expected.items():
             with self.subTest(route=path.relative_to(site)):
                 page = BeautifulSoup(path.read_bytes(), "html.parser")
                 self.assertEqual([[cell.get_text() for cell in entry.select("td")]
                                   for entry in page.select("tbody tr")], [row])
                 self.assertEqual(page.select_one("tbody tr a")["href"], season_link)
+                self.assertTrue(page.select_one("tbody td:nth-child(2) a")["href"].endswith("/2025.html"))
                 self.assertIsNotNone(page.select_one('script[src="/cfb/assets/sort-history.js"][defer]'))
                 archive = BeautifulSoup(source_bytes(path.read_bytes()), "html.parser")
                 self.assertIsNone(archive.find("script"))

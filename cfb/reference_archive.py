@@ -60,6 +60,19 @@ def program_routes(seasons: list[Season]) -> dict[str, str]:
     return routes
 
 
+def program_season_route(route: str, year: int) -> str:
+    return f"{route.rsplit('/', 1)[0]}/{year}.html"
+
+
+def season_team_routes(season: Season, routes: dict[str, str]) -> dict[str, str]:
+    """Every team ranked at any checkpoint gets a review for this season."""
+    ranked = {row.school for rows in season.rankings.values() for row in rows}
+    return {
+        school: program_season_route(route, season.year)
+        for school, route in routes.items() if school in ranked
+    }
+
+
 def _rows(path: Path):
     raw = source_bytes(path.read_bytes())
     try:
