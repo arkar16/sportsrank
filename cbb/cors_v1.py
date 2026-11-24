@@ -44,7 +44,7 @@ def _prior(year, previous, genesis):
     return CARRY_TOTAL**gap * slow, min(100., variance + gap*SIGMA_OFF**2)
 
 
-def _update(mu, cov, observations, adaptive):
+def _update(mu, cov, observations, adaptive, *, game_deltas=None):
     """Accumulate information using a single pre-update mean and covariance."""
     n = len(mu) - 2
     cov[np.arange(n), np.arange(n)] += SIGMA_WK**2
@@ -52,6 +52,7 @@ def _update(mu, cov, observations, adaptive):
         cov[-1, -1] += SIGMA_HFA_WK**2
     precision = np.linalg.inv(cov)
     eta = precision @ mu
+    terms = []
     for home, away, margin, venue in observations:
         noise = ((SIGMA_NOND1 if away == n else SIGMA_G_BASE) * NOISE_SCALE)**2
         # Only D1-D1 games measure the league home-advantage node.
@@ -68,8 +69,19 @@ def _update(mu, cov, observations, adaptive):
         weight = (NU + 1) / (NU + residual**2 / max(variance, 1e-6)) / noise
         precision[block] += weight * np.outer(x, x)
         eta[ids] += weight * margin * x
+        if game_deltas is not None and away < n:
+            terms.append((home, away, margin, ids, x, weight))
     cov = np.linalg.inv(precision)
-    return cov @ eta, cov
+    mu = cov @ eta
+    # Remove one observation from the same weekly fit with its robust
+    # weight held fixed. Neither the fit nor its covariance changes.
+    for home, away, margin, ids, x, weight in terms:
+        v = cov[:, ids] @ x
+        leverage = weight * float(x @ v[ids])
+        delta = (weight * (margin - x @ mu[ids]) / max(1.0 - leverage, 1e-9)) * v
+        center = delta[:n].mean()
+        game_deltas.append((float(delta[home] - center), float(delta[away] - center)))
+    return mu, cov
 
 
 def _validate_seed(seed):
@@ -91,7 +103,7 @@ def _validate_seed(seed):
 
 def _weekly_games(season, idx, effect, tier_games):
     """Group fixtures by prediction cutoff and finals by first eligible observation cutoff."""
-    fixtures, observations = defaultdict(list), defaultdict(list)
+    fixtures, observations, result_ids = defaultdict(list), defaultdict(list), defaultdict(list)
     for g in sorted(season["forecasts"], key=lambda g: (g["start_utc"], g["game_id"])):
         fixtures[g["cutoff_utc"]].append(g)
         if g["actual_home_margin"] is not None:
@@ -99,11 +111,12 @@ def _weekly_games(season, idx, effect, tier_games):
             venue = int(not g["neutral_site"])
             cutoff = _available(datetime.fromisoformat(g["start_utc"]))
             observations[cutoff].append((h, a, g["actual_home_margin"] - venue * effect[h], venue))
+            result_ids[cutoff].append(g["game_id"])
     for start, team, margin, venue in sorted(tier_games):
         if team in idx:
             h = idx[team]
             observations[_available(start)].append((h, len(idx), margin - (effect[h] if venue == 1 else 0), venue))
-    return fixtures, observations
+    return fixtures, observations, result_ids
 
 
 def _checkpoints(season, observations):
@@ -158,9 +171,10 @@ def iter_cors_v1_seasons(seasons, keys, seed=None, *, nond1_by_season=None, hfa_
             effect[experienced] -= effect[experienced].mean()
 
         tier_games = (nond1_by_season or {}).get(year, ())
-        fixtures, observations = _weekly_games(season, idx, effect, tier_games)
+        fixtures, observations, result_ids = _weekly_games(season, idx, effect, tier_games)
         checkpoints, final_cutoff = _checkpoints(season, observations)
         rankings, forecasts = [], []
+        deltas_by_game = {}
         opp_sum, opp_count = np.zeros((2, n))
         residuals = np.zeros((n, 4))
         ratings = mu[:n].copy()
@@ -172,7 +186,12 @@ def iter_cors_v1_seasons(seasons, keys, seed=None, *, nond1_by_season=None, hfa_
                         opp_sum[h] += ratings[a]
                         opp_sum[a] += ratings[h]
                         opp_count[[h, a]] += 1
-                mu, cov = _update(mu, cov, observations[cutoff], year >= hfa_start_year)
+                deltas = []
+                mu, cov = _update(mu, cov, observations[cutoff], year >= hfa_start_year, game_deltas=deltas)
+                for game_id, (home, away) in zip(result_ids[cutoff], deltas, strict=True):
+                    deltas_by_game[game_id] = {
+                        "home_cors_delta": home, "away_cors_delta": away, "result_cutoff_utc": cutoff,
+                    }
             sos = opp_sum / np.maximum(1, opp_count)
             ratings = mu[:n] - mu[:n].mean()
             standing_rows = []
@@ -213,7 +232,7 @@ def iter_cors_v1_seasons(seasons, keys, seed=None, *, nond1_by_season=None, hfa_
             for row in state.values():
                 row[4:] = [v * HFA_TEAM_MEM for v in row[4:]]
         tier, tier_var = mu[n] - center, cov[n, n]
-        yield {**season, "rankings": tuple(rankings), "forecasts": tuple(forecasts),
+        yield {**season, "rankings": tuple(rankings), "forecasts": tuple({**g, **deltas_by_game.get(g["game_id"], {})} for g in forecasts),
                "final_cutoff_utc": final_cutoff, "final_rankings": final_rows, "home_advantages": final_advantages}
 
 

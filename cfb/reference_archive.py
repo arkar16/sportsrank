@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict, deque
 from dataclasses import dataclass, replace
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 import json
 from pathlib import Path
@@ -14,6 +15,7 @@ from lxml import html
 from .historical_rebuild import _school
 from .performance import _saved_margin
 from .reference_markup import source_bytes
+from .week_calendar import EASTERN, WEEK_ONE_BOUNDARIES
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,6 +39,10 @@ class Game:
     tipoff_label: str = ""
     home_division: str = ""
     away_division: str = ""
+    conference_game: bool | None = None
+    postseason: bool = False
+    home_cors_delta: float | None = None
+    away_cors_delta: float | None = None
 
 
 @dataclass(slots=True)
@@ -45,6 +51,8 @@ class Season:
     rankings: dict[str, list[Standing]]
     games: list[Game]
     updated_at: str = ""
+    home_advantage: float = 3.0
+    conference_note: str = ""
 
 
 def program_routes(seasons: list[Season]) -> dict[str, str]:
@@ -141,6 +149,28 @@ def _matchup(game: Game):
     return game.week, game.home, game.away, game.neutral_site
 
 
+def _postseason(year: int, week: int, game_date: str, season_type: str = "") -> bool:
+    if season_type:
+        return season_type.lower() == "postseason"
+    # Since 2024 the first Monday of the canonical championship week is
+    # the Monday immediately after Thanksgiving weekend.
+    november_end = date(year, 11, 30)
+    thanksgiving = november_end - timedelta(days=(november_end.weekday() - 3) % 7)
+    championship_week = thanksgiving + timedelta(days=4)
+    if year in WEEK_ONE_BOUNDARIES:
+        return week >= 1 + (championship_week - WEEK_ONE_BOUNDARIES[year].date()).days // 7
+    if not game_date:
+        return False
+    start = datetime.fromisoformat(game_date)
+    if start.tzinfo is None:
+        start = start.replace(tzinfo=timezone.utc)
+    # The delayed 2020 championship weekend was December 18–19.
+    cutoff = date(2020, 12, 18) if year == 2020 else championship_week
+    if year < 1992:
+        cutoff = date(year, 12, 15)
+    return start.astimezone(EASTERN).date() >= cutoff
+
+
 def _games(site: Path, directory: Path, year: int, *, active: bool) -> list[Game]:
     # The performance report is FBS-only. Start from the full schedule of
     # results so e.g. a ranked team's win against an unranked opponent survives.
@@ -161,14 +191,17 @@ def _games(site: Path, directory: Path, year: int, *, active: bool) -> list[Game
         games.append(Game(
             *key[:5], Decimal(str(handicap)) if handicap is not None else None, key[5],
             home_division=row.get("home_division", ""), away_division=row.get("away_division", ""),
+            postseason=_postseason(year, key[0], row.get("game_date", ""), row.get("season_type", "")),
         ))
     # A newly retained weekly report can precede the aggregate results page.
     for key, handicaps in forecasts.items():
         for handicap in handicaps:
-            games.append(Game(*key[:5], Decimal(str(handicap)) if handicap is not None else None, key[5]))
+            games.append(Game(*key[:5], Decimal(str(handicap)) if handicap is not None else None,
+                              key[5], postseason=_postseason(year, key[0], "")))
     for row in report.get("upcoming", []):
         games.append(Game(int(row["week"]), _school(row["home"]), _school(row["away"]), None, None,
-                          Decimal(str(row["home_handicap"])), row["neutral_site"]))
+                          Decimal(str(row["home_handicap"])), row["neutral_site"],
+                          postseason=_postseason(year, int(row["week"]), row.get("game_date", ""))))
     if active:
         known = Counter(map(_matchup, games))
         for path in sorted((directory / "data/slate/weekly_slate").glob(f"{year}_W*_FBS_slate.html")):
@@ -177,6 +210,8 @@ def _games(site: Path, directory: Path, year: int, *, active: bool) -> list[Game
                     int(row["week"]), _school(row["home_team"]), _school(row["away_team"]),
                     None, None, None, row["neutral_site"].lower() == "true",
                     home_division=row.get("home_division", ""), away_division=row.get("away_division", ""),
+                    postseason=_postseason(year, int(row["week"]), row.get("game_date", ""),
+                                           row.get("season_type", "")),
                 )
                 key = _matchup(game)
                 if known[key]:
@@ -219,5 +254,13 @@ def read_archive(site: Path) -> list[Season]:
             raw = (directory / f"rankings/{year}_{last}_FBS_cors.html").read_bytes()
             timestamp = re.search(rb"Last updated:\s*([0-9][0-9T:.+ Z-]*)", raw)
             updated = timestamp[1].decode("ascii").strip() if timestamp else ""
-            seasons.append(Season(year, standings, games, updated))
+            home_advantage = 3.0
+            if "FINAL" not in standings:
+                for path in sorted((directory / "spread").glob(f"{year}_W*_FBS_spread.html"),
+                                   key=lambda path: _checkpoint_order(path.name.split("_")[1]), reverse=True):
+                    match = re.search(rb"league HFA ([-+0-9.]+) pts", path.read_bytes())
+                    if match:
+                        home_advantage = float(match[1])
+                        break
+            seasons.append(Season(year, standings, games, updated, home_advantage))
     return seasons

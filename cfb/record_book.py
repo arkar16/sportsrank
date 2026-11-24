@@ -297,7 +297,9 @@ def build(site: Path) -> tuple[int, int, int]:
         sortable = relative.endswith("/index.html") and relative != "cfb/teams/index.html"
         changed += _write_changed(site / relative, presentation.render(markup.encode(), archive=False, sortable=sortable))
     for relative, markup in build_conference_pages(seasons, routes):
-        changed += _write_changed(site / relative, presentation.render(markup.encode(), archive=False))
+        changed += _write_changed(site / relative, presentation.render(
+            markup.encode(), archive=False, sortable="data-sortable" in markup,
+        ))
     season_pages = set()
     for season in seasons:
         for relative, markup in build_season_pages(site, season, routes):

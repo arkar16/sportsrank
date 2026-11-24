@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, time, timedelta, timezone
 import math
 from pathlib import Path
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 from zoneinfo import ZoneInfo
 
 from .source import Game, Season, read_history
@@ -72,6 +72,13 @@ class ForecastRow(TypedDict):
     away_points: int | None
     ncaa_round: str | None
     actual_home_margin: int | None
+    conference_game: NotRequired[bool | None]
+    season_type: NotRequired[str | None]
+    tournament: NotRequired[str | None]
+    conference_tournament: NotRequired[bool]
+    home_cors_delta: NotRequired[float]
+    away_cors_delta: NotRequired[float]
+    result_cutoff_utc: NotRequired[str]
 
 
 class SeasonReplay(TypedDict):
@@ -189,6 +196,8 @@ def _forecast(
         home_margin=round(home - away + (0.0 if game.neutral_site else home_advantage), 2),
         status=game.status, home_points=home_points, away_points=away_points,
         actual_home_margin=actual_margin, ncaa_round=game.ncaa_round,
+        conference_game=game.conference_game, season_type=game.season_type, tournament=game.tournament,
+        conference_tournament=game.conference_tournament,
     )
 
 

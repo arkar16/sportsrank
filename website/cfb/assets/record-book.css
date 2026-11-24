@@ -612,3 +612,27 @@ html .metrics {
   html a { color: inherit; text-decoration: none; }
   .table-scroll, html .scroll, .forecast-table-scroll { overflow: visible; }
 }
+
+html .conference-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .7rem 1.5rem;
+}
+.conference-summary dt {
+  color: var(--muted);
+  font-size: .85rem;
+}
+.conference-summary dd {
+  margin: .1rem 0 0;
+  color: var(--ink);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.conference-note {
+  color: var(--muted);
+  font-size: .875rem;
+}
+table[data-sortable] tfoot {
+  border-top: 2px solid var(--rule);
+  font-weight: 700;
+}
