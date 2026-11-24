@@ -58,7 +58,7 @@ class ArchiveTests(unittest.TestCase):
         opponents = log.xpath('//td[normalize-space(.)="Town College"]')
         self.assertEqual(len(opponents), 2)
         self.assertEqual(opponents[0].xpath('.//img/@src'), [mark])
-        self.assertFalse(opponents[1].xpath('.//img'))
+        self.assertEqual(opponents[1].xpath('.//img/@src'), [mark])
         self.assertFalse(any(cell.xpath('.//a') for cell in opponents))
         self.assertEqual(log.xpath('//a[@href="/cfb/teams/miami-oh/2026.html"]/img/@src'), [miami_mark])
 

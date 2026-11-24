@@ -76,13 +76,12 @@ class PagePresentation:
     def _cell(self, match: re.Match) -> str:
         return match[1] + self._school(match["value"]) + match[4]
 
-    def _mark_label(self, match: re.Match, seen: set[str]) -> str:
+    def _mark_label(self, match: re.Match) -> str:
         name = _school_text(match["name"])
-        if name in seen or name not in self.marks:
+        if name not in self.marks:
             return match[0]
         if match["directory"] and self.by_directory.get(match["directory"]) != name:
             return match[0]
-        seen.add(name)
         return match["start"] + _image(self.marks[name]) + match["name"] + match["end"]
 
     def _heading(self, match: re.Match) -> str:
@@ -124,10 +123,11 @@ class PagePresentation:
         # Only rows get small marks. Breadcrumbs and links to individual
         # seasons keep their original labels.
         if self.marks:
-            game_log = set() if _HEADING.search(markup) else None
-            def row_images(match):
-                seen = game_log if game_log is not None else set()
-                return _SCHOOL_LABEL.sub(lambda label: self._mark_label(label, seen), match[0])
-            markup = re.sub(r"<tr\b[^>]*>.*?</tr>", row_images, markup, flags=re.I | re.S)
+            markup = re.sub(
+                r"<tr\b[^>]*>.*?</tr>",
+                lambda match: _SCHOOL_LABEL.sub(self._mark_label, match[0]),
+                markup,
+                flags=re.I | re.S,
+            )
             markup = _HEADING.sub(self._heading, markup)
         return markup.encode(encoding, errors="xmlcharrefreplace")

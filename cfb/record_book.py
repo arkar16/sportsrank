@@ -12,7 +12,7 @@ from .history_sheets import render_history_sheet
 from .program_marks import program_logo_paths
 from .program_pages import build_program_pages
 from .reference_archive import Game, Season, final_history_rows, program_routes, read_archive, season_team_routes
-from .reference_markup import PagePresentation, school_label
+from .reference_markup import PagePresentation, _image, school_label
 from .release import _page, _row_table
 from .season_pages import build_season_pages, weekly_forecast_path
 
@@ -289,7 +289,11 @@ def build(site: Path) -> tuple[int, int, int]:
     changed = 0
     for asset in (Path(__file__).parent / "assets").iterdir():
         changed += _write_changed(site / "cfb/assets" / asset.name, asset.read_bytes())
-    for relative, markup in build_program_pages(seasons, routes):
+    def directory_label(school: str) -> str:
+        mark = _image(marks[school]) if school in marks else ""
+        return f'<a href="{escape(routes[school])}">{mark}{escape(school)}</a>'
+
+    for relative, markup in build_program_pages(seasons, routes, directory_label=directory_label):
         changed += _write_changed(site / relative, presentation.render(markup.encode(), archive=False))
     for relative, markup in build_conference_pages(seasons, routes):
         changed += _write_changed(site / relative, presentation.render(markup.encode(), archive=False))

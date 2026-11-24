@@ -72,7 +72,7 @@ class SeasonPageTests(unittest.TestCase):
         view = PagePresentation(self.routes, {"Favorite C": mark})
         marked = BeautifulSoup(view.render(pages[f"{base}/2025_CFB.html"].encode(), archive=False), "html.parser")
         upset = marked.select_one('table[aria-labelledby="cors-upsets"] tbody tr')
-        self.assertEqual([image["src"] for image in upset.find_all("img")], [mark])
+        self.assertEqual([image["src"] for image in upset.find_all("img")], [mark, mark])
         self.assertIsNone(upset.find("a", string="Favorite C"))
         self.assertEqual(
             [a["href"] for a in landing.select('nav[aria-label="Ranking checkpoints"] a')],

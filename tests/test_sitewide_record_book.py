@@ -266,3 +266,35 @@ class SitewideRecordBookTests(unittest.TestCase):
                 self.assertEqual(archive.select_one("tbody td:nth-child(3)").text, row[2])
                 self.assertIsNone(archive.find("script"))
                 self.assertIsNotNone(archive.select_one("tbody tr"))
+
+    def test_repeated_school_labels_keep_marks_across_rows_and_game_logs(self):
+        routes = {
+            "Texas": "/cbb/teams/295/index.html",
+            "Florida": "/cbb/teams/87/index.html",
+            "Colorado": "/cbb/teams/56/index.html",
+        }
+        marks = {
+            "Texas": "/cbb/assets/team-logos/295.png",
+            "Florida": "/cbb/assets/team-logos/87.png",
+            "Colorado": "/cbb/assets/team-logos/56.png",
+        }
+        view = PagePresentation(routes, marks)
+        raw = (
+            '<html><head></head><body><h1><span data-program="Texas">Texas</span></h1>'
+            '<table><tbody>'
+            '<tr><td><a href="/cbb/teams/87/2027.html">Florida</a></td></tr>'
+            '<tr><td><a href="/cbb/teams/87/2027.html">Florida</a></td></tr>'
+            '<tr><td><a href="/cbb/teams/56/2027.html">Colorado</a> by 15</td>'
+            '<td><a href="/cbb/teams/56/2027.html">Colorado</a></td></tr>'
+            '</tbody></table></body></html>'
+        ).encode("utf-8")
+        rendered = view.render(raw, archive=False)
+        doc = BeautifulSoup(rendered, "html.parser")
+        florida_links = doc.select('tbody a[href="/cbb/teams/87/2027.html"]')
+        self.assertEqual(len(florida_links), 2)
+        self.assertTrue(all(link.find("img", class_="school-mark") is not None for link in florida_links))
+        colorado_links = doc.select('tbody a[href="/cbb/teams/56/2027.html"]')
+        self.assertEqual(len(colorado_links), 2)
+        self.assertTrue(all(link.find("img", class_="school-mark") is not None for link in colorado_links))
+        self.assertEqual(source_bytes(rendered), raw)
+        self.assertEqual(view.render(rendered, archive=False), rendered)
