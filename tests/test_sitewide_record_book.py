@@ -62,6 +62,17 @@ class SitewideRecordBookTests(unittest.TestCase):
         build(site)
         self.assertEqual(build(site), (1, 27, 0))
 
+        sorter = 'script[src="/cfb/assets/sort-history.js"][defer]'
+        history = (site / "cfb/teams/kansas-state/index.html").read_bytes()
+        self.assertIsNotNone(BeautifulSoup(history, "html.parser").select_one(sorter))
+        source = BeautifulSoup(source_bytes(history), "html.parser")
+        self.assertIsNone(source.select_one(sorter))
+        self.assertEqual(source.select_one("main table caption").text, "Season history")
+        for relative in ("cfb/teams/index.html", "cfb/teams/kansas-state/2026.html"):
+            with self.subTest(page=relative):
+                page = BeautifulSoup((site / relative).read_bytes(), "html.parser")
+                self.assertIsNone(page.select_one(sorter))
+
         for relative in ("index.html", "cfb/cfb.html"):
             with self.subTest(page=relative):
                 page = BeautifulSoup((site / relative).read_bytes(), "html.parser")

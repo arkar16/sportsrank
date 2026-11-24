@@ -294,7 +294,8 @@ def build(site: Path) -> tuple[int, int, int]:
         return f'<a href="{escape(routes[school])}">{mark}{escape(school)}</a>'
 
     for relative, markup in build_program_pages(seasons, routes, directory_label=directory_label):
-        changed += _write_changed(site / relative, presentation.render(markup.encode(), archive=False))
+        sortable = relative.endswith("/index.html") and relative != "cfb/teams/index.html"
+        changed += _write_changed(site / relative, presentation.render(markup.encode(), archive=False, sortable=sortable))
     for relative, markup in build_conference_pages(seasons, routes):
         changed += _write_changed(site / relative, presentation.render(markup.encode(), archive=False))
     season_pages = set()

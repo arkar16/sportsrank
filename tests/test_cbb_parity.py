@@ -37,6 +37,19 @@ class CbbWebsiteParityTests(unittest.TestCase):
     def read(self, relative):
         return BeautifulSoup((SITE / relative).read_bytes(), "lxml")
 
+    def test_public_team_history_pages_are_the_only_team_pages_with_the_sorter(self):
+        script_path = b"/cfb/assets/sort-history.js"
+        sorter = b'<script src="' + script_path + b'" defer></script>'
+        for sport in ("cfb", "cbb"):
+            teams = SITE / sport / "teams"
+            self.assertNotIn(script_path, (teams / "index.html").read_bytes())
+            histories = list(teams.glob("*/index.html"))
+            self.assertTrue(histories, sport)
+            for path in histories:
+                self.assertIn(sorter, path.read_bytes(), path)
+            for path in teams.glob("*/[0-9][0-9][0-9][0-9].html"):
+                self.assertNotIn(script_path, path.read_bytes(), path)
+
     def test_all_cors_seasons_1981_through_2027_have_weekly_progression_and_performance(self):
         for year in range(1981, 2028):
             base = SITE / f"cbb/seasons/{year}"

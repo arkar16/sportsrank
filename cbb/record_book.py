@@ -184,10 +184,10 @@ def build(
     marks = {name: f"/cbb/assets/team-logos/{i}.png" for i, name in names.items() if i in logos}
     presentation = PagePresentation(routes, marks, header=masthead(SECTIONS))
 
-    def publish(path, markup):
+    def publish(path, markup, *, sortable=False):
         target = root / path
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(presentation.render(markup.encode(), archive=False))
+        target.write_bytes(presentation.render(markup.encode(), archive=False, sortable=sortable))
 
     performance_records = []
     fixtures = defaultdict(lambda: defaultdict(list))
@@ -425,7 +425,8 @@ def build(
         year_label=season_name,
         directory_label=lambda school: team_label(school, ids[school], logos),
     ):
-        publish(path.removeprefix("cbb/"), markup)
+        sortable = path.endswith("/index.html") and path != "cbb/teams/index.html"
+        publish(path.removeprefix("cbb/"), markup, sortable=sortable)
     for path, markup in build_conference_pages(
         archives, routes, sport="basketball", year_label=season_name,
         season_route=lambda y: f"/cbb/seasons/{y}/index.html",
