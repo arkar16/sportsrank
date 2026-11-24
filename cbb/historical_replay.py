@@ -1,4 +1,4 @@
-"""Full weekly CORS v0.6.0 replay for 1980–81 through 2018–19 from pinned compact results."""
+"""Full weekly CORS replay for 1980–81 through 2018–19 from pinned compact results."""
 from collections import Counter, defaultdict
 import csv
 from datetime import datetime, time, timedelta
@@ -8,6 +8,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from .archive_finals import conference_name, program_id_map
+from .cors_v1 import VERSION, iter_cors_v1_seasons
 from .blend import iter_blended_seasons
 from .replay import CARRYOVER_STRENGTH, HOME_ADVANTAGE, MARGIN_WEIGHT, _replay
 from .source import Game, Season, Team
@@ -31,8 +32,8 @@ HASHES = {
 }
 
 
-def iter_raw_historical_seasons(directory: Path, *, through_year: int = LAST):
-    """Yield blended historical replays using raw historical TeamIDs and conference codes."""
+def iter_raw_historical_seasons(directory: Path, *, through_year: int = LAST, model=VERSION):
+    """Yield weekly historical replays using raw historical TeamIDs and conference codes."""
     last = min(LAST, through_year)
     if last < FIRST:
         return
@@ -90,7 +91,15 @@ def iter_raw_historical_seasons(directory: Path, *, through_year: int = LAST):
 
     keys = {(year, tid): tid for year, roster in rosters.items() for tid in roster}
     seed = {"teams": {}, "xx": 0., "xy": 0.}
-    for season in iter_blended_seasons(baseline(), keys, seed):
+    if model == VERSION:
+        seasons = iter_cors_v1_seasons(baseline(), keys, hfa_start_year=FIRST)
+    elif model == "CORS v0.6.0":
+        seasons = iter_blended_seasons(baseline(), keys, seed)
+    elif model == "CORS v0.4.0":
+        seasons = baseline()
+    else:
+        raise ValueError(f"Unknown historical CORS model: {model}")
+    for season in seasons:
         year = season["season"]
         final = season["final_rankings"]
         if {r["team_id"] for r in final} != rosters[year].keys():
@@ -111,13 +120,19 @@ def _remap_row(row, programs):
     }
 
 
-def replay_historical_seasons(directory: Path, *, before_year: int = 2020):
+def replay_historical_seasons(directory: Path, *, before_year: int = 2020, model=VERSION):
     """Return full weekly historical seasons normalized to site program IDs and conferences."""
     programs = program_id_map()
+    def remap_advantages(container):
+        if "home_advantages" not in container:
+            return {}
+        return {"home_advantages": {programs.get(str(t), f"historical-{t}"): advantage
+                                    for t, advantage in container["home_advantages"].items()}}
+
     replays = []
-    for season in iter_raw_historical_seasons(Path(directory), through_year=before_year - 1):
+    for season in iter_raw_historical_seasons(Path(directory), through_year=before_year - 1, model=model):
         rankings = tuple(
-            {**c, "rows": tuple(_remap_row(r, programs) for r in c["rows"])}
+            {**c, **remap_advantages(c), "rows": tuple(_remap_row(r, programs) for r in c["rows"])}
             for c in season["rankings"]
         )
         final_rankings = tuple(_remap_row(r, programs) for r in season["final_rankings"])
@@ -131,7 +146,7 @@ def replay_historical_seasons(directory: Path, *, before_year: int = 2020):
             for g in season["forecasts"]
         )
         replays.append({
-            **season,
+            **season, **remap_advantages(season),
             "rankings": rankings,
             "final_rankings": final_rankings,
             "forecasts": forecasts,

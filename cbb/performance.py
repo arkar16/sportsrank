@@ -359,6 +359,12 @@ def write_performance(
             'with 16.77 points RMSE. '
             '<a href="https://github.com/arkar16/sportsrank/issues/100#issuecomment-7104093506">Experiment results</a></p>'
         )
+    elif model == "CORS v1.0.0":
+        body += (
+            '<p>In the November 19–23 comparison across 153 games, margin RMSE was 13.25 points '
+            'for v1.0.0, 13.48 for v0.6.0, and 16.77 for v0.4.0. Across 54,197 games in the '
+            '2017–26 evaluation, RMSE was 11.40, 11.44, and 13.35 points respectively.</p>'
+        )
     if tournament_years:
         body += '<p><a href="/cbb/tournaments/index.html">March Madness picks and model comparisons</a></p>'
     body += (

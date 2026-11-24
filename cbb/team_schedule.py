@@ -8,6 +8,7 @@ from pathlib import Path
 import sqlite3
 from zoneinfo import ZoneInfo
 
+from .cors_v1 import rounded
 from cfb.reference_markup import school_label
 
 EASTERN = ZoneInfo("America/New_York")
@@ -53,8 +54,12 @@ def remaining_schedules(database, season, checkpoint, as_of, *, snapshots=Path(_
                 if game and (game["home_team_id"], game["away_team_id"], game["neutral_site"]) == (h, a, neutral):
                     margin = game["home_margin"]
                 else:
-                    venue = 0 if neutral else season["home_advantages"][h]
-                    margin = round(home["cors"] - away["cors"] + venue, 2)
+                    if "home_advantages" in checkpoint:
+                        venue = 0 if neutral else checkpoint["home_advantages"][h]
+                        margin = rounded(home["cors"] - away["cors"] + venue)
+                    else:
+                        venue = 0 if neutral else season["home_advantages"][h]
+                        margin = round(home["cors"] - away["cors"] + venue, 2)
             if game_id is not None:
                 moved.add(game_id)
             clock = tip.strftime("%I:%M %p").lstrip("0") + " ET" if known else "Time TBD"

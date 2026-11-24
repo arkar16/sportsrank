@@ -6,6 +6,7 @@ import shutil
 
 from site_navigation import masthead
 from .blend import VERSION, blend_seasons
+from .cors_v1 import VERSION as V1_VERSION, cors_v1_seasons
 from .early_records import read_early_records
 from .historical_replay import replay_historical_seasons
 from .home import landing_page
@@ -14,6 +15,9 @@ from .march_archive import build_tournaments
 from .program_records import read_program_records
 from .record_book import SECTIONS, _games, _write, build, season_name, team_label
 from .team_schedule import remaining_schedules
+
+
+V1_START = datetime.fromisoformat("2026-11-24T00:00:00+00:00")
 
 
 def _forecasts(forecasts, prepared_at, logo_ids, current, *, year=None):
@@ -85,7 +89,10 @@ def main():
     baseline = seasons
     blended = as_of >= datetime.fromisoformat("2026-11-23T11:00:00+00:00")
     model = VERSION if blended else "CORS v0.4.0"
-    if blended:
+    if as_of >= V1_START:
+        model = V1_VERSION
+        seasons = cors_v1_seasons(args.database, baseline)
+    elif blended:
         seasons = blend_seasons(args.database, baseline)
     season = seasons[-1]
     checkpoints = [c for c in season["rankings"] if datetime.fromisoformat(c["cutoff_utc"]) <= as_of]
@@ -129,11 +136,11 @@ def main():
     if archive.exists() and archive.read_text() != page:
         raise ValueError("A different basketball edition exists for that timestamp")
     archive.write_text(page)
-    years = build_tournaments(args.output, baseline, as_of, logo_ids, blends=seasons if blended else ())
+    years = build_tournaments(args.output, baseline, as_of, logo_ids, blends=seasons if blended else (), model=model)
     schedules, upcoming_ids = remaining_schedules(args.database, season, checkpoint, as_of) if blended else ({}, set())
     first_replay = min(as_of.year + (as_of.month >= 7), seasons[0]["season"])
     historical_seasons = (
-        replay_historical_seasons(args.historical_dir, before_year=first_replay)
+        replay_historical_seasons(args.historical_dir, before_year=first_replay, model=model)
         if args.historical_dir is not None else ()
     )
     program_records = read_program_records(first_replay)

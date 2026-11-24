@@ -6,6 +6,12 @@ full 1897–2026 static archive (rankings, spreads through 2026 Week 13, forecas
 results, performance reports, honors, team pages, conference pages, and
 homepages) is rebuilt offline via `python -m cfb.cors_v1`.
 
+Men's Division I basketball **CORS v1.0.0** (`cbb-kalman-2scale/v1`) is the
+accepted model for the 47-season record-book rebuild, from 1980–81 through
+2026–27. The rebuild uses retained inputs and preserves the issued November 19
+and 23, 2026 editions. [ADR-0030](../adr/0030-adopt-kalman-two-scale-basketball-cors-v1.md) ·
+[Basketball experiment #100](https://github.com/arkar16/sportsrank/issues/100)
+
 The CFB record-book redesign is tracked in [program histories #85](https://github.com/arkar16/sportsrank/issues/85),
 [season progress #86](https://github.com/arkar16/sportsrank/issues/86),
 [school marks #87](https://github.com/arkar16/sportsrank/issues/87),

@@ -1,8 +1,8 @@
 # SportsRank
 
-SportsRank publishes College Football CORS rankings as a barebones static HTML
-website under `website/`. Firebase Hosting serves those files; the public site
-has no Python, Node, database, or server runtime.
+SportsRank publishes college football and men's Division I basketball CORS
+rankings as a static HTML website under `website/`. Firebase Hosting serves
+those files. The public site has no Python, Node, database, or server runtime.
 
 ## Current work
 
@@ -280,22 +280,29 @@ thread and execution state. [GitHub issues](docs/agents/issue-tracker.md) own
 current task scope, dependencies, and acceptance. Historical workflow records are retained in the
 [frozen archive](docs/archive/codex-workflow/2026-09-10/README.md).
 
-### Basketball record book
+## Basketball record book
 
-Build the current basketball rankings, dated forecast edition, team histories,
-weekly score and forecast archives, and model performance from the retained
-SQLite cache. The season argument is the ending year. For the first edition:
+Basketball uses the frozen two-timescale Bayesian state-space model
+**CORS v1.0.0** (`cbb-kalman-2scale/v1`). Ratings are expected neutral-court
+points above or below the season's average Division I team (`0.00`).
+[ADR-0030](docs/adr/0030-adopt-kalman-two-scale-basketball-cors-v1.md)
+
+Build the current rankings, a dated forecast edition, team histories, weekly
+scores and forecasts, and model performance offline from the retained SQLite
+cache and historical inputs. The season argument is the ending year. Use the
+pinned historical CSV directory to include the full 47-season weekly archive
+from 1980–81 through 2026–27. The command below builds a local review copy.
 
 ```sh
 uv run --locked python -m cbb.site --database .sportsrank/cbb/history.sqlite3 \
-  --season 2027 --as-of 2026-11-19T18:58:00Z --output website/cbb
+  --season 2027 --as-of "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  --historical-dir /path/to/compact-results --output .sportsrank/cbb-review
 ```
 
-Basketball v0.6.0 replays completed games as well as scheduled matchups. Each
-weekly pick uses ratings from the preceding Monday checkpoint. Final scores can be
-shown alongside picks and used for grading whenever the page is built.
-Dated editions preserve the original printed picks for readers interested in
-publication history. See the reconstructed-picks rule in AGENTS.md.
+Each weekly pick uses the preceding Monday 06:00 Eastern checkpoint, with a
+six-hour completion buffer for games entering the ratings. The build grades
+completed games and forecasts scheduled matchups. Dated editions preserve the
+picks shown at publication. See the reconstructed-picks rule in AGENTS.md.
 
 Team-season pages also show the remaining announced games from the latest
 schedule snapshot on or before the build date. Later matchups use the displayed
@@ -309,23 +316,24 @@ uv run --locked python -m scripts.collect_cbb_schedule --season 2027 \
   --from-date 2026-11-23 --through-date 2027-04-06 --cache .sportsrank/cbb/schedules/2026-11-23
 ```
 
-The same build includes 1980–81 through 2018–19 final standings from
-`cbb/archive_finals.csv`. To reproduce these derived records, place the six
-CSV inputs listed in `scripts/backfill_cbb_finals.py` together in a directory.
-The rosters and dated results for the first four years are included in the repository.
+The weekly historical replay uses the six CSV inputs listed in
+`scripts/backfill_cbb_finals.py`. The repository includes the rosters and dated
+results for the first four years.
 [1980–81 through 1982–83 sources](cbb/historical_inputs/1981-83/README.md) ·
 [1983–84 sources](cbb/historical_inputs/1984/README.md)
 
 The importer verifies input hashes, season rosters and win/loss totals. The
 program crosswalk in `cbb/archive_programs.csv` connects matching historical
-teams to CBBD program pages. [Pinned source files](https://github.com/Nate-Cheney/March-Machine-Learning-Mania-2026/tree/b12a81c1201bb88b1d2010210116559d1fa03851/raw_data)
+teams to CBBD program pages. Regenerate the historical final standings in
+`cbb/archive_finals.csv` from the same inputs.
+[Pinned source files](https://github.com/Nate-Cheney/March-Machine-Learning-Mania-2026/tree/b12a81c1201bb88b1d2010210116559d1fa03851/raw_data)
 
 ```sh
 uv run --locked python -m scripts.backfill_cbb_finals /path/to/compact-results
 ```
 
 The same build exports completed 2022–26 March Madness replays. It joins the
-weekly CORS forecast and final score to the retained opponent-adjusted margin
+weekly CORS forecasts and final score to the retained opponent-adjusted margin
 model's weekly and pre-tipoff predictions in `cbb/tournament_margins.csv`.
 Both research columns are signed points for the designated home team. The
 archive checks game identity, teams, tipoff, weekly cutoff, and coverage against

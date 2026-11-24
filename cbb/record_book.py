@@ -225,7 +225,7 @@ def build(
         table = standings_table(final, [], None, "FINAL", season_team_routes(season, routes),
                                 conference_links=conferences)
         title = f"{season_name(year)} Division I basketball"
-        context = ('<p>Final CORS v0.6.0 standings. Records count games between Division I teams. '
+        context = (f'<p>Final {escape(model)} standings. Records count games between Division I teams. '
                    '<a href="/cbb/seasons/index.html">Season archive</a></p>')
         body = '<div class="season-standings">' + _standings("Final CORS rankings", table, "") + "</div>"
         publish(f"seasons/{year}/index.html", _document(title, title, context + body + record_tables.get(year, "")))
@@ -402,10 +402,14 @@ def build(
 
     history_note = ""
     if include_early_finals or historical_seasons:
+        modern_start = (
+            "The 2019–20 preseason uses ratings learned from 2002–19 hoopR results."
+            if model == "CORS v1.0.0" else "The modern series begins in 2019–20."
+        )
         history_note = (
-            '<p>Weekly CORS v0.6.0 rankings, game logs, upsets, progression tables, and performance reports '
-            'cover 1980–81 through the current season. Teams start level in 1980–81; 2019–20 retains its '
-            'original preseason ratings. Earlier seasons list historical program records. '
+            f'<p>Weekly {escape(model)} rankings, game logs, upsets, progression tables, and performance reports '
+            'cover 1980–81 through the current season. Teams start level in 1980–81. '
+            f'{modern_start} Earlier seasons list historical program records. '
             '<a href="https://academics.smcvt.edu/jtrono/BBallArchive.htm">1980–84 game archive</a> · '
             '<a href="https://github.com/Nate-Cheney/March-Machine-Learning-Mania-2026/tree/'
             'b12a81c1201bb88b1d2010210116559d1fa03851/raw_data">Historical game data</a></p>'

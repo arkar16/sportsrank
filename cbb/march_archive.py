@@ -92,9 +92,9 @@ def _year_body(year, games, logos, models):
     return body
 
 
-def build_tournaments(root, seasons, as_of, logos, *, blends=()):
+def build_tournaments(root, seasons, as_of, logos, *, blends=(), model="CORS v0.6.0"):
     by_year = {s["season"]: s for s in blends}
-    models = MODELS + ((("blend", "CORS v0.6.0 · Monday"),) if blends else ())
+    models = MODELS + ((("blend", f"{escape(model)} · Monday"),) if blends else ())
     margins = _load_margins()
     archive = {}
     for season in seasons:
