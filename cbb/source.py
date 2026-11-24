@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
 from pathlib import Path
+import re
 import sqlite3
 
 
@@ -27,6 +28,10 @@ class Game:
     status: str
     score: tuple[int, int] | None
     ncaa_round: str | None = None
+    conference_game: bool | None = None
+    season_type: str | None = None
+    tournament: str | None = None
+    conference_tournament: bool = False
 
 
 @dataclass(frozen=True)
@@ -91,8 +96,16 @@ def _read_season(db: sqlite3.Connection, year: int) -> Season:
         ncaa_round = None
         if data.get("tournament") == "NCAA":
             ncaa_round = (data.get("gameNotes") or "").split(" - ")[-1] or "Tournament games"
+        tournament = data.get("tournament")
+        # The provider labels some conference tournaments "regular".
+        notes = data.get("gameNotes") or ""
+        conference_tournament = bool(data.get("conferenceGame") and re.search(
+            r"(?:tournament|championship|playoffs).*? - .*?(?:round|final|play-in)",
+            notes, re.IGNORECASE,
+        ))
         games.append(Game(
             game_id, start.astimezone(timezone.utc), home, away, neutral_site, status, score, ncaa_round,
+            data.get("conferenceGame"), data.get("seasonType"), tournament, conference_tournament,
         ))
 
     games.sort(key=lambda game: (game.start_utc, game.id))

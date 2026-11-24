@@ -61,9 +61,13 @@ def iter_raw_historical_seasons(directory: Path, *, through_year: int = LAST, mo
     games = defaultdict(list)
     records = defaultdict(Counter)
     seen = set()
-    for results in (rows("1981-83/results", historical_inputs), rows("1984/results", historical_inputs),
-                    rows("MRegularSeasonCompactResults"), rows("MNCAATourneyCompactResults"),
-                    rows("MSecondaryTourneyCompactResults")):
+    for results, tournament in (
+        (rows("1981-83/results", historical_inputs), None),
+        (rows("1984/results", historical_inputs), None),
+        (rows("MRegularSeasonCompactResults"), None),
+        (rows("MNCAATourneyCompactResults"), "NCAA"),
+        (rows("MSecondaryTourneyCompactResults"), "Secondary"),
+    ):
         for r in results:
             year = int(r["Season"])
             if not FIRST <= year <= last:
@@ -77,7 +81,15 @@ def iter_raw_historical_seasons(directory: Path, *, through_year: int = LAST, mo
             seen.add(key)
             h, a, score = (l, w, (ls, ws)) if site == "A" else (w, l, (ws, ls))
             start = datetime.combine(starts[year] + timedelta(days=day), time(12), EASTERN)
-            games[year].append(Game(len(seen), start, h, a, site == "N", "final", score))
+            # The earliest inputs merge NCAA/NIT games with dated results.
+            early_postseason = year < 1985 and start.date() >= datetime(
+                year, 3, {1981: 11, 1982: 11, 1983: 15, 1984: 13}[year]
+            ).date()
+            games[year].append(Game(
+                len(seen), start, h, a, site == "N", "final", score,
+                season_type="postseason" if tournament or early_postseason else None,
+                tournament=tournament,
+            ))
             records[year, w]["wins"] += 1
             records[year, l]["losses"] += 1
 

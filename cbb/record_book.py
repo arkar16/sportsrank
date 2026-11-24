@@ -15,6 +15,7 @@ from cfb.season_pages import _document, _standings, _rankings as standings_table
 
 from site_navigation import masthead
 from .archive_finals import read_archive
+from .cors_v1 import _available
 from .early_records import SOURCE as EARLY_SOURCE, record_rows
 from .grade import grade_margins
 from .performance import write_performance
@@ -169,6 +170,18 @@ def _season_notes(cutoff_utc):
     return f'<div id="season-notes"><p>{stamp}</p></div>' if stamp else ""
 
 
+def conference_game(game, week, names):
+    """Adapt a completed replay result to the shared conference record book."""
+    return Game(
+        week, names[game["home_team_id"]], names[game["away_team_id"]],
+        game["home_points"], game["away_points"], -Decimal(str(game["home_margin"])),
+        game["neutral_site"], conference_game=game.get("conference_game"),
+        postseason=bool(game.get("season_type") == "postseason" or game.get("tournament")
+                        or game.get("conference_tournament") or game.get("ncaa_round")),
+        home_cors_delta=game.get("home_cors_delta"), away_cors_delta=game.get("away_cors_delta"),
+    )
+
+
 def build(
     root,
     seasons,
@@ -179,6 +192,7 @@ def build(
     model="CORS v0.4.0",
     schedules=None,
     upcoming_ids=(),
+    conference_schedule=(),
     include_early_finals=False,
     early_records=None,
     program_records=None,
@@ -192,6 +206,7 @@ def build(
     )
     archives, names = read_archive(earliest_weekly) if include_early_finals else ([], {})
     program_archives = list(archives)
+    conference_archives = list(archives)
     for season in weekly_seasons:
         for c in season["rankings"]:
             if datetime.fromisoformat(c["cutoff_utc"]) <= as_of:
@@ -272,6 +287,7 @@ def build(
             rankings["FINAL"] = rankings[f'W{weeks[season["final_cutoff_utc"]]}']
         games = []
         logged_games = []
+        conference_games = []
         slates = defaultdict(list)
         weekly_games = defaultdict(list)
         evaluated = []
@@ -294,6 +310,10 @@ def build(
                         g["home_points"] if visible else None, g["away_points"] if visible else None,
                         -Decimal(str(g["home_margin"])), g["neutral_site"], tip_text)
             games.append(game)
+            if visible:
+                result_cutoff = g.get("result_cutoff_utc") or _available(datetime.fromisoformat(g["start_utc"]))
+                if result_cutoff in weeks:
+                    conference_games.append(conference_game(g, week, names))
             if year != latest_season_year or g["game_id"] not in upcoming_ids:
                 logged_games.append(game)
             weekly_games[week].append(game)
@@ -301,6 +321,9 @@ def build(
         season_obj = Season(year, rankings, games, last["cutoff_utc"])
         season_routes = season_team_routes(season_obj, routes)
         archives.append(season_obj)
+        conference_archives.append(replace(
+            season_obj, games=conference_games + (list(conference_schedule) if year == latest_season_year else []),
+        ))
         program_archives.append(replace(season_obj, games=logged_games))
         performance_records.append({
             "year": year,
@@ -458,10 +481,10 @@ def build(
         sortable = path.endswith("/index.html") and path != "cbb/teams/index.html"
         publish(path.removeprefix("cbb/"), markup, sortable=sortable)
     for path, markup in build_conference_pages(
-        archives, routes, sport="basketball", year_label=season_name,
+        conference_archives, routes, sport="basketball", year_label=season_name,
         season_route=lambda y: f"/cbb/seasons/{y}/index.html",
     ):
-        publish(path.removeprefix("cbb/"), markup)
+        publish(path.removeprefix("cbb/"), markup, sortable="data-sortable" in markup)
 
     editions = []
     for path in sorted((root / "editions").glob("*.html"), reverse=True):

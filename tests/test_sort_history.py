@@ -37,9 +37,11 @@ class Element {
 }
 const link = label => new Element(label);
 
-function setup(fields, data) {
+function makeTable(fields, data) {
   const headers = fields.map(field => new Element(field));
-  const row = (id, cells) => ({ id, cells: cells.map(cell => new Element(cell)) });
+  const row = (id, cells) => ({
+    id, cells: cells.map(cell => cell instanceof Element ? cell : new Element(cell)),
+  });
   const body = {
     rows: data.map(([id, ...cells]) => row(id, cells)),
     append(row) {
@@ -47,13 +49,8 @@ function setup(fields, data) {
       this.rows.push(row);
     },
   };
-  const table = { tHead: { rows: [{ cells: headers }] }, tBodies: [body] };
-  const document = {
-    querySelector: () => table,
-    createElement: () => new Element(),
-  };
-  vm.runInNewContext(source, { document });
   return {
+    element: { tHead: { rows: [{ cells: headers }] }, tBodies: [body] },
     click(field) { headers[fields.indexOf(field)].children[0].click(); },
     order() { return body.rows.map(row => row.id).join(""); },
     sorts() {
@@ -63,6 +60,13 @@ function setup(fields, data) {
       }));
     },
   };
+}
+
+function setup(fields, data) {
+  const table = makeTable(fields, data);
+  const document = { querySelector: () => table.element, createElement: () => new Element() };
+  vm.runInNewContext(source, { document });
+  return table;
 }
 
 function checkSort(table, field, first, forward, reverse) {
@@ -165,6 +169,39 @@ test("win percent and win fraction labels start high to low", () => {
     "Win %", "descending", "cab", "acb");
   checkSort(setup(["Win fraction"], [["a", "0.50"], ["b", "—"], ["c", "0.95"]]),
     "Win fraction", "descending", "cab", "acb");
+});
+
+test("conference standings and opponent records sort independently", () => {
+  const bestWin = (text, delta) => {
+    const cell = new Element(text);
+    cell.setAttribute("data-sort-value", delta);
+    return cell;
+  };
+  const standings = makeTable(["National rank", "Conf", "Proj conf", "Best win (Δ CORS)"], [
+    ["a", "#12", "10–2", "10.4–2.6", bestWin("W 80–60", "2.5")],
+    ["b", "#2", "10–1", "9.6–1.4", bestWin("W 68–65", "5.0")],
+    ["c", "—", "—", "—", "—"],
+  ]);
+  const opponents = makeTable(["Record", "Win %", "Avg margin"], [
+    ["a", "10–2", "83.3%", "+10.0"], ["b", "10–1", "90.9%", "-2.0"], ["c", "—", "—", "—"],
+  ]);
+  const document = {
+    querySelectorAll(selector) {
+      assert.equal(selector, "main table[data-sortable]");
+      return [standings.element, opponents.element];
+    },
+    createElement: () => new Element(),
+  };
+  vm.runInNewContext(source, { document });
+  checkSort(standings, "National rank", "ascending", "bac", "abc");
+  checkSort(standings, "Conf", "descending", "bac", "abc");
+  checkSort(standings, "Proj conf", "descending", "bac", "abc");
+  checkSort(standings, "Best win (Δ CORS)", "descending", "bac", "abc");
+  assert.deepEqual(opponents.sorts(), {});
+  checkSort(opponents, "Record", "descending", "bac", "abc");
+  checkSort(opponents, "Win %", "descending", "bac", "abc");
+  checkSort(opponents, "Avg margin", "descending", "abc", "bac");
+  assert.deepEqual(standings.sorts(), { "Best win (Δ CORS)": "ascending" });
 });
 
 test("unordered, equal, or mid-null season keys have no initial indicator", () => {

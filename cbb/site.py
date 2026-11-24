@@ -14,7 +14,7 @@ from .honors import write_honors
 from .march_archive import build_tournaments
 from .program_records import read_program_records
 from .record_book import SECTIONS, _games, _write, build, season_name, team_label
-from .team_schedule import remaining_schedules
+from .team_schedule import schedule_views
 
 
 V1_START = datetime.fromisoformat("2026-11-24T00:00:00+00:00")
@@ -137,7 +137,9 @@ def main():
         raise ValueError("A different basketball edition exists for that timestamp")
     archive.write_text(page)
     years = build_tournaments(args.output, baseline, as_of, logo_ids, blends=seasons if blended else (), model=model)
-    schedules, upcoming_ids = remaining_schedules(args.database, season, checkpoint, as_of) if blended else ({}, set())
+    schedules, upcoming_ids, conference_schedule = (
+        schedule_views(args.database, season, checkpoint, as_of) if blended else ({}, set(), [])
+    )
     first_replay = min(as_of.year + (as_of.month >= 7), seasons[0]["season"])
     historical_seasons = (
         replay_historical_seasons(args.historical_dir, before_year=first_replay, model=model)
@@ -148,7 +150,8 @@ def main():
     earlier_years = early_records.keys() | program_records.keys()
     archives, routes, presentation = build(
         args.output, seasons, as_of, logo_ids, tournament_years=years, model=model,
-        schedules=schedules, upcoming_ids=upcoming_ids, include_early_finals=True,
+        schedules=schedules, upcoming_ids=upcoming_ids, conference_schedule=conference_schedule,
+        include_early_finals=True,
         early_records=early_records, program_records=program_records,
         historical_seasons=historical_seasons,
     )
