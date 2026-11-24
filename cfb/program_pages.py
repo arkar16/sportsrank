@@ -39,8 +39,7 @@ def build_program_pages(
 ) -> Iterator[tuple[str, str]]:
     """Yield the program index and one history and season page per ranked program."""
     histories: dict[str, list[_ProgramSeason]] = defaultdict(list)
-    opponent_routes = {season.year: season_team_routes(season, routes) if sport == "football" else routes
-                       for season in seasons}
+    opponent_routes = {season.year: season_team_routes(season, routes) for season in seasons}
     for season in sorted(seasons, key=lambda season: season.year, reverse=True):
         standings: dict[str, dict[str, Standing]] = defaultdict(dict)
         for checkpoint, rows in season.rankings.items():
@@ -71,14 +70,14 @@ def build_program_pages(
         heading = f'<span data-program="{name}">{name}</span>'
         yield route.lstrip("/"), _page(
             f"{school} {sport}", heading, [],
-            _rank_trend(route, history) + _history_table(route, history, sport), history[0].season.updated_at,
+            _rank_trend(route, history, year_label) + _history_table(route, history, sport, year_label), history[0].season.updated_at,
         )
         for entry in history:
             year = entry.season.year
             links = [(route, f"{school} history"), (season_route(year), f"{year_label(year)} season")]
             standing = entry.standings.get(entry.latest_checkpoint)
             if standing and standing.conference and standing.conference != "—":
-                links.append((conference_route(standing.conference, year, sport=sport), f"{year} {standing.conference}"))
+                links.append((conference_route(standing.conference, year, sport=sport), f"{year_label(year)} {standing.conference}"))
             remaining = (remaining_schedules or {}).get((year, school), "")
             log = _season_table(school, entry, opponent_routes[year], has_schedule=bool(remaining))
             if remaining:
@@ -135,7 +134,7 @@ def _table(label: str, headers: tuple[str, ...], body: str, *, caption: str = ""
     )
 
 
-def _history_table(route: str, history: list[_ProgramSeason], sport: str) -> str:
+def _history_table(route: str, history: list[_ProgramSeason], sport: str, year_label=str) -> str:
     rows = []
     for entry in history:
         year = entry.season.year
@@ -147,7 +146,7 @@ def _history_table(route: str, history: list[_ProgramSeason], sport: str) -> str
         if standing and standing.conference and standing.conference != "—":
             conference = _link(conference_route(standing.conference, year, sport=sport), standing.conference)
         rows.append(
-            f'<tr><th scope="row">{_link(program_season_route(route, year), str(year))}</th>'
+            f'<tr><th scope="row">{_link(program_season_route(route, year), str(year_label(year)))}</th>'
             f"<td>{through}{_checkpoint_label(checkpoint)}</td>"
             f'<td class="num">{standing.rank if standing else _MISSING}</td>'
             f'<td class="num">{format(standing.rating, "f") if standing else _MISSING}</td>'
@@ -163,7 +162,7 @@ def _history_table(route: str, history: list[_ProgramSeason], sport: str) -> str
     )
 
 
-def _rank_trend(route: str, history: list[_ProgramSeason]) -> str:
+def _rank_trend(route: str, history: list[_ProgramSeason], year_label=str) -> str:
     ranks = [
         (entry.season.year, entry.standings["FINAL"].rank)
         for entry in reversed(history)
@@ -209,7 +208,7 @@ def _rank_trend(route: str, history: list[_ProgramSeason]) -> str:
         # Keep the clickable area within this season's share of the time axis.
         start = max(cx - 12, (cx + x(ranks[i - 1][0])) / 2) if i else cx - 12
         end = min(cx + 12, (cx + x(ranks[i + 1][0])) / 2) if i + 1 < len(ranks) else cx + 12
-        label = f"{year} season, final rank {rank}"
+        label = f"{year_label(year)} season, final rank {rank}"
         dots.append(
             f'<a href="{escape(program_season_route(route, year))}" aria-label="{label}">'
             f'<title>{label}</title>'

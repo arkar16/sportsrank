@@ -48,7 +48,7 @@ jobs:
         run: uv run --locked python -m unittest discover -s tests -v
 
       - name: Compile the Python source
-        run: uv run --locked python -m compileall -q cfb tools scripts tests
+        run: uv run --locked python -m compileall -q cfb cbb tools scripts tests
 
       - name: Check static hosting tree
         run: test -f website/index.html && test -f website/404.html

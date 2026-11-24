@@ -35,10 +35,24 @@ class BasketballBookTests(unittest.TestCase):
             self.assertIn("1–0", page.get_text())
             self.assertIn("A & M", read("teams/index.html").select_one(".program-list").text)
             self.assertTrue(read("teams/1/index.html").select_one('a[href="/cbb/teams/1/2020.html"]'))
-            self.assertEqual(len(read("seasons/2020/weeks/1.html").select("table")[0].select("tbody tr")), 2)
+            self.assertTrue(page.select_one('a[href="/cbb/teams/2/2020.html"]'))
+            week1 = read("seasons/2020/weeks/1.html")
+            self.assertEqual(len(week1.select("table")[0].select("tbody tr")), 2)
+            self.assertEqual(week1.select_one('a[aria-current="page"]')["href"], "/cbb/seasons/2020/weeks/1.html")
+            self.assertTrue(week1.select_one('a[href="/cbb/teams/1/2020.html"]'))
             self.assertFalse((root / "seasons/2020/weeks/2.html").exists())
-            self.assertEqual([c.text for c in read("performance/index.html").select("tbody tr")[0].select("td")][1:],
-                             ["1", "12.00", "1/1", "100.0%", "0"])
+            self.assertTrue((root / "seasons/2020/progression.html").is_file())
+            self.assertTrue((root / "seasons/2020/progression.json").is_file())
+            perf = read("performance/index.html")
+            self.assertEqual(
+                [c.text for c in perf.select("tbody tr")[0].select("td")][1:],
+                ["1", "1", "0", "0", "100.0%", "1", "0", "0", "100.0%", "12.00", "12.00"],
+            )
+            self.assertEqual(perf.select("tbody tr")[0].td.a["href"], "/cbb/performance/2020/index.html")
+            for artifact in ("performance/seasons.csv", "performance/2020/index.html",
+                             "performance/2020/weekly.csv", "performance/2020/games.csv",
+                             "performance/2020/report.json"):
+                self.assertTrue((root / artifact).is_file(), artifact)
 
     def test_issued_grade_uses_printed_margin_and_verified_public_time(self):
         with TemporaryDirectory() as tmp:

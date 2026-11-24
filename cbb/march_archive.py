@@ -76,12 +76,13 @@ def _year_body(year, games, logos, models):
     for g in games:
         sides = []
         for side in ("away", "home"):
-            school = team_label(g[f"{side}_team"], g[f"{side}_team_id"], logos)
+            school = team_label(g[f"{side}_team"], g[f"{side}_team_id"], logos, year=year)
             sides.append(f'{school} {g[f"{side}_points"]}')
         tip = datetime.fromisoformat(g["start_utc"]).astimezone(EASTERN)
         rounds[g["ncaa_round"]].append((f"{tip:%b %d · %I:%M %p}", "<br>".join(sides),
                                          *(_pick(g, key) for key, _ in models)))
-    body = (f'<p><a href="/cbb/tournaments/index.html">Tournament archive</a> · {_season_link(year)} season</p>'
+    body = (f'<p><a href="/cbb/tournaments/index.html">Tournament archive</a> · {_season_link(year)} season · '
+            f'<a href="/cbb/performance/{year}/index.html">Model performance</a></p>'
             + METHOD + _grades(games, models))
     links = [f'<a href="#round-{i}">{escape(name)}</a>' for i, name in enumerate(rounds, 1)]
     body += '<nav aria-label="Tournament rounds"><p>' + ' · '.join(links) + '</p></nav>'

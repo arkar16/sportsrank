@@ -34,7 +34,8 @@ class MarchArchiveTests(unittest.TestCase):
             self.assertEqual(len(result), 1)
             self.assertEqual(list(result[0].stripped_strings)[1:],
                              ["B & C", "69", "A", "65", "A by 1.50", "Pick’em", "B & C by 2.50"])
-            self.assertTrue(page.select_one('a[href="/cbb/teams/2/index.html"]'))
+            self.assertTrue(page.select_one('a[href="/cbb/teams/2/2024.html"]'))
+            self.assertTrue(page.select_one('a[href="/cbb/performance/2024/index.html"]'))
             self.assertTrue(page.select_one('a[href="#round-1"]'))
 
     def test_rejects_unpaired_or_reassigned_games_and_bad_margins(self):

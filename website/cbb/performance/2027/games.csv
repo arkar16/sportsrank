@@ -1,0 +1,946 @@
+week,start_utc,home,away,neutral_site,checkpoint,home_handicap,predicted_winner,home_score,away_score,actual_home_margin,straight_up,cors_line_coverage,absolute_error,status
+0,2026-11-01T14:30:00+00:00,Villanova,Notre Dame,True,Preseason,-8.10,Villanova,72,74,-2,incorrect,no_cover,10.10,Evaluated
+0,2026-11-02T04:59:00+00:00,High Point,Liberty,True,Preseason,-4.11,High Point,72,57,15,correct,cover,10.89,Evaluated
+0,2026-11-02T08:00:00+00:00,Northern Illinois,Grambling,True,Preseason,4.11,Grambling,87,89,-2,correct,no_cover,2.11,Evaluated
+0,2026-11-02T11:00:00+00:00,Merrimack,App State,True,Preseason,-0.59,Merrimack,49,63,-14,incorrect,no_cover,14.59,Evaluated
+1,2026-11-02T14:00:00+00:00,Queens University,Winthrop,True,Week 1,2.76,Winthrop,103,98,5,incorrect,no_cover,7.76,Evaluated
+1,2026-11-02T16:30:00+00:00,Tennessee State,Murray State,True,Week 1,3.90,Murray State,64,94,-30,correct,cover,26.10,Evaluated
+1,2026-11-02T19:30:00+00:00,UTEP,Northern Kentucky,True,Week 1,2.76,Northern Kentucky,76,84,-8,correct,cover,5.24,Evaluated
+1,2026-11-02T20:00:00+00:00,San José State,UTSA,False,Week 1,-11.05,San José State,95,74,21,correct,cover,9.95,Evaluated
+1,2026-11-02T21:00:00+00:00,George Mason,UMBC,False,Week 1,-8.77,George Mason,82,54,28,correct,cover,19.23,Evaluated
+1,2026-11-02T22:30:00+00:00,McNeese,UAB,True,Week 1,-3.36,McNeese,99,78,21,correct,cover,17.64,Evaluated
+1,2026-11-02T23:00:00+00:00,Georgia State,Bowling Green,False,Week 1,2.99,Bowling Green,73,76,-3,correct,cover,0.01,Evaluated
+1,2026-11-02T23:00:00+00:00,Florida,Miami,True,Week 1,-12.13,Florida,77,67,10,correct,no_cover,2.13,Evaluated
+1,2026-11-02T23:00:00+00:00,Michigan,Oakland,False,Week 1,-30.33,Michigan,84,68,16,correct,no_cover,14.33,Evaluated
+1,2026-11-02T23:00:00+00:00,Cornell,Pepperdine,False,Week 1,-10.54,Cornell,86,85,1,correct,no_cover,9.54,Evaluated
+1,2026-11-02T23:30:00+00:00,Duke,Army,False,Week 1,-40.58,Duke,84,50,34,correct,no_cover,6.58,Evaluated
+1,2026-11-02T23:30:00+00:00,Temple,Central Connecticut,False,Week 1,-11.07,Temple,68,56,12,correct,cover,0.93,Evaluated
+1,2026-11-02T23:30:00+00:00,Georgetown,Loyola Maryland,False,Week 1,-19.82,Georgetown,80,58,22,correct,cover,2.18,Evaluated
+1,2026-11-02T23:30:00+00:00,St. John's,Monmouth,False,Week 1,-23.77,St. John's,78,63,15,correct,no_cover,8.77,Evaluated
+1,2026-11-03T00:00:00+00:00,Maryland,Bucknell,False,Week 1,-19.78,Maryland,96,67,29,correct,cover,9.22,Evaluated
+1,2026-11-03T00:00:00+00:00,Indiana,Eastern Illinois,False,Week 1,-26.38,Indiana,91,57,34,correct,cover,7.62,Evaluated
+1,2026-11-03T00:00:00+00:00,North Carolina,Western Carolina,False,Week 1,-21.35,North Carolina,80,72,8,correct,no_cover,13.35,Evaluated
+1,2026-11-03T00:00:00+00:00,Cincinnati,American University,False,Week 1,-21.68,Cincinnati,79,53,26,correct,cover,4.32,Evaluated
+1,2026-11-03T00:00:00+00:00,Wright State,Air Force,False,Week 1,-16.56,Wright State,102,71,31,correct,cover,14.44,Evaluated
+1,2026-11-03T00:00:00+00:00,St. Bonaventure,Youngstown State,False,Week 1,-7.99,St. Bonaventure,71,79,-8,incorrect,no_cover,15.99,Evaluated
+1,2026-11-03T00:00:00+00:00,Richmond,UNC Asheville,False,Week 1,-7.75,Richmond,100,77,23,correct,cover,15.25,Evaluated
+1,2026-11-03T00:00:00+00:00,Dayton,NJIT,False,Week 1,-22.45,Dayton,89,58,31,correct,cover,8.55,Evaluated
+1,2026-11-03T00:00:00+00:00,Georgia Southern,Ball State,False,Week 1,-6.72,Georgia Southern,67,55,12,correct,cover,5.28,Evaluated
+1,2026-11-03T00:00:00+00:00,James Madison,Miami (OH),False,Week 1,3.03,Miami (OH),77,86,-9,correct,cover,5.97,Evaluated
+1,2026-11-03T00:00:00+00:00,Troy,Massachusetts,False,Week 1,-7.01,Troy,60,71,-11,incorrect,no_cover,18.01,Evaluated
+1,2026-11-03T00:00:00+00:00,Coastal Carolina,Eastern Michigan,False,Week 1,-4.01,Coastal Carolina,70,71,-1,incorrect,no_cover,5.01,Evaluated
+1,2026-11-03T00:00:00+00:00,Old Dominion,Western Michigan,False,Week 1,-5.86,Old Dominion,61,49,12,correct,cover,6.14,Evaluated
+1,2026-11-03T00:00:00+00:00,Marshall,Buffalo,False,Week 1,-7.19,Marshall,92,65,27,correct,cover,19.81,Evaluated
+1,2026-11-03T00:00:00+00:00,Iowa State,Memphis,True,Week 1,-17.97,Iowa State,76,80,-4,incorrect,no_cover,21.97,Evaluated
+1,2026-11-03T00:00:00+00:00,Syracuse,New Haven,False,Week 1,-17.43,Syracuse,74,58,16,correct,no_cover,1.43,Evaluated
+1,2026-11-03T00:00:00+00:00,Pittsburgh,Rider,False,Week 1,-22.14,Pittsburgh,95,57,38,correct,cover,15.86,Evaluated
+1,2026-11-03T00:00:00+00:00,Xavier,Mount St. Mary's,False,Week 1,-16.27,Xavier,97,52,45,correct,cover,28.73,Evaluated
+1,2026-11-03T00:00:00+00:00,Providence,Maine,False,Week 1,-21.43,Providence,83,56,27,correct,cover,5.57,Evaluated
+1,2026-11-03T00:00:00+00:00,Butler,Lafayette,False,Week 1,-20.61,Butler,96,60,36,correct,cover,15.39,Evaluated
+1,2026-11-03T00:00:00+00:00,Brown,New Hampshire,False,Week 1,-8.94,Brown,55,59,-4,incorrect,no_cover,12.94,Evaluated
+1,2026-11-03T00:00:00+00:00,Indiana State,Charlotte,False,Week 1,-3.64,Indiana State,70,78,-8,incorrect,no_cover,11.64,Evaluated
+1,2026-11-03T00:00:00+00:00,Michigan State,Quinnipiac,False,Week 1,-25.53,Michigan State,96,59,37,correct,cover,11.47,Evaluated
+1,2026-11-03T00:00:00+00:00,Yale,Howard,False,Week 1,-11.57,Yale,72,62,10,correct,no_cover,1.57,Evaluated
+1,2026-11-03T00:00:00+00:00,West Virginia,Niagara,False,Week 1,-25.69,West Virginia,91,46,45,correct,cover,19.31,Evaluated
+1,2026-11-03T00:00:00+00:00,UCF,Florida Gulf Coast,False,Week 1,-17.58,UCF,96,95,1,correct,no_cover,16.58,Evaluated
+1,2026-11-03T00:00:00+00:00,Columbia,Elon,False,Week 1,-4.89,Columbia,71,84,-13,incorrect,no_cover,17.89,Evaluated
+1,2026-11-03T00:00:00+00:00,Vanderbilt,Bellarmine,False,Week 1,-27.61,Vanderbilt,93,47,46,correct,cover,18.39,Evaluated
+1,2026-11-03T00:00:00+00:00,Texas Tech,Jackson State,False,Week 1,-34.77,Texas Tech,76,42,34,correct,no_cover,0.77,Evaluated
+1,2026-11-03T00:00:00+00:00,Presbyterian,St. Thomas-Minnesota,False,Week 1,4.98,St. Thomas-Minnesota,78,87,-9,correct,cover,4.02,Evaluated
+1,2026-11-03T00:00:00+00:00,Boston University,Northeastern,False,Week 1,-3.67,Boston University,93,85,8,correct,cover,4.33,Evaluated
+1,2026-11-03T00:00:00+00:00,Marist,Dartmouth,False,Week 1,-5.94,Marist,62,69,-7,incorrect,no_cover,12.94,Evaluated
+1,2026-11-03T00:00:00+00:00,Clemson,Stetson,False,Week 1,-26.54,Clemson,85,72,13,correct,no_cover,13.54,Evaluated
+1,2026-11-03T00:00:00+00:00,Iona,Vermont,False,Week 1,-1.81,Iona,56,55,1,correct,no_cover,0.81,Evaluated
+1,2026-11-03T00:00:00+00:00,VCU,Little Rock,False,Week 1,-23.31,VCU,82,72,10,correct,no_cover,13.31,Evaluated
+1,2026-11-03T00:00:00+00:00,Florida Atlantic,Long Island University,False,Week 1,-10.88,Florida Atlantic,74,60,14,correct,cover,3.12,Evaluated
+1,2026-11-03T00:00:00+00:00,East Carolina,South Carolina Upstate,False,Week 1,-7.83,East Carolina,83,70,13,correct,cover,5.17,Evaluated
+1,2026-11-03T00:30:00+00:00,George Washington,Navy,False,Week 1,-9.13,George Washington,91,39,52,correct,cover,42.87,Evaluated
+1,2026-11-03T00:30:00+00:00,Louisiana Tech,Kent State,False,Week 1,-3.67,Louisiana Tech,85,75,10,correct,cover,6.33,Evaluated
+1,2026-11-03T00:30:00+00:00,UL Monroe,Central Michigan,False,Week 1,5.02,Central Michigan,78,83,-5,correct,no_cover,0.02,Evaluated
+1,2026-11-03T00:30:00+00:00,Marquette,Mercyhurst,False,Week 1,-20.14,Marquette,78,43,35,correct,cover,14.86,Evaluated
+1,2026-11-03T00:30:00+00:00,Mississippi State,Tennessee Tech,False,Week 1,-19.46,Mississippi State,106,88,18,correct,no_cover,1.46,Evaluated
+1,2026-11-03T00:30:00+00:00,Georgia,North Carolina Central,False,Week 1,-29.95,Georgia,78,62,16,correct,no_cover,13.95,Evaluated
+1,2026-11-03T00:30:00+00:00,Western Kentucky,Morehead State,False,Week 1,-11.80,Western Kentucky,83,58,25,correct,cover,13.20,Evaluated
+1,2026-11-03T00:30:00+00:00,Wisconsin,Denver,False,Week 1,-25.09,Wisconsin,75,68,7,correct,no_cover,18.09,Evaluated
+1,2026-11-03T00:30:00+00:00,Seton Hall,Saint Peter's,False,Week 1,-16.87,Seton Hall,66,42,24,correct,cover,7.13,Evaluated
+1,2026-11-03T00:30:00+00:00,Southeast Missouri State,Lipscomb,False,Week 1,0.01,Lipscomb,86,79,7,incorrect,no_cover,7.01,Evaluated
+1,2026-11-03T00:30:00+00:00,Nebraska,Le Moyne,False,Week 1,-29.42,Nebraska,106,64,42,correct,cover,12.58,Evaluated
+1,2026-11-03T00:30:00+00:00,NC State,Campbell,False,Week 1,-16.82,NC State,83,64,19,correct,cover,2.18,Evaluated
+1,2026-11-03T00:30:00+00:00,Penn State,Canisius,False,Week 1,-19.13,Penn State,97,57,40,correct,cover,20.87,Evaluated
+1,2026-11-03T00:30:00+00:00,Purdue,Gonzaga,True,Week 1,-0.66,Purdue,72,78,-6,incorrect,no_cover,6.66,Evaluated
+1,2026-11-03T00:30:00+00:00,Belmont,Southern Indiana,False,Week 1,-22.58,Belmont,72,54,18,correct,no_cover,4.58,Evaluated
+1,2026-11-03T00:45:00+00:00,South Florida,Charleston Southern,False,Week 1,-17.88,South Florida,98,71,27,correct,cover,9.12,Evaluated
+1,2026-11-03T01:00:00+00:00,Illinois,Fairleigh Dickinson,False,Week 1,-35.50,Illinois,120,45,75,correct,cover,39.50,Evaluated
+1,2026-11-03T01:00:00+00:00,Saint Louis,Lehigh,False,Week 1,-23.29,Saint Louis,92,67,25,correct,cover,1.71,Evaluated
+1,2026-11-03T01:00:00+00:00,Loyola Chicago,The Citadel,False,Week 1,-11.34,Loyola Chicago,77,52,25,correct,cover,13.66,Evaluated
+1,2026-11-03T01:00:00+00:00,South Alabama,Ohio,False,Week 1,-6.83,South Alabama,77,86,-9,incorrect,no_cover,15.83,Evaluated
+1,2026-11-03T01:00:00+00:00,Arkansas State,Toledo,False,Week 1,-5.59,Arkansas State,71,70,1,correct,no_cover,4.59,Evaluated
+1,2026-11-03T01:00:00+00:00,Louisiana,Akron,False,Week 1,11.56,Akron,61,75,-14,correct,cover,2.44,Evaluated
+1,2026-11-03T01:00:00+00:00,Kansas,Fordham,False,Week 1,-20.56,Kansas,95,65,30,correct,cover,9.44,Evaluated
+1,2026-11-03T01:00:00+00:00,Wake Forest,Maryland Eastern Shore,False,Week 1,-24.88,Wake Forest,83,62,21,correct,no_cover,3.88,Evaluated
+1,2026-11-03T01:00:00+00:00,DePaul,West Georgia,False,Week 1,-16.73,DePaul,75,58,17,correct,cover,0.27,Evaluated
+1,2026-11-03T01:00:00+00:00,Creighton,Kansas City,False,Week 1,-27.06,Creighton,76,61,15,correct,no_cover,12.06,Evaluated
+1,2026-11-03T01:00:00+00:00,Oklahoma,East Texas A&M,False,Week 1,-26.91,Oklahoma,64,68,-4,incorrect,no_cover,30.91,Evaluated
+1,2026-11-03T01:00:00+00:00,Texas State,Texas A&M-Corpus Christi,False,Week 1,-1.73,Texas State,67,55,12,correct,cover,10.27,Evaluated
+1,2026-11-03T01:00:00+00:00,Bryant,Siena,False,Week 1,5.85,Siena,80,75,5,incorrect,no_cover,10.85,Evaluated
+1,2026-11-03T01:00:00+00:00,Northwestern,Binghamton,False,Week 1,-26.53,Northwestern,86,60,26,correct,no_cover,0.53,Evaluated
+1,2026-11-03T01:00:00+00:00,TCU,Lindenwood,False,Week 1,-22.72,TCU,98,59,39,correct,cover,16.28,Evaluated
+1,2026-11-03T01:00:00+00:00,Tulane,UT Martin,False,Week 1,-5.86,Tulane,100,98,2,correct,no_cover,3.86,Evaluated
+1,2026-11-03T01:00:00+00:00,SMU,Southern,False,Week 1,-22.70,SMU,85,72,13,correct,no_cover,9.70,Evaluated
+1,2026-11-03T01:00:00+00:00,Bethune-Cookman,Furman,True,Week 1,7.38,Furman,70,79,-9,correct,cover,1.62,Evaluated
+1,2026-11-03T01:00:00+00:00,Valparaiso,Western Illinois,False,Week 1,-21.32,Valparaiso,80,58,22,correct,cover,0.68,Evaluated
+1,2026-11-03T01:30:00+00:00,Ole Miss,Alcorn State,False,Week 1,-27.66,Ole Miss,99,58,41,correct,cover,13.34,Evaluated
+1,2026-11-03T01:30:00+00:00,Central Arkansas,Oral Roberts,False,Week 1,-10.31,Central Arkansas,85,55,30,correct,cover,19.69,Evaluated
+1,2026-11-03T02:00:00+00:00,BYU,Ohio State,True,Week 1,-0.72,BYU,94,83,11,correct,cover,10.28,Evaluated
+1,2026-11-03T02:00:00+00:00,Minnesota,North Dakota,False,Week 1,-17.68,Minnesota,85,50,35,correct,cover,17.32,Evaluated
+1,2026-11-03T02:00:00+00:00,UConn,Gardner-Webb,False,Week 1,-38.44,UConn,86,46,40,correct,cover,1.56,Evaluated
+1,2026-11-03T02:00:00+00:00,Colorado,Abilene Christian,False,Week 1,-17.89,Colorado,94,59,35,correct,cover,17.11,Evaluated
+1,2026-11-03T02:00:00+00:00,Texas,Chicago State,False,Week 1,-30.48,Texas,109,59,50,correct,cover,19.52,Evaluated
+1,2026-11-03T02:00:00+00:00,Grand Canyon,Texas Southern,False,Week 1,-22.55,Grand Canyon,103,79,24,correct,cover,1.45,Evaluated
+1,2026-11-03T02:00:00+00:00,Houston,La Salle,False,Week 1,-30.78,Houston,94,55,39,correct,cover,8.22,Evaluated
+1,2026-11-03T02:00:00+00:00,Washington State,Davidson,False,Week 1,-3.60,Washington State,61,76,-15,incorrect,no_cover,18.60,Evaluated
+1,2026-11-03T02:00:00+00:00,New Mexico,Utah Tech,False,Week 1,-19.44,New Mexico,100,60,40,correct,cover,20.56,Evaluated
+1,2026-11-03T02:00:00+00:00,Oklahoma State,Incarnate Word,False,Week 1,-17.15,Oklahoma State,91,60,31,correct,cover,13.85,Evaluated
+1,2026-11-03T02:00:00+00:00,Louisville,Chattanooga,False,Week 1,-24.49,Louisville,84,70,14,correct,no_cover,10.49,Evaluated
+1,2026-11-03T02:00:00+00:00,Utah,Long Beach State,False,Week 1,-14.49,Utah,66,63,3,correct,no_cover,11.49,Evaluated
+1,2026-11-03T02:15:00+00:00,Florida State,Florida A&M,True,Week 1,-17.91,Florida State,112,69,43,correct,cover,25.09,Evaluated
+1,2026-11-03T02:30:00+00:00,Baylor,Northwestern State,False,Week 1,-23.85,Baylor,87,65,22,correct,no_cover,1.85,Evaluated
+1,2026-11-03T02:30:00+00:00,Oregon State,Weber State,False,Week 1,-8.33,Oregon State,102,61,41,correct,cover,32.67,Evaluated
+1,2026-11-03T02:30:00+00:00,Utah State,Idaho State,False,Week 1,-23.80,Utah State,94,58,36,correct,cover,12.20,Evaluated
+1,2026-11-03T03:00:00+00:00,UC Davis,North Alabama,False,Week 1,-11.23,UC Davis,75,79,-4,incorrect,no_cover,15.23,Evaluated
+1,2026-11-03T03:00:00+00:00,Nevada,Robert Morris,False,Week 1,-11.11,Nevada,86,49,37,correct,cover,25.89,Evaluated
+1,2026-11-03T03:00:00+00:00,Arizona,UCLA,True,Week 1,-9.72,Arizona,75,84,-9,incorrect,no_cover,18.72,Evaluated
+1,2026-11-03T03:00:00+00:00,Colorado State,Montana State,False,Week 1,-10.48,Colorado State,84,74,10,correct,no_cover,0.48,Evaluated
+1,2026-11-03T03:00:00+00:00,Oregon,Montana,False,Week 1,-14.12,Oregon,87,69,18,correct,cover,3.88,Evaluated
+1,2026-11-03T03:00:00+00:00,Arizona State,East Tennessee State,False,Week 1,-9.96,Arizona State,75,65,10,correct,cover,0.04,Evaluated
+1,2026-11-03T03:00:00+00:00,San Francisco,Radford,False,Week 1,-9.82,San Francisco,76,62,14,correct,cover,4.18,Evaluated
+1,2026-11-03T03:00:00+00:00,Washington,Colgate,False,Week 1,-18.12,Washington,90,76,14,correct,no_cover,4.12,Evaluated
+1,2026-11-03T03:00:00+00:00,Stanford,Eastern Washington,False,Week 1,-14.28,Stanford,74,65,9,correct,no_cover,5.28,Evaluated
+1,2026-11-03T03:00:00+00:00,Santa Clara,Towson,False,Week 1,-14.51,Santa Clara,89,70,19,correct,cover,4.49,Evaluated
+1,2026-11-03T03:00:00+00:00,Saint Mary's,Illinois State,False,Week 1,-12.89,Saint Mary's,90,85,5,correct,no_cover,7.89,Evaluated
+1,2026-11-03T03:30:00+00:00,USC,Milwaukee,False,Week 1,-15.80,USC,95,63,32,correct,cover,16.20,Evaluated
+1,2026-11-03T04:59:00+00:00,Hawai'i,Seattle U,False,Week 1,-2.62,Hawai'i,74,73,1,correct,no_cover,1.62,Evaluated
+1,2026-11-03T23:00:00+00:00,Tennessee,Wofford,False,Week 1,-24.88,Tennessee,90,59,31,correct,cover,6.12,Evaluated
+1,2026-11-04T00:00:00+00:00,Boston College,Wagner,False,Week 1,-12.33,Boston College,76,50,26,correct,cover,13.67,Evaluated
+1,2026-11-04T00:00:00+00:00,Duquesne,Purdue Fort Wayne,False,Week 1,-10.49,Duquesne,78,71,7,correct,no_cover,3.49,Evaluated
+1,2026-11-04T00:00:00+00:00,South Carolina,Stetson,False,Week 1,-18.58,South Carolina,81,55,26,correct,cover,7.42,Evaluated
+1,2026-11-04T00:00:00+00:00,Kentucky,Manhattan,False,Week 1,-29.09,Kentucky,85,57,28,correct,no_cover,1.09,Evaluated
+1,2026-11-04T00:00:00+00:00,Georgia Tech,Hampton,False,Week 1,-10.31,Georgia Tech,75,55,20,correct,cover,9.69,Evaluated
+1,2026-11-04T00:00:00+00:00,Virginia Tech,Coppin State,False,Week 1,-29.27,Virginia Tech,88,54,34,correct,cover,4.73,Evaluated
+1,2026-11-04T00:00:00+00:00,Rhode Island,Holy Cross,False,Week 1,-14.78,Rhode Island,103,59,44,correct,cover,29.22,Evaluated
+1,2026-11-04T00:30:00+00:00,Alabama,Sam Houston,False,Week 1,-20.66,Alabama,96,74,22,correct,cover,1.34,Evaluated
+1,2026-11-04T00:30:00+00:00,Virginia,Drexel,False,Week 1,-20.96,Virginia,89,60,29,correct,cover,8.04,Evaluated
+1,2026-11-04T01:00:00+00:00,Kansas State,South Dakota State,False,Week 1,-10.84,Kansas State,66,68,-2,incorrect,no_cover,12.84,Evaluated
+1,2026-11-04T01:00:00+00:00,LSU,New Orleans,False,Week 1,-17.31,LSU,100,57,43,correct,cover,25.69,Evaluated
+1,2026-11-04T01:00:00+00:00,Missouri,Cleveland State,False,Week 1,-23.71,Missouri,111,50,61,correct,cover,37.29,Evaluated
+1,2026-11-04T01:00:00+00:00,Texas A&M,Alabama State,False,Week 1,-26.69,Texas A&M,97,66,31,correct,cover,4.31,Evaluated
+1,2026-11-04T01:00:00+00:00,Iowa,Lipscomb,False,Week 1,-20.41,Iowa,76,54,22,correct,cover,1.59,Evaluated
+1,2026-11-04T01:00:00+00:00,Arkansas,Arkansas-Pine Bluff,False,Week 1,-34.31,Arkansas,106,61,45,correct,cover,10.69,Evaluated
+1,2026-11-04T03:00:00+00:00,UNLV,Northern Arizona,False,Week 1,-17.50,UNLV,89,77,12,correct,no_cover,5.50,Evaluated
+1,2026-11-04T03:00:00+00:00,San Diego State,Cal State Fullerton,False,Week 1,-17.98,San Diego State,102,78,24,correct,cover,6.02,Evaluated
+1,2026-11-04T03:00:00+00:00,California Baptist,North Florida,False,Week 1,-17.16,California Baptist,63,71,-8,incorrect,no_cover,25.16,Evaluated
+1,2026-11-05T00:00:00+00:00,Butler,Fairleigh Dickinson,False,Week 1,-21.04,Butler,99,65,34,correct,cover,12.96,Evaluated
+1,2026-11-05T00:00:00+00:00,High Point,Maryland Eastern Shore,False,Week 1,-26.59,High Point,63,49,14,correct,no_cover,12.59,Evaluated
+1,2026-11-05T00:00:00+00:00,Saint Joseph's,Longwood,False,Week 1,-11.82,Saint Joseph's,82,73,9,correct,no_cover,2.82,Evaluated
+1,2026-11-05T00:30:00+00:00,Wichita State,Cal State Northridge,False,Week 1,-11.15,Wichita State,79,67,12,correct,cover,0.85,Evaluated
+1,2026-11-05T01:00:00+00:00,Auburn,SE Louisiana,False,Week 1,-26.59,Auburn,92,59,33,correct,cover,6.41,Evaluated
+1,2026-11-05T01:00:00+00:00,South Dakota,Northern Kentucky,False,Week 1,1.06,Northern Kentucky,94,102,-8,correct,cover,6.94,Evaluated
+1,2026-11-05T02:00:00+00:00,California,Radford,False,Week 1,-13.67,California,84,70,14,correct,cover,0.33,Evaluated
+1,2026-11-05T03:00:00+00:00,Santa Clara,Milwaukee,False,Week 1,-19.81,Santa Clara,95,72,23,correct,cover,3.19,Evaluated
+1,2026-11-05T03:00:00+00:00,Saint Mary's,North Dakota State,False,Week 1,-14.50,Saint Mary's,105,64,41,correct,cover,26.50,Evaluated
+1,2026-11-05T03:00:00+00:00,Loyola Marymount,Queens University,False,Week 1,-4.57,Loyola Marymount,95,96,-1,incorrect,no_cover,5.57,Evaluated
+1,2026-11-05T22:00:00+00:00,North Texas,McNeese,False,Week 1,0.74,McNeese,77,67,10,incorrect,no_cover,10.74,Evaluated
+1,2026-11-05T23:00:00+00:00,Indiana,Bellarmine,False,Week 1,-23.68,Indiana,92,69,23,correct,no_cover,0.68,Evaluated
+1,2026-11-05T23:00:00+00:00,Vanderbilt,Wake Forest,False,Week 1,-12.82,Vanderbilt,74,51,23,correct,cover,10.18,Evaluated
+1,2026-11-05T23:00:00+00:00,Penn State,Chattanooga,False,Week 1,-11.02,Penn State,97,93,4,correct,no_cover,7.02,Evaluated
+1,2026-11-05T23:30:00+00:00,Seton Hall,Long Island University,False,Week 1,-16.29,Seton Hall,67,60,7,correct,no_cover,9.29,Evaluated
+1,2026-11-06T00:00:00+00:00,Saint Peter's,Binghamton,False,Week 1,-11.87,Saint Peter's,55,58,-3,incorrect,no_cover,14.87,Evaluated
+1,2026-11-06T00:00:00+00:00,Syracuse,Central Connecticut,False,Week 1,-16.12,Syracuse,102,49,53,correct,cover,36.88,Evaluated
+1,2026-11-06T00:00:00+00:00,Pittsburgh,Buffalo,False,Week 1,-14.00,Pittsburgh,80,61,19,correct,cover,5.00,Evaluated
+1,2026-11-06T00:00:00+00:00,Charlotte,Georgia State,False,Week 1,-10.65,Charlotte,77,67,10,correct,no_cover,0.65,Evaluated
+1,2026-11-06T00:00:00+00:00,Alcorn State,Howard,False,Week 1,9.19,Howard,83,94,-11,correct,cover,1.81,Evaluated
+1,2026-11-06T00:00:00+00:00,Cincinnati,Green Bay,False,Week 1,-21.22,Cincinnati,81,64,17,correct,no_cover,4.22,Evaluated
+1,2026-11-06T00:00:00+00:00,Quinnipiac,Bryant,False,Week 1,-10.44,Quinnipiac,66,56,10,correct,no_cover,0.44,Evaluated
+1,2026-11-06T00:00:00+00:00,Merrimack,UMass Lowell,False,Week 1,-9.71,Merrimack,61,71,-10,incorrect,no_cover,19.71,Evaluated
+1,2026-11-06T00:00:00+00:00,Manhattan,UAlbany,False,Week 1,-0.74,Manhattan,68,72,-4,incorrect,no_cover,4.74,Evaluated
+1,2026-11-06T00:00:00+00:00,Virginia Tech,Mercer,False,Week 1,-12.41,Virginia Tech,96,67,29,correct,cover,16.59,Evaluated
+1,2026-11-06T00:00:00+00:00,Notre Dame,Mercyhurst,False,Week 1,-16.69,Notre Dame,83,56,27,correct,cover,10.31,Evaluated
+1,2026-11-06T00:00:00+00:00,Incarnate Word,Chicago State,False,Week 1,-9.31,Incarnate Word,54,66,-12,incorrect,no_cover,21.31,Evaluated
+1,2026-11-06T00:00:00+00:00,Princeton,Hofstra,False,Week 1,4.79,Hofstra,60,58,2,incorrect,no_cover,6.79,Evaluated
+1,2026-11-06T00:00:00+00:00,Lehigh,Cornell,False,Week 1,5.86,Cornell,71,64,7,incorrect,no_cover,12.86,Evaluated
+1,2026-11-06T00:00:00+00:00,Sacred Heart,Maine,False,Week 1,-6.21,Sacred Heart,72,74,-2,incorrect,no_cover,8.21,Evaluated
+1,2026-11-06T00:00:00+00:00,Rider,New Hampshire,False,Week 1,-1.59,Rider,55,66,-11,incorrect,no_cover,12.59,Evaluated
+1,2026-11-06T00:00:00+00:00,Navy,Delaware State,False,Week 1,-17.98,Navy,66,60,6,correct,no_cover,11.98,Evaluated
+1,2026-11-06T00:00:00+00:00,Marist,UMBC,False,Week 1,-1.55,Marist,88,80,8,correct,cover,6.45,Evaluated
+1,2026-11-06T00:00:00+00:00,Iona,NJIT,False,Week 1,-9.93,Iona,72,49,23,correct,cover,13.07,Evaluated
+1,2026-11-06T00:00:00+00:00,Fairfield,Vermont,False,Week 1,-0.28,Fairfield,67,79,-12,incorrect,no_cover,12.28,Evaluated
+1,2026-11-06T00:30:00+00:00,Fordham,Stonehill,False,Week 1,-13.62,Fordham,83,63,20,correct,cover,6.38,Evaluated
+1,2026-11-06T00:30:00+00:00,Mississippi State,Northwestern State,False,Week 1,-17.48,Mississippi State,82,44,38,correct,cover,20.52,Evaluated
+1,2026-11-06T00:30:00+00:00,Tulane,Jackson State,False,Week 1,-14.83,Tulane,85,87,-2,incorrect,no_cover,16.83,Evaluated
+1,2026-11-06T01:00:00+00:00,Loyola Chicago,West Georgia,False,Week 1,-8.21,Loyola Chicago,76,53,23,correct,cover,14.79,Evaluated
+1,2026-11-06T01:00:00+00:00,Duke,Coastal Carolina,False,Week 1,-34.63,Duke,113,52,61,correct,cover,26.37,Evaluated
+1,2026-11-06T01:00:00+00:00,Creighton,Le Moyne,False,Week 1,-21.28,Creighton,83,55,28,correct,cover,6.72,Evaluated
+1,2026-11-06T01:00:00+00:00,Texas,Gardner-Webb,False,Week 1,-32.45,Texas,98,50,48,correct,cover,15.55,Evaluated
+1,2026-11-06T01:00:00+00:00,Florida,Jacksonville,False,Week 1,-34.35,Florida,88,57,31,correct,no_cover,3.35,Evaluated
+1,2026-11-06T01:00:00+00:00,Michigan State,Toledo,False,Week 1,-22.72,Michigan State,91,61,30,correct,cover,7.28,Evaluated
+1,2026-11-06T01:00:00+00:00,Tulsa,Northern Illinois,False,Week 1,-24.37,Tulsa,94,75,19,correct,no_cover,5.37,Evaluated
+1,2026-11-06T01:00:00+00:00,SMU,VMI,False,Week 1,-29.94,SMU,95,70,25,correct,no_cover,4.94,Evaluated
+1,2026-11-06T01:00:00+00:00,Rice,East Texas A&M,False,Week 1,-10.14,Rice,71,72,-1,incorrect,no_cover,11.14,Evaluated
+1,2026-11-06T01:00:00+00:00,South Alabama,Jacksonville State,False,Week 1,-3.00,South Alabama,83,80,3,correct,push,0.00,Evaluated
+1,2026-11-06T01:30:00+00:00,Illinois,Pennsylvania,False,Week 1,-25.71,Illinois,112,70,42,correct,cover,16.29,Evaluated
+1,2026-11-06T01:30:00+00:00,DePaul,South Florida,False,Week 1,2.33,South Florida,82,80,2,incorrect,no_cover,4.33,Evaluated
+1,2026-11-06T02:00:00+00:00,Utah,Towson,False,Week 1,-8.35,Utah,67,57,10,correct,cover,1.65,Evaluated
+1,2026-11-06T02:00:00+00:00,Texas Tech,Bethune-Cookman,False,Week 1,-28.06,Texas Tech,76,58,18,correct,no_cover,10.06,Evaluated
+1,2026-11-06T03:30:00+00:00,Arizona,Cal Poly,False,Week 1,-31.33,Arizona,104,84,20,correct,no_cover,11.33,Evaluated
+1,2026-11-06T21:00:00+00:00,Boston College,Massachusetts,True,Week 1,-3.43,Boston College,71,55,16,correct,cover,12.57,Evaluated
+1,2026-11-06T22:00:00+00:00,Baylor,Arkansas-Pine Bluff,False,Week 1,-28.76,Baylor,109,53,56,correct,cover,27.24,Evaluated
+1,2026-11-06T22:00:00+00:00,Florida International,West Florida,False,Week 1,-2.17,Florida International,85,75,10,correct,cover,7.83,Evaluated
+1,2026-11-06T22:00:00+00:00,Virginia,Northeastern,False,Week 1,-24.56,Virginia,97,72,25,correct,cover,0.44,Evaluated
+1,2026-11-06T23:00:00+00:00,Oregon,Eastern Washington,False,Week 1,-13.71,Oregon,98,71,27,correct,cover,13.29,Evaluated
+1,2026-11-06T23:30:00+00:00,Ohio State,Youngstown State,False,Week 1,-21.77,Ohio State,89,65,24,correct,cover,2.23,Evaluated
+1,2026-11-06T23:30:00+00:00,Purdue,Valparaiso,False,Week 1,-24.84,Purdue,80,83,-3,incorrect,no_cover,27.84,Evaluated
+1,2026-11-06T23:30:00+00:00,South Carolina Upstate,South Carolina State,False,Week 1,-7.59,South Carolina Upstate,70,78,-8,incorrect,no_cover,15.59,Evaluated
+1,2026-11-07T00:00:00+00:00,North Carolina,Wofford,False,Week 1,-20.40,North Carolina,109,70,39,correct,cover,18.60,Evaluated
+1,2026-11-07T00:00:00+00:00,Clemson,American University,False,Week 1,-21.82,Clemson,82,73,9,correct,no_cover,12.82,Evaluated
+1,2026-11-07T00:00:00+00:00,Saint Louis,Missouri,True,Week 1,-1.89,Saint Louis,90,84,6,correct,cover,4.11,Evaluated
+1,2026-11-07T00:00:00+00:00,Ball State,Indiana State,False,Week 1,2.01,Indiana State,66,69,-3,correct,cover,0.99,Evaluated
+1,2026-11-07T00:00:00+00:00,Florida State,Troy,False,Week 1,-10.34,Florida State,91,68,23,correct,cover,12.66,Evaluated
+1,2026-11-07T00:00:00+00:00,Xavier,Eastern Michigan,False,Week 1,-16.67,Xavier,76,53,23,correct,cover,6.33,Evaluated
+1,2026-11-07T00:00:00+00:00,Georgia,Presbyterian,False,Week 1,-22.39,Georgia,91,77,14,correct,no_cover,8.39,Evaluated
+1,2026-11-07T00:00:00+00:00,Brown,Boston University,False,Week 1,-1.77,Brown,67,72,-5,incorrect,no_cover,6.77,Evaluated
+1,2026-11-07T00:00:00+00:00,Rutgers,New Haven,False,Week 1,-16.17,Rutgers,81,54,27,correct,cover,10.83,Evaluated
+1,2026-11-07T00:00:00+00:00,Kentucky,James Madison,False,Week 1,-20.48,Kentucky,89,80,9,correct,no_cover,11.48,Evaluated
+1,2026-11-07T00:00:00+00:00,West Virginia,Stetson,False,Week 1,-24.60,West Virginia,91,53,38,correct,cover,13.40,Evaluated
+1,2026-11-07T00:00:00+00:00,UCF,Yale,False,Week 1,-6.48,UCF,87,75,12,correct,cover,5.52,Evaluated
+1,2026-11-07T00:00:00+00:00,Villanova,Holy Cross,False,Week 1,-24.90,Villanova,95,66,29,correct,cover,4.10,Evaluated
+1,2026-11-07T00:00:00+00:00,Elon,UNC Greensboro,False,Week 1,-2.89,Elon,74,65,9,correct,cover,6.11,Evaluated
+1,2026-11-07T00:00:00+00:00,Georgia Tech,Georgia Southern,False,Week 1,-7.84,Georgia Tech,95,83,12,correct,cover,4.16,Evaluated
+1,2026-11-07T00:00:00+00:00,George Mason,Coppin State,False,Week 1,-25.86,George Mason,68,51,17,correct,no_cover,8.86,Evaluated
+1,2026-11-07T00:00:00+00:00,NC State,East Tennessee State,False,Week 1,-13.33,NC State,77,63,14,correct,cover,0.67,Evaluated
+1,2026-11-07T00:00:00+00:00,Kennesaw State,Austin Peay,False,Week 1,-6.78,Kennesaw State,71,69,2,correct,no_cover,4.78,Evaluated
+1,2026-11-07T00:00:00+00:00,Mount St. Mary's,Loyola Maryland,False,Week 1,-7.08,Mount St. Mary's,68,57,11,correct,cover,3.92,Evaluated
+1,2026-11-07T00:30:00+00:00,Alabama,Arkansas State,False,Week 1,-21.27,Alabama,101,86,15,correct,no_cover,6.27,Evaluated
+1,2026-11-07T00:30:00+00:00,Wisconsin,Delaware,False,Week 1,-25.65,Wisconsin,73,64,9,correct,no_cover,16.65,Evaluated
+1,2026-11-07T00:30:00+00:00,UAB,Nicholls,False,Week 1,-12.65,UAB,70,63,7,correct,no_cover,5.65,Evaluated
+1,2026-11-07T00:30:00+00:00,Wright State,Florida Atlantic,False,Week 1,-0.83,Wright State,97,71,26,correct,cover,25.17,Evaluated
+1,2026-11-07T01:00:00+00:00,Minnesota,St. Thomas-Minnesota,False,Week 1,-8.14,Minnesota,76,62,14,correct,cover,5.86,Evaluated
+1,2026-11-07T01:00:00+00:00,Iowa State,Southern Miss,False,Week 1,-30.08,Iowa State,83,57,26,correct,no_cover,4.08,Evaluated
+1,2026-11-07T01:00:00+00:00,Marquette,Detroit Mercy,False,Week 1,-17.97,Marquette,93,32,61,correct,cover,43.03,Evaluated
+1,2026-11-07T01:00:00+00:00,Oklahoma,Mississippi Valley State,False,Week 1,-41.22,Oklahoma,84,57,27,correct,no_cover,14.22,Evaluated
+1,2026-11-07T01:00:00+00:00,LSU,Texas Southern,False,Week 1,-22.02,LSU,92,51,41,correct,cover,18.98,Evaluated
+1,2026-11-07T01:00:00+00:00,Texas A&M,Northern Kentucky,False,Week 1,-17.86,Texas A&M,104,67,37,correct,cover,19.14,Evaluated
+1,2026-11-07T01:00:00+00:00,Northwestern,Stony Brook,False,Week 1,-17.99,Northwestern,78,65,13,correct,no_cover,4.99,Evaluated
+1,2026-11-07T01:00:00+00:00,UConn,Michigan,True,Week 1,6.19,Michigan,85,77,8,incorrect,no_cover,14.19,Evaluated
+1,2026-11-07T01:00:00+00:00,TCU,Southern,False,Week 1,-22.93,TCU,106,54,52,correct,cover,29.07,Evaluated
+1,2026-11-07T01:00:00+00:00,Louisiana,Texas A&M-Corpus Christi,False,Week 1,2.44,Texas A&M-Corpus Christi,60,67,-7,correct,cover,4.56,Evaluated
+1,2026-11-07T01:00:00+00:00,UIC,Robert Morris,False,Week 1,-6.00,UIC,79,56,23,correct,cover,17.00,Evaluated
+1,2026-11-07T01:30:00+00:00,Wyoming,Idaho State,False,Week 1,-13.69,Wyoming,93,62,31,correct,cover,17.31,Evaluated
+1,2026-11-07T01:30:00+00:00,Iowa,Eastern Illinois,False,Week 1,-29.10,Iowa,91,47,44,correct,cover,14.90,Evaluated
+1,2026-11-07T01:30:00+00:00,Ole Miss,Central Arkansas,False,Week 1,-14.68,Ole Miss,92,60,32,correct,cover,17.32,Evaluated
+1,2026-11-07T02:00:00+00:00,Kansas State,Cal State Northridge,False,Week 1,-9.77,Kansas State,95,78,17,correct,cover,7.23,Evaluated
+1,2026-11-07T02:00:00+00:00,Kansas,Middle Tennessee,False,Week 1,-19.95,Kansas,89,45,44,correct,cover,24.05,Evaluated
+1,2026-11-07T02:00:00+00:00,Colorado State,Idaho,False,Week 1,-11.70,Colorado State,78,67,11,correct,no_cover,0.70,Evaluated
+1,2026-11-07T02:00:00+00:00,BYU,Omaha,False,Week 1,-23.87,BYU,108,67,41,correct,cover,17.13,Evaluated
+1,2026-11-07T02:00:00+00:00,Arizona State,Northern Colorado,False,Week 1,-10.54,Arizona State,90,63,27,correct,cover,16.46,Evaluated
+1,2026-11-07T02:00:00+00:00,Miami,Wagner,False,Week 1,-22.87,Miami,83,57,26,correct,cover,3.13,Evaluated
+1,2026-11-07T02:00:00+00:00,Oklahoma State,Queens University,False,Week 1,-12.22,Oklahoma State,118,68,50,correct,cover,37.78,Evaluated
+1,2026-11-07T02:15:00+00:00,Kansas City,Southern Illinois,False,Week 1,13.77,Southern Illinois,100,93,7,incorrect,no_cover,20.77,Evaluated
+1,2026-11-07T02:30:00+00:00,Oregon State,California Baptist,False,Week 1,-2.14,Oregon State,96,68,28,correct,cover,25.86,Evaluated
+1,2026-11-07T02:30:00+00:00,San Diego,Tarleton State,False,Week 1,-2.92,San Diego,96,90,6,correct,cover,3.08,Evaluated
+1,2026-11-07T02:30:00+00:00,UT Arlington,Portland,True,Week 1,-2.64,UT Arlington,89,85,4,correct,cover,1.36,Evaluated
+1,2026-11-07T03:00:00+00:00,Stanford,Oakland,False,Week 1,-12.73,Stanford,81,63,18,correct,cover,5.27,Evaluated
+1,2026-11-07T03:00:00+00:00,San Francisco,North Dakota State,False,Week 1,-3.19,San Francisco,79,70,9,correct,cover,5.81,Evaluated
+1,2026-11-07T03:30:00+00:00,UCLA,North Florida,False,Week 1,-29.87,UCLA,114,63,51,correct,cover,21.13,Evaluated
+1,2026-11-07T17:00:00+00:00,Louisville,Morehead State,False,Week 1,-27.95,Louisville,107,57,50,correct,cover,22.05,Evaluated
+1,2026-11-07T17:00:00+00:00,Winthrop,North Dakota,False,Week 1,-10.05,Winthrop,90,93,-3,incorrect,no_cover,13.05,Evaluated
+1,2026-11-07T18:00:00+00:00,Ohio,North Carolina A&T,False,Week 1,-8.83,Ohio,80,70,10,correct,cover,1.17,Evaluated
+1,2026-11-07T19:00:00+00:00,Marshall,Toledo,False,Week 1,-2.01,Marshall,76,81,-5,incorrect,no_cover,7.01,Evaluated
+1,2026-11-07T19:00:00+00:00,Drexel,Colgate,False,Week 1,-4.87,Drexel,77,74,3,correct,no_cover,1.87,Evaluated
+1,2026-11-07T19:00:00+00:00,Abilene Christian,Lamar,False,Week 1,-3.88,Abilene Christian,83,81,2,correct,no_cover,1.88,Evaluated
+1,2026-11-07T19:00:00+00:00,East Carolina,UNC Wilmington,False,Week 1,2.74,UNC Wilmington,75,78,-3,correct,cover,0.26,Evaluated
+1,2026-11-07T19:00:00+00:00,South Dakota,Cal State Fullerton,False,Week 1,-0.92,South Dakota,85,87,-2,incorrect,no_cover,2.92,Evaluated
+1,2026-11-07T20:00:00+00:00,Memphis,VCU,False,Week 1,3.66,VCU,89,88,1,incorrect,no_cover,4.66,Evaluated
+1,2026-11-07T20:00:00+00:00,Montana State,Long Beach State,False,Week 1,-9.54,Montana State,83,70,13,correct,cover,3.46,Evaluated
+1,2026-11-07T20:00:00+00:00,Longwood,North Carolina Central,False,Week 1,-11.97,Longwood,80,75,5,correct,no_cover,6.97,Evaluated
+1,2026-11-07T20:30:00+00:00,San Diego State,Colorado,True,Week 1,-4.10,San Diego State,77,66,11,correct,cover,6.90,Evaluated
+1,2026-11-07T20:30:00+00:00,La Salle,Long Island University,False,Week 1,-3.51,La Salle,88,80,8,correct,cover,4.49,Evaluated
+1,2026-11-07T21:00:00+00:00,UNLV,Samford,False,Week 1,-8.49,UNLV,88,79,9,correct,cover,0.51,Evaluated
+1,2026-11-07T21:00:00+00:00,Rhode Island,Monmouth,True,Week 1,-2.48,Rhode Island,84,66,18,correct,cover,15.52,Evaluated
+1,2026-11-07T21:00:00+00:00,Saint Joseph's,Lafayette,False,Week 1,-17.27,Saint Joseph's,67,57,10,correct,no_cover,7.27,Evaluated
+1,2026-11-07T21:00:00+00:00,Utah State,Omaha,False,Week 1,-22.55,Utah State,90,56,34,correct,cover,11.45,Evaluated
+1,2026-11-07T21:00:00+00:00,UC Santa Barbara,Oakland,False,Week 1,-4.57,UC Santa Barbara,90,67,23,correct,cover,18.43,Evaluated
+1,2026-11-07T22:00:00+00:00,Miami (OH),Bellarmine,False,Week 1,-15.29,Miami (OH),80,73,7,correct,no_cover,8.29,Evaluated
+1,2026-11-07T22:00:00+00:00,UTSA,VMI,False,Week 1,-8.45,UTSA,70,68,2,correct,no_cover,6.45,Evaluated
+1,2026-11-07T22:00:00+00:00,Furman,Northern Iowa,False,Week 1,2.59,Northern Iowa,98,83,15,incorrect,no_cover,17.59,Evaluated
+1,2026-11-07T22:00:00+00:00,Bucknell,Old Dominion,False,Week 1,2.34,Old Dominion,62,82,-20,correct,cover,17.66,Evaluated
+1,2026-11-07T22:00:00+00:00,IU Indianapolis,UT Martin,False,Week 1,2.21,UT Martin,75,74,1,incorrect,no_cover,3.21,Evaluated
+1,2026-11-07T22:00:00+00:00,Lipscomb,SIU Edwardsville,False,Week 1,-7.10,Lipscomb,78,77,1,correct,no_cover,6.10,Evaluated
+1,2026-11-07T22:00:00+00:00,High Point,Washington State,False,Week 1,-11.53,High Point,83,71,12,correct,cover,0.47,Evaluated
+1,2026-11-07T22:00:00+00:00,Gonzaga,New Mexico State,False,Week 1,-23.87,Gonzaga,109,68,41,correct,cover,17.13,Evaluated
+1,2026-11-07T22:30:00+00:00,UT Rio Grande Valley,Prairie View A&M,False,Week 1,-12.92,UT Rio Grande Valley,68,63,5,correct,no_cover,7.92,Evaluated
+1,2026-11-07T22:30:00+00:00,UNC Asheville,Western Carolina,False,Week 1,-3.36,UNC Asheville,75,83,-8,incorrect,no_cover,11.36,Evaluated
+1,2026-11-07T23:00:00+00:00,New Mexico,Northern Arizona,False,Week 1,-25.30,New Mexico,94,65,29,correct,cover,3.70,Evaluated
+1,2026-11-07T23:00:00+00:00,George Washington,Hampton,False,Week 1,-15.78,George Washington,75,61,14,correct,no_cover,1.78,Evaluated
+1,2026-11-07T23:30:00+00:00,Niagara,Morgan State,False,Week 1,-5.94,Niagara,67,73,-6,incorrect,no_cover,11.94,Evaluated
+1,2026-11-08T00:00:00+00:00,Canisius,St. Bonaventure,False,Week 1,11.42,St. Bonaventure,49,88,-39,correct,cover,27.58,Evaluated
+1,2026-11-08T00:00:00+00:00,Dayton,Northern Illinois,False,Week 1,-24.22,Dayton,76,81,-5,incorrect,no_cover,29.22,Evaluated
+1,2026-11-08T00:00:00+00:00,Providence,Nebraska,True,Week 1,8.00,Nebraska,58,67,-9,correct,cover,1.00,Evaluated
+1,2026-11-08T00:00:00+00:00,Houston Christian,Western Illinois,True,Week 1,-8.97,Houston Christian,74,67,7,correct,no_cover,1.97,Evaluated
+1,2026-11-08T00:00:00+00:00,Davidson,Mercer,False,Week 1,-7.02,Davidson,88,76,12,correct,cover,4.98,Evaluated
+1,2026-11-08T00:30:00+00:00,Georgetown,Maryland,False,Week 1,-4.31,Georgetown,86,74,12,correct,cover,7.69,Evaluated
+1,2026-11-08T00:30:00+00:00,UC Riverside,Denver,False,Week 1,-3.30,UC Riverside,64,60,4,correct,cover,0.70,Evaluated
+1,2026-11-08T01:00:00+00:00,Grand Canyon,Bethune-Cookman,False,Week 1,-19.24,Grand Canyon,99,81,18,correct,no_cover,1.24,Evaluated
+1,2026-11-08T01:00:00+00:00,Murray State,Northwestern State,False,Week 1,-13.27,Murray State,93,71,22,correct,cover,8.73,Evaluated
+1,2026-11-08T01:00:00+00:00,Little Rock,SE Louisiana,False,Week 1,-3.16,Little Rock,79,83,-4,incorrect,no_cover,7.16,Evaluated
+1,2026-11-08T01:00:00+00:00,Bradley,Pacific,False,Week 1,-6.67,Bradley,52,63,-11,incorrect,no_cover,17.67,Evaluated
+1,2026-11-08T01:00:00+00:00,Evansville,Southern Indiana,False,Week 1,-8.55,Evansville,78,76,2,correct,no_cover,6.55,Evaluated
+1,2026-11-08T02:00:00+00:00,Weber State,Utah Valley,False,Week 1,4.06,Utah Valley,93,101,-8,correct,cover,3.94,Evaluated
+1,2026-11-08T03:00:00+00:00,UC Irvine,San José State,False,Week 1,-9.59,UC Irvine,91,79,12,correct,cover,2.41,Evaluated
+1,2026-11-08T03:00:00+00:00,Santa Clara,Sacramento State,False,Week 1,-23.18,Santa Clara,83,77,6,correct,no_cover,17.18,Evaluated
+1,2026-11-08T03:00:00+00:00,Seattle U,Portland State,False,Week 1,-7.72,Seattle U,79,60,19,correct,cover,11.28,Evaluated
+1,2026-11-08T03:00:00+00:00,UC San Diego,Fresno State,False,Week 1,-5.29,UC San Diego,81,65,16,correct,cover,10.71,Evaluated
+1,2026-11-08T17:00:00+00:00,St. John's,Iona,False,Week 1,-26.77,St. John's,104,65,39,correct,cover,12.23,Evaluated
+1,2026-11-08T18:00:00+00:00,South Carolina,Southeast Missouri State,False,Week 1,-12.97,South Carolina,78,68,10,correct,no_cover,2.97,Evaluated
+1,2026-11-08T18:00:00+00:00,New Hampshire,Sacred Heart,False,Week 1,3.08,Sacred Heart,76,81,-5,correct,cover,1.92,Evaluated
+1,2026-11-08T18:00:00+00:00,Bryant,Fairfield,False,Week 1,2.01,Fairfield,59,68,-9,correct,cover,6.99,Evaluated
+1,2026-11-08T18:00:00+00:00,Siena,Princeton,False,Week 1,-5.21,Siena,82,68,14,correct,cover,8.79,Evaluated
+1,2026-11-08T18:00:00+00:00,UMass Lowell,Marist,False,Week 1,2.56,Marist,63,61,2,incorrect,no_cover,4.56,Evaluated
+1,2026-11-08T18:00:00+00:00,Virginia,Arkansas,True,Week 1,1.54,Arkansas,91,72,19,incorrect,no_cover,20.54,Evaluated
+1,2026-11-08T18:00:00+00:00,Maine,Manhattan,False,Week 1,-2.66,Maine,62,68,-6,incorrect,no_cover,8.66,Evaluated
+1,2026-11-08T19:00:00+00:00,Lehigh,Brown,False,Week 1,-1.28,Lehigh,55,65,-10,incorrect,no_cover,11.28,Evaluated
+1,2026-11-08T19:00:00+00:00,Boise State,Butler,False,Week 1,-6.28,Boise State,100,81,19,correct,cover,12.72,Evaluated
+1,2026-11-08T19:00:00+00:00,UAlbany,Merrimack,False,Week 1,5.16,Merrimack,60,73,-13,correct,cover,7.84,Evaluated
+1,2026-11-08T19:00:00+00:00,Western Michigan,Campbell,False,Week 1,1.53,Campbell,87,71,16,incorrect,no_cover,17.53,Evaluated
+1,2026-11-08T19:00:00+00:00,St. Thomas-Minnesota,Green Bay,False,Week 1,-12.11,St. Thomas-Minnesota,67,76,-9,incorrect,no_cover,21.11,Evaluated
+1,2026-11-08T19:00:00+00:00,Vermont,Quinnipiac,False,Week 1,-2.54,Vermont,76,79,-3,incorrect,no_cover,5.54,Evaluated
+1,2026-11-08T19:00:00+00:00,Dartmouth,Central Connecticut,False,Week 1,-4.77,Dartmouth,71,78,-7,incorrect,no_cover,11.77,Evaluated
+1,2026-11-08T20:00:00+00:00,Air Force,Idaho State,False,Week 1,3.83,Idaho State,89,82,7,incorrect,no_cover,10.83,Evaluated
+1,2026-11-08T20:00:00+00:00,Tennessee Tech,Western Kentucky,False,Week 1,6.75,Western Kentucky,97,94,3,incorrect,no_cover,9.75,Evaluated
+1,2026-11-08T20:00:00+00:00,Drake,Southern,False,Week 1,-11.86,Drake,75,68,7,correct,no_cover,4.86,Evaluated
+1,2026-11-08T21:00:00+00:00,Binghamton,Rider,False,Week 1,-2.43,Binghamton,75,63,12,correct,cover,9.57,Evaluated
+1,2026-11-08T21:00:00+00:00,NJIT,Saint Peter's,False,Week 1,4.01,Saint Peter's,54,52,2,incorrect,no_cover,6.01,Evaluated
+1,2026-11-08T21:30:00+00:00,Nevada,Saint Mary's,True,Week 1,6.52,Saint Mary's,96,95,1,incorrect,no_cover,7.52,Evaluated
+1,2026-11-08T22:00:00+00:00,Temple,Richmond,True,Week 1,-0.85,Temple,53,79,-26,incorrect,no_cover,26.85,Evaluated
+1,2026-11-08T23:00:00+00:00,William & Mary,Norfolk State,False,Week 1,-10.36,William & Mary,104,73,31,correct,cover,20.64,Evaluated
+1,2026-11-08T23:00:00+00:00,Cal State Bakersfield,North Dakota State,False,Week 1,10.40,North Dakota State,91,80,11,incorrect,no_cover,21.40,Evaluated
+1,2026-11-09T00:00:00+00:00,UTEP,Incarnate Word,False,Week 1,-6.18,UTEP,79,60,19,correct,cover,12.82,Evaluated
+1,2026-11-09T01:00:00+00:00,Pittsburgh,Penn State,True,Week 1,-2.89,Pittsburgh,82,76,6,correct,cover,3.11,Evaluated
+1,2026-11-09T01:30:00+00:00,California,Houston,True,Week 1,16.07,Houston,68,86,-18,correct,cover,1.93,Evaluated
+1,2026-11-09T03:00:00+00:00,Hawai'i,UT Arlington,False,Week 1,-6.65,Hawai'i,71,62,9,correct,cover,2.35,Evaluated
+1,2026-11-09T04:00:00+00:00,Wichita State,USC,True,Week 1,0.07,USC,86,93,-7,correct,cover,6.93,Evaluated
+2,2026-11-09T23:00:00+00:00,Ohio State,Marshall,False,Week 2,-18.93,Ohio State,84,74,10,correct,no_cover,8.93,Evaluated
+2,2026-11-09T23:30:00+00:00,Indiana,Syracuse,True,Week 2,-2.01,Indiana,83,80,3,correct,cover,0.99,Evaluated
+2,2026-11-09T23:30:00+00:00,Pennsylvania,Howard,False,Week 2,-1.62,Pennsylvania,78,65,13,correct,cover,11.38,Evaluated
+2,2026-11-10T00:00:00+00:00,Cincinnati,Minnesota,False,Week 2,-7.22,Cincinnati,61,63,-2,incorrect,no_cover,9.22,Evaluated
+2,2026-11-10T00:00:00+00:00,Bowling Green,Cleveland State,False,Week 2,-16.63,Bowling Green,95,79,16,correct,no_cover,0.63,Evaluated
+2,2026-11-10T00:00:00+00:00,Texas,Grambling,False,Week 2,-30.83,Texas,93,62,31,correct,cover,0.17,Evaluated
+2,2026-11-10T00:00:00+00:00,Tennessee,Radford,False,Week 2,-27.40,Tennessee,70,47,23,correct,no_cover,4.40,Evaluated
+2,2026-11-10T00:00:00+00:00,Georgia,Florida Gulf Coast,False,Week 2,-16.44,Georgia,80,72,8,correct,no_cover,8.44,Evaluated
+2,2026-11-10T00:00:00+00:00,UIC,UNC Greensboro,False,Week 2,-15.21,UIC,82,72,10,correct,no_cover,5.21,Evaluated
+2,2026-11-10T00:00:00+00:00,Notre Dame,Eastern Illinois,False,Week 2,-23.72,Notre Dame,94,70,24,correct,cover,0.28,Evaluated
+2,2026-11-10T00:00:00+00:00,Coastal Carolina,South Carolina Upstate,False,Week 2,-4.80,Coastal Carolina,65,56,9,correct,cover,4.20,Evaluated
+2,2026-11-10T00:00:00+00:00,Miami,North Florida,False,Week 2,-25.92,Miami,89,51,38,correct,cover,12.08,Evaluated
+2,2026-11-10T00:00:00+00:00,Jacksonville,Kansas City,False,Week 2,-6.74,Jacksonville,79,61,18,correct,cover,11.26,Evaluated
+2,2026-11-10T00:00:00+00:00,UConn,Wagner,False,Week 2,-35.15,UConn,83,41,42,correct,cover,6.85,Evaluated
+2,2026-11-10T00:00:00+00:00,Columbia,Stonehill,False,Week 2,-9.32,Columbia,75,55,20,correct,cover,10.68,Evaluated
+2,2026-11-10T00:00:00+00:00,Towson,Long Island University,False,Week 2,-5.73,Towson,66,46,20,correct,cover,14.27,Evaluated
+2,2026-11-10T00:00:00+00:00,Chicago State,South Carolina State,False,Week 2,-1.61,Chicago State,67,82,-15,incorrect,no_cover,16.61,Evaluated
+2,2026-11-10T00:00:00+00:00,Clemson,North Dakota,False,Week 2,-20.28,Clemson,92,77,15,correct,no_cover,5.28,Evaluated
+2,2026-11-10T00:30:00+00:00,Mississippi State,Jackson State,False,Week 2,-24.31,Mississippi State,98,57,41,correct,cover,16.69,Evaluated
+2,2026-11-10T00:30:00+00:00,Alabama,Oakland,False,Week 2,-24.79,Alabama,109,68,41,correct,cover,16.21,Evaluated
+2,2026-11-10T00:30:00+00:00,UAB,Florida A&M,False,Week 2,-17.84,UAB,92,64,28,correct,cover,10.16,Evaluated
+2,2026-11-10T01:00:00+00:00,Oklahoma,North Alabama,False,Week 2,-18.84,Oklahoma,81,72,9,correct,no_cover,9.84,Evaluated
+2,2026-11-10T01:00:00+00:00,Missouri,SIU Edwardsville,False,Week 2,-23.92,Missouri,96,58,38,correct,cover,14.08,Evaluated
+2,2026-11-10T01:00:00+00:00,LSU,Louisiana Tech,False,Week 2,-17.03,LSU,90,50,40,correct,cover,22.97,Evaluated
+2,2026-11-10T01:00:00+00:00,Northwestern,Boston University,False,Week 2,-16.11,Northwestern,72,55,17,correct,cover,0.89,Evaluated
+2,2026-11-10T01:00:00+00:00,Texas A&M,UL Monroe,False,Week 2,-33.86,Texas A&M,108,67,41,correct,cover,7.14,Evaluated
+2,2026-11-10T01:30:00+00:00,Purdue,Illinois State,False,Week 2,-13.87,Purdue,76,59,17,correct,cover,3.13,Evaluated
+2,2026-11-10T02:00:00+00:00,DePaul,Alabama A&M,False,Week 2,-20.46,DePaul,84,47,37,correct,cover,16.54,Evaluated
+2,2026-11-10T02:00:00+00:00,Seton Hall,Charlotte,True,Week 2,-8.28,Seton Hall,68,62,6,correct,no_cover,2.28,Evaluated
+2,2026-11-10T02:00:00+00:00,Auburn,App State,False,Week 2,-18.98,Auburn,75,53,22,correct,cover,3.02,Evaluated
+2,2026-11-10T02:30:00+00:00,Oregon State,Eastern Washington,False,Week 2,-15.19,Oregon State,94,84,10,correct,no_cover,5.19,Evaluated
+2,2026-11-10T03:00:00+00:00,Washington,Mississippi Valley State,False,Week 2,-36.77,Washington,77,64,13,correct,no_cover,23.77,Evaluated
+2,2026-11-10T03:00:00+00:00,Stanford,Rice,False,Week 2,-16.00,Stanford,91,73,18,correct,cover,2.00,Evaluated
+2,2026-11-10T04:59:00+00:00,Hawai'i,Portland,False,Week 2,-10.24,Hawai'i,66,73,-7,incorrect,no_cover,17.24,Evaluated
+2,2026-11-10T23:00:00+00:00,Florida State,Florida,False,Week 2,6.57,Florida,72,81,-9,correct,cover,2.43,Evaluated
+2,2026-11-10T23:30:00+00:00,Georgetown,Delaware State,False,Week 2,-26.29,Georgetown,83,78,5,correct,no_cover,21.29,Evaluated
+2,2026-11-10T23:30:00+00:00,Rutgers,NJIT,False,Week 2,-24.11,Rutgers,101,64,37,correct,cover,12.89,Evaluated
+2,2026-11-11T00:00:00+00:00,North Carolina,Wyoming,False,Week 2,-12.25,North Carolina,76,63,13,correct,cover,0.75,Evaluated
+2,2026-11-11T00:00:00+00:00,New Haven,Army,False,Week 2,-4.70,New Haven,63,55,8,correct,cover,3.30,Evaluated
+2,2026-11-11T00:00:00+00:00,George Washington,Elon,False,Week 2,-15.83,George Washington,69,50,19,correct,cover,3.17,Evaluated
+2,2026-11-11T00:00:00+00:00,Fordham,Iona,False,Week 2,-7.74,Fordham,78,72,6,correct,no_cover,1.74,Evaluated
+2,2026-11-11T00:00:00+00:00,Dayton,Siena,False,Week 2,-10.08,Dayton,89,99,-10,incorrect,no_cover,20.08,Evaluated
+2,2026-11-11T00:00:00+00:00,Central Michigan,Youngstown State,False,Week 2,1.21,Youngstown State,91,78,13,incorrect,no_cover,14.21,Evaluated
+2,2026-11-11T00:00:00+00:00,Wake Forest,Charleston Southern,False,Week 2,-16.90,Wake Forest,82,64,18,correct,cover,1.10,Evaluated
+2,2026-11-11T00:00:00+00:00,Duke,Michigan State,True,Week 2,-5.27,Duke,73,79,-6,incorrect,no_cover,11.27,Evaluated
+2,2026-11-11T00:00:00+00:00,Boston College,Maryland Eastern Shore,False,Week 2,-19.43,Boston College,82,54,28,correct,cover,8.57,Evaluated
+2,2026-11-11T00:00:00+00:00,Xavier,Detroit Mercy,False,Week 2,-27.12,Xavier,100,55,45,correct,cover,17.88,Evaluated
+2,2026-11-11T00:00:00+00:00,Providence,Bryant,False,Week 2,-22.47,Providence,78,55,23,correct,cover,0.53,Evaluated
+2,2026-11-11T00:00:00+00:00,Duquesne,Washington State,False,Week 2,-6.65,Duquesne,72,71,1,correct,no_cover,5.65,Evaluated
+2,2026-11-11T00:00:00+00:00,Kennesaw State,Winthrop,False,Week 2,-7.01,Kennesaw State,88,79,9,correct,cover,1.99,Evaluated
+2,2026-11-11T00:00:00+00:00,Villanova,La Salle,False,Week 2,-19.32,Villanova,80,59,21,correct,cover,1.68,Evaluated
+2,2026-11-11T00:00:00+00:00,UCF,South Alabama,False,Week 2,-14.85,UCF,76,69,7,correct,no_cover,7.85,Evaluated
+2,2026-11-11T00:00:00+00:00,Iowa,Virginia Tech,True,Week 2,-5.72,Iowa,88,93,-5,incorrect,no_cover,10.72,Evaluated
+2,2026-11-11T00:00:00+00:00,Northeastern,Harvard,False,Week 2,4.63,Harvard,74,70,4,incorrect,no_cover,8.63,Evaluated
+2,2026-11-11T00:00:00+00:00,Georgia Tech,Eastern Kentucky,False,Week 2,-13.01,Georgia Tech,85,71,14,correct,cover,0.99,Evaluated
+2,2026-11-11T00:00:00+00:00,NC State,Presbyterian,False,Week 2,-20.11,NC State,94,60,34,correct,cover,13.89,Evaluated
+2,2026-11-11T00:00:00+00:00,Troy,Loyola Marymount,False,Week 2,-2.21,Troy,74,69,5,correct,cover,2.79,Evaluated
+2,2026-11-11T00:00:00+00:00,Davidson,Bradley,False,Week 2,-8.80,Davidson,62,45,17,correct,cover,8.20,Evaluated
+2,2026-11-11T00:00:00+00:00,Georgia Southern,Mercer,False,Week 2,-3.63,Georgia Southern,91,97,-6,incorrect,no_cover,9.63,Evaluated
+2,2026-11-11T00:00:00+00:00,Rhode Island,Maine,False,Week 2,-21.30,Rhode Island,71,65,6,correct,no_cover,15.30,Evaluated
+2,2026-11-11T00:00:00+00:00,Toledo,Wright State,False,Week 2,0.76,Wright State,68,76,-8,correct,cover,7.24,Evaluated
+2,2026-11-11T00:15:00+00:00,Vanderbilt,Memphis,False,Week 2,-17.79,Vanderbilt,105,81,24,correct,cover,6.21,Evaluated
+2,2026-11-11T00:30:00+00:00,Tulane,Nicholls,False,Week 2,-4.03,Tulane,77,63,14,correct,cover,9.97,Evaluated
+2,2026-11-11T00:30:00+00:00,UT Rio Grande Valley,Texas State,False,Week 2,-3.41,UT Rio Grande Valley,65,72,-7,incorrect,no_cover,10.41,Evaluated
+2,2026-11-11T00:30:00+00:00,Middle Tennessee,Evansville,False,Week 2,-9.45,Middle Tennessee,73,68,5,correct,no_cover,4.45,Evaluated
+2,2026-11-11T01:00:00+00:00,Texas Tech,Illinois,False,Week 2,7.00,Illinois,84,78,6,incorrect,no_cover,13.00,Evaluated
+2,2026-11-11T01:00:00+00:00,Saint Louis,Northern Kentucky,False,Week 2,-20.06,Saint Louis,125,63,62,correct,cover,41.94,Evaluated
+2,2026-11-11T01:00:00+00:00,Iowa State,Southern,False,Week 2,-32.08,Iowa State,84,47,37,correct,cover,4.92,Evaluated
+2,2026-11-11T01:00:00+00:00,Baylor,Yale,False,Week 2,-13.37,Baylor,90,61,29,correct,cover,15.63,Evaluated
+2,2026-11-11T01:00:00+00:00,Murray State,Alcorn State,False,Week 2,-26.55,Murray State,94,57,37,correct,cover,10.45,Evaluated
+2,2026-11-11T01:00:00+00:00,South Dakota,Houston Christian,False,Week 2,-5.01,South Dakota,76,87,-11,incorrect,no_cover,16.01,Evaluated
+2,2026-11-11T01:00:00+00:00,SMU,Prairie View A&M,False,Week 2,-22.48,SMU,98,63,35,correct,cover,12.52,Evaluated
+2,2026-11-11T01:00:00+00:00,Lipscomb,Belmont,False,Week 2,6.51,Belmont,88,75,13,incorrect,no_cover,19.51,Evaluated
+2,2026-11-11T01:00:00+00:00,Northern Iowa,Green Bay,False,Week 2,-8.61,Northern Iowa,89,76,13,correct,cover,4.39,Evaluated
+2,2026-11-11T01:00:00+00:00,Arkansas State,UT Martin,False,Week 2,-11.20,Arkansas State,65,82,-17,incorrect,no_cover,28.20,Evaluated
+2,2026-11-11T01:30:00+00:00,Wisconsin,Fairfield,False,Week 2,-21.24,Wisconsin,89,42,47,correct,cover,25.76,Evaluated
+2,2026-11-11T01:30:00+00:00,Ole Miss,SE Louisiana,False,Week 2,-24.56,Ole Miss,91,51,40,correct,cover,15.44,Evaluated
+2,2026-11-11T02:00:00+00:00,Colorado,San Diego,False,Week 2,-17.56,Colorado,83,75,8,correct,no_cover,9.56,Evaluated
+2,2026-11-11T02:00:00+00:00,Arizona,Northern Arizona,False,Week 2,-33.98,Arizona,90,59,31,correct,no_cover,2.98,Evaluated
+2,2026-11-11T02:00:00+00:00,Kansas State,Creighton,False,Week 2,-0.57,Kansas State,89,82,7,correct,cover,6.43,Evaluated
+2,2026-11-11T02:00:00+00:00,Utah State,Utah Tech,False,Week 2,-27.73,Utah State,118,86,32,correct,cover,4.27,Evaluated
+2,2026-11-11T02:00:00+00:00,New Mexico,Little Rock,False,Week 2,-27.01,New Mexico,94,69,25,correct,no_cover,2.01,Evaluated
+2,2026-11-11T02:00:00+00:00,BYU,Queens University,False,Week 2,-28.10,BYU,98,82,16,correct,no_cover,12.10,Evaluated
+2,2026-11-11T02:00:00+00:00,Arizona State,Hofstra,False,Week 2,-10.85,Arizona State,85,63,22,correct,cover,11.15,Evaluated
+2,2026-11-11T02:00:00+00:00,Utah,Weber State,False,Week 2,-15.91,Utah,85,64,21,correct,cover,5.09,Evaluated
+2,2026-11-11T02:00:00+00:00,Virginia,Bucknell,False,Week 2,-34.92,Virginia,95,61,34,correct,no_cover,0.92,Evaluated
+2,2026-11-11T02:00:00+00:00,TCU,UL Monroe,False,Week 2,-35.62,TCU,100,92,8,correct,no_cover,27.62,Evaluated
+2,2026-11-11T02:00:00+00:00,Fresno State,Georgia State,False,Week 2,-9.77,Fresno State,95,92,3,correct,no_cover,6.77,Evaluated
+2,2026-11-11T02:58:00+00:00,Kansas,Kentucky,True,Week 2,-6.85,Kansas,89,69,20,correct,cover,13.15,Evaluated
+2,2026-11-11T03:00:00+00:00,San Francisco,Montana,False,Week 2,-10.41,San Francisco,63,58,5,correct,no_cover,5.41,Evaluated
+2,2026-11-11T16:30:00+00:00,East Texas A&M,Fairleigh Dickinson,False,Week 2,-12.96,East Texas A&M,76,80,-4,incorrect,no_cover,16.96,Evaluated
+2,2026-11-11T17:00:00+00:00,Kansas City,Florida A&M,True,Week 2,-3.88,Kansas City,87,65,22,correct,cover,18.12,Evaluated
+2,2026-11-11T18:00:00+00:00,UAlbany,Dartmouth,False,Week 2,0.89,Dartmouth,76,85,-9,correct,cover,8.11,Evaluated
+2,2026-11-11T19:00:00+00:00,UC Davis,Incarnate Word,False,Week 2,-10.72,UC Davis,81,69,12,correct,cover,1.28,Evaluated
+2,2026-11-11T20:00:00+00:00,Air Force,Loyola Chicago,False,Week 2,9.95,Loyola Chicago,107,93,14,incorrect,no_cover,23.95,Evaluated
+2,2026-11-11T20:00:00+00:00,South Florida,Saint Joseph's,True,Week 2,-8.17,South Florida,80,83,-3,incorrect,no_cover,11.17,Evaluated
+2,2026-11-11T21:00:00+00:00,East Carolina,North Carolina A&T,False,Week 2,-8.61,East Carolina,72,67,5,correct,no_cover,3.61,Evaluated
+2,2026-11-11T22:00:00+00:00,San Diego State,Bethune-Cookman,False,Week 2,-22.24,San Diego State,88,75,13,correct,no_cover,9.24,Evaluated
+2,2026-11-11T22:58:00+00:00,Navy,Pennsylvania,False,Week 2,2.08,Pennsylvania,81,76,5,incorrect,no_cover,7.08,Evaluated
+2,2026-11-11T23:00:00+00:00,VMI,North Carolina Central,False,Week 2,0.18,North Carolina Central,65,51,14,incorrect,no_cover,14.18,Evaluated
+2,2026-11-11T23:30:00+00:00,Temple,Charleston,False,Week 2,-0.33,Temple,81,91,-10,incorrect,no_cover,10.33,Evaluated
+2,2026-11-11T23:30:00+00:00,IU Indianapolis,Southern Indiana,False,Week 2,-4.87,IU Indianapolis,74,70,4,correct,no_cover,0.87,Evaluated
+2,2026-11-12T00:00:00+00:00,Drexel,American University,False,Week 2,-3.86,Drexel,64,66,-2,incorrect,no_cover,5.86,Evaluated
+2,2026-11-12T00:00:00+00:00,St. Bonaventure,Cornell,False,Week 2,-8.35,St. Bonaventure,88,64,24,correct,cover,15.65,Evaluated
+2,2026-11-12T00:00:00+00:00,Massachusetts,UMass Lowell,False,Week 2,-6.54,Massachusetts,72,62,10,correct,cover,3.46,Evaluated
+2,2026-11-12T00:00:00+00:00,Michigan,Marquette,False,Week 2,-8.98,Michigan,84,70,14,correct,cover,5.02,Evaluated
+2,2026-11-12T00:00:00+00:00,Notre Dame,South Carolina State,False,Week 2,-21.28,Notre Dame,99,59,40,correct,cover,18.72,Evaluated
+2,2026-11-12T00:00:00+00:00,South Carolina,Saint Peter's,False,Week 2,-17.90,South Carolina,77,41,36,correct,cover,18.10,Evaluated
+2,2026-11-12T00:00:00+00:00,Holy Cross,Furman,False,Week 2,15.24,Furman,67,80,-13,correct,no_cover,2.24,Evaluated
+2,2026-11-12T00:00:00+00:00,East Tennessee State,Campbell,False,Week 2,-9.56,East Tennessee State,68,53,15,correct,cover,5.44,Evaluated
+2,2026-11-12T00:00:00+00:00,St. John's,Colgate,False,Week 2,-26.74,St. John's,90,59,31,correct,cover,4.26,Evaluated
+2,2026-11-12T00:00:00+00:00,Norfolk State,Old Dominion,False,Week 2,5.97,Old Dominion,60,71,-11,correct,cover,5.03,Evaluated
+2,2026-11-12T00:00:00+00:00,Princeton,Stony Brook,False,Week 2,-3.28,Princeton,69,59,10,correct,cover,6.72,Evaluated
+2,2026-11-12T00:00:00+00:00,Delaware,James Madison,False,Week 2,0.22,James Madison,61,71,-10,correct,cover,9.78,Evaluated
+2,2026-11-12T00:00:00+00:00,VCU,NJIT,False,Week 2,-26.78,VCU,87,49,38,correct,cover,11.22,Evaluated
+2,2026-11-12T00:00:00+00:00,Florida Atlantic,William & Mary,False,Week 2,-1.81,Florida Atlantic,95,90,5,correct,cover,3.19,Evaluated
+2,2026-11-12T00:00:00+00:00,West Georgia,UNC Asheville,False,Week 2,0.25,UNC Asheville,70,73,-3,correct,cover,2.75,Evaluated
+2,2026-11-12T00:00:00+00:00,Indiana State,Milwaukee,False,Week 2,-8.29,Indiana State,73,82,-9,incorrect,no_cover,17.29,Evaluated
+2,2026-11-12T00:00:00+00:00,UNC Wilmington,Kent State,False,Week 2,-7.40,UNC Wilmington,91,73,18,correct,cover,10.60,Evaluated
+2,2026-11-12T00:30:00+00:00,Sam Houston,Pepperdine,False,Week 2,-10.43,Sam Houston,85,77,8,correct,no_cover,2.43,Evaluated
+2,2026-11-12T01:00:00+00:00,Tulsa,Oral Roberts,False,Week 2,-23.44,Tulsa,80,71,9,correct,no_cover,14.44,Evaluated
+2,2026-11-12T01:00:00+00:00,Houston,Jacksonville State,False,Week 2,-29.44,Houston,92,46,46,correct,cover,16.56,Evaluated
+2,2026-11-12T01:00:00+00:00,Southern Miss,Jackson State,False,Week 2,-12.04,Southern Miss,84,80,4,correct,no_cover,8.04,Evaluated
+2,2026-11-12T01:00:00+00:00,Abilene Christian,Stephen F. Austin,False,Week 2,5.64,Stephen F. Austin,71,76,-5,correct,no_cover,0.64,Evaluated
+2,2026-11-12T01:00:00+00:00,North Texas,Santa Clara,False,Week 2,3.00,Santa Clara,71,76,-5,correct,cover,2.00,Evaluated
+2,2026-11-12T01:00:00+00:00,Arkansas,Robert Morris,False,Week 2,-24.87,Arkansas,76,53,23,correct,no_cover,1.87,Evaluated
+2,2026-11-12T01:00:00+00:00,South Dakota State,Valparaiso,False,Week 2,-2.20,South Dakota State,81,69,12,correct,cover,9.80,Evaluated
+2,2026-11-12T02:00:00+00:00,UC Santa Barbara,Nevada,False,Week 2,4.99,Nevada,76,63,13,incorrect,no_cover,17.99,Evaluated
+2,2026-11-12T02:00:00+00:00,Grand Canyon,Cal Poly,False,Week 2,-14.34,Grand Canyon,99,71,28,correct,cover,13.66,Evaluated
+2,2026-11-12T02:00:00+00:00,Nebraska,Lindenwood,False,Week 2,-31.99,Nebraska,94,60,34,correct,cover,2.01,Evaluated
+2,2026-11-12T02:00:00+00:00,Colorado State,Portland State,False,Week 2,-13.66,Colorado State,87,71,16,correct,cover,2.34,Evaluated
+2,2026-11-12T02:00:00+00:00,UCLA,Arkansas-Pine Bluff,False,Week 2,-42.17,UCLA,106,37,69,correct,cover,26.83,Evaluated
+2,2026-11-12T02:00:00+00:00,Boise State,Oakland,False,Week 2,-18.27,Boise State,111,79,32,correct,cover,13.73,Evaluated
+2,2026-11-12T03:00:00+00:00,Oregon,Mississippi Valley State,False,Week 2,-37.45,Oregon,100,66,34,correct,no_cover,3.45,Evaluated
+2,2026-11-12T03:00:00+00:00,Seattle U,UTSA,False,Week 2,-21.18,Seattle U,59,86,-27,incorrect,no_cover,48.18,Evaluated
+2,2026-11-12T03:00:00+00:00,California Baptist,Chicago State,False,Week 2,-12.47,California Baptist,62,81,-19,incorrect,no_cover,31.47,Evaluated
+2,2026-11-12T03:00:00+00:00,Long Beach State,Pacific,False,Week 2,5.31,Pacific,62,59,3,incorrect,no_cover,8.31,Evaluated
+2,2026-11-12T04:00:00+00:00,California,USC,False,Week 2,0.40,USC,65,77,-12,correct,cover,11.60,Evaluated
+2,2026-11-12T20:00:00+00:00,George Mason,Kansas City,True,Week 2,-16.74,George Mason,76,68,8,correct,no_cover,8.74,Evaluated
+2,2026-11-12T23:00:00+00:00,Coppin State,Bradley,True,Week 2,16.88,Bradley,54,56,-2,correct,no_cover,14.88,Evaluated
+2,2026-11-12T23:00:00+00:00,UMBC,Morgan State,False,Week 2,-8.95,UMBC,85,70,15,correct,cover,6.05,Evaluated
+2,2026-11-12T23:30:00+00:00,Indiana,Tennessee Tech,False,Week 2,-24.99,Indiana,90,66,24,correct,no_cover,0.99,Evaluated
+2,2026-11-12T23:30:00+00:00,Penn State,Mercyhurst,False,Week 2,-17.82,Penn State,72,57,15,correct,no_cover,2.82,Evaluated
+2,2026-11-13T00:00:00+00:00,Bowling Green,Niagara,False,Week 2,-16.47,Bowling Green,88,76,12,correct,no_cover,4.47,Evaluated
+2,2026-11-13T00:00:00+00:00,Brown,Canisius,False,Week 2,-15.29,Brown,81,86,-5,incorrect,no_cover,20.29,Evaluated
+2,2026-11-13T00:00:00+00:00,Howard,Stetson,False,Week 2,-13.32,Howard,75,62,13,correct,no_cover,0.32,Evaluated
+2,2026-11-13T00:00:00+00:00,West Virginia,Mercer,False,Week 2,-22.52,West Virginia,75,61,14,correct,no_cover,8.52,Evaluated
+2,2026-11-13T00:00:00+00:00,Western Illinois,Cal State Bakersfield,False,Week 2,6.34,Cal State Bakersfield,83,91,-8,correct,cover,1.66,Evaluated
+2,2026-11-13T00:00:00+00:00,Sacred Heart,Central Connecticut,False,Week 2,-5.88,Sacred Heart,75,79,-4,incorrect,no_cover,9.88,Evaluated
+2,2026-11-13T00:00:00+00:00,Quinnipiac,Monmouth,False,Week 2,-1.29,Quinnipiac,70,74,-4,incorrect,no_cover,5.29,Evaluated
+2,2026-11-13T00:00:00+00:00,Towson,Loyola Maryland,False,Week 2,-12.44,Towson,90,60,30,correct,cover,17.56,Evaluated
+2,2026-11-13T00:00:00+00:00,High Point,Southern Utah,False,Week 2,-17.94,High Point,88,59,29,correct,cover,11.06,Evaluated
+2,2026-11-13T00:00:00+00:00,Rhode Island,Maryland Eastern Shore,False,Week 2,-22.23,Rhode Island,67,47,20,correct,no_cover,2.23,Evaluated
+2,2026-11-13T00:00:00+00:00,Purdue Fort Wayne,Western Michigan,False,Week 2,-4.43,Purdue Fort Wayne,59,81,-22,incorrect,no_cover,26.43,Evaluated
+2,2026-11-13T01:00:00+00:00,Minnesota,Southern,False,Week 2,-23.70,Minnesota,91,61,30,correct,cover,6.30,Evaluated
+2,2026-11-13T01:00:00+00:00,Southern Illinois,Richmond,False,Week 2,2.89,Richmond,80,70,10,incorrect,no_cover,12.89,Evaluated
+2,2026-11-13T01:00:00+00:00,Alabama A&M,West Florida,False,Week 2,5.12,West Florida,85,83,2,incorrect,no_cover,7.12,Evaluated
+2,2026-11-13T01:00:00+00:00,Texas A&M,Oklahoma State,False,Week 2,-7.02,Texas A&M,88,69,19,correct,cover,11.98,Evaluated
+2,2026-11-13T01:00:00+00:00,South Alabama,Loyola Marymount,True,Week 2,1.40,Loyola Marymount,79,72,7,incorrect,no_cover,8.40,Evaluated
+2,2026-11-13T02:00:00+00:00,UTEP,New Mexico State,False,Week 2,-3.66,UTEP,60,58,2,correct,no_cover,1.66,Evaluated
+2,2026-11-13T02:00:00+00:00,BYU,Montana State,False,Week 2,-22.05,BYU,86,71,15,correct,no_cover,7.05,Evaluated
+2,2026-11-13T03:00:00+00:00,San José State,UC Riverside,False,Week 2,-6.82,San José State,75,80,-5,incorrect,no_cover,11.82,Evaluated
+2,2026-11-13T20:00:00+00:00,Cleveland State,West Florida,True,Week 2,12.90,West Florida,69,67,2,incorrect,no_cover,14.90,Evaluated
+2,2026-11-13T22:00:00+00:00,Florida State,Texas A&M-Corpus Christi,False,Week 2,-19.59,Florida State,84,60,24,correct,cover,4.41,Evaluated
+2,2026-11-13T22:00:00+00:00,Miami,North Alabama,False,Week 2,-22.81,Miami,94,52,42,correct,cover,19.19,Evaluated
+2,2026-11-13T23:00:00+00:00,Clemson,Georgetown,False,Week 2,-4.07,Clemson,78,85,-7,incorrect,no_cover,11.07,Evaluated
+2,2026-11-13T23:00:00+00:00,Rutgers,Bryant,False,Week 2,-20.22,Rutgers,72,51,21,correct,cover,0.78,Evaluated
+2,2026-11-13T23:30:00+00:00,Butler,Pittsburgh,False,Week 2,-4.02,Butler,64,76,-12,incorrect,no_cover,16.02,Evaluated
+2,2026-11-14T00:00:00+00:00,Illinois,Sam Houston,False,Week 2,-28.93,Illinois,108,86,22,correct,no_cover,6.93,Evaluated
+2,2026-11-14T00:00:00+00:00,George Washington,Harvard,False,Week 2,-14.31,George Washington,85,57,28,correct,cover,13.69,Evaluated
+2,2026-11-14T00:00:00+00:00,Fordham,Long Island University,False,Week 2,-7.15,Fordham,80,58,22,correct,cover,14.85,Evaluated
+2,2026-11-14T00:00:00+00:00,Tennessee,Tennessee State,False,Week 2,-29.46,Tennessee,83,78,5,correct,no_cover,24.46,Evaluated
+2,2026-11-14T00:00:00+00:00,North Carolina,Georgia,False,Week 2,-8.00,North Carolina,70,78,-8,incorrect,no_cover,16.00,Evaluated
+2,2026-11-14T00:00:00+00:00,Florida,Merrimack,False,Week 2,-30.18,Florida,83,54,29,correct,no_cover,1.18,Evaluated
+2,2026-11-14T00:00:00+00:00,Purdue,Ohio,False,Week 2,-21.87,Purdue,80,62,18,correct,no_cover,3.87,Evaluated
+2,2026-11-14T00:00:00+00:00,Charlotte,App State,False,Week 2,-3.05,Charlotte,60,66,-6,incorrect,no_cover,9.05,Evaluated
+2,2026-11-14T00:00:00+00:00,Michigan State,Northern Iowa,False,Week 2,-22.40,Michigan State,106,72,34,correct,cover,11.60,Evaluated
+2,2026-11-14T00:00:00+00:00,Lehigh,Marist,False,Week 2,1.02,Marist,65,60,5,incorrect,no_cover,6.02,Evaluated
+2,2026-11-14T00:00:00+00:00,Florida Gulf Coast,Florida International,False,Week 2,-2.25,Florida Gulf Coast,80,89,-9,incorrect,no_cover,11.25,Evaluated
+2,2026-11-14T00:00:00+00:00,Vanderbilt,Prairie View A&M,False,Week 2,-33.74,Vanderbilt,89,62,27,correct,no_cover,6.74,Evaluated
+2,2026-11-14T00:00:00+00:00,Kentucky,Northern Arizona,False,Week 2,-26.51,Kentucky,78,77,1,correct,no_cover,25.51,Evaluated
+2,2026-11-14T00:00:00+00:00,Hofstra,Iona,False,Week 2,-10.07,Hofstra,62,59,3,correct,no_cover,7.07,Evaluated
+2,2026-11-14T00:00:00+00:00,Elon,Chattanooga,False,Week 2,-2.48,Elon,70,77,-7,incorrect,no_cover,9.48,Evaluated
+2,2026-11-14T00:00:00+00:00,Northeastern,Yale,False,Week 2,9.86,Yale,84,73,11,incorrect,no_cover,20.86,Evaluated
+2,2026-11-14T00:00:00+00:00,Virginia Tech,Mount St. Mary's,False,Week 2,-23.53,Virginia Tech,82,62,20,correct,no_cover,3.53,Evaluated
+2,2026-11-14T00:00:00+00:00,NC State,Troy,False,Week 2,-17.35,NC State,81,62,19,correct,cover,1.65,Evaluated
+2,2026-11-14T00:00:00+00:00,Bucknell,Columbia,False,Week 2,5.55,Columbia,59,77,-18,correct,cover,12.45,Evaluated
+2,2026-11-14T00:30:00+00:00,UConn,Ohio State,False,Week 2,-10.53,UConn,84,68,16,correct,cover,5.47,Evaluated
+2,2026-11-14T00:30:00+00:00,Middle Tennessee,Southeast Missouri State,False,Week 2,-3.48,Middle Tennessee,88,75,13,correct,cover,9.52,Evaluated
+2,2026-11-14T00:30:00+00:00,Drake,South Dakota,False,Week 2,-11.91,Drake,81,72,9,correct,no_cover,2.91,Evaluated
+2,2026-11-14T00:30:00+00:00,Liberty,North Carolina Central,False,Week 2,-14.20,Liberty,74,66,8,correct,no_cover,6.20,Evaluated
+2,2026-11-14T01:00:00+00:00,Maryland,Virginia,False,Week 2,8.20,Virginia,83,87,-4,correct,no_cover,4.20,Evaluated
+2,2026-11-14T01:00:00+00:00,Duke,SIU Edwardsville,False,Week 2,-36.08,Duke,90,47,43,correct,cover,6.92,Evaluated
+2,2026-11-14T01:00:00+00:00,Oklahoma,Fairleigh Dickinson,False,Week 2,-26.15,Oklahoma,74,58,16,correct,no_cover,10.15,Evaluated
+2,2026-11-14T01:00:00+00:00,Tarleton State,Alcorn State,False,Week 2,-14.91,Tarleton State,73,69,4,correct,no_cover,10.91,Evaluated
+2,2026-11-14T01:00:00+00:00,UCF,Georgia Southern,False,Week 2,-15.59,UCF,84,70,14,correct,no_cover,1.59,Evaluated
+2,2026-11-14T01:00:00+00:00,TCU,Milwaukee,False,Week 2,-29.01,TCU,76,64,12,correct,no_cover,17.01,Evaluated
+2,2026-11-14T01:00:00+00:00,Arkansas,Central Arkansas,False,Week 2,-21.67,Arkansas,79,66,13,correct,no_cover,8.67,Evaluated
+2,2026-11-14T01:00:00+00:00,Samford,Wright State,False,Week 2,2.88,Wright State,66,90,-24,correct,cover,21.12,Evaluated
+2,2026-11-14T01:00:00+00:00,Texas State,Southern Miss,False,Week 2,-5.60,Texas State,85,65,20,correct,cover,14.40,Evaluated
+2,2026-11-14T01:00:00+00:00,Murray State,Texas Southern,False,Week 2,-22.40,Murray State,99,78,21,correct,no_cover,1.40,Evaluated
+2,2026-11-14T01:00:00+00:00,North Dakota State,Illinois State,False,Week 2,5.70,Illinois State,82,81,1,incorrect,no_cover,6.70,Evaluated
+2,2026-11-14T01:45:00+00:00,Omaha,Lindenwood,False,Week 2,-6.06,Omaha,67,56,11,correct,cover,4.94,Evaluated
+2,2026-11-14T02:00:00+00:00,SMU,Ball State,False,Week 2,-21.14,SMU,90,65,25,correct,cover,3.86,Evaluated
+2,2026-11-14T02:00:00+00:00,Auburn,Arizona,False,Week 2,0.26,Arizona,69,80,-11,correct,cover,10.74,Evaluated
+2,2026-11-14T02:00:00+00:00,Northwestern,DePaul,False,Week 2,-6.85,Northwestern,47,67,-20,incorrect,no_cover,26.85,Evaluated
+2,2026-11-14T02:00:00+00:00,Mississippi State,Xavier,True,Week 2,2.68,Xavier,63,81,-18,correct,cover,15.32,Evaluated
+2,2026-11-14T02:00:00+00:00,Alabama,Seton Hall,False,Week 2,-14.04,Alabama,82,76,6,correct,no_cover,8.04,Evaluated
+2,2026-11-14T02:00:00+00:00,UNLV,Stanford,False,Week 2,-0.30,UNLV,76,68,8,correct,cover,7.70,Evaluated
+2,2026-11-14T02:00:00+00:00,Idaho,Cal Poly,False,Week 2,-3.61,Idaho,74,83,-9,incorrect,no_cover,12.61,Evaluated
+2,2026-11-14T02:00:00+00:00,Arizona State,UL Monroe,False,Week 2,-27.77,Arizona State,92,62,30,correct,cover,2.23,Evaluated
+2,2026-11-14T02:30:00+00:00,Oregon State,Mississippi Valley State,False,Week 2,-35.27,Oregon State,81,65,16,correct,no_cover,19.27,Evaluated
+2,2026-11-14T02:30:00+00:00,San Diego,Chicago State,False,Week 2,-11.95,San Diego,87,67,20,correct,cover,8.05,Evaluated
+2,2026-11-14T03:00:00+00:00,Utah State,UC San Diego,False,Week 2,-15.79,Utah State,120,82,38,correct,cover,22.21,Evaluated
+2,2026-11-14T03:00:00+00:00,Saint Mary's,UIC,False,Week 2,-13.36,Saint Mary's,84,61,23,correct,cover,9.64,Evaluated
+2,2026-11-14T03:00:00+00:00,Portland,East Texas A&M,False,Week 2,-4.27,Portland,88,94,-6,incorrect,no_cover,10.27,Evaluated
+2,2026-11-14T03:30:00+00:00,California Baptist,Arkansas-Pine Bluff,False,Week 2,-17.42,California Baptist,74,60,14,correct,no_cover,3.42,Evaluated
+2,2026-11-14T17:00:00+00:00,Akron,Tulane,False,Week 2,-15.86,Akron,65,63,2,correct,no_cover,13.86,Evaluated
+2,2026-11-14T18:00:00+00:00,Army,St. Thomas-Minnesota,False,Week 2,9.33,St. Thomas-Minnesota,79,77,2,incorrect,no_cover,11.33,Evaluated
+2,2026-11-14T18:00:00+00:00,Youngstown State,Marshall,False,Week 2,-2.37,Youngstown State,74,71,3,correct,cover,0.63,Evaluated
+2,2026-11-14T18:00:00+00:00,George Mason,Bradley,True,Week 2,-6.15,George Mason,61,62,-1,incorrect,no_cover,7.15,Evaluated
+2,2026-11-14T18:00:00+00:00,Maine,Drexel,False,Week 2,4.01,Drexel,64,66,-2,correct,no_cover,2.01,Evaluated
+2,2026-11-14T18:30:00+00:00,Colorado State,Loyola Chicago,False,Week 2,-10.81,Colorado State,58,73,-15,incorrect,no_cover,25.81,Evaluated
+2,2026-11-14T19:00:00+00:00,South Carolina,Gardner-Webb,False,Week 2,-26.50,South Carolina,79,62,17,correct,no_cover,9.50,Evaluated
+2,2026-11-14T19:00:00+00:00,Evansville,Miami (OH),False,Week 2,8.78,Miami (OH),78,86,-8,correct,no_cover,0.78,Evaluated
+2,2026-11-14T19:00:00+00:00,North Florida,The Citadel,False,Week 2,-6.52,North Florida,74,77,-3,incorrect,no_cover,9.52,Evaluated
+2,2026-11-14T19:00:00+00:00,Bellarmine,Northern Illinois,False,Week 2,-3.75,Bellarmine,64,72,-8,incorrect,no_cover,11.75,Evaluated
+2,2026-11-14T19:00:00+00:00,Texas Tech,Stonehill,False,Week 2,-32.02,Texas Tech,88,37,51,correct,cover,18.98,Evaluated
+2,2026-11-14T19:00:00+00:00,South Florida,Coppin State,False,Week 2,-30.23,South Florida,73,63,10,correct,no_cover,20.23,Evaluated
+2,2026-11-14T19:00:00+00:00,Queens University,Wofford,False,Week 2,-4.90,Queens University,97,92,5,correct,cover,0.10,Evaluated
+2,2026-11-14T19:00:00+00:00,Stephen F. Austin,Rice,False,Week 2,-8.87,Stephen F. Austin,78,81,-3,incorrect,no_cover,11.87,Evaluated
+2,2026-11-14T19:30:00+00:00,Winthrop,Jackson State,False,Week 2,-11.86,Winthrop,72,76,-4,incorrect,no_cover,15.86,Evaluated
+2,2026-11-14T20:00:00+00:00,Denver,Wyoming,False,Week 2,5.35,Wyoming,53,76,-23,correct,cover,17.65,Evaluated
+2,2026-11-14T20:30:00+00:00,Northern Kentucky,Central Michigan,False,Week 2,-6.68,Northern Kentucky,57,68,-11,incorrect,no_cover,17.68,Evaluated
+2,2026-11-14T20:30:00+00:00,Gonzaga,LSU,False,Week 2,-12.06,Gonzaga,80,81,-1,incorrect,no_cover,13.06,Evaluated
+2,2026-11-14T21:00:00+00:00,St. Bonaventure,Lafayette,False,Week 2,-17.61,St. Bonaventure,81,58,23,correct,cover,5.39,Evaluated
+2,2026-11-14T21:00:00+00:00,Wake Forest,Southern Utah,False,Week 2,-16.75,Wake Forest,89,51,38,correct,cover,21.25,Evaluated
+2,2026-11-14T21:00:00+00:00,Northern Colorado,South Dakota State,False,Week 2,-0.01,Northern Colorado,46,71,-25,incorrect,no_cover,25.01,Evaluated
+2,2026-11-14T21:00:00+00:00,Old Dominion,Longwood,False,Week 2,-6.96,Old Dominion,80,74,6,correct,no_cover,0.96,Evaluated
+2,2026-11-14T21:00:00+00:00,Georgia Tech,UNC Asheville,False,Week 2,-12.87,Georgia Tech,75,74,1,correct,no_cover,11.87,Evaluated
+2,2026-11-14T21:00:00+00:00,Navy,Hampton,False,Week 2,-1.95,Navy,58,56,2,correct,cover,0.05,Evaluated
+2,2026-11-14T21:00:00+00:00,East Carolina,Delaware State,False,Week 2,-14.73,East Carolina,72,48,24,correct,cover,9.27,Evaluated
+2,2026-11-14T21:00:00+00:00,Detroit Mercy,Toledo,False,Week 2,9.14,Toledo,72,85,-13,correct,cover,3.86,Evaluated
+2,2026-11-14T21:30:00+00:00,Campbell,South Carolina Upstate,False,Week 2,-9.30,Campbell,93,77,16,correct,cover,6.70,Evaluated
+2,2026-11-14T22:00:00+00:00,California,Utah Tech,False,Week 2,-17.10,California,79,73,6,correct,no_cover,11.10,Evaluated
+2,2026-11-14T22:00:00+00:00,Oakland,Northern Iowa,False,Week 2,3.19,Northern Iowa,80,76,4,incorrect,no_cover,7.19,Evaluated
+2,2026-11-14T22:00:00+00:00,Loyola Maryland,Morgan State,True,Week 2,-0.98,Loyola Maryland,61,63,-2,incorrect,no_cover,2.98,Evaluated
+2,2026-11-14T23:00:00+00:00,Providence,Colorado,False,Week 2,-4.26,Providence,67,53,14,correct,cover,9.74,Evaluated
+2,2026-11-14T23:00:00+00:00,North Texas,South Alabama,False,Week 2,-11.08,North Texas,66,65,1,correct,no_cover,10.08,Evaluated
+2,2026-11-14T23:00:00+00:00,Le Moyne,Manhattan,False,Week 2,-1.69,Le Moyne,76,62,14,correct,cover,12.31,Evaluated
+2,2026-11-14T23:00:00+00:00,Fresno State,UC Riverside,False,Week 2,-7.03,Fresno State,89,80,9,correct,cover,1.97,Evaluated
+2,2026-11-14T23:30:00+00:00,Saint Joseph's,Pennsylvania,False,Week 2,-8.80,Saint Joseph's,83,77,6,correct,no_cover,2.80,Evaluated
+2,2026-11-15T00:00:00+00:00,Siena,Brown,False,Week 2,-8.05,Siena,79,74,5,correct,no_cover,3.05,Evaluated
+2,2026-11-15T00:00:00+00:00,Charleston Southern,West Georgia,False,Week 2,-6.89,Charleston Southern,92,68,24,correct,cover,17.11,Evaluated
+2,2026-11-15T00:00:00+00:00,UT Arlington,UT Rio Grande Valley,False,Week 2,-2.95,UT Arlington,85,77,8,correct,cover,5.05,Evaluated
+2,2026-11-15T00:00:00+00:00,Villanova,Rider,False,Week 2,-31.94,Villanova,99,62,37,correct,cover,5.06,Evaluated
+2,2026-11-15T00:00:00+00:00,San Francisco,Portland State,False,Week 2,-9.88,San Francisco,68,84,-16,incorrect,no_cover,25.88,Evaluated
+2,2026-11-15T00:00:00+00:00,Western Carolina,Lipscomb,False,Week 2,-6.17,Western Carolina,68,75,-7,incorrect,no_cover,13.17,Evaluated
+2,2026-11-15T00:00:00+00:00,Wichita State,Austin Peay,False,Week 2,-11.40,Wichita State,76,60,16,correct,cover,4.60,Evaluated
+2,2026-11-15T00:00:00+00:00,Davidson,Howard,False,Week 2,-10.60,Davidson,58,64,-6,incorrect,no_cover,16.60,Evaluated
+2,2026-11-15T00:00:00+00:00,Fairfield,NJIT,False,Week 2,-10.47,Fairfield,63,60,3,correct,no_cover,7.47,Evaluated
+2,2026-11-15T00:00:00+00:00,Jacksonville State,UAB,False,Week 2,-1.32,Jacksonville State,71,68,3,correct,cover,1.68,Evaluated
+2,2026-11-15T00:30:00+00:00,Duquesne,Binghamton,False,Week 2,-16.69,Duquesne,71,58,13,correct,no_cover,3.69,Evaluated
+2,2026-11-15T00:30:00+00:00,Dayton,Cincinnati,False,Week 2,4.40,Cincinnati,72,95,-23,correct,cover,18.60,Evaluated
+2,2026-11-15T00:30:00+00:00,Morehead State,IU Indianapolis,False,Week 2,0.43,IU Indianapolis,79,75,4,incorrect,no_cover,4.43,Evaluated
+2,2026-11-15T00:30:00+00:00,Towson,UMBC,False,Week 2,-6.33,Towson,68,42,26,correct,cover,19.67,Evaluated
+2,2026-11-15T01:00:00+00:00,Sacramento State,UC Davis,False,Week 2,-2.16,Sacramento State,56,75,-19,incorrect,no_cover,21.16,Evaluated
+2,2026-11-15T01:00:00+00:00,Grand Canyon,UL Monroe,False,Week 2,-26.62,Grand Canyon,88,52,36,correct,cover,9.38,Evaluated
+2,2026-11-15T01:00:00+00:00,Nicholls,Louisiana Tech,False,Week 2,2.21,Louisiana Tech,71,68,3,incorrect,no_cover,5.21,Evaluated
+2,2026-11-15T01:00:00+00:00,Little Rock,Northwestern State,False,Week 2,-6.05,Little Rock,84,83,1,correct,no_cover,5.05,Evaluated
+2,2026-11-15T01:30:00+00:00,Belmont,Furman,False,Week 2,-6.63,Belmont,72,62,10,correct,cover,3.37,Evaluated
+2,2026-11-15T02:00:00+00:00,North Dakota,Montana,False,Week 2,0.13,Montana,71,80,-9,correct,cover,8.87,Evaluated
+2,2026-11-15T03:00:00+00:00,Nevada,Utah Valley,False,Week 2,-11.90,Nevada,71,73,-2,incorrect,no_cover,13.90,Evaluated
+2,2026-11-15T03:00:00+00:00,Santa Clara,New Mexico,False,Week 2,1.08,New Mexico,90,85,5,incorrect,no_cover,6.08,Evaluated
+2,2026-11-15T17:00:00+00:00,Central Connecticut,Quinnipiac,False,Week 2,4.96,Quinnipiac,72,67,5,incorrect,no_cover,9.96,Evaluated
+2,2026-11-15T18:00:00+00:00,Iowa State,Niagara,False,Week 2,-37.74,Iowa State,66,45,21,correct,no_cover,16.74,Evaluated
+2,2026-11-15T18:00:00+00:00,American University,Harvard,False,Week 2,1.83,Harvard,70,64,6,incorrect,no_cover,7.83,Evaluated
+2,2026-11-15T18:00:00+00:00,Nebraska,Boise State,True,Week 2,-5.87,Nebraska,102,75,27,correct,cover,21.13,Evaluated
+2,2026-11-15T18:00:00+00:00,Georgia State,Norfolk State,False,Week 2,-7.32,Georgia State,78,53,25,correct,cover,17.68,Evaluated
+2,2026-11-15T18:00:00+00:00,Boston University,Dartmouth,False,Week 2,-4.33,Boston University,90,75,15,correct,cover,10.67,Evaluated
+2,2026-11-15T18:00:00+00:00,Memphis,Louisville,False,Week 2,7.24,Louisville,98,78,20,incorrect,no_cover,27.24,Evaluated
+2,2026-11-15T18:00:00+00:00,Delaware,Colgate,False,Week 2,-2.79,Delaware,64,58,6,correct,cover,3.21,Evaluated
+2,2026-11-15T18:30:00+00:00,Boston College,New Hampshire,False,Week 2,-17.56,Boston College,67,55,12,correct,no_cover,5.56,Evaluated
+2,2026-11-15T19:00:00+00:00,Charleston,South Carolina State,False,Week 2,-13.22,Charleston,90,66,24,correct,cover,10.78,Evaluated
+2,2026-11-15T19:00:00+00:00,La Salle,Temple,False,Week 2,-1.77,La Salle,71,84,-13,incorrect,no_cover,14.77,Evaluated
+2,2026-11-15T19:00:00+00:00,Holy Cross,UAlbany,False,Week 2,3.03,UAlbany,60,62,-2,correct,no_cover,1.03,Evaluated
+2,2026-11-15T19:00:00+00:00,Michigan,William & Mary,False,Week 2,-22.88,Michigan,123,79,44,correct,cover,21.12,Evaluated
+2,2026-11-15T19:00:00+00:00,North Dakota State,Cal State Bakersfield,False,Week 2,-8.40,North Dakota State,69,73,-4,incorrect,no_cover,12.40,Evaluated
+2,2026-11-15T19:00:00+00:00,Rhode Island,Princeton,False,Week 2,-14.49,Rhode Island,79,72,7,correct,no_cover,7.49,Evaluated
+2,2026-11-15T19:30:00+00:00,Marquette,Missouri,True,Week 2,-2.17,Marquette,64,69,-5,incorrect,no_cover,7.17,Evaluated
+2,2026-11-15T20:00:00+00:00,Saint Louis,High Point,False,Week 2,-10.14,Saint Louis,58,68,-10,incorrect,no_cover,20.14,Evaluated
+2,2026-11-15T20:00:00+00:00,Creighton,Iowa,True,Week 2,8.31,Iowa,70,69,1,incorrect,no_cover,9.31,Evaluated
+2,2026-11-15T20:00:00+00:00,Texas,Baylor,True,Week 2,-3.24,Texas,75,72,3,correct,no_cover,0.24,Evaluated
+2,2026-11-15T20:00:00+00:00,Alabama A&M,Cleveland State,False,Week 2,-7.78,Alabama A&M,73,74,-1,incorrect,no_cover,8.78,Evaluated
+2,2026-11-15T20:00:00+00:00,Eastern Illinois,Purdue Fort Wayne,False,Week 2,6.28,Purdue Fort Wayne,74,86,-12,correct,cover,5.72,Evaluated
+2,2026-11-15T21:00:00+00:00,Seattle U,Idaho State,False,Week 2,-19.05,Seattle U,77,70,7,correct,no_cover,12.05,Evaluated
+2,2026-11-15T21:00:00+00:00,James Madison,Mercyhurst,False,Week 2,-11.67,James Madison,80,71,9,correct,no_cover,2.67,Evaluated
+2,2026-11-15T21:00:00+00:00,Loyola Marymount,Chicago State,False,Week 2,-14.31,Loyola Marymount,86,49,37,correct,cover,22.69,Evaluated
+2,2026-11-15T21:00:00+00:00,New Mexico State,San Diego State,True,Week 2,16.63,San Diego State,61,73,-12,correct,no_cover,4.63,Evaluated
+2,2026-11-15T21:00:00+00:00,Pacific,Air Force,False,Week 2,-19.76,Pacific,93,69,24,correct,cover,4.24,Evaluated
+2,2026-11-15T21:30:00+00:00,Penn State,New Haven,False,Week 2,-16.82,Penn State,86,52,34,correct,cover,17.18,Evaluated
+2,2026-11-15T21:30:00+00:00,Southern Indiana,Western Michigan,False,Week 2,3.07,Western Michigan,59,80,-21,correct,cover,17.93,Evaluated
+2,2026-11-15T22:30:00+00:00,Buffalo,Canisius,False,Week 2,-13.96,Buffalo,79,55,24,correct,cover,10.04,Evaluated
+2,2026-11-15T23:00:00+00:00,Montana State,Cal Poly,False,Week 2,-6.59,Montana State,77,52,25,correct,cover,18.41,Evaluated
+2,2026-11-16T00:00:00+00:00,St. John's,Syracuse,False,Week 2,-12.44,St. John's,79,62,17,correct,cover,4.56,Evaluated
+2,2026-11-16T00:00:00+00:00,USC,Arkansas-Pine Bluff,False,Week 2,-32.23,USC,122,46,76,correct,cover,43.77,Evaluated
+2,2026-11-16T01:00:00+00:00,Wisconsin,Coastal Carolina,False,Week 2,-25.34,Wisconsin,89,81,8,correct,no_cover,17.34,Evaluated
+2,2026-11-16T01:00:00+00:00,UTSA,Texas State,False,Week 2,6.71,Texas State,67,87,-20,correct,cover,13.29,Evaluated
+2,2026-11-16T02:00:00+00:00,San José State,Alabama State,False,Week 2,-12.77,San José State,80,68,12,correct,no_cover,0.77,Evaluated
+3,2026-11-16T19:00:00+00:00,UTEP,Florida A&M,False,Week 3,-16.05,UTEP,79,46,33,correct,cover,16.95,Evaluated
+3,2026-11-16T23:00:00+00:00,Maryland,Alcorn State,False,Week 3,-25.90,Maryland,117,57,60,correct,cover,34.10,Evaluated
+3,2026-11-16T23:00:00+00:00,UMBC,Iona,False,Week 3,-0.02,UMBC,75,67,8,correct,cover,7.98,Evaluated
+3,2026-11-16T23:30:00+00:00,Ohio State,Prairie View A&M,False,Week 3,-27.02,Ohio State,86,59,27,correct,no_cover,0.02,Evaluated
+3,2026-11-17T00:00:00+00:00,Virginia Tech,Richmond,False,Week 3,-11.23,Virginia Tech,85,68,17,correct,cover,5.77,Evaluated
+3,2026-11-17T00:00:00+00:00,Georgia,Jacksonville,False,Week 3,-19.52,Georgia,107,62,45,correct,cover,25.48,Evaluated
+3,2026-11-17T00:00:00+00:00,Tulsa,Western Kentucky,False,Week 3,-9.08,Tulsa,67,64,3,correct,no_cover,6.08,Evaluated
+3,2026-11-17T00:00:00+00:00,Kentucky,Grambling,False,Week 3,-22.50,Kentucky,88,59,29,correct,cover,6.50,Evaluated
+3,2026-11-17T00:00:00+00:00,Long Island University,St. Thomas-Minnesota,False,Week 3,3.15,St. Thomas-Minnesota,70,79,-9,correct,cover,5.85,Evaluated
+3,2026-11-17T00:00:00+00:00,Clemson,The Citadel,False,Week 3,-23.65,Clemson,87,51,36,correct,cover,12.35,Evaluated
+3,2026-11-17T00:00:00+00:00,Kent State,Eastern Kentucky,False,Week 3,-7.76,Kent State,49,65,-16,incorrect,no_cover,23.76,Evaluated
+3,2026-11-17T00:30:00+00:00,Drake,Tarleton State,False,Week 3,-9.19,Drake,79,83,-4,incorrect,no_cover,13.19,Evaluated
+3,2026-11-17T01:00:00+00:00,Minnesota,Western Illinois,False,Week 3,-32.93,Minnesota,99,63,36,correct,cover,3.07,Evaluated
+3,2026-11-17T01:00:00+00:00,Kansas State,Montana,False,Week 3,-11.88,Kansas State,86,45,41,correct,cover,29.12,Evaluated
+3,2026-11-17T01:00:00+00:00,Northwestern,Columbia,False,Week 3,-12.30,Northwestern,53,75,-22,incorrect,no_cover,34.30,Evaluated
+3,2026-11-17T01:00:00+00:00,Missouri State,Abilene Christian,False,Week 3,-10.61,Missouri State,73,64,9,correct,no_cover,1.61,Evaluated
+3,2026-11-17T01:00:00+00:00,Oklahoma State,Central Arkansas,False,Week 3,-15.62,Oklahoma State,99,66,33,correct,cover,17.38,Evaluated
+3,2026-11-17T01:30:00+00:00,Texas A&M,SE Louisiana,False,Week 3,-30.30,Texas A&M,101,69,32,correct,cover,1.70,Evaluated
+3,2026-11-17T02:30:00+00:00,Oregon State,East Texas A&M,False,Week 3,-14.17,Oregon State,109,71,38,correct,cover,23.83,Evaluated
+3,2026-11-17T03:00:00+00:00,UCLA,Long Beach State,False,Week 3,-28.88,UCLA,105,66,39,correct,cover,10.12,Evaluated
+3,2026-11-17T03:00:00+00:00,Saint Mary's,Portland State,False,Week 3,-20.35,Saint Mary's,94,78,16,correct,no_cover,4.35,Evaluated
+3,2026-11-17T03:00:00+00:00,UC San Diego,Texas Southern,False,Week 3,-15.45,UC San Diego,97,92,5,correct,no_cover,10.45,Evaluated
+3,2026-11-17T17:00:00+00:00,Hofstra,Murray State,True,Week 3,6.70,Murray State,66,82,-16,correct,cover,9.30,Evaluated
+3,2026-11-17T19:00:00+00:00,Rutgers,Houston,True,Week 3,17.54,Houston,73,85,-12,correct,no_cover,5.54,Evaluated
+3,2026-11-17T21:51:00+00:00,Florida,Notre Dame,True,Week 3,-14.16,Florida,86,78,8,correct,no_cover,6.16,Evaluated
+3,2026-11-17T23:00:00+00:00,Army,Marist,False,Week 3,2.82,Marist,68,73,-5,correct,cover,2.18,Evaluated
+3,2026-11-17T23:00:00+00:00,UMass Lowell,Saint Peter's,False,Week 3,-8.01,UMass Lowell,66,51,15,correct,cover,6.99,Evaluated
+3,2026-11-17T23:00:00+00:00,Southern Illinois,Liberty,True,Week 3,-0.52,Southern Illinois,78,87,-9,incorrect,no_cover,9.52,Evaluated
+3,2026-11-17T23:30:00+00:00,Purdue,Lipscomb,False,Week 3,-20.10,Purdue,95,78,17,correct,no_cover,3.10,Evaluated
+3,2026-11-18T00:00:00+00:00,Manhattan,Fordham,False,Week 3,9.44,Fordham,61,80,-19,correct,cover,9.56,Evaluated
+3,2026-11-18T00:00:00+00:00,Dayton,Central Michigan,False,Week 3,-6.20,Dayton,88,63,25,correct,cover,18.80,Evaluated
+3,2026-11-18T00:00:00+00:00,William & Mary,Bowling Green,False,Week 3,-3.02,William & Mary,77,73,4,correct,cover,0.98,Evaluated
+3,2026-11-18T00:00:00+00:00,Wake Forest,Monmouth,False,Week 3,-13.98,Wake Forest,81,76,5,correct,no_cover,8.98,Evaluated
+3,2026-11-18T00:00:00+00:00,Pittsburgh,Villanova,False,Week 3,-1.57,Pittsburgh,81,61,20,correct,cover,18.43,Evaluated
+3,2026-11-18T00:00:00+00:00,Florida State,Ball State,False,Week 3,-24.81,Florida State,85,71,14,correct,no_cover,10.81,Evaluated
+3,2026-11-18T00:00:00+00:00,Duke,Illinois,False,Week 3,-5.66,Duke,78,99,-21,incorrect,no_cover,26.66,Evaluated
+3,2026-11-18T00:00:00+00:00,Xavier,Cleveland State,False,Week 3,-30.38,Xavier,75,67,8,correct,no_cover,22.38,Evaluated
+3,2026-11-18T00:00:00+00:00,Providence,Sacred Heart,False,Week 3,-21.55,Providence,86,67,19,correct,no_cover,2.55,Evaluated
+3,2026-11-18T00:00:00+00:00,Butler,Western Carolina,False,Week 3,-12.77,Butler,89,64,25,correct,cover,12.23,Evaluated
+3,2026-11-18T00:00:00+00:00,Bucknell,Akron,False,Week 3,16.95,Akron,53,49,4,incorrect,no_cover,20.95,Evaluated
+3,2026-11-18T00:00:00+00:00,West Florida,Green Bay,False,Week 3,-1.31,West Florida,87,69,18,correct,cover,16.69,Evaluated
+3,2026-11-18T00:00:00+00:00,UCF,Mississippi State,False,Week 3,-1.47,UCF,83,86,-3,incorrect,no_cover,4.47,Evaluated
+3,2026-11-18T00:00:00+00:00,Miami,Rider,False,Week 3,-34.79,Miami,95,48,47,correct,cover,12.21,Evaluated
+3,2026-11-18T00:00:00+00:00,Marshall,East Tennessee State,False,Week 3,-2.41,Marshall,67,55,12,correct,cover,9.59,Evaluated
+3,2026-11-18T00:00:00+00:00,Georgia Tech,Norfolk State,False,Week 3,-18.61,Georgia Tech,93,79,14,correct,no_cover,4.61,Evaluated
+3,2026-11-18T00:00:00+00:00,Saint Joseph's,Wagner,False,Week 3,-17.35,Saint Joseph's,84,65,19,correct,cover,1.65,Evaluated
+3,2026-11-18T00:00:00+00:00,South Florida,Tennessee State,False,Week 3,-13.78,South Florida,98,71,27,correct,cover,13.22,Evaluated
+3,2026-11-18T00:00:00+00:00,Davidson,Charlotte,False,Week 3,-8.44,Davidson,66,73,-7,incorrect,no_cover,15.44,Evaluated
+3,2026-11-18T00:00:00+00:00,Mount St. Mary's,Lehigh,False,Week 3,-1.86,Mount St. Mary's,65,99,-34,incorrect,no_cover,35.86,Evaluated
+3,2026-11-18T00:00:00+00:00,Troy,Cal State Northridge,False,Week 3,-3.29,Troy,84,74,10,correct,cover,6.71,Evaluated
+3,2026-11-18T00:30:00+00:00,Indiana,Arkansas,True,Week 3,1.08,Arkansas,81,76,5,incorrect,no_cover,6.08,Evaluated
+3,2026-11-18T00:30:00+00:00,Massachusetts,Bryant,False,Week 3,-12.86,Massachusetts,79,83,-4,incorrect,no_cover,16.86,Evaluated
+3,2026-11-18T00:30:00+00:00,Alabama,Kennesaw State,False,Week 3,-21.94,Alabama,109,91,18,correct,no_cover,3.94,Evaluated
+3,2026-11-18T00:30:00+00:00,UAB,Florida International,False,Week 3,-3.79,UAB,94,82,12,correct,cover,8.21,Evaluated
+3,2026-11-18T00:30:00+00:00,Louisiana Tech,Jacksonville State,False,Week 3,-3.38,Louisiana Tech,68,63,5,correct,cover,1.62,Evaluated
+3,2026-11-18T01:00:00+00:00,DePaul,Maryland Eastern Shore,False,Week 3,-24.51,DePaul,83,39,44,correct,cover,19.49,Evaluated
+3,2026-11-18T01:00:00+00:00,North Dakota,SIU Edwardsville,False,Week 3,-3.11,North Dakota,83,78,5,correct,cover,1.89,Evaluated
+3,2026-11-18T01:00:00+00:00,Vanderbilt,Eastern Illinois,False,Week 3,-37.57,Vanderbilt,96,50,46,correct,cover,8.43,Evaluated
+3,2026-11-18T01:00:00+00:00,Illinois State,Bellarmine,False,Week 3,-18.31,Illinois State,76,59,17,correct,no_cover,1.31,Evaluated
+3,2026-11-18T01:00:00+00:00,Evansville,Le Moyne,False,Week 3,-5.82,Evansville,79,65,14,correct,cover,8.18,Evaluated
+3,2026-11-18T01:00:00+00:00,SMU,Oral Roberts,False,Week 3,-24.25,SMU,76,72,4,correct,no_cover,20.25,Evaluated
+3,2026-11-18T01:00:00+00:00,Georgia Southern,Middle Tennessee,False,Week 3,-1.49,Georgia Southern,78,85,-7,incorrect,no_cover,8.49,Evaluated
+3,2026-11-18T01:00:00+00:00,Omaha,Lamar,False,Week 3,-2.89,Omaha,74,104,-30,incorrect,no_cover,32.89,Evaluated
+3,2026-11-18T01:00:00+00:00,Rice,Texas A&M-Corpus Christi,False,Week 3,-2.86,Rice,81,74,7,correct,cover,4.14,Evaluated
+3,2026-11-18T01:00:00+00:00,Northern Iowa,Lindenwood,False,Week 3,-16.01,Northern Iowa,81,74,7,correct,no_cover,9.01,Evaluated
+3,2026-11-18T01:00:00+00:00,Southern Miss,UT Arlington,False,Week 3,0.75,UT Arlington,72,83,-11,correct,cover,10.25,Evaluated
+3,2026-11-18T01:30:00+00:00,Ole Miss,Nicholls,False,Week 3,-24.56,Ole Miss,76,41,35,correct,cover,10.44,Evaluated
+3,2026-11-18T01:30:00+00:00,Wyoming,Sam Houston,False,Week 3,-9.86,Wyoming,81,79,2,correct,no_cover,7.86,Evaluated
+3,2026-11-18T01:30:00+00:00,Utah,Eastern Washington,False,Week 3,-12.31,Utah,67,71,-4,incorrect,no_cover,16.31,Evaluated
+3,2026-11-18T02:00:00+00:00,UC Davis,Alabama State,False,Week 3,-12.04,UC Davis,68,75,-7,incorrect,no_cover,19.04,Evaluated
+3,2026-11-18T02:00:00+00:00,Tennessee,Michigan State,False,Week 3,4.03,Michigan State,61,46,15,incorrect,no_cover,19.03,Evaluated
+3,2026-11-18T02:00:00+00:00,Virginia,Old Dominion,False,Week 3,-21.20,Virginia,85,65,20,correct,no_cover,1.20,Evaluated
+3,2026-11-18T02:30:00+00:00,Kansas,UNLV,True,Week 3,-15.65,Kansas,102,77,25,correct,cover,9.35,Evaluated
+3,2026-11-18T03:00:00+00:00,Stanford,UC Irvine,False,Week 3,-6.67,Stanford,65,61,4,correct,no_cover,2.67,Evaluated
+3,2026-11-18T03:00:00+00:00,California Baptist,Seattle U,False,Week 3,3.65,Seattle U,54,83,-29,correct,cover,25.35,Evaluated
+3,2026-11-18T04:00:00+00:00,Gonzaga,Montana State,False,Week 3,-20.67,Gonzaga,74,62,12,correct,no_cover,8.67,Evaluated
+3,2026-11-18T04:59:00+00:00,Auburn,West Virginia,True,Week 3,-1.52,Auburn,70,76,-6,incorrect,no_cover,7.52,Evaluated
+3,2026-11-18T17:00:00+00:00,Baylor,Jackson State,False,Week 3,-29.84,Baylor,104,55,49,correct,cover,19.16,Evaluated
+3,2026-11-18T19:00:00+00:00,Notre Dame,Rutgers,True,Week 3,-1.79,Notre Dame,110,100,10,correct,cover,8.21,Evaluated
+3,2026-11-18T21:48:00+00:00,Florida,Houston,True,Week 3,1.59,Houston,76,86,-10,correct,cover,8.41,Evaluated
+3,2026-11-18T23:30:00+00:00,Georgetown,Navy,False,Week 3,-15.47,Georgetown,84,53,31,correct,cover,15.53,Evaluated
+3,2026-11-18T23:30:00+00:00,Eastern Michigan,Detroit Mercy,False,Week 3,-12.33,Eastern Michigan,99,62,37,correct,cover,24.67,Evaluated
+3,2026-11-18T23:30:00+00:00,Penn State,IU Indianapolis,False,Week 3,-19.18,Penn State,81,74,7,correct,no_cover,12.18,Evaluated
+3,2026-11-18T23:30:00+00:00,UNC Asheville,Tennessee Tech,False,Week 3,-5.99,UNC Asheville,77,98,-21,incorrect,no_cover,26.99,Evaluated
+3,2026-11-18T23:30:00+00:00,Winthrop,Chattanooga,False,Week 3,0.72,Chattanooga,79,90,-11,correct,cover,10.28,Evaluated
+3,2026-11-19T00:00:00+00:00,Holy Cross,Brown,False,Week 3,4.12,Brown,63,74,-11,correct,cover,6.88,Evaluated
+3,2026-11-19T00:00:00+00:00,Lafayette,Binghamton,False,Week 3,-2.68,Lafayette,80,65,15,correct,cover,12.32,Evaluated
+3,2026-11-19T00:00:00+00:00,Charleston Southern,Wofford,False,Week 3,-5.11,Charleston Southern,77,79,-2,incorrect,no_cover,7.11,Evaluated
+3,2026-11-19T00:00:00+00:00,Duquesne,Howard,True,Week 3,-2.12,Duquesne,74,68,6,correct,cover,3.88,Evaluated
+3,2026-11-19T00:00:00+00:00,La Salle,Coppin State,False,Week 3,-10.63,La Salle,88,61,27,correct,cover,16.37,Evaluated
+3,2026-11-19T00:00:00+00:00,Merrimack,Boston University,False,Week 3,-1.74,Merrimack,60,65,-5,incorrect,no_cover,6.74,Evaluated
+3,2026-11-19T00:00:00+00:00,Radford,Furman,False,Week 3,4.76,Furman,71,78,-7,correct,cover,2.24,Evaluated
+3,2026-11-19T00:00:00+00:00,South Carolina,Elon,False,Week 3,-12.85,South Carolina,80,72,8,correct,no_cover,4.85,Evaluated
+3,2026-11-19T00:00:00+00:00,Ohio,Morehead State,False,Week 3,-15.99,Ohio,91,77,14,correct,no_cover,1.99,Evaluated
+3,2026-11-19T00:00:00+00:00,Yale,Vermont,False,Week 3,-7.25,Yale,76,74,2,correct,no_cover,5.25,Evaluated
+3,2026-11-19T00:00:00+00:00,St. John's,Siena,False,Week 3,-23.31,St. John's,119,72,47,correct,cover,23.69,Evaluated
+3,2026-11-19T00:00:00+00:00,George Mason,North Carolina Central,False,Week 3,-18.27,George Mason,83,60,23,correct,cover,4.73,Evaluated
+3,2026-11-19T00:00:00+00:00,Long Island University,UNC Wilmington,False,Week 3,7.34,UNC Wilmington,115,114,1,incorrect,no_cover,8.34,Evaluated
+3,2026-11-19T00:00:00+00:00,Fairleigh Dickinson,NJIT,False,Week 3,-5.36,Fairleigh Dickinson,78,66,12,correct,cover,6.64,Evaluated
+3,2026-11-19T00:00:00+00:00,UIC,Chicago State,False,Week 3,-21.51,UIC,60,52,8,correct,no_cover,13.51,Evaluated
+3,2026-11-19T00:00:00+00:00,Florida Atlantic,Florida Gulf Coast,False,Week 3,-6.96,Florida Atlantic,86,76,10,correct,cover,3.04,Evaluated
+3,2026-11-19T00:00:00+00:00,Longwood,VMI,False,Week 3,-10.43,Longwood,82,76,6,correct,no_cover,4.43,Evaluated
+3,2026-11-19T00:00:00+00:00,North Carolina A&T,Morgan State,False,Week 3,-8.67,North Carolina A&T,82,70,12,correct,cover,3.33,Evaluated
+3,2026-11-19T00:00:00+00:00,Towson,James Madison,False,Week 3,-7.17,Towson,52,70,-18,incorrect,no_cover,25.17,Evaluated
+3,2026-11-19T00:00:00+00:00,Presbyterian,Mercer,False,Week 3,1.93,Mercer,88,84,4,incorrect,no_cover,5.93,Evaluated
+3,2026-11-19T00:30:00+00:00,Marquette,Northern Illinois,False,Week 3,-26.97,Marquette,79,65,14,correct,no_cover,12.97,Evaluated
+3,2026-11-19T00:30:00+00:00,Texas Tech,New Orleans,False,Week 3,-32.21,Texas Tech,86,41,45,correct,cover,12.79,Evaluated
+3,2026-11-19T00:30:00+00:00,Cincinnati,Youngstown State,False,Week 3,-19.69,Cincinnati,91,54,37,correct,cover,17.31,Evaluated
+3,2026-11-19T00:30:00+00:00,West Virginia,Kansas,True,Week 3,7.98,Kansas,82,86,-4,correct,no_cover,3.98,Evaluated
+3,2026-11-19T01:00:00+00:00,Gardner-Webb,UNC Greensboro,False,Week 3,7.24,UNC Greensboro,72,78,-6,correct,no_cover,1.24,Evaluated
+3,2026-11-19T01:00:00+00:00,Loyola Chicago,Wichita State,False,Week 3,4.44,Wichita State,75,79,-4,correct,no_cover,0.44,Evaluated
+3,2026-11-19T01:00:00+00:00,Harvard,Boston College,False,Week 3,5.60,Boston College,69,74,-5,correct,no_cover,0.60,Evaluated
+3,2026-11-19T01:00:00+00:00,Oklahoma,Campbell,False,Week 3,-13.42,Oklahoma,87,78,9,correct,no_cover,4.42,Evaluated
+3,2026-11-19T01:00:00+00:00,LSU,UL Monroe,False,Week 3,-33.41,LSU,79,67,12,correct,no_cover,21.41,Evaluated
+3,2026-11-19T01:00:00+00:00,Syracuse,Cornell,False,Week 3,-16.58,Syracuse,91,82,9,correct,no_cover,7.58,Evaluated
+3,2026-11-19T01:00:00+00:00,Stonehill,New Hampshire,False,Week 3,1.47,New Hampshire,70,90,-20,correct,cover,18.53,Evaluated
+3,2026-11-19T01:00:00+00:00,UTSA,Florida A&M,False,Week 3,-12.32,UTSA,98,78,20,correct,cover,7.68,Evaluated
+3,2026-11-19T01:00:00+00:00,Texas State,Incarnate Word,False,Week 3,-17.68,Texas State,84,51,33,correct,cover,15.32,Evaluated
+3,2026-11-19T01:00:00+00:00,Arkansas State,Arkansas-Pine Bluff,False,Week 3,-25.26,Arkansas State,100,69,31,correct,cover,5.74,Evaluated
+3,2026-11-19T01:00:00+00:00,Bradley,Purdue Fort Wayne,False,Week 3,-9.93,Bradley,73,78,-5,incorrect,no_cover,14.93,Evaluated
+3,2026-11-19T01:30:00+00:00,Nebraska,South Dakota,False,Week 3,-34.92,Nebraska,73,47,26,correct,no_cover,8.92,Evaluated
+3,2026-11-19T01:30:00+00:00,South Carolina Upstate,Samford,False,Week 3,5.34,Samford,64,74,-10,correct,cover,4.66,Evaluated
+3,2026-11-19T02:00:00+00:00,Colorado,Portland,False,Week 3,-15.20,Colorado,74,77,-3,incorrect,no_cover,18.20,Evaluated
+3,2026-11-19T02:00:00+00:00,Arizona,UConn,False,Week 3,-3.79,Arizona,85,79,6,correct,cover,2.21,Evaluated
+3,2026-11-19T02:00:00+00:00,Creighton,Bethune-Cookman,False,Week 3,-16.70,Creighton,88,65,23,correct,cover,6.30,Evaluated
+3,2026-11-19T02:00:00+00:00,San José State,Fresno State,False,Week 3,-2.77,San José State,92,86,6,correct,cover,3.23,Evaluated
+3,2026-11-19T02:00:00+00:00,Utah State,Weber State,False,Week 3,-31.90,Utah State,101,71,30,correct,no_cover,1.90,Evaluated
+3,2026-11-19T02:00:00+00:00,Missouri,Alcorn State,False,Week 3,-37.55,Missouri,102,41,61,correct,cover,23.45,Evaluated
+3,2026-11-19T02:00:00+00:00,BYU,Northern Colorado,False,Week 3,-25.65,BYU,98,54,44,correct,cover,18.35,Evaluated
+3,2026-11-19T02:00:00+00:00,Arizona State,Oakland,False,Week 3,-18.51,Arizona State,68,65,3,correct,no_cover,15.51,Evaluated
+3,2026-11-19T02:00:00+00:00,Colorado State,North Dakota State,False,Week 3,-12.05,Colorado State,71,64,7,correct,no_cover,5.05,Evaluated
+3,2026-11-19T02:30:00+00:00,San Diego,UC Riverside,False,Week 3,-4.58,San Diego,71,62,9,correct,cover,4.42,Evaluated
+3,2026-11-19T03:00:00+00:00,Nevada,Idaho,False,Week 3,-16.08,Nevada,91,74,17,correct,cover,0.92,Evaluated
+3,2026-11-19T03:00:00+00:00,San Francisco,Louisiana,False,Week 3,-13.73,San Francisco,77,56,21,correct,cover,7.27,Evaluated
+3,2026-11-19T03:00:00+00:00,San Diego State,Texas Southern,False,Week 3,-26.20,San Diego State,97,51,46,correct,cover,19.80,Evaluated
+3,2026-11-19T03:00:00+00:00,Hawai'i,Washington State,True,Week 3,0.40,Washington State,63,79,-16,correct,cover,15.60,Evaluated
+3,2026-11-19T03:30:00+00:00,UCLA,Cal State Fullerton,False,Week 3,-30.19,UCLA,75,71,4,correct,no_cover,26.19,Evaluated
+3,2026-11-19T03:30:00+00:00,Auburn,UNLV,True,Week 3,-9.19,Auburn,86,71,15,correct,cover,5.81,Evaluated
+3,2026-11-19T19:30:00+00:00,West Virginia,Florida,True,Week 3,10.20,Florida,72,85,-13,correct,cover,2.80,Evaluated
+3,2026-11-19T22:00:00+00:00,Auburn,Notre Dame,True,Week 3,-5.48,Auburn,73,78,-5,incorrect,no_cover,10.48,Evaluated
+3,2026-11-19T23:00:00+00:00,Murray State,NC State,True,Week 3,5.54,NC State,83,93,-10,correct,cover,4.46,Evaluated
+3,2026-11-20T00:00:00+00:00,Ohio State,UMBC,False,Week 3,-22.74,Ohio State,101,62,39,correct,cover,16.26,Evaluated
+3,2026-11-20T00:00:00+00:00,St. Bonaventure,Buffalo,False,Week 3,-14.58,St. Bonaventure,78,69,9,correct,no_cover,5.58,Evaluated
+3,2026-11-20T00:00:00+00:00,Butler,Northeastern,False,Week 3,-14.99,Butler,84,77,7,correct,no_cover,7.99,Evaluated
+3,2026-11-20T00:00:00+00:00,Jacksonville,Little Rock,False,Week 3,-6.58,Jacksonville,72,78,-6,incorrect,no_cover,12.58,Evaluated
+3,2026-11-20T00:00:00+00:00,Quinnipiac,Maine,False,Week 3,-7.68,Quinnipiac,67,69,-2,incorrect,no_cover,9.68,Evaluated
+3,2026-11-20T00:00:00+00:00,High Point,Montana State,False,Week 3,-10.66,High Point,85,74,11,correct,cover,0.34,Evaluated
+3,2026-11-20T00:00:00+00:00,Toledo,Robert Morris,False,Week 3,-9.97,Toledo,83,76,7,correct,no_cover,2.97,Evaluated
+3,2026-11-20T00:30:00+00:00,Louisiana Tech,Tulane,False,Week 3,-2.59,Louisiana Tech,74,67,7,correct,cover,4.41,Evaluated
+3,2026-11-20T00:30:00+00:00,Drake,Charleston,False,Week 3,0.73,Charleston,86,70,16,incorrect,no_cover,16.73,Evaluated
+3,2026-11-20T01:00:00+00:00,Texas,Southern Utah,False,Week 3,-32.42,Texas,92,68,24,correct,no_cover,8.42,Evaluated
+3,2026-11-20T01:00:00+00:00,Houston Christian,Georgia Southern,False,Week 3,-1.65,Houston Christian,79,86,-7,incorrect,no_cover,8.65,Evaluated
+3,2026-11-20T01:00:00+00:00,TCU,Texas A&M,False,Week 3,1.25,Texas A&M,92,97,-5,correct,cover,3.75,Evaluated
+3,2026-11-20T01:00:00+00:00,Louisville,Stetson,False,Week 3,-29.00,Louisville,83,69,14,correct,no_cover,15.00,Evaluated
+3,2026-11-20T01:00:00+00:00,St. Thomas-Minnesota,Southeast Missouri State,False,Week 3,-7.61,St. Thomas-Minnesota,93,61,32,correct,cover,24.39,Evaluated
+3,2026-11-20T01:30:00+00:00,Seton Hall,Wisconsin,True,Week 3,3.63,Wisconsin,74,69,5,incorrect,no_cover,8.63,Evaluated
+3,2026-11-20T01:30:00+00:00,UNLV,Rutgers,True,Week 3,1.91,Rutgers,70,89,-19,correct,cover,17.09,Evaluated
+3,2026-11-20T02:00:00+00:00,New Mexico State,UTEP,False,Week 3,-5.40,New Mexico State,69,84,-15,incorrect,no_cover,20.40,Evaluated
+3,2026-11-20T02:00:00+00:00,Washington,Utah Tech,False,Week 3,-16.04,Washington,82,69,13,correct,no_cover,3.04,Evaluated
+3,2026-11-20T02:00:00+00:00,Pepperdine,UC Santa Barbara,False,Week 3,7.33,UC Santa Barbara,80,88,-8,correct,cover,0.67,Evaluated
+3,2026-11-20T02:00:00+00:00,Grambling,Southern Miss,False,Week 3,-0.17,Grambling,100,103,-3,incorrect,no_cover,3.17,Evaluated
+3,2026-11-20T02:00:00+00:00,Oregon,Oregon State,True,Week 3,-5.26,Oregon,71,82,-11,incorrect,no_cover,16.26,Evaluated
+3,2026-11-20T03:00:00+00:00,Stanford,Sacramento State,False,Week 3,-19.43,Stanford,78,65,13,correct,no_cover,6.43,Evaluated
+3,2026-11-20T03:00:00+00:00,California,East Texas A&M,False,Week 3,-13.80,California,86,54,32,correct,cover,18.20,Evaluated
+3,2026-11-20T03:30:00+00:00,Santa Clara,VCU,False,Week 3,-4.33,Santa Clara,77,83,-6,incorrect,no_cover,10.33,Evaluated
+3,2026-11-20T04:00:00+00:00,USC,Tarleton State,False,Week 3,-24.90,USC,96,51,45,correct,cover,20.10,Evaluated
+3,2026-11-20T04:00:00+00:00,Kansas,Houston,True,Week 3,3.81,Houston,83,92,-9,correct,cover,5.19,Evaluated
+3,2026-11-20T17:00:00+00:00,Florida State,Green Bay,False,Week 3,-18.36,Florida State,87,63,24,correct,cover,5.64,Evaluated
+3,2026-11-20T17:30:00+00:00,Middle Tennessee,Temple,True,Week 3,0.77,Temple,76,85,-9,correct,cover,8.23,Evaluated
+3,2026-11-20T17:30:00+00:00,Minnesota,Oklahoma State,True,Week 3,-0.17,Minnesota,85,70,15,correct,cover,14.83,Evaluated
+3,2026-11-20T19:00:00+00:00,UAB,George Washington,True,Week 3,10.88,George Washington,81,76,5,incorrect,no_cover,15.88,Evaluated
+3,2026-11-20T20:00:00+00:00,Stephen F. Austin,Indiana State,True,Week 3,-4.81,Stephen F. Austin,86,76,10,correct,cover,5.19,Evaluated
+3,2026-11-20T20:00:00+00:00,UAlbany,Western Illinois,True,Week 3,-7.42,UAlbany,65,60,5,correct,no_cover,2.42,Evaluated
+3,2026-11-20T20:00:00+00:00,Virginia Tech,Northwestern,True,Week 3,-4.59,Virginia Tech,87,70,17,correct,cover,12.41,Evaluated
+3,2026-11-20T21:00:00+00:00,Idaho State,South Dakota State,False,Week 3,9.87,South Dakota State,86,71,15,incorrect,no_cover,24.87,Evaluated
+3,2026-11-20T21:30:00+00:00,Rhode Island,Liberty,True,Week 3,-3.34,Rhode Island,68,71,-3,incorrect,no_cover,6.34,Evaluated
+3,2026-11-20T22:00:00+00:00,Miami,Manhattan,False,Week 3,-29.11,Miami,106,54,52,correct,cover,22.89,Evaluated
+3,2026-11-20T22:30:00+00:00,Southern Illinois,UT Martin,True,Week 3,-2.89,Southern Illinois,73,76,-3,incorrect,no_cover,5.89,Evaluated
+3,2026-11-20T22:30:00+00:00,Utah,Dayton,True,Week 3,-3.26,Utah,46,63,-17,incorrect,no_cover,20.26,Evaluated
+3,2026-11-20T22:30:00+00:00,Canisius,Mercyhurst,False,Week 3,5.61,Mercyhurst,63,56,7,incorrect,no_cover,12.61,Evaluated
+3,2026-11-20T23:00:00+00:00,Cal State Northridge,Delaware,False,Week 3,-5.68,Cal State Northridge,92,97,-5,incorrect,no_cover,10.68,Evaluated
+3,2026-11-20T23:30:00+00:00,App State,North Texas,False,Week 3,-1.02,App State,81,75,6,correct,cover,4.98,Evaluated
+3,2026-11-21T00:00:00+00:00,Murray State,Wisconsin,True,Week 3,4.75,Wisconsin,70,53,17,incorrect,no_cover,21.75,Evaluated
+3,2026-11-21T00:00:00+00:00,Maryland,Wagner,False,Week 3,-20.28,Maryland,62,45,17,correct,no_cover,3.28,Evaluated
+3,2026-11-21T00:00:00+00:00,Pittsburgh,Central Michigan,False,Week 3,-15.33,Pittsburgh,104,82,22,correct,cover,6.67,Evaluated
+3,2026-11-21T00:00:00+00:00,Tennessee,Coastal Carolina,False,Week 3,-26.65,Tennessee,78,51,27,correct,cover,0.35,Evaluated
+3,2026-11-21T00:00:00+00:00,Purdue,Oakland,False,Week 3,-23.75,Purdue,95,49,46,correct,cover,22.25,Evaluated
+3,2026-11-21T00:00:00+00:00,The Citadel,South Carolina State,False,Week 3,-2.12,The Citadel,79,63,16,correct,cover,13.88,Evaluated
+3,2026-11-21T00:00:00+00:00,Delaware State,Niagara,False,Week 3,-2.97,Delaware State,101,103,-2,incorrect,no_cover,4.97,Evaluated
+3,2026-11-21T00:00:00+00:00,Eastern Kentucky,Bellarmine,False,Week 3,-4.83,Eastern Kentucky,76,79,-3,incorrect,no_cover,7.83,Evaluated
+3,2026-11-21T00:00:00+00:00,Kennesaw State,SE Louisiana,False,Week 3,-13.79,Kennesaw State,96,59,37,correct,cover,23.21,Evaluated
+3,2026-11-21T00:00:00+00:00,Virginia,Loyola Maryland,False,Week 3,-32.72,Virginia,103,61,42,correct,cover,9.28,Evaluated
+3,2026-11-21T00:00:00+00:00,Holy Cross,Harvard,False,Week 3,8.39,Harvard,65,77,-12,correct,cover,3.61,Evaluated
+3,2026-11-21T00:00:00+00:00,Drexel,Saint Joseph's,False,Week 3,4.98,Saint Joseph's,75,64,11,incorrect,no_cover,15.98,Evaluated
+3,2026-11-21T00:00:00+00:00,Princeton,Monmouth,False,Week 3,-1.45,Princeton,75,64,11,correct,cover,9.55,Evaluated
+3,2026-11-21T00:00:00+00:00,Iona,Kansas City,False,Week 3,-7.94,Iona,62,61,1,correct,no_cover,6.94,Evaluated
+3,2026-11-21T00:00:00+00:00,Mount St. Mary's,Western Michigan,False,Week 3,4.25,Western Michigan,67,73,-6,correct,cover,1.75,Evaluated
+3,2026-11-21T00:00:00+00:00,Jacksonville State,Georgia State,False,Week 3,-4.95,Jacksonville State,82,77,5,correct,cover,0.05,Evaluated
+3,2026-11-21T00:00:00+00:00,Western Kentucky,Richmond,True,Week 3,3.67,Richmond,82,68,14,incorrect,no_cover,17.67,Evaluated
+3,2026-11-21T00:30:00+00:00,Xavier,Iowa,False,Week 3,-4.45,Xavier,65,83,-18,incorrect,no_cover,22.45,Evaluated
+3,2026-11-21T00:30:00+00:00,Tulsa,Mississippi State,True,Week 3,3.78,Mississippi State,61,72,-11,correct,cover,7.22,Evaluated
+3,2026-11-21T00:30:00+00:00,Northwestern State,UT Arlington,False,Week 3,4.70,UT Arlington,62,69,-7,correct,cover,2.30,Evaluated
+3,2026-11-21T01:00:00+00:00,Indiana,Kentucky,True,Week 3,-2.58,Indiana,90,76,14,correct,cover,11.42,Evaluated
+3,2026-11-21T01:00:00+00:00,Kansas State,Campbell,False,Week 3,-13.90,Kansas State,70,80,-10,incorrect,no_cover,23.90,Evaluated
+3,2026-11-21T01:00:00+00:00,Georgia Tech,Georgia,False,Week 3,6.13,Georgia,82,88,-6,correct,no_cover,0.13,Evaluated
+3,2026-11-21T01:00:00+00:00,Utah Valley,East Carolina,True,Week 3,-7.83,Utah Valley,90,79,11,correct,cover,3.17,Evaluated
+3,2026-11-21T01:00:00+00:00,Arkansas,Mississippi Valley State,False,Week 3,-36.96,Arkansas,92,48,44,correct,cover,7.04,Evaluated
+3,2026-11-21T01:00:00+00:00,Vanderbilt,UCF,False,Week 3,-17.24,Vanderbilt,82,74,8,correct,no_cover,9.24,Evaluated
+3,2026-11-21T01:00:00+00:00,Alabama A&M,Lipscomb,False,Week 3,8.52,Lipscomb,85,69,16,incorrect,no_cover,24.52,Evaluated
+3,2026-11-21T01:00:00+00:00,Missouri,Le Moyne,False,Week 3,-31.12,Missouri,91,64,27,correct,no_cover,4.12,Evaluated
+3,2026-11-21T01:00:00+00:00,SMU,South Alabama,False,Week 3,-14.88,SMU,101,55,46,correct,cover,31.12,Evaluated
+3,2026-11-21T02:00:00+00:00,Illinois,Eastern Illinois,False,Week 3,-42.32,Illinois,114,52,62,correct,cover,19.68,Evaluated
+3,2026-11-21T02:00:00+00:00,North Carolina,Marshall,False,Week 3,-16.23,North Carolina,88,72,16,correct,no_cover,0.23,Evaluated
+3,2026-11-21T02:00:00+00:00,Idaho,Cal State Bakersfield,False,Week 3,-5.96,Idaho,84,81,3,correct,no_cover,2.96,Evaluated
+3,2026-11-21T02:00:00+00:00,Boise State,Sam Houston,False,Week 3,-12.54,Boise State,69,83,-14,incorrect,no_cover,26.54,Evaluated
+3,2026-11-21T02:30:00+00:00,NC State,Seton Hall,True,Week 3,-4.42,NC State,81,87,-6,incorrect,no_cover,10.42,Evaluated
+3,2026-11-21T03:00:00+00:00,Fresno State,Alabama State,False,Week 3,-12.44,Fresno State,80,68,12,correct,no_cover,0.44,Evaluated
+3,2026-11-21T04:00:00+00:00,Saint Mary's,Saint Louis,False,Week 3,-3.56,Saint Mary's,95,78,17,correct,cover,13.44,Evaluated
+3,2026-11-21T16:00:00+00:00,Bucknell,Siena,False,Week 3,11.27,Siena,87,93,-6,correct,no_cover,5.27,Evaluated
+3,2026-11-21T16:00:00+00:00,UNC Greensboro,South Carolina Upstate,False,Week 3,-8.10,UNC Greensboro,85,66,19,correct,cover,10.90,Evaluated
+3,2026-11-21T17:00:00+00:00,Michigan State,Detroit Mercy,False,Week 3,-41.23,Michigan State,91,70,21,correct,no_cover,20.23,Evaluated
+3,2026-11-21T17:00:00+00:00,Boston University,Columbia,False,Week 3,-1.92,Boston University,71,80,-9,incorrect,no_cover,10.92,Evaluated
+3,2026-11-21T18:00:00+00:00,New Haven,New Hampshire,False,Week 3,-2.78,New Haven,50,47,3,correct,cover,0.22,Evaluated
+3,2026-11-21T18:00:00+00:00,LSU,Queens University,False,Week 3,-24.74,LSU,106,75,31,correct,cover,6.26,Evaluated
+3,2026-11-21T18:00:00+00:00,Eastern Michigan,Denver,False,Week 3,-4.22,Eastern Michigan,70,68,2,correct,no_cover,2.22,Evaluated
+3,2026-11-21T18:00:00+00:00,Cleveland State,Kent State,False,Week 3,5.29,Kent State,62,69,-7,correct,cover,1.71,Evaluated
+3,2026-11-21T18:30:00+00:00,Western Illinois,Mercyhurst,True,Week 3,8.55,Mercyhurst,65,68,-3,correct,no_cover,5.55,Evaluated
+3,2026-11-21T19:00:00+00:00,Bowling Green,Northern Illinois,False,Week 3,-10.25,Bowling Green,68,86,-18,incorrect,no_cover,28.25,Evaluated
+3,2026-11-21T19:00:00+00:00,Wake Forest,Western Carolina,False,Week 3,-14.31,Wake Forest,90,63,27,correct,cover,12.69,Evaluated
+3,2026-11-21T19:00:00+00:00,Syracuse,Lafayette,False,Week 3,-24.63,Syracuse,84,81,3,correct,no_cover,21.63,Evaluated
+3,2026-11-21T19:00:00+00:00,Portland,Fordham,True,Week 3,4.71,Fordham,69,87,-18,correct,cover,13.29,Evaluated
+3,2026-11-21T19:00:00+00:00,North Florida,Little Rock,False,Week 3,1.37,Little Rock,99,87,12,incorrect,no_cover,13.37,Evaluated
+3,2026-11-21T19:00:00+00:00,Wichita State,New Mexico,False,Week 3,2.95,New Mexico,85,60,25,incorrect,no_cover,27.95,Evaluated
+3,2026-11-21T19:00:00+00:00,Saint Peter's,Stony Brook,False,Week 3,1.84,Stony Brook,52,67,-15,correct,cover,13.16,Evaluated
+3,2026-11-21T19:00:00+00:00,Rider,Navy,False,Week 3,9.20,Navy,69,66,3,incorrect,no_cover,12.20,Evaluated
+3,2026-11-21T19:00:00+00:00,Morgan State,Cornell,False,Week 3,5.53,Cornell,63,84,-21,correct,cover,15.47,Evaluated
+3,2026-11-21T20:00:00+00:00,Indiana State,Middle Tennessee,True,Week 3,2.63,Middle Tennessee,59,69,-10,correct,cover,7.37,Evaluated
+3,2026-11-21T20:00:00+00:00,Milwaukee,St. Thomas-Minnesota,False,Week 3,0.26,St. Thomas-Minnesota,70,98,-28,correct,cover,27.74,Evaluated
+3,2026-11-21T20:00:00+00:00,Austin Peay,UT Rio Grande Valley,False,Week 3,-4.98,Austin Peay,73,79,-6,incorrect,no_cover,10.98,Evaluated
+3,2026-11-21T20:00:00+00:00,Missouri State,Drake,False,Week 3,-3.51,Missouri State,67,65,2,correct,no_cover,1.51,Evaluated
+3,2026-11-21T20:30:00+00:00,Binghamton,Army,False,Week 3,-0.84,Binghamton,67,46,21,correct,cover,20.16,Evaluated
+3,2026-11-21T21:00:00+00:00,Canisius,UAlbany,False,Week 3,4.48,UAlbany,91,81,10,incorrect,no_cover,14.48,Evaluated
+3,2026-11-21T21:00:00+00:00,East Tennessee State,Longwood,False,Week 3,-10.51,East Tennessee State,74,68,6,correct,no_cover,4.51,Evaluated
+3,2026-11-21T21:00:00+00:00,La Salle,Pennsylvania,False,Week 3,0.84,Pennsylvania,73,83,-10,correct,cover,9.16,Evaluated
+3,2026-11-21T21:00:00+00:00,George Mason,South Florida,False,Week 3,0.77,South Florida,73,62,11,incorrect,no_cover,11.77,Evaluated
+3,2026-11-21T21:00:00+00:00,Jacksonville,Central Arkansas,False,Week 3,1.01,Central Arkansas,67,82,-15,correct,cover,13.99,Evaluated
+3,2026-11-21T21:30:00+00:00,San Diego,UC Irvine,True,Week 3,6.80,UC Irvine,67,64,3,incorrect,no_cover,9.80,Evaluated
+3,2026-11-21T22:00:00+00:00,UTSA,Air Force,False,Week 3,-5.68,UTSA,90,68,22,correct,cover,16.32,Evaluated
+3,2026-11-21T22:00:00+00:00,Nicholls,Southern Miss,True,Week 3,-0.27,Nicholls,69,80,-11,incorrect,no_cover,11.27,Evaluated
+3,2026-11-21T22:00:00+00:00,Wofford,Winthrop,False,Week 3,-0.94,Wofford,91,86,5,correct,cover,4.06,Evaluated
+3,2026-11-21T22:00:00+00:00,Stonehill,Northeastern,False,Week 3,6.93,Northeastern,95,82,13,incorrect,no_cover,19.93,Evaluated
+3,2026-11-21T22:30:00+00:00,East Carolina,Southern Illinois,True,Week 3,3.84,Southern Illinois,69,85,-16,correct,cover,12.16,Evaluated
+3,2026-11-21T23:00:00+00:00,Massachusetts,Maine,False,Week 3,-11.86,Massachusetts,76,44,32,correct,cover,20.14,Evaluated
+3,2026-11-21T23:00:00+00:00,Georgetown,Coppin State,False,Week 3,-23.06,Georgetown,84,60,24,correct,cover,0.94,Evaluated
+3,2026-11-21T23:00:00+00:00,Norfolk State,UNC Wilmington,False,Week 3,13.79,UNC Wilmington,80,89,-9,correct,no_cover,4.79,Evaluated
+3,2026-11-22T00:00:00+00:00,VMI,Gardner-Webb,False,Week 3,-7.52,VMI,71,68,3,correct,no_cover,4.52,Evaluated
+3,2026-11-22T00:00:00+00:00,Mercer,Charleston Southern,False,Week 3,-6.26,Mercer,69,64,5,correct,no_cover,1.26,Evaluated
+3,2026-11-22T00:00:00+00:00,Vermont,Brown,False,Week 3,-7.99,Vermont,84,71,13,correct,cover,5.01,Evaluated
+3,2026-11-22T00:00:00+00:00,Villanova,Michigan,False,Week 3,8.06,Michigan,79,73,6,incorrect,no_cover,14.06,Evaluated
+3,2026-11-22T00:00:00+00:00,Elon,Morehead State,False,Week 3,-12.11,Elon,84,61,23,correct,cover,10.89,Evaluated
+3,2026-11-22T00:00:00+00:00,Cal Poly,Northern Arizona,False,Week 3,-5.39,Cal Poly,89,88,1,correct,no_cover,4.39,Evaluated
+3,2026-11-22T00:00:00+00:00,Chattanooga,Radford,False,Week 3,-6.91,Chattanooga,65,73,-8,incorrect,no_cover,14.91,Evaluated
+3,2026-11-22T00:00:00+00:00,Loyola Marymount,California Baptist,True,Week 3,-9.19,Loyola Marymount,80,73,7,correct,no_cover,2.19,Evaluated
+3,2026-11-22T00:30:00+00:00,Tennessee Tech,Presbyterian,False,Week 3,-2.33,Tennessee Tech,97,69,28,correct,cover,25.67,Evaluated
+3,2026-11-22T01:00:00+00:00,Oral Roberts,Texas A&M-Corpus Christi,False,Week 3,2.50,Texas A&M-Corpus Christi,78,74,4,incorrect,no_cover,6.50,Evaluated
+3,2026-11-22T01:00:00+00:00,Valparaiso,Troy,True,Week 3,-4.11,Valparaiso,77,72,5,correct,cover,0.89,Evaluated
+3,2026-11-22T01:30:00+00:00,Texas Southern,New Orleans,False,Week 3,-1.64,Texas Southern,70,75,-5,incorrect,no_cover,6.64,Evaluated
+3,2026-11-22T03:00:00+00:00,Pacific,Bradley,False,Week 3,-7.69,Pacific,63,62,1,correct,no_cover,6.69,Evaluated
+3,2026-11-22T04:00:00+00:00,Duke,Washington State,True,Week 3,-26.78,Duke,78,74,4,correct,no_cover,22.78,Evaluated
+3,2026-11-22T17:00:00+00:00,UIC,Miami (OH),True,Week 3,0.49,Miami (OH),60,71,-11,correct,cover,10.51,Evaluated
+3,2026-11-22T17:00:00+00:00,Nebraska,Butler,True,Week 3,-13.07,Nebraska,76,74,2,correct,no_cover,11.07,Evaluated
+3,2026-11-22T18:00:00+00:00,Marquette,Chicago State,False,Week 3,-33.32,Marquette,106,62,44,correct,cover,10.68,Evaluated
+3,2026-11-22T18:00:00+00:00,American University,Towson,False,Week 3,4.78,Towson,86,75,11,incorrect,no_cover,15.78,Evaluated
+3,2026-11-22T18:00:00+00:00,Long Island University,Fairfield,False,Week 3,-6.25,Long Island University,71,74,-3,incorrect,no_cover,9.25,Evaluated
+3,2026-11-22T18:00:00+00:00,Northwestern,Dayton,True,Week 3,-6.64,Northwestern,79,55,24,correct,cover,17.36,Evaluated
+3,2026-11-22T18:00:00+00:00,Canisius,Western Illinois,False,Week 3,-2.94,Canisius,46,66,-20,incorrect,no_cover,22.94,Evaluated
+3,2026-11-22T19:00:00+00:00,Fordham,San Diego,True,Week 3,-3.24,Fordham,58,80,-22,incorrect,no_cover,25.24,Evaluated
+3,2026-11-22T19:00:00+00:00,Cincinnati,UMass Lowell,False,Week 3,-22.97,Cincinnati,78,68,10,correct,no_cover,12.97,Evaluated
+3,2026-11-22T19:00:00+00:00,Memphis,Evansville,False,Week 3,-20.68,Memphis,82,62,20,correct,no_cover,0.68,Evaluated
+3,2026-11-22T19:00:00+00:00,Youngstown State,William & Mary,False,Week 3,-2.16,Youngstown State,63,75,-12,incorrect,no_cover,14.16,Evaluated
+3,2026-11-22T19:00:00+00:00,Utah Tech,South Dakota,True,Week 3,-4.59,Utah Tech,73,74,-1,incorrect,no_cover,5.59,Evaluated
+3,2026-11-22T19:00:00+00:00,Duquesne,Wyoming,True,Week 3,7.10,Wyoming,61,79,-18,correct,cover,10.90,Evaluated
+3,2026-11-22T19:00:00+00:00,Western Kentucky,George Washington,True,Week 3,10.99,George Washington,86,78,8,incorrect,no_cover,18.99,Evaluated
+3,2026-11-22T19:30:00+00:00,New Mexico State,Robert Morris,True,Week 3,-2.05,New Mexico State,79,84,-5,incorrect,no_cover,7.05,Evaluated
+3,2026-11-22T20:00:00+00:00,Texas,Southern Indiana,False,Week 3,-34.20,Texas,97,61,36,correct,cover,1.80,Evaluated
+3,2026-11-22T20:00:00+00:00,South Alabama,West Florida,False,Week 3,-7.44,South Alabama,79,66,13,correct,cover,5.56,Evaluated
+3,2026-11-22T20:00:00+00:00,Nicholls,Troy,True,Week 3,4.33,Troy,77,78,-1,correct,no_cover,3.33,Evaluated
+3,2026-11-22T20:30:00+00:00,Mercyhurst,UAlbany,True,Week 3,-1.12,Mercyhurst,78,75,3,correct,cover,1.88,Evaluated
+3,2026-11-22T20:30:00+00:00,Oklahoma State,Virginia Tech,True,Week 3,0.46,Virginia Tech,106,80,26,incorrect,no_cover,26.46,Evaluated
+3,2026-11-22T20:30:00+00:00,Texas State,McNeese,False,Week 3,1.94,McNeese,95,69,26,incorrect,no_cover,27.94,Evaluated
+3,2026-11-22T21:30:00+00:00,IU Indianapolis,Maryland Eastern Shore,True,Week 3,-2.52,IU Indianapolis,81,61,20,correct,cover,17.48,Evaluated
+3,2026-11-22T21:30:00+00:00,Loyola Marymount,UC Irvine,True,Week 3,4.22,UC Irvine,72,68,4,incorrect,no_cover,8.22,Evaluated
+3,2026-11-22T21:30:00+00:00,Liberty,Richmond,True,Week 3,3.19,Richmond,88,92,-4,correct,cover,0.81,Evaluated
+3,2026-11-22T22:00:00+00:00,Boston College,NJIT,False,Week 3,-23.55,Boston College,79,59,20,correct,no_cover,3.55,Evaluated
+3,2026-11-22T22:00:00+00:00,Lamar,Rice,True,Week 3,2.43,Rice,81,85,-4,correct,cover,1.57,Evaluated
+3,2026-11-22T22:00:00+00:00,Samford,UNC Asheville,False,Week 3,-5.76,Samford,80,77,3,correct,no_cover,2.76,Evaluated
+3,2026-11-22T22:00:00+00:00,Portland State,Cal State Fullerton,False,Week 3,-7.11,Portland State,75,92,-17,incorrect,no_cover,24.11,Evaluated
+3,2026-11-22T22:30:00+00:00,Stephen F. Austin,Temple,True,Week 3,-1.41,Stephen F. Austin,72,70,2,correct,cover,0.59,Evaluated
+3,2026-11-22T23:00:00+00:00,Minnesota,Utah,True,Week 3,-7.67,Minnesota,77,62,15,correct,cover,7.33,Evaluated
+3,2026-11-22T23:00:00+00:00,Valparaiso,Southern Miss,True,Week 3,-8.70,Valparaiso,89,99,-10,incorrect,no_cover,18.70,Evaluated
+3,2026-11-23T00:00:00+00:00,UCLA,Delaware,False,Week 3,-30.29,UCLA,85,48,37,correct,cover,6.71,Evaluated
+3,2026-11-23T00:00:00+00:00,Portland,California Baptist,True,Week 3,-5.15,Portland,71,79,-8,incorrect,no_cover,13.15,Evaluated
+3,2026-11-23T00:40:00+00:00,UAB,Rhode Island,True,Week 3,3.71,Rhode Island,64,79,-15,correct,cover,11.29,Evaluated
+3,2026-11-23T01:00:00+00:00,USC,Louisiana,False,Week 3,-28.26,USC,82,56,26,correct,no_cover,2.26,Evaluated
+3,2026-11-23T01:10:00+00:00,Utah Valley,UT Martin,True,Week 3,-6.88,Utah Valley,78,76,2,correct,no_cover,4.88,Evaluated
+3,2026-11-23T02:45:00+00:00,UC San Diego,Seattle U,True,Week 3,-3.03,UC San Diego,64,90,-26,incorrect,no_cover,29.03,Evaluated
+3,2026-11-23T04:59:00+00:00,Loyola Chicago,San José State,True,Week 3,-2.35,Loyola Chicago,72,63,9,correct,cover,6.65,Evaluated

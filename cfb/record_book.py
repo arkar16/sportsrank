@@ -219,7 +219,12 @@ def home_document(
 """
 
 
-def _not_found(year: int) -> str:
+def _not_found(year: int, *, include_cbb: bool = False) -> str:
+    cbb_links = (
+        '<li><a href="/cbb/index.html">College basketball rankings</a></li>\n'
+        '<li><a href="/cbb/teams/index.html">Find a basketball team</a></li>\n'
+        '<li><a href="/cbb/seasons/index.html">Basketball season archive</a></li>\n'
+    ) if include_cbb else ""
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>404 · Page not found | SportsRank</title><link rel="stylesheet" href="/cfb/assets/record-book.css"></head>
@@ -228,7 +233,7 @@ def _not_found(year: int) -> str:
 <li><a href="/cfb/years/{year}/{year}_CFB.html">{year} standings</a></li>
 <li><a href="/cfb/teams/index.html">Find a team</a></li>
 <li><a href="/cfb/cfb.html">Season archive</a></li>
-</ul></main></body></html>
+{cbb_links}</ul></main></body></html>
 """
 
 
@@ -298,7 +303,8 @@ def build(site: Path) -> tuple[int, int, int]:
     for relative in ("index.html", "cfb/cfb.html"):
         markup = _home(site, seasons, routes, stylesheet_revision, is_root=relative == "index.html")
         changed += _write_changed(site / relative, presentation.render(markup.encode(), archive=False))
-    changed += _write_changed(site / "404.html", presentation.render(_not_found(seasons[-1].year).encode(), archive=False))
+    has_cbb = all((site / p).is_file() for p in ("cbb/index.html", "cbb/teams/index.html", "cbb/seasons/index.html"))
+    changed += _write_changed(site / "404.html", presentation.render(_not_found(seasons[-1].year, include_cbb=has_cbb).encode(), archive=False))
     targets = {"/" + path.relative_to(site).as_posix() for path in site.rglob("*.html")}
     for relative, raw in honors.items():
         markup = presentation.render(raw, archive=True, relative=relative, targets=targets, sortable=True)

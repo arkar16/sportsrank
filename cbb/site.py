@@ -6,23 +6,24 @@ import shutil
 
 from site_navigation import masthead
 from .blend import VERSION, blend_seasons
-from .team_schedule import remaining_schedules
-from .program_records import read_program_records
 from .early_records import read_early_records
+from .historical_replay import replay_historical_seasons
 from .home import landing_page
 from .honors import write_honors
 from .march_archive import build_tournaments
+from .program_records import read_program_records
 from .record_book import SECTIONS, _games, _write, build, season_name, team_label
+from .team_schedule import remaining_schedules
 
 
-def _forecasts(forecasts, prepared_at, logo_ids, current):
+def _forecasts(forecasts, prepared_at, logo_ids, current, *, year=None):
     forecast_rows = []
     for row in forecasts:
         margin = row["predicted_home_margin"]
         pick = "Pick’em" if margin == 0 else escape(row["home"] if margin > 0 else row["away"])
         forecast_rows.append(
-            f'<tr><td>{escape(row["tipoff"])}</td><td>{team_label(row["away"], row.get("away_id"), logo_ids, linked=current)}</td>'
-            f'<td>{team_label(row["home"], row.get("home_id"), logo_ids, linked=current)}</td><td>{pick}</td><td class="num">{abs(margin):.2f}</td></tr>'
+            f'<tr><td>{escape(row["tipoff"])}</td><td>{team_label(row["away"], row.get("away_id"), logo_ids, linked=current, year=year if current else None)}</td>'
+            f'<td>{team_label(row["home"], row.get("home_id"), logo_ids, linked=current, year=year if current else None)}</td><td>{pick}</td><td class="num">{abs(margin):.2f}</td></tr>'
         )
     section_id = ' id="forecasts"' if current else ""
     forecast_section = ""
@@ -74,6 +75,8 @@ def main():
     parser.add_argument("--season", type=int, required=True)
     parser.add_argument("--as-of", required=True, help="Snapshot preparation time, with timezone")
     parser.add_argument("--output", type=Path, required=True, help="Basketball website directory")
+    parser.add_argument("--historical-dir", type=Path, default=None,
+                        help="Directory containing pinned 1985–2019 March Mania CSV files for full weekly history")
     args = parser.parse_args()
     as_of = datetime.fromisoformat(args.as_of)
     if as_of.utcoffset() is None:
@@ -129,21 +132,28 @@ def main():
     years = build_tournaments(args.output, baseline, as_of, logo_ids, blends=seasons if blended else ())
     schedules, upcoming_ids = remaining_schedules(args.database, season, checkpoint, as_of) if blended else ({}, set())
     first_replay = min(as_of.year + (as_of.month >= 7), seasons[0]["season"])
+    historical_seasons = (
+        replay_historical_seasons(args.historical_dir, before_year=first_replay)
+        if args.historical_dir is not None else ()
+    )
     program_records = read_program_records(first_replay)
     early_records = read_early_records(first_replay)
     earlier_years = early_records.keys() | program_records.keys()
-    archives, routes, presentation = build(args.output, seasons, as_of, logo_ids, tournament_years=years, model=model,
-                                           schedules=schedules, upcoming_ids=upcoming_ids, include_early_finals=True, early_records=early_records,
-                                           program_records=program_records)
+    archives, routes, presentation = build(
+        args.output, seasons, as_of, logo_ids, tournament_years=years, model=model,
+        schedules=schedules, upcoming_ids=upcoming_ids, include_early_finals=True,
+        early_records=early_records, program_records=program_records,
+        historical_seasons=historical_seasons,
+    )
     write_honors(args.output, archives, routes, presentation, as_of, earlier_years=earlier_years)
     edition_link = f'<nav class="sr-report-nav"><a href="editions/{archive.name}">Dated edition</a></nav>'
-    report = _forecasts(edition_games, as_of.astimezone(et), logo_ids, True)
+    report = _forecasts(edition_games, as_of.astimezone(et), logo_ids, True, year=args.season)
     if not report:
         report = '<p id="forecasts">No upcoming games in this edition.</p>'
     if blended:
         slate = [g for g in season["forecasts"] if g["cutoff_utc"] == cutoff]
         report = (f'<section id="forecasts"><h2>{model} weekly picks</h2>'
-                  + _games(slate, logo_ids, as_of) + '</section>')
+                  + _games(slate, logo_ids, as_of, year=args.season) + '</section>')
     _write(args.output, "current.html", f"{season_name(args.season)} basketball forecasts", edition_link + report)
     (args.output / "index.html").write_bytes(landing_page(archives, routes, presentation, checkpoint, archive, years, model=model, earlier_years=earlier_years))
 

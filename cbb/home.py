@@ -39,6 +39,7 @@ def landing_page(archives, routes, presentation, checkpoint, edition_path, tourn
              '<p><a href="/cbb/conferences/index.html">Conference histories</a></p>'
              '<p><a href="/cbb/history/champions.html">CORS national champions</a></p>'
              '<p><a href="/cbb/history/last-place.html">Last-place finishers</a></p>'
+             '<p><a href="/cbb/history/ncaa-champions.html">NCAA tournament champions</a></p>'
              f'<p id="forecasts"><a href="current.html#forecasts">Game forecasts</a></p>'
              f'<p><a href="editions/{edition_path.name}">Dated edition</a></p>')
     if tournaments:

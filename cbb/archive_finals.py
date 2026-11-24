@@ -9,9 +9,11 @@ from cfb.reference_archive import Season, Standing
 _ROOT = Path(__file__).parent
 _CONFERENCES = {
     "a_sun": "ASUN", "a_ten": "A-10", "aac": "American", "aec": "Am. East",
+    "big sky conference": "Big Sky",
     "big_east": "Big East", "big_eight": "Big Eight", "big_sky": "Big Sky",
     "big_south": "Big South", "big_ten": "Big Ten", "big_twelve": "Big 12",
-    "big_west": "Big West", "horizon": "Horizon", "ind": "Indep.", "ivy": "Ivy",
+    "big_west": "Big West", "eastern 8": "Eastern 8", "horizon": "Horizon",
+    "ind": "Indep.", "ivy": "Ivy",
     "maac": "Metro", "metro": "Metro Conference", "mid_cont": "Mid-Continent",
     "mw_city": "Midwestern City", "mw_coll": "Midwestern Collegiate", "mwc": "Mountain West",
     "pac_ten": "Pac-10", "pac_twelve": "Pac-12", "patriot": "Patriot", "southern": "SoCon",
@@ -19,9 +21,19 @@ _CONFERENCES = {
 }
 
 
-def read_archive(before_year):
+def conference_name(raw):
+    if not raw or raw == "—":
+        return "—"
+    return _CONFERENCES.get(raw, raw.upper())
+
+
+def program_id_map():
     with (_ROOT / "archive_programs.csv").open(encoding="utf-8") as f:
-        programs = {r["historical_id"]: int(r["program_id"]) for r in csv.DictReader(f)}
+        return {r["historical_id"]: int(r["program_id"]) for r in csv.DictReader(f)}
+
+
+def read_archive(before_year):
+    programs = program_id_map()
     ids = {}
     years = defaultdict(list)
     with (_ROOT / "archive_finals.csv").open(encoding="utf-8") as f:
@@ -35,5 +47,5 @@ def read_archive(before_year):
                 raise ValueError(f"Ambiguous historical basketball program: {program}")
             years[year].append(Standing(school, int(r["rank"]), Decimal(r["cors"]),
                                         f'{r["wins"]}–{r["losses"]}',
-                                        _CONFERENCES.get(r["conference"], r["conference"].upper())))
+                                        conference_name(r["conference"])))
     return [Season(year, {"FINAL": standings}, []) for year, standings in sorted(years.items())], ids
