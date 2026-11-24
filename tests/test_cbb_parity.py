@@ -5,6 +5,7 @@ from pathlib import Path
 import unittest
 
 from bs4 import BeautifulSoup
+from lxml import html
 
 from cbb.grade import grade_game, grade_performance
 
@@ -31,6 +32,42 @@ class PerformanceGradingTests(unittest.TestCase):
         self.assertAlmostEqual(summary.winner_accuracy, 0.75)
         self.assertAlmostEqual(summary.line_coverage, 1 / 3)
         self.assertAlmostEqual(summary.mae, (3 + 0 + 2 + 7 + 6) / 5)
+
+
+class TeamHistoryLinksTests(unittest.TestCase):
+    def test_every_best_rank_links_to_a_published_checkpoint(self):
+        for sport, route in (
+            ("cfb", r"/cfb/years/\d{4}/checkpoints/(?:PRESEASON|W\d+|FINAL)\.html"),
+            ("cbb", r"/cbb/seasons/\d{4}/(?:weeks/(?:\d+|final)|index)\.html"),
+        ):
+            directory = SITE / sport / "teams"
+            paths = set(directory.glob("*/index.html"))
+            self.assertTrue(paths, directory)
+            directory_page = html.parse(directory / "index.html")
+            self.assertEqual(paths, {
+                SITE / href.lstrip("/") for href in directory_page.xpath('//ul[@class="program-list"]/li/a/@href')
+            })
+            for path in sorted(paths):
+                tables = html.parse(path).xpath('//table[caption="Season history"]')
+                self.assertEqual(len(tables), 1, path)
+                table = tables[0]
+                headings = table.xpath("thead/tr/th/text()")
+                self.assertIn("Best rank", headings, path)
+                column = headings.index("Best rank")
+                rows = table.xpath("tbody/tr")
+                self.assertTrue(rows, path)
+                for row in rows:
+                    cell = row[column]
+                    links = cell.xpath("a")
+                    self.assertEqual(len(links), 1, path)
+                    link = links[0]
+                    href = link.get("href")
+                    rank = link.text_content().strip()
+                    self.assertEqual(cell.text_content().strip(), rank, path)
+                    self.assertRegex(rank, r"^[1-9]\d*$", path)
+                    self.assertTrue(href, path)
+                    self.assertRegex(href, f"^{route}$", path)
+                    self.assertTrue((SITE / href.lstrip("/")).is_file(), f"{path} links to {href}")
 
 
 class CbbWebsiteParityTests(unittest.TestCase):

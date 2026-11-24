@@ -4,9 +4,10 @@
 
 The team directory opens each program’s history. Within a season, team links open that year’s team page whenever the archive has one. A compact line shows
 season-ending national rank over time. A table gives the record, final national
-rank, final CORS Rating and best rank reached for each completed season. For
-the current season, label the latest figures with the week they cover. Opening
-any season shows the team's weekly ranks, opponents, forecasts and scores.
+rank, final CORS Rating and best rank reached for each completed season. Each
+season’s best rank links to the checkpoint where the team first reached it.
+For the current season, label the latest figures with the week they cover.
+Opening any season shows the team's weekly ranks, opponents, forecasts and scores.
 Every program appearing in an archived CORS Ranking gets a permanent page,
 including programs whose last ranked season was decades ago. Keep a documented
 rename on the same program history and distinct schools separate. Game logs

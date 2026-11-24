@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 from .archive_presentation import updated_time
 from .conference_pages import conference_route
-from .reference_archive import program_season_route, season_team_routes
+from .reference_archive import _checkpoint_order, program_season_route, season_team_routes
 from .reference_markup import school_label
 
 if TYPE_CHECKING:
@@ -32,10 +32,18 @@ class _ProgramSeason:
         return next(key for key, rows in reversed(self.season.rankings.items()) if rows)
 
 
+def _checkpoint_label(checkpoint: str) -> str:
+    if checkpoint.startswith("W"):
+        return f"Week {checkpoint[1:]}"
+    return checkpoint.title()
+
+
 def build_program_pages(
     seasons: list[Season], routes: dict[str, str], *, sport="football", directory_route=_DIRECTORY,
     season_route=lambda year: f"/cfb/years/{year}/{year}_CFB.html",
     year_label=str, directory_label=None, remaining_schedules=None,
+    checkpoint_route=lambda year, checkpoint: f"/cfb/years/{year}/checkpoints/{checkpoint}.html",
+    best_checkpoint_label=_checkpoint_label,
 ) -> Iterator[tuple[str, str]]:
     """Yield the program index and one history and season page per ranked program."""
     histories: dict[str, list[_ProgramSeason]] = defaultdict(list)
@@ -70,7 +78,9 @@ def build_program_pages(
         heading = f'<span data-program="{name}">{name}</span>'
         yield route.lstrip("/"), _page(
             f"{school} {sport}", heading, [],
-            _rank_trend(route, history, year_label) + _history_table(route, history, sport, year_label), history[0].season.updated_at,
+            _rank_trend(route, history, year_label)
+            + _history_table(route, history, sport, year_label, checkpoint_route, best_checkpoint_label),
+            history[0].season.updated_at,
         )
         for entry in history:
             year = entry.season.year
@@ -119,12 +129,6 @@ def _page(title: str, heading: str, links: list[tuple[str, str]], content: str, 
 """
 
 
-def _checkpoint_label(checkpoint: str) -> str:
-    if checkpoint.startswith("W"):
-        return f"Week {checkpoint[1:]}"
-    return checkpoint.title()
-
-
 def _table(label: str, headers: tuple[str, ...], body: str, *, caption: str = "") -> str:
     columns = "".join(f'<th scope="col">{header}</th>' for header in headers)
     table = f"<table><caption>{caption}</caption>" if caption else f'<table aria-label="{label}">'
@@ -134,23 +138,62 @@ def _table(label: str, headers: tuple[str, ...], body: str, *, caption: str = ""
     )
 
 
-def _history_table(route: str, history: list[_ProgramSeason], sport: str, year_label=str) -> str:
+def _best_rank_content(entry: _ProgramSeason, season_label: str, checkpoint_route, checkpoint_label) -> str:
+    best_rank = min(row.rank for row in entry.standings.values())
+    best_checkpoints = sorted(
+        (checkpoint for checkpoint, row in entry.standings.items() if row.rank == best_rank),
+        key=_checkpoint_order,
+    )
+    # Basketball aliases FINAL to the final weekly ranking list; avoid
+    # treating that alias as a second distinct checkpoint in tie wording.
+    if len(best_checkpoints) > 1 and best_checkpoints[-1] == "FINAL":
+        rankings = entry.season.rankings
+        season_checkpoints = sorted((key for key, rows in rankings.items() if rows), key=_checkpoint_order)
+        if (
+            len(season_checkpoints) >= 2
+            and season_checkpoints[-1] == "FINAL"
+            and season_checkpoints[-2] in best_checkpoints
+            and rankings["FINAL"] is rankings[season_checkpoints[-2]]
+        ):
+            best_checkpoints = best_checkpoints[:-1]
+
+    first_checkpoint = best_checkpoints[0]
+    href = checkpoint_route(entry.season.year, first_checkpoint) if checkpoint_route is not None else None
+    if not href:
+        return str(best_rank)
+
+    labeler = checkpoint_label or _checkpoint_label
+    first = labeler(first_checkpoint)
+    rank_label = f"{season_label} best rank {best_rank}"
+    if len(best_checkpoints) == 1:
+        title = first
+        aria_label = f"{rank_label}, {first}"
+    else:
+        title = f"First reached {first}"
+        aria_label = f"{rank_label}, first reached {first}"
+    return f'<a href="{escape(href)}" title="{escape(title)}" aria-label="{escape(aria_label)}">{best_rank}</a>'
+
+
+def _history_table(
+    route: str, history: list[_ProgramSeason], sport: str, year_label, checkpoint_route, checkpoint_label,
+) -> str:
     rows = []
     for entry in history:
         year = entry.season.year
+        season_label = str(year_label(year))
         checkpoint = entry.latest_checkpoint
         standing = entry.standings.get(checkpoint)
         through = "Through " if checkpoint.startswith("W") else ""
-        best_rank = min(row.rank for row in entry.standings.values())
+        best_rank_html = _best_rank_content(entry, season_label, checkpoint_route, checkpoint_label)
         conference = escape(standing.conference) if standing else _MISSING
         if standing and standing.conference and standing.conference != "—":
             conference = _link(conference_route(standing.conference, year, sport=sport), standing.conference)
         rows.append(
-            f'<tr><th scope="row">{_link(program_season_route(route, year), str(year_label(year)))}</th>'
+            f'<tr><th scope="row">{_link(program_season_route(route, year), season_label)}</th>'
             f"<td>{through}{_checkpoint_label(checkpoint)}</td>"
             f'<td class="num">{standing.rank if standing else _MISSING}</td>'
             f'<td class="num">{format(standing.rating, "f") if standing else _MISSING}</td>'
-            f'<td class="num">{best_rank}</td>'
+            f'<td class="num">{best_rank_html}</td>'
             f'<td class="num">{escape(standing.record) if standing else _MISSING}</td>'
             f"<td>{conference}</td></tr>\n"
         )

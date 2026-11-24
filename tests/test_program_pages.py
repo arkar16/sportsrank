@@ -124,6 +124,65 @@ class ProgramPagesTests(unittest.TestCase):
             places=1,
         )
 
+    def test_best_rank_links_to_the_checkpoint_with_numeric_link_text(self):
+        page = self.pages[TEAM_PATH + "index.html"]
+        links = page.select("table tbody td:nth-of-type(4) a")
+        self.assertEqual([(a.text, a["href"], a["title"], a["aria-label"]) for a in links], [
+            ("6", "/cfb/years/2026/checkpoints/PRESEASON.html", "Preseason", "2026 best rank 6, Preseason"),
+            ("2", "/cfb/years/1905/checkpoints/W2.html", "Week 2", "1905 best rank 2, Week 2"),
+            ("4", "/cfb/years/1904/checkpoints/W1.html", "Week 1", "1904 best rank 4, Week 1"),
+            ("9", "/cfb/years/1903/checkpoints/FINAL.html", "Final", "1903 best rank 9, Final"),
+            ("10", "/cfb/years/1902/checkpoints/FINAL.html", "Final", "1902 best rank 10, Final"),
+        ])
+
+    def test_best_rank_ties_link_to_the_first_checkpoint_in_season_order(self):
+        seasons = [
+            Season(2026, {key: [standing(TEAM, rank)] for key, rank in (
+                ("W10", 2), ("W2", 2), ("W1", 5), ("FINAL", 4),
+            )}, []),
+            Season(2025, {key: [standing(TEAM, 3)] for key in ("FINAL", "W10", "PRESEASON", "W0")}, []),
+        ]
+        pages = dict(build_program_pages(seasons, ROUTES))
+        page = BeautifulSoup(pages[TEAM_PATH + "index.html"], "html5lib")
+        links = page.select("table tbody td:nth-of-type(4) a")
+        self.assertEqual([(a.text, a["href"], a["title"], a["aria-label"]) for a in links], [
+            ("2", "/cfb/years/2026/checkpoints/W2.html", "First reached Week 2",
+             "2026 best rank 2, first reached Week 2"),
+            ("3", "/cfb/years/2025/checkpoints/PRESEASON.html", "First reached Preseason",
+             "2025 best rank 3, first reached Preseason"),
+        ])
+
+    def test_best_rank_defaults_labeler_when_none_is_passed(self):
+        season = Season(2026, {"W1": [standing(TEAM, 6)]}, [])
+        pages = dict(build_program_pages([season], ROUTES, best_checkpoint_label=None))
+        page = BeautifulSoup(pages[TEAM_PATH + "index.html"], "html5lib")
+        link = page.select_one("table tbody td:nth-of-type(4) a")
+        self.assertEqual((link.text, link["href"], link["title"], link["aria-label"]), (
+            "6", "/cfb/years/2026/checkpoints/W1.html", "Week 1", "2026 best rank 6, Week 1",
+        ))
+
+    def test_best_rank_falls_back_to_plain_text_when_no_route_is_available(self):
+        season = Season(2026, {"W1": [standing(TEAM, 6)]}, [])
+        for checkpoint_route in (None, lambda year, checkpoint: ""):
+            with self.subTest(checkpoint_route=checkpoint_route):
+                pages = dict(build_program_pages([season], ROUTES, checkpoint_route=checkpoint_route))
+                page = BeautifulSoup(pages[TEAM_PATH + "index.html"], "html5lib")
+                cell = page.select_one("table tbody td:nth-of-type(4)")
+                self.assertEqual(cell.text, "6")
+                self.assertIsNone(cell.a)
+
+    def test_best_rank_escapes_custom_link_attributes(self):
+        season = Season(2026, {"W1": [standing(TEAM, 6)]}, [])
+        href = '/checkpoints?season=2026&week="1"'
+        label = 'Week "1" <First results>'
+        pages = dict(build_program_pages(
+            [season], ROUTES, checkpoint_route=lambda year, checkpoint: href,
+            best_checkpoint_label=lambda checkpoint: label,
+        ))
+        page = BeautifulSoup(pages[TEAM_PATH + "index.html"], "html5lib")
+        link = page.select_one("table tbody td:nth-of-type(4) a")
+        self.assertEqual(link.attrs, {"href": href, "title": label, "aria-label": f"2026 best rank 6, {label}"})
+
     def test_games_keep_multiple_matchups_bye_and_pending_forecast_in_order(self):
         page = self.pages[TEAM_PATH + "2026.html"]
         headings = page.select("main [data-program]")

@@ -16,6 +16,41 @@ def instant(stamp):
 
 
 class BasketballBookTests(unittest.TestCase):
+    def test_best_rank_links_open_weekly_and_final_only_standings(self):
+        schools = {90001: Team(90001, "A & M"), 90002: Team(90002, "B")}
+        completed = _replay(Season(1982, schools, (
+            Game(10, instant("1981-11-05T22:00Z"), 90001, 90002, False, "final", (60, 74)),
+        )), (), 2., 1., 4.)
+        future = _replay(Season(1983, schools, (
+            Game(11, instant("1982-11-16T22:00Z"), 90001, 90002, False, "final", (71, 65)),
+        )), (), 2., 1., 4.)
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _, routes, _ = build(root, [completed, future], instant("1982-11-10T23:00Z"), set(),
+                                 include_early_finals=True)
+            for school, rank, href, title, aria_label, destination_heading in (
+                ("A & M", "1", "/cbb/seasons/1982/weeks/0.html", "Preseason",
+                 "1981–82 best rank 1, Preseason", "1981–82 basketball · Preseason"),
+                ("B", "1", "/cbb/seasons/1982/weeks/1.html", "Week 1",
+                 "1981–82 best rank 1, Week 1", "1981–82 basketball · Week 1"),
+                ("Indiana", "1", "/cbb/seasons/1981/index.html", "Final",
+                 "1980–81 best rank 1, Final", "1980–81 Division I basketball"),
+            ):
+                with self.subTest(school=school):
+                    history = BeautifulSoup((root / routes[school].removeprefix("/cbb/")).read_bytes(), "html.parser")
+                    links = history.select("table tbody td:nth-of-type(4) a")
+                    self.assertEqual(len(links), 1)
+                    link = links[0]
+                    self.assertEqual((link.text, link["href"], link["title"], link["aria-label"]),
+                                     (rank, href, title, aria_label))
+                    destination = root / link["href"].removeprefix("/cbb/")
+                    page = BeautifulSoup(destination.read_bytes(), "html.parser")
+                    self.assertEqual(page.h1.text, destination_heading)
+            final = BeautifulSoup((root / "seasons/1982/weeks/final.html").read_bytes(), "html.parser")
+            self.assertEqual(final.select_one('a[aria-current="page"]')["href"], "/cbb/seasons/1982/weeks/final.html")
+            self.assertFalse((root / "seasons/1981/weeks").exists())
+            self.assertFalse((root / "seasons/1983/weeks").exists())
+
     def test_navigation_and_results_follow_the_visible_checkpoint(self):
         schools = {1: Team(1, "A & M"), 2: Team(2, "B")}
         season = Season(2020, schools, (

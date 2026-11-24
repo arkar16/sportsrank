@@ -70,16 +70,35 @@ def _season_link(year):
     return f'<a href="/cbb/seasons/{year}/index.html">{season_name(year)}</a>'
 
 
+def _week_route(year, week):
+    slug = "final" if week == "FINAL" else week
+    return f"/cbb/seasons/{year}/weeks/{slug}.html"
+
+
 def _week_link(year, week, label, *, current=False):
     selected = ' aria-current="page"' if current else ""
-    dest = f"/cbb/seasons/{year}/weeks/final.html" if week == "FINAL" else f"/cbb/seasons/{year}/weeks/{week}.html"
-    return f'<a href="{dest}"{selected}>{label}</a>'
+    return f'<a href="{_week_route(year, week)}"{selected}>{label}</a>'
 
 
 def _week_label(week):
     if week == "FINAL":
         return "Final"
     return "Preseason" if week == 0 else f"Week {week}"
+
+
+def _checkpoint_week(checkpoint):
+    if checkpoint == "PRESEASON":
+        return 0
+    if checkpoint == "FINAL":
+        return checkpoint
+    if checkpoint.startswith("W") and checkpoint[1:].isdigit():
+        return int(checkpoint[1:])
+    return None
+
+
+def _best_checkpoint_label(checkpoint):
+    week = _checkpoint_week(checkpoint)
+    return _week_label(week) if week is not None else checkpoint.title()
 
 
 def _checkpoint_nav(year, week_numbers, *, finals=False, current=None):
@@ -233,6 +252,7 @@ def build(
         season_index.append((_season_link(year), len(final), "Final only", completed, "—"))
 
     latest_season_year = seasons[-1]["season"]
+    weekly_years: set[int] = set()
     for season in weekly_seasons:
         year = season["season"]
         date_only = bool(season.get("date_only"))
@@ -319,6 +339,7 @@ def build(
                 + _games(slates[week], logos, as_of, year=year, date_only=date_only)
             )
             publish(f"seasons/{year}/weeks/{week}.html", _document(title, title, body, metadata=_season_notes(c["cutoff_utc"])))
+        weekly_years.add(year)
 
         if finals:
             final_title = f"{season_name(year)} basketball · Final"
@@ -418,12 +439,21 @@ def build(
         root, "seasons/index.html", "Basketball season archive",
         history_note + _table(("Season", "Teams", "Weekly checkpoints", "Completed games", "Performance"), reversed(season_index)),
     )
+
+    def checkpoint_route(year, checkpoint):
+        week = _checkpoint_week(checkpoint)
+        if year in weekly_years and week is not None:
+            return _week_route(year, week)
+        return f"/cbb/seasons/{year}/index.html"
+
     for path, markup in build_program_pages(
         program_archives, routes, sport="basketball", remaining_schedules=schedules,
         directory_route="/cbb/teams/index.html",
         season_route=lambda y: f"/cbb/seasons/{y}/index.html",
         year_label=season_name,
         directory_label=lambda school: team_label(school, ids[school], logos),
+        checkpoint_route=checkpoint_route,
+        best_checkpoint_label=_best_checkpoint_label,
     ):
         sortable = path.endswith("/index.html") and path != "cbb/teams/index.html"
         publish(path.removeprefix("cbb/"), markup, sortable=sortable)
