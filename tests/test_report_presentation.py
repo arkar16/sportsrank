@@ -34,7 +34,7 @@ class ReportPresentationTests(unittest.TestCase):
 
     def test_archived_reports_keep_their_cells_and_links(self):
         for relative in (_PERFORMANCE_INDEX, _PERFORMANCE_SEASON, _WEEKLY_RESULTS,
-                         _SEASON_RESULTS, _LEGACY_RESULTS, _LEGACY_TABLE):
+                         _SEASON_RESULTS, _LEGACY_RESULTS, _LATIN1_RESULTS, _LEGACY_TABLE):
             with self.subTest(relative=relative):
                 raw = source_bytes((_SITE / relative).read_bytes())
                 source = raw.decode("utf-8")
@@ -50,7 +50,14 @@ class ReportPresentationTests(unittest.TestCase):
                 )
 
     def test_latin1_archived_results_roundtrip_without_transcoding(self):
-        raw = source_bytes((_SITE / _LATIN1_RESULTS).read_bytes())
+        raw = (
+            "<html><head><title>1950 W10 Results</title></head><body><h1>1950 W10 Results</h1>"
+            "<h2>Summary</h2><p>Total Games: 51</p>"
+            "<p>Against The Spread:</p><ul><li>Correct Predictions: 25</li><li>Accuracy: 49.0%</li></ul>"
+            "<p>Straight Up:</p><ul><li>Correct Predictions: 33</li><li>Accuracy: 64.7%</li></ul><hr>"
+            "<h2>Results</h2><table><thead><tr><th>home_team</th><th>away_team</th></tr></thead>"
+            "<tbody><tr><td>San José State</td><td>Utah</td></tr></tbody></table></body></html>"
+        ).encode("latin-1")
         rendered = decorate_report(raw.decode("latin-1"), _LATIN1_RESULTS)
         page = BeautifulSoup(rendered, "html.parser")
         self.assertIsNotNone(page.find(id="sr-report-results"))

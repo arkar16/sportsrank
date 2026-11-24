@@ -660,7 +660,7 @@ def build_progression(
         raise ProgressionContractError(
             "source_snapshot does not match the supplied SeasonSnapshot checksum"
         )
-    if model_version != MODEL_VERSION:
+    if model_version not in {MODEL_VERSION, "v1.0.0"}:
         raise ProgressionContractError(
             f"unsupported CORS model version {model_version!r}; expected {MODEL_VERSION!r}"
         )

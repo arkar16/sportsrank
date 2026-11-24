@@ -119,6 +119,20 @@ GitHub evidence using `GITHUB_TOKEN`, `GH_TOKEN`, or the existing `gh` login,
 without printing or saving the credential; it does not read or
 write Firebase. Results are `site/` and `receipt.json` under a new output folder.
 
+## College football CORS v1.0.0
+
+College football uses the frozen two-timescale Bayesian state-space multi-tier
+Kalman model (**CORS v1.0.0**, [ADR-0029](docs/adr/0029-adopt-kalman-two-scale-football-cors-v1.md)).
+Ratings are zero-centered expected neutral-field points above or below an
+average FBS team (`0.00`). Replay the full 1897–current football archive
+(rankings, spreads including the current upcoming slate, weekly forecast
+results, model performance reports, progression, honors, team pages, conference
+pages, and homepages) offline with zero live API calls:
+
+```sh
+env -u CFBD_API -u CFBD_API_KEY -u CFBD_PRED_API uv run --locked python -m cfb.cors_v1
+```
+
 ## College football record book
 
 The public college football record book links each ranked program to its
