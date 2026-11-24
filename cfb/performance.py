@@ -137,7 +137,8 @@ def seasons(website: Path) -> list[int]:
 
 def evaluate_season(website: Path, season: int, *, from_week: int | None = None,
                     through_week: int | None = None,
-                    reconstruct_all: bool = False, market_index: dict | None = None) -> tuple[dict, list[ForecastGrade]]:
+                    reconstruct_all: bool = False, market_index: dict | None = None,
+                    model_version: str = MODEL_VERSION) -> tuple[dict, list[ForecastGrade]]:
     root = website / "cfb/years" / str(season)
     available = {int(p.stem.split("_W", 1)[1].split("_", 1)[0]): p
                  for p in (root / "data/results/weekly_results").glob(f"{season}_W*_FBS_results.html")}
@@ -230,7 +231,7 @@ def evaluate_season(website: Path, season: int, *, from_week: int | None = None,
             candidate = ForecastCandidate.create(
                 game=identity, home_margin=margin, precision=max(0, -margin.as_tuple().exponent), selection=selection,
                 provenance=ForecastProvenance(checkpoint, "site-performance", "sha256:"+forecast_sha,
-                    "sha256:"+result_sha, MODEL_VERSION, source, SCHEMA,
+                    "sha256:"+result_sha, model_version, source, SCHEMA,
                     _number(home_rating), _number(away_rating), Decimal(0) if neutral else Decimal(str(HFA))))
             score = FinalScore(identity, (ScoreRevision(home_score, away_score, datetime.now(timezone.utc),
                 EvidenceRef("local-result-page", result_path.name, "sha256:"+result_sha)),))
@@ -422,16 +423,17 @@ def report_files(report: dict, *, site_links: bool = False) -> dict[str, bytes]:
             "weekly.csv": _csv(report["weekly"], week_columns).encode()}
 
 
-def weekly_result_files(website: Path, report: dict) -> dict[str, bytes]:
+def weekly_result_files(website: Path, report: dict, *, force: bool = False) -> dict[str, bytes]:
     """Render modern forecast-result URLs from the model-performance evaluation.
 
     The ledger remains the authenticated publication history. Reader-facing
     results follow ADR-0019's recreational policy, independently of receipts.
-    Legacy seasons keep their existing result-page format.
+    Legacy seasons keep their existing result-page format unless ``force=True``.
     """
     year = report["season"]
     root = website / f"cfb/years/{year}"
-    if not (root / "forecasts/ledger.json").is_file():
+    has_ledger = (root / "forecasts/ledger.json").is_file()
+    if not has_ledger and not force:
         return {}
     base = f"cfb/years/{year}/spread"
     navigation = (f'<a href="../{year}_CFB.html">Season</a> · '
@@ -447,7 +449,7 @@ def weekly_result_files(website: Path, report: dict) -> dict[str, bytes]:
         path = website / relative
         timestamp = None
         if path.exists():
-            match = re.search(r'<p>Last updated: ([^<]*)</p>', path.read_text(encoding="utf-8"))
+            match = re.search(r'<p>Last updated: ([^<]*)</p>', path.read_text(encoding="utf-8", errors="replace"))
             timestamp = match.group(1) if match else None
         metadata = root / "metadata.json"
         if timestamp is None and metadata.exists():
@@ -462,26 +464,43 @@ def weekly_result_files(website: Path, report: dict) -> dict[str, bytes]:
         output[relative] = _page(title, body + links + '<h2>Game results</h2>' + _table(games, columns), navigation)
 
     links = []
-    for summary in report["weekly"]:
-        week = summary["week"]
+    weekly_by_week = {summary["week"]: summary for summary in report["weekly"]}
+    existing_weeks = {
+        int(p.stem.split("_W", 1)[1].split("_", 1)[0])
+        for p in (root / "spread").glob(f"{year}_W*_FBS_spread_results.html")
+    } if (root / "spread").exists() else set()
+    target_weeks = sorted(weekly_by_week) if has_ledger else sorted(existing_weeks | set(weekly_by_week))
+    empty_summary = {**_summary([]), **dict.fromkeys(COUNTS, 0)}
+    if "market_policy" in report:
+        empty_summary.update(summarize_market([]))
+    for week in target_weeks:
+        if not has_ledger and week not in existing_weeks:
+            continue
+        summary = weekly_by_week.get(week, empty_summary)
         filename = f"{year}_W{week}_FBS_spread_results.html"
         games = [game for game in report["games"] if game["week"] == week]
         page(f"{base}/{filename}", f"{year} W{week} Forecast Results - FBS CFB", summary, games)
         links.append(f'<a href="{filename}">Week {week}</a>')
-    page(f"{base}/{year}_FBS_forecast_results.html", f"{year} Forecast Results - FBS CFB",
-         report["summary"], report["games"], '<p>' + ' · '.join(links) + '</p>')
+    if has_ledger:
+        page(f"{base}/{year}_FBS_forecast_results.html", f"{year} Forecast Results - FBS CFB",
+             report["summary"], report["games"], '<p>' + ' · '.join(links) + '</p>')
     return output
 
 
 
 def build_performance_files(website: Path, *, reconstruct_all: bool = False,
-                            market_lines: MarketLines | None = None) -> dict[str, bytes]:
+                            market_lines: MarketLines | None = None,
+                            model_version: str = MODEL_VERSION,
+                            include_all_weekly_results: bool = False) -> dict[str, bytes]:
     output, summaries, grades, market_games = {}, [], [], []
     market = market_lines or MarketLines.from_site(website)
     market_index = market.index(website) if market is not None else None
     years = seasons(website)
     for year in years:
-        report, evaluated = evaluate_season(website, year, reconstruct_all=reconstruct_all, market_index=market_index)
+        report, evaluated = evaluate_season(
+            website, year, reconstruct_all=reconstruct_all, market_index=market_index,
+            model_version=model_version,
+        )
         if market is not None:
             market_games.extend(report["games"])
             if year == max(years):
@@ -490,7 +509,7 @@ def build_performance_files(website: Path, *, reconstruct_all: bool = False,
         summaries.append({"season": year, **report["summary"]})
         for name, raw in report_files(report, site_links=True).items():
             output[f"{PREFIX}/{year}/{name}"] = raw
-        output.update(weekly_result_files(website, report))
+        output.update(weekly_result_files(website, report, force=include_all_weekly_results))
     totals = {**_summary(grades), **{k: sum(s[k] for s in summaries) for k in COUNTS}}
     body = '<p>CORS model performance across seasons.</p>'+_metrics(totals)
     if market is not None:

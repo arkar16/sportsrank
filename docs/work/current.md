@@ -1,5 +1,11 @@
 # Current work
 
+College football has been promoted to **CORS v1.0.0** (`kalman-2scale (+Other)`)
+under [ADR-0029](../adr/0029-adopt-kalman-two-scale-football-cors-v1.md) and the
+full 1897–2026 static archive (rankings, spreads through 2026 Week 13, forecast
+results, performance reports, honors, team pages, conference pages, and
+homepages) is rebuilt offline via `python -m cfb.cors_v1`.
+
 The CFB record-book redesign is tracked in [program histories #85](https://github.com/arkar16/sportsrank/issues/85),
 [season progress #86](https://github.com/arkar16/sportsrank/issues/86),
 [school marks #87](https://github.com/arkar16/sportsrank/issues/87),

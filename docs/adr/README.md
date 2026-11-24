@@ -33,3 +33,4 @@ consult architecture/current work before treating it as implemented.
 | [0026](0026-restore-direct-static-publication.md) | Direct static publication with changed-output validation |
 | [0027](0027-preserve-program-history-across-seasons.md) | Permanent histories for every ranked program and shared school marks |
 | [0028](0028-start-basketball-cors-in-2019-20.md) | Start men’s Division I basketball CORS in 2019–20 |
+| [0029](0029-adopt-kalman-two-scale-football-cors-v1.md) | Adopt two-timescale Bayesian state-space football CORS v1.0.0 |
