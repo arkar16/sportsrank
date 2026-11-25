@@ -3,7 +3,7 @@ import csv
 from html import escape
 from pathlib import Path
 
-from cfb.conference_pages import conference_route
+from cfb.conference_pages import CONFERENCE_HONORS, conference_honors_route, conference_route
 from cfb.reference_archive import season_team_routes
 from cfb.reference_markup import school_label
 from cfb.season_pages import _document
@@ -119,4 +119,6 @@ def write_honors(root, archives, routes, presentation, as_of, *, earlier_years=(
                 '<a href="/cbb/history/ncaa-champions.html">NCAA tournament champions</a>',
             )
         name = "last-place" if last else "champions"
+        conference_link = f'<a href="{conference_honors_route(sport="basketball")}">{CONFERENCE_HONORS}</a>'
+        nav_links += (conference_link,)
         publish(name, title, nav_links, body)

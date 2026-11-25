@@ -33,12 +33,15 @@ class ArchiveTests(unittest.TestCase):
               ["week", "home_team", "away_team", "spread", "neutral_site"],
               [(1, "Miami", "Miami (OH)", "Miami -3.0", "True")])
         table(season / "data/slate/weekly_slate/2026_W2_FBS_slate.html",
-              ["week", "home_team", "away_team", "neutral_site"], [(2, "Town College", "Miami", "False")])
+              ["week", "home_team", "away_team", "neutral_site", "game_date"],
+              [(2, "Town College", "Miami", "False", "2026-09-12")])
         report = site / "cfb/performance/2026/report.json"
         report.parent.mkdir(parents=True)
         report.write_text(json.dumps({"games": [
             {"week": 1, "home": "Miami", "away": "Miami (OH)", "home_score": 27, "away_score": 23,
-             "neutral_site": True, "home_handicap": "-7.89"}
+             "neutral_site": True, "home_handicap": "-7.89", "game_date": "2026-09-06 01:00:00"}
+        ], "upcoming": [
+            {"week": 2, "home": "Town College", "away": "Miami", "home_handicap": "2.5", "neutral_site": False}
         ]}))
         seasons = read_archive(site)
         routes = program_routes(seasons)
@@ -50,6 +53,10 @@ class ArchiveTests(unittest.TestCase):
         self.assertTrue(games[1].neutral_site)
         self.assertEqual((games[0].away, games[0].away_score, games[0].home_handicap), ("Town College", 0, None))
         self.assertIsNone(games[2].home_score)
+        self.assertEqual(len(seasons[0].games), 3)
+        self.assertEqual([games[w].start_utc for w in range(3)], [
+            "", "2026-09-06T01:00:00+00:00", "2026-09-12T04:00:00+00:00",
+        ])
         mark = "/cfb/assets/program-marks/town.png"
         pages = dict(build_program_pages(seasons, routes))
         miami_mark = "/cfb/assets/program-marks/miami-oh.png"

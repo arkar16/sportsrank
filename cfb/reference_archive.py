@@ -43,6 +43,7 @@ class Game:
     postseason: bool = False
     home_cors_delta: float | None = None
     away_cors_delta: float | None = None
+    start_utc: str = ""
 
 
 @dataclass(slots=True)
@@ -149,6 +150,17 @@ def _matchup(game: Game):
     return game.week, game.home, game.away, game.neutral_site
 
 
+def _football_start_utc(value: str | None) -> str:
+    if not value:
+        return ""
+    start = datetime.fromisoformat(value)
+    if start.tzinfo is None:
+        # Date-only records refer to the local game day. Archived kickoff
+        # timestamps, when present, use UTC.
+        start = start.replace(tzinfo=EASTERN if len(value) == 10 else timezone.utc)
+    return start.astimezone(timezone.utc).isoformat()
+
+
 def _postseason(year: int, week: int, game_date: str, season_type: str = "") -> bool:
     if season_type:
         return season_type.lower() == "postseason"
@@ -180,30 +192,37 @@ def _games(site: Path, directory: Path, year: int, *, active: bool) -> list[Game
     for row in report.get("games", []):
         key = _key(row["week"], row["home"], row["away"], row.get("home_score"),
                    row.get("away_score"), row["neutral_site"])
-        forecasts[key].append(row.get("home_handicap"))
+        forecasts[key].append(row)
 
     games = []
     results = directory / f"data/results/{year}_FBS_results.html"
     for row in _rows(results) if results.is_file() else ():
         key = _key(row["week"], row["home_team"], row["away_team"], row.get("home_score"),
                    row.get("away_score"), row["neutral_site"].lower() == "true")
-        handicap = forecasts[key].popleft() if forecasts.get(key) else None
+        forecast = forecasts[key].popleft() if forecasts.get(key) else {}
+        handicap = forecast.get("home_handicap")
         games.append(Game(
             *key[:5], Decimal(str(handicap)) if handicap is not None else None, key[5],
             home_division=row.get("home_division", ""), away_division=row.get("away_division", ""),
             postseason=_postseason(year, key[0], row.get("game_date", ""), row.get("season_type", "")),
+            start_utc=_football_start_utc(row.get("game_date") or forecast.get("game_date")),
         ))
     # A newly retained weekly report can precede the aggregate results page.
-    for key, handicaps in forecasts.items():
-        for handicap in handicaps:
+    for key, rows in forecasts.items():
+        for row in rows:
+            handicap = row.get("home_handicap")
             games.append(Game(*key[:5], Decimal(str(handicap)) if handicap is not None else None,
-                              key[5], postseason=_postseason(year, key[0], "")))
+                              key[5], postseason=_postseason(year, key[0], ""),
+                              start_utc=_football_start_utc(row.get("game_date"))))
     for row in report.get("upcoming", []):
         games.append(Game(int(row["week"]), _school(row["home"]), _school(row["away"]), None, None,
                           Decimal(str(row["home_handicap"])), row["neutral_site"],
-                          postseason=_postseason(year, int(row["week"]), row.get("game_date", ""))))
+                          postseason=_postseason(year, int(row["week"]), row.get("game_date", "")),
+                          start_utc=_football_start_utc(row.get("game_date"))))
     if active:
-        known = Counter(map(_matchup, games))
+        known = defaultdict(deque)
+        for index, game in enumerate(games):
+            known[_matchup(game)].append(index)
         for path in sorted((directory / "data/slate/weekly_slate").glob(f"{year}_W*_FBS_slate.html")):
             for row in _rows(path):
                 game = Game(
@@ -212,10 +231,13 @@ def _games(site: Path, directory: Path, year: int, *, active: bool) -> list[Game
                     home_division=row.get("home_division", ""), away_division=row.get("away_division", ""),
                     postseason=_postseason(year, int(row["week"]), row.get("game_date", ""),
                                            row.get("season_type", "")),
+                    start_utc=_football_start_utc(row.get("game_date")),
                 )
                 key = _matchup(game)
                 if known[key]:
-                    known[key] -= 1
+                    index = known[key].popleft()
+                    if game.start_utc and not games[index].start_utc:
+                        games[index] = replace(games[index], start_utc=game.start_utc)
                 else:
                     games.append(game)
 

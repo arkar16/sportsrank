@@ -3,7 +3,7 @@ import argparse
 from collections import Counter
 import csv
 from dataclasses import replace
-from datetime import date, datetime
+from datetime import date, datetime, time
 from decimal import Decimal
 from pathlib import Path
 
@@ -16,9 +16,9 @@ from site_navigation import masthead
 
 from .cors_v1 import _available, cors_v1_seasons
 from .historical_replay import replay_historical_seasons
-from .record_book import SECTIONS, _record, conference_game, season_name
+from .record_book import SECTIONS, _record, conference_game, conference_slate, season_name
 from .replay import replay_seasons
-from .team_schedule import EASTERN, projection_key, schedule_views
+from .team_schedule import EASTERN, conference_tipoff, projection_key, schedule_views
 
 
 def _published_standings(path):
@@ -38,7 +38,7 @@ def _fixture_key(start, home, away, neutral):
 
 
 def _retained_results(site, year, cutoff, standings, replayed):
-    results = []
+    results = {}
     records = Counter()
     with (site / f"performance/{year}/games.csv").open(encoding="utf-8", newline="") as stream:
         for row in csv.DictReader(stream):
@@ -53,10 +53,15 @@ def _retained_results(site, year, cutoff, standings, replayed):
             key = _fixture_key(start, home, away, neutral)
             game = replayed.get(key)
             if game is None:
-                game = Game(int(row["week"]), home, away, h, a, Decimal(row["home_handicap"]), neutral)
+                game = Game(int(row["week"]), home, away, h, a, Decimal(row["home_handicap"]), neutral,
+                            **conference_tipoff(key[0]))
             elif (game.home_score, game.away_score) != (h, a):
                 game = replace(game, home_score=h, away_score=a, home_cors_delta=None, away_cors_delta=None)
-            results.append(game)
+            if key in results:
+                if results[key] != game:
+                    raise ValueError(f"Conflicting retained basketball result for {key}")
+                continue
+            results[key] = game
             records[home, h > a] += 1
             records[away, a > h] += 1
 
@@ -64,7 +69,7 @@ def _retained_results(site, year, cutoff, standings, replayed):
         record = f"{records[row.school, True]}–{records[row.school, False]}"
         if row.record != record:
             raise ValueError(f"{year} retained results for {row.school}: {record}, expected {row.record}")
-    return results
+    return list(results.values())
 
 
 def _upcoming_rows(path):
@@ -81,6 +86,13 @@ def _upcoming_rows(path):
             yield row[0], *row[2:5]
 
 
+def _published_tipoff(day, clock):
+    clock = clock.strip()
+    known = clock not in ("", "Time TBD")
+    local_time = datetime.strptime(clock.removesuffix(" ET"), "%I:%M %p").time() if known else time.min
+    return conference_tipoff(datetime.combine(day, local_time, EASTERN), time_known=known)
+
+
 def _retained_schedule(site, year, standings, routes, week_page, replayed):
     by_url = {f"{route.rsplit('/', 1)[0]}/{year}.html": name for name, route in routes.items()}
     schedule = {}
@@ -89,18 +101,22 @@ def _retained_schedule(site, year, standings, routes, week_page, replayed):
         path = site / route / f"{year}.html"
         for day, opponent, venue, handicap in _upcoming_rows(path):
             links = opponent.xpath("./a/@href")
-            if not links or handicap.text_content() == "—":
-                continue
-            other = by_url[links[0]]
+            other = by_url[links[0]] if links else opponent.text_content().strip()
             side = venue.text_content()
             home, away = row.school, other
-            spread = Decimal(0) if handicap.text_content() == "Pick’em" else Decimal(handicap.text_content())
+            line = handicap.text_content().strip()
+            spread = None if line == "—" else Decimal(0 if line == "Pick’em" else line)
             if side == "Away" or (side == "Neutral" and home > away):
-                home, away, spread = away, home, -spread
+                home, away = away, home
+                if spread is not None:
+                    spread = -spread
             month_day = datetime.strptime(f'{day.text.split(", ", 1)[1]} {year}', "%b %d %Y").date()
             day_key = date(year - (month_day.month >= 7), month_day.month, month_day.day)
+            clock = day.findtext("small")
+            if clock is None:
+                clock = day.getnext().text_content()
             key = projection_key(day_key, home, away, side == "Neutral")
-            game = Game(0, home, away, None, None, spread, side == "Neutral")
+            game = Game(0, home, away, None, None, spread, side == "Neutral", **_published_tipoff(day_key, clock))
             if schedule.setdefault(key, game) != game:
                 raise ValueError(f"Conflicting retained basketball projection for {key}")
     # Team schedule pages show games still upcoming at publication. The
@@ -109,15 +125,19 @@ def _retained_schedule(site, year, standings, routes, week_page, replayed):
         if "Reconstructed pick" not in table.xpath("./thead/tr/th/text()"):
             continue
         for tipoff, visitor, host, venue, pick, _ in table.xpath("./tbody/tr"):
-            day_key = datetime.strptime(tipoff.text_content().split(" · ")[0], "%b %d, %Y").date()
+            date_label, _, clock = tipoff.text_content().partition(" · ")
+            day_key = datetime.strptime(date_label, "%b %d, %Y").date()
             away, home = (cell.text_content() for cell in (visitor, host))
-            winner, _, margin = pick.text_content().rpartition(" by ")
-            spread = (Decimal(margin) * (-1 if winner == home else 1)) if margin else Decimal(0)
+            line = pick.text_content()
+            spread = Decimal(0)
+            if line != "Pick’em":
+                winner, margin = line.rsplit(" by ", 1)
+                spread = Decimal(margin) * (-1 if winner == home else 1)
             neutral = venue.text_content() == "Neutral"
             if neutral and home > away:
                 home, away, spread = away, home, -spread
             schedule.setdefault(projection_key(day_key, home, away, neutral),
-                                Game(0, home, away, None, None, spread, neutral))
+                                Game(0, home, away, None, None, spread, neutral, **_published_tipoff(day_key, clock)))
     metadata = {}
     for start, home, away, neutral in replayed:
         day = start.astimezone(EASTERN).date()
@@ -156,6 +176,8 @@ def _season_archive(site, model, year, latest_year, as_of, database, routes):
     if (datetime.fromisoformat(checkpoints[-1]["cutoff_utc"]) == datetime.fromisoformat(published_cutoff)
             and current == next(reversed(rankings.values()))):
         _, _, projections = schedule_views(database, model, checkpoints[-1], as_of)
+        if not projections:
+            projections = conference_slate(model["forecasts"], checkpoints[-1], names)
         visible = [game for key, game in games.items() if game.home_score is not None and _available(key[0]) in weeks]
         return Season(year, rankings, visible + projections, published_cutoff)
 
@@ -179,7 +201,7 @@ def _season_archive(site, model, year, latest_year, as_of, database, routes):
     schedule = _retained_schedule(site, year, current, routes, weekly[-1], games)
     return Season(year, rankings, results + schedule, published_cutoff, conference_note=(
         "Best wins and worst losses are selected from games with a verifiable CORS update. "
-        "The retained schedule supplies projections for this edition."
+        "Scores reflect the ranking checkpoint. The retained schedule supplies projections for this edition."
     ))
 
 

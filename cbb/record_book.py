@@ -1,10 +1,9 @@
 """Build the basketball record book from frozen weekly replays."""
 from collections import defaultdict
 from dataclasses import replace
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from html import escape
-from zoneinfo import ZoneInfo
 
 from cfb.archive_presentation import updated_time
 from cfb.conference_pages import build_conference_pages, conference_route, projected_overall_records
@@ -21,8 +20,8 @@ from .grade import grade_margins
 from .performance import write_performance
 from .program_records import program_record_rows
 from .progression import write_progression
+from .team_schedule import EASTERN, conference_tipoff, projection_key
 
-EASTERN = ZoneInfo("America/New_York")
 SECTIONS = (
     '<a href="/cbb/teams/index.html">Teams</a>'
     '<a href="/cbb/performance/index.html">Model performance</a>'
@@ -171,7 +170,7 @@ def _season_notes(cutoff_utc):
 
 
 def conference_game(game, week, names):
-    """Adapt a completed replay result to the shared conference record book."""
+    """Adapt a replayed game to the shared conference record book."""
     return Game(
         week, names[game["home_team_id"]], names[game["away_team_id"]],
         game["home_points"], game["away_points"], -Decimal(str(game["home_margin"])),
@@ -179,7 +178,21 @@ def conference_game(game, week, names):
         postseason=bool(game.get("season_type") == "postseason" or game.get("tournament")
                         or game.get("conference_tournament") or game.get("ncaa_round")),
         home_cors_delta=game.get("home_cors_delta"), away_cors_delta=game.get("away_cors_delta"),
+        **conference_tipoff(_tipoff(game), time_known=not game.get("date_only")),
     )
+
+
+def conference_slate(forecasts, checkpoint, names):
+    """Use the known weekly slate when no dated schedule is available."""
+    games = {}
+    for row in forecasts:
+        if row["cutoff_utc"] != checkpoint["cutoff_utc"]:
+            continue
+        game = conference_game(row, checkpoint["week"], names)
+        key = projection_key(_tipoff(row).date(), game.home, game.away, game.neutral_site)
+        games.setdefault(key, replace(game, home_score=None, away_score=None, home_handicap=None,
+                                      home_cors_delta=None, away_cors_delta=None))
+    return list(games.values())
 
 
 def build(
@@ -322,9 +335,9 @@ def build(
         season_obj = Season(year, rankings, games, last["cutoff_utc"])
         season_routes = season_team_routes(season_obj, routes)
         archives.append(season_obj)
-        conference_archive = replace(
-            season_obj, games=conference_games + (list(conference_schedule) if year == latest_season_year else []),
-        )
+        if year == latest_season_year and not finals:
+            conference_games.extend(list(conference_schedule) or conference_slate(season["forecasts"], last, names))
+        conference_archive = replace(season_obj, games=conference_games)
         conference_archives.append(conference_archive)
         if year == latest_season_year and schedules is not None:
             projections = projected_overall_records(conference_archive, sport="basketball")
@@ -492,7 +505,7 @@ def build(
 
     editions = []
     for path in sorted((root / "editions").glob("*.html"), reverse=True):
-        stamp = datetime.strptime(path.stem, "%Y-%m-%dT%H%M%SZ").replace(tzinfo=ZoneInfo("UTC"))
+        stamp = datetime.strptime(path.stem, "%Y-%m-%dT%H%M%SZ").replace(tzinfo=UTC)
         if stamp <= as_of:
             editions.append((stamp, path))
     write_performance(
