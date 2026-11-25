@@ -5,6 +5,7 @@ from pathlib import Path
 import shutil
 
 from site_navigation import masthead
+from spread_cards import basketball_links
 from .blend import VERSION, blend_seasons
 from .cors_v1 import VERSION as V1_VERSION, cors_v1_seasons
 from .early_records import read_early_records
@@ -165,6 +166,8 @@ def main():
         report = (f'<section id="forecasts"><h2>{model} weekly picks</h2>'
                   + _games(slate, logo_ids, as_of, year=args.season) + '</section>')
     _write(args.output, "current.html", f"{season_name(args.season)} basketball forecasts", edition_link + report)
+    if blended and slate:
+        basketball_links(args.output)
     (args.output / "index.html").write_bytes(landing_page(archives, routes, presentation, checkpoint, archive, years, model=model, earlier_years=earlier_years))
 
 

@@ -7,6 +7,8 @@ import os
 from pathlib import Path
 import tempfile
 
+from spread_cards import football_links
+
 from .conference_pages import build_conference_pages, conference_route
 from .history_sheets import render_history_sheet
 from .program_marks import program_logo_paths
@@ -313,6 +315,10 @@ def build(site: Path) -> tuple[int, int, int]:
     has_cbb = all((site / p).is_file() for p in ("cbb/index.html", "cbb/teams/index.html", "cbb/seasons/index.html"))
     changed += _write_changed(site / "404.html", presentation.render(_not_found(seasons[-1].year, include_cbb=has_cbb).encode(), archive=False))
     targets = {"/" + path.relative_to(site).as_posix() for path in site.rglob("*.html")}
+    latest_year = seasons[-1].year
+    spread_dir = site / f"cfb/years/{latest_year}/spread"
+    current_spread = max(spread_dir.glob(f"{latest_year}_W*_FBS_spread.html"),
+                         key=lambda p: int(p.name.split("_")[1][1:]), default=None)
     for relative, raw in honors.items():
         markup = presentation.render(raw, archive=True, relative=relative, targets=targets, sortable=True)
         changed += _write_changed(site / relative, markup)
@@ -331,6 +337,10 @@ def build(site: Path) -> tuple[int, int, int]:
             raw = path.read_bytes()
             view = views.get(path.relative_to(site / "cfb" / directory).parts[0], presentation)
             markup = view.render(raw, archive=True, relative=relative, targets=targets)
+            if path.parent.name == "spread" and path.name.endswith("_FBS_spread.html"):
+                year, checkpoint = path.name.split("_")[:2]
+                if path == current_spread or (site / "cfb/picks" / year / f"week-{checkpoint[1:]}").is_dir():
+                    markup = football_links(markup, path, site / "cfb")
             if raw != markup:
                 changed += _write_changed(path, markup)
     return len(seasons), len(routes), changed
