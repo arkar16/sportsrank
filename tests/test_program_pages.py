@@ -5,6 +5,7 @@ import unittest
 
 from bs4 import BeautifulSoup
 
+from cfb.conference_pages import build_conference_pages
 from cfb.program_pages import build_program_pages
 from cfb.reference_archive import Game, Season, Standing
 
@@ -190,15 +191,17 @@ class ProgramPagesTests(unittest.TestCase):
         season_nav = {link["href"] for link in page.select("nav a")}
         self.assertTrue({ROUTES[TEAM], "/cfb/years/2026/2026_CFB.html"}.issubset(season_nav))
         table = page.select_one('div.table-scroll[tabindex="0"] table')
-        spread, score = table.select("thead th")[-2:]
+        spread, chance, score = table.select("thead th")[-3:]
         self.assertEqual(spread.get_text(" ", strip=True), "CORS spread Negative if favored")
+        self.assertEqual(chance.text, "Win chance")
         self.assertEqual(score.get_text(" ", strip=True), f"Score {TEAM} first")
         self.assertEqual([cell_text(row) for row in table.select("tbody tr")], [
-            ["Preseason", "6", "17.25", "1-0", "—", "—", "—", "—"],
-            ["Week 0", "8", "17.25", "1-0", "No game listed", "—", "—", "—"],
-            ["Week 1", "12", "17.25", "1-0", FORMER, "Home", "-7.25", "31–17"],
-            [OPPONENT, "Away", "+3.50", "0–21"],
-            ["Week 2", "15", "-2.40", "2-1", OPPONENT, "Home", "0.0", "7–6"],
+            ["Preseason", "6", "17.25", "1-0", "—", "—", "—", "—", "—"],
+            ["Week 0", "8", "17.25", "1-0", "No game listed", "—", "—", "—", "—"],
+            ["Week 1", "12", "17.25", "1-0", FORMER, "Home", "-7.25", "—", "31–17"],
+            [OPPONENT, "Away", "+3.50", "—", "0–21"],
+            ["Week 2", "15", "-2.40", "2-1", OPPONENT, "Home", "0.0", "—", "7–6"],
+            ["Week 3", "—", "—", "—", OPPONENT, "Away", "-6", "66%", "—"],
         ])
         week_one = table.find("th", string="Week 1")
         self.assertEqual(week_one["rowspan"], "2")
@@ -206,32 +209,51 @@ class ProgramPagesTests(unittest.TestCase):
         self.assertEqual([a.get_text() for a in table.select("tbody td a")], [FORMER])
 
     def test_current_football_schedule_lists_all_retained_future_games_once(self):
-        season = Season(2026, {"W12": [standing(TEAM, 1), standing(FORMER, 2)]}, [
+        season = Season(2026, {
+            "W11": [standing(OPPONENT, 3)],
+            "W12": [standing(TEAM, 1), standing(FORMER, 2)],
+        }, [
             Game(15, TEAM, OPPONENT, None, None, None),
-            Game(14, TEAM, FORMER, None, None, Decimal("-15.125"), neutral_site=True),
+            Game(14, TEAM, FORMER, None, None, Decimal("-15.125"), neutral_site=True,
+                 tipoff_label="Dec 01 · 8 PM ET"),
             Game(13, TEAM, FORMER, None, None, Decimal("6")),
             Game(14, OPPONENT, TEAM, None, None, Decimal("0.00")),
             Game(12, TEAM, OPPONENT, None, None, None),
             Game(13, TEAM, OPPONENT, 13, 10, Decimal("-3.00")),
+            Game(16, TEAM, FORMER, None, None, Decimal("25"), postseason=True),
         ])
-        pages = dict(build_program_pages([season], ROUTES))
+        routes = {**ROUTES, OPPONENT: "/cfb/teams/visitors/index.html"}
+        pages = dict(build_program_pages([season], routes))
         home = BeautifulSoup(pages[TEAM_PATH + "2026.html"], "html5lib")
         other = BeautifulSoup(pages["cfb/teams/former-state/2026.html"], "html5lib")
         self.assertIsNotNone(home.select_one('a[href="#remaining-schedule"]'))
-        self.assertEqual(cell_text(home.select_one("#remaining-schedule thead tr"))[-1], "Win chance")
-        self.assertEqual([cell_text(row) for row in home.select("#remaining-schedule tbody tr")], [
-            ["Week 13", FORMER, "Home", "+6", "34%"],
-            ["Week 14", FORMER, "Neutral", "-15.125", "85%"],
-            ["Week 14", OPPONENT, "Away", "0.00", "50%"],
-            ["Week 15", OPPONENT, "Home", "—", "—"],
+        table, = home.select("main table")
+        self.assertEqual(cell_text(table.select_one("thead tr"))[-2], "Win chance")
+        self.assertEqual([cell_text(row)[-5:] for row in table.select("tbody tr")[1:]], [
+            [OPPONENT, "Home", "—", "—", "—"],
+            [OPPONENT, "Home", "-3.00", "—", "13–10"],
+            [FORMER, "Home", "+6", "34%", "—"],
+            [FORMER + "Dec 01 · 8 PM ET", "Neutral", "-15.125", "85%", "—"],
+            [OPPONENT, "Away", "0.00", "50%", "—"],
+            [OPPONENT, "Home", "—", "—", "—"],
+            [FORMER, "Home", "+25", "5%", "—"],
         ])
-        self.assertEqual([cell_text(row)[2:] for row in other.select("#remaining-schedule tbody tr")], [
-            ["Away", "-6", "66%"], ["Neutral", "+15.125", "15%"],
+        first = table.select_one("tr#remaining-schedule")
+        self.assertEqual(cell_text(first), [FORMER, "Home", "+6", "34%", "—"])
+        self.assertEqual(first.find_previous_sibling("tr").find("th").text, "Week 13")
+        self.assertEqual([cell_text(row)[-4:] for row in other.select("table tbody tr")[-3:]], [
+            ["Away", "-6", "66%", "—"], ["Neutral", "+15.125", "15%", "—"],
+            ["Away", "-25", "95%", "—"],
         ])
-        results = home.select('table[aria-label="Rankings and games"] tbody tr')
-        self.assertEqual([cell_text(row)[-4:] for row in results], [
-            [OPPONENT, "Home", "—", "—"], [OPPONENT, "Home", "-3.00", "13–10"],
-        ])
+        conferences = dict(build_conference_pages([season], routes))
+        conference = BeautifulSoup(conferences["cfb/conferences/a-b/2026.html"], "html5lib")
+        conference_row = conference.find("a", href="/" + TEAM_PATH + "2026.html").find_parent("tr")
+        footer = table.parent.find_next_sibling()
+        self.assertEqual(footer["id"], "projected-season-record")
+        self.assertEqual(footer.strong.text, "3.7–1.3")
+        self.assertEqual(footer.strong.text, cell_text(conference_row)[-1])
+        visitor = BeautifulSoup(pages["cfb/teams/visitors/2026.html"], "html5lib")
+        self.assertEqual(visitor.select_one("#projected-season-record strong").text, "—")
 
     def test_postseason_game_without_checkpoint_precedes_final(self):
         page = self.pages[TEAM_PATH + "1905.html"]

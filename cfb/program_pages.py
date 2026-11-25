@@ -5,11 +5,12 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Iterator
 from dataclasses import dataclass
+from datetime import date
 from html import escape
 from typing import TYPE_CHECKING
 
 from .archive_presentation import updated_time
-from .conference_pages import conference_route
+from .conference_pages import conference_route, projected_overall_records
 from .reference_archive import _checkpoint_order, program_season_route, season_team_routes
 from .reference_markup import school_label
 from .win_probability import format_win_chance
@@ -33,6 +34,25 @@ class _ProgramSeason:
         return next(key for key, rows in reversed(self.season.rankings.items()) if rows)
 
 
+@dataclass(frozen=True)
+class ScheduledGame:
+    game: Game
+    date_label: str
+    opponent_rank: int | None
+
+
+@dataclass(frozen=True)
+class TeamSchedule:
+    fixtures: tuple[ScheduledGame, ...]
+    snapshot_date: date
+    rating_date: date
+
+
+def _is_upcoming(game: Game, through_week: int | None) -> bool:
+    return (through_week is not None and game.week > through_week
+            and game.home_score is None and game.away_score is None)
+
+
 def _checkpoint_label(checkpoint: str) -> str:
     if checkpoint.startswith("W"):
         return f"Week {checkpoint[1:]}"
@@ -42,39 +62,33 @@ def _checkpoint_label(checkpoint: str) -> str:
 def build_program_pages(
     seasons: list[Season], routes: dict[str, str], *, sport="football", directory_route=_DIRECTORY,
     season_route=lambda year: f"/cfb/years/{year}/{year}_CFB.html",
-    year_label=str, directory_label=None, remaining_schedules=None,
+    year_label=str, directory_label=None, remaining_schedules=None, projections=None,
     checkpoint_route=lambda year, checkpoint: f"/cfb/years/{year}/checkpoints/{checkpoint}.html",
     best_checkpoint_label=_checkpoint_label,
 ) -> Iterator[tuple[str, str]]:
     """Yield the program index and one history and season page per ranked program."""
     histories: dict[str, list[_ProgramSeason]] = defaultdict(list)
     opponent_routes = {season.year: season_team_routes(season, routes) for season in seasons}
-    schedules = dict(remaining_schedules or {})
+    schedules = remaining_schedules or {}
     latest_year = max(opponent_routes, default=None)
+    football_week = None
+    if sport == "football":
+        latest = next((season for season in seasons if season.year == latest_year), None)
+        if latest is not None and not latest.rankings.get("FINAL"):
+            football_week = max((int(key[1:]) for key, rows in latest.rankings.items()
+                                 if key.startswith("W") and rows), default=-1)
+            projections = projected_overall_records(latest, sport=sport)
     for season in sorted(seasons, key=lambda season: season.year, reverse=True):
         standings: dict[str, dict[str, Standing]] = defaultdict(dict)
         for checkpoint, rows in season.rankings.items():
             for row in rows:
                 standings[row.school][checkpoint] = row
 
-        last_week = None
-        if sport == "football" and season.year == latest_year and not season.rankings.get("FINAL"):
-            last_week = max((int(key[1:]) for key, rows in season.rankings.items()
-                             if key.startswith("W") and rows), default=-1)
         games: dict[str, dict[int, list[Game]]] = defaultdict(lambda: defaultdict(list))
-        upcoming: dict[str, list[Game]] = defaultdict(list)
         for game in season.games:
-            remaining = (last_week is not None and game.week > last_week
-                         and game.home_score is None and game.away_score is None)
             for school in (game.home, game.away):
                 if school in standings:
-                    if remaining:
-                        upcoming[school].append(game)
-                    else:
-                        games[school][game.week].append(game)
-
-        for school, fixtures in upcoming.items():
-            schedules[season.year, school] = _football_schedule(school, fixtures, opponent_routes[season.year])
+                    games[school][game.week].append(game)
 
         for school, checkpoints in standings.items():
             histories[school].append(_ProgramSeason(season, checkpoints, games.get(school, {})))
@@ -104,12 +118,12 @@ def build_program_pages(
             standing = entry.standings.get(entry.latest_checkpoint)
             if standing and standing.conference and standing.conference != "—":
                 links.append((conference_route(standing.conference, year, sport=sport), f"{year_label(year)} {standing.conference}"))
-            remaining = schedules.get((year, school), "")
-            log = _season_table(school, entry, opponent_routes[year],
-                                has_schedule=bool(remaining) and sport == "basketball")
-            if remaining:
-                log = ('<p><a href="#remaining-schedule">Remaining schedule</a></p>'
-                       '<h2>Weekly rankings and results</h2>' + log + remaining)
+            log = _season_table(
+                school, entry, opponent_routes[year], sport=sport,
+                schedule=schedules.get((year, school)),
+                through_week=football_week if year == latest_year else None,
+                projection=projections.get(school) if projections is not None and year == latest_year else None,
+            )
             yield program_season_route(route, year).lstrip("/"), _page(
                 f"{year_label(year)} {school} {sport}", f"{year_label(year)} {heading}",
                 links,
@@ -293,7 +307,10 @@ def _rank_trend(route: str, history: list[_ProgramSeason], year_label=str) -> st
     )
 
 
-def _season_table(school: str, entry: _ProgramSeason, routes: dict[str, str], *, has_schedule=False) -> str:
+def _season_table(
+    school: str, entry: _ProgramSeason, routes: dict[str, str], *, sport: str,
+    schedule: TeamSchedule | None, through_week: int | None, projection: str | None,
+) -> str:
     rankings = entry.season.rankings
     weeks = {int(key[1:]) for key, rows in rankings.items() if rows and key.startswith("W")}
     checkpoints = ["PRESEASON"] if rankings.get("PRESEASON") else []
@@ -301,51 +318,80 @@ def _season_table(school: str, entry: _ProgramSeason, routes: dict[str, str], *,
     if rankings.get("FINAL"):
         checkpoints.append("FINAL")
 
+    has_upcoming = bool(schedule) or any(
+        _is_upcoming(game, through_week) for games in entry.games.values() for game in games
+    )
+    anchor = ' id="remaining-schedule"'
+
+    def row_start(upcoming):
+        nonlocal anchor
+        if upcoming and anchor:
+            start = f"<tr{anchor}>"
+            anchor = ""
+            return start
+        return "<tr>"
+
     groups = []
     for checkpoint in checkpoints:
         games = entry.games.get(int(checkpoint[1:]), []) if checkpoint.startswith("W") else []
         standing = entry.standings.get(checkpoint)
         span = f' rowspan="{len(games)}"' if len(games) > 1 else ""
         if games:
-            game_rows = [_game_cells(school, game, routes) for game in games]
+            game_rows = [(_is_upcoming(game, through_week), game) for game in games]
+            game_rows.sort(key=lambda row: row[0])
+            rows = [
+                (row_start(upcoming), _game_cells(school, game, routes, sport=sport,
+                                                  upcoming=upcoming, show_chance=has_upcoming))
+                for upcoming, game in game_rows
+            ]
         else:
             opponent = "No game listed" if checkpoint.startswith("W") else _MISSING
-            if has_schedule and checkpoint == entry.latest_checkpoint:
+            if schedule and checkpoint == entry.latest_checkpoint:
                 opponent = "No result yet"
-            game_rows = [f"<td>{opponent}</td>" + f"<td>{_MISSING}</td>" * 3]
+            rows = [("<tr>", f"<td>{opponent}</td>" + f"<td>{_MISSING}</td>" * (3 + has_upcoming))]
         groups.append(
-            f'<tbody><tr><th scope="rowgroup"{span}>{_checkpoint_label(checkpoint)}</th>'
+            f'<tbody>{rows[0][0]}<th scope="rowgroup"{span}>{_checkpoint_label(checkpoint)}</th>'
             f'<td class="num"{span}>{standing.rank if standing else _MISSING}</td>'
             f'<td class="num"{span}>{format(standing.rating, "f") if standing else _MISSING}</td>'
             f"<td{span}>{escape(standing.record) if standing else _MISSING}</td>"
-            + game_rows[0]
+            + rows[0][1]
             + "</tr>"
-            + "".join(f"<tr>{row}</tr>" for row in game_rows[1:])
+            + "".join(f"{start}{cells}</tr>" for start, cells in rows[1:])
             + "</tbody>\n"
         )
 
-    return _table(
-        "Rankings and games",
-        ("Week", "National rank", "CORS rating", "Record", "Opponent", "Site",
-         "CORS spread <small>Negative if favored</small>", f"Score <small>{escape(school)} first</small>"),
-        "".join(groups),
-    )
+    note = ""
+    if schedule:
+        note = (f'<p>Upcoming CORS spreads and opponent ranks use the {schedule.rating_date:%B %d} ratings. '
+                f'Schedule as of {schedule.snapshot_date:%B %d, %Y}.</p>')
+        for fixture in schedule.fixtures:
+            groups.append(
+                f'<tbody>{row_start(True)}<th scope="rowgroup">{escape(fixture.date_label)}'
+                f'<br><small>{escape(fixture.game.tipoff_label)}</small></th>'
+                + f"<td>{_MISSING}</td>" * 3
+                + _game_cells(school, fixture.game, routes, sport=sport, upcoming=True,
+                              show_chance=True, opponent_rank=fixture.opponent_rank)
+                + "</tr></tbody>\n"
+            )
+
+    headers = ("Week / Date" if schedule else "Week", "National rank", "CORS rating", "Record", "Opponent",
+               "Site", "CORS spread <small>Negative if favored</small>")
+    if has_upcoming:
+        headers += ("Win chance",)
+    headers += (f"Score <small>{escape(school)} first</small>",)
+    log = _table("Rankings and games", headers, "".join(groups))
+    if has_upcoming:
+        log = ('<p><a href="#remaining-schedule">Remaining schedule</a></p>'
+               '<h2>Weekly rankings and games</h2>' + note + log)
+    if projection is not None or has_upcoming:
+        log += f'<p id="projected-season-record">Projected season record <strong>{projection or _MISSING}</strong></p>'
+    return log
 
 
-def _football_schedule(school: str, games: list[Game], routes: dict[str, str]) -> str:
-    rows = []
-    for game in sorted(games, key=lambda game: game.week):
-        rows.append(f'<tr><th scope="row">Week {game.week}</th>'
-                    + _game_cells(school, game, routes, upcoming=True) + "</tr>")
-    table = _table(
-        "Remaining schedule",
-        ("Week", "Opponent", "Site", "CORS spread <small>Negative if favored</small>", "Win chance"),
-        "<tbody>" + "".join(rows) + "</tbody>",
-    )
-    return '<section id="remaining-schedule"><h2>Remaining schedule</h2>' + table + "</section>"
-
-
-def _game_cells(school: str, game: Game, routes: dict[str, str], *, upcoming=False) -> str:
+def _game_cells(
+    school: str, game: Game, routes: dict[str, str], *, sport: str, upcoming: bool,
+    show_chance: bool, opponent_rank: int | None = None,
+) -> str:
     at_home = game.home == school
     if at_home:
         opponent, side = game.away, "Home"
@@ -359,18 +405,22 @@ def _game_cells(school: str, game: Game, routes: dict[str, str], *, upcoming=Fal
 
     handicap = game.home_handicap
     spread = _MISSING
+    basketball_fixture = upcoming and sport == "basketball"
     if handicap is not None:
         if not at_home:
             handicap = handicap.copy_negate()
         spread = format(handicap, "+f") if handicap else format(handicap.copy_abs(), "f")
-
-    outcome = _MISSING
-    if upcoming:
-        outcome = format_win_chance(handicap, sport="football")
-    elif team_score is not None and opponent_score is not None:
-        outcome = f"{team_score}–{opponent_score}"
+        if basketball_fixture:
+            spread = f"{handicap:+.2f}" if handicap else "Pick’em"
 
     name = school_label(opponent, routes)
-    if game.tipoff_label:
+    if basketball_fixture:
+        name = f"#{opponent_rank} {name}" if opponent_rank is not None else escape(opponent)
+    elif game.tipoff_label:
         name += f'<small>{escape(game.tipoff_label)}</small>'
-    return f'<td>{name}</td><td>{side}</td><td class="num">{spread}</td><td class="num">{outcome}</td>'
+    outcome = f"{team_score}–{opponent_score}" if team_score is not None and opponent_score is not None else _MISSING
+    cells = f'<td>{name}</td><td>{side}</td><td class="num">{spread}</td>'
+    if show_chance:
+        chance = format_win_chance(handicap, sport=sport) if upcoming else _MISSING
+        cells += f'<td class="num">{chance}</td>'
+    return cells + f'<td class="num">{outcome}</td>'

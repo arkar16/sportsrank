@@ -132,15 +132,43 @@ class SeasonRecords:
     remaining_league: dict
 
 
+def _remaining_probabilities(season, checkpoint, standings, sport):
+    if checkpoint == "FINAL":
+        return
+    football = sport == "football"
+    week = int(checkpoint[1:]) if checkpoint.startswith("W") else -1
+    ratings = {name: row.rating for name, row in standings.items()}
+    for game in season.games:
+        if game.postseason or game.home_score is not None or game.away_score is not None:
+            continue
+        if football:
+            if game.week <= week:
+                continue
+            margin = _football_margin(game, ratings, season.home_advantage)
+        elif game.home_handicap is not None:
+            margin = -float(game.home_handicap)
+        else:
+            continue
+        yield game, win_probability(margin, sport=sport)
+
+
+def _overall_probabilities(matchups):
+    by_school = defaultdict(list)
+    for game, home_prob in matchups:
+        by_school[game.home].append(home_prob)
+        by_school[game.away].append(1 - home_prob)
+    return by_school
+
+
 def _season_records(season, checkpoint, standings, groups, sport):
     football = sport == "football"
     week = int(checkpoint[1:]) if checkpoint.startswith("W") else -1
     completed = [g for g in season.games if g.home_score is not None and g.away_score is not None
                  and (not football or checkpoint == "FINAL" or g.week <= week)]
     deltas = _football_deltas(season, completed) if football else {}
-    ratings = {name: row.rating for name, row in standings.items()}
+    remaining = list(_remaining_probabilities(season, checkpoint, standings, sport))
     stats = SeasonRecords(defaultdict(Record), defaultdict(lambda: defaultdict(Record)), set(),
-                          {}, {}, defaultdict(list), defaultdict(list))
+                          {}, {}, _overall_probabilities(remaining), defaultdict(list))
 
     def conferences(game):
         return (
@@ -170,24 +198,10 @@ def _season_records(season, checkpoint, standings, groups, sport):
                 if old is None or (delta - old[0]) * (1 if margin > 0 else -1) > 0:
                     extremes[school] = (delta, game, home)
 
-    if checkpoint != "FINAL":
-        for game in season.games:
-            if game.postseason or game.home_score is not None or game.away_score is not None:
-                continue
-            if football and game.week <= week:
-                continue
-            if football:
-                margin = _football_margin(game, ratings, season.home_advantage)
-            elif game.home_handicap is not None:
-                margin = -float(game.home_handicap)
-            else:
-                continue
-            home_prob = win_probability(margin, sport=sport)
-            stats.remaining[game.home].append(home_prob)
-            stats.remaining[game.away].append(1 - home_prob)
-            if _is_conference_game(game, *conferences(game)):
-                stats.remaining_league[game.home].append(home_prob)
-                stats.remaining_league[game.away].append(1 - home_prob)
+    for game, home_prob in remaining:
+        if _is_conference_game(game, *conferences(game)):
+            stats.remaining_league[game.home].append(home_prob)
+            stats.remaining_league[game.away].append(1 - home_prob)
     return stats
 
 
@@ -197,6 +211,20 @@ def _project(record, probabilities):
     wins = record.wins + record.ties / 2 + sum(probabilities)
     losses = record.losses + record.ties / 2 + sum(1 - p for p in probabilities)
     return f"{wins:.1f}–{losses:.1f}"
+
+
+def _project_overall(standing, probabilities):
+    return _project(Record.from_text(standing.record), probabilities)
+
+
+def projected_overall_records(season: Season, *, sport: str) -> dict[str, str]:
+    """Project overall W–L at the conference page's latest checkpoint."""
+    checkpoint = next(reversed(season.rankings), None)
+    if checkpoint is None or checkpoint == "FINAL":
+        return {}
+    standings = {row.school: row for row in season.rankings[checkpoint]}
+    probabilities = _overall_probabilities(_remaining_probabilities(season, checkpoint, standings, sport))
+    return {school: _project_overall(row, probabilities[school]) for school, row in standings.items()}
 
 
 def _percentage(record):
@@ -264,7 +292,7 @@ def _standings_table(members, stats, preseason, standings, team_routes, *, activ
                + _game_cell(stats.worst.get(school), standings, team_routes))
         if active:
             proj_conf = _project(stats.league[school] if not independent else None, stats.remaining_league[school])
-            proj_overall = _project(Record.from_text(member.record), stats.remaining[school])
+            proj_overall = _project_overall(member, stats.remaining[school])
             row += f'<td class="num">{proj_conf}</td><td class="num">{proj_overall}</td>'
         rows.append(f"<tr>{row}</tr>")
     return _table("Conference standings", headers, rows)

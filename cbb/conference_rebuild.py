@@ -18,7 +18,7 @@ from .cors_v1 import _available, cors_v1_seasons
 from .historical_replay import replay_historical_seasons
 from .record_book import SECTIONS, _record, conference_game, season_name
 from .replay import replay_seasons
-from .team_schedule import EASTERN, schedule_views
+from .team_schedule import EASTERN, projection_key, schedule_views
 
 
 def _published_standings(path):
@@ -67,15 +67,27 @@ def _retained_results(site, year, cutoff, standings, replayed):
     return results
 
 
+def _upcoming_rows(path):
+    anchors = html.parse(str(path)).xpath('//*[@id="remaining-schedule"]')
+    if not anchors:
+        return
+    anchor, = anchors
+    if anchor.tag == "tr":
+        for row in [anchor, *anchor.xpath("following-sibling::tr | ../following-sibling::tbody/tr")]:
+            yield row[0], *row[-5:-2]
+    else:
+        # Older pages used a separate table, with or without a Win chance column.
+        for row in anchor.xpath(".//tbody/tr"):
+            yield row[0], *row[2:5]
+
+
 def _retained_schedule(site, year, standings, routes, week_page, replayed):
     by_url = {f"{route.rsplit('/', 1)[0]}/{year}.html": name for name, route in routes.items()}
     schedule = {}
     for row in standings:
         route = routes[row.school].removeprefix("/cbb/").rsplit("/", 1)[0]
         path = site / route / f"{year}.html"
-        for day, _, opponent, venue, handicap in html.parse(str(path)).xpath(
-            '//*[@id="remaining-schedule"]//tbody/tr'
-        ):
+        for day, opponent, venue, handicap in _upcoming_rows(path):
             links = opponent.xpath("./a/@href")
             if not links or handicap.text_content() == "—":
                 continue
@@ -85,9 +97,9 @@ def _retained_schedule(site, year, standings, routes, week_page, replayed):
             spread = Decimal(0) if handicap.text_content() == "Pick’em" else Decimal(handicap.text_content())
             if side == "Away" or (side == "Neutral" and home > away):
                 home, away, spread = away, home, -spread
-            month_day = datetime.strptime(f'{day.text_content().split(", ", 1)[1]} {year}', "%b %d %Y").date()
+            month_day = datetime.strptime(f'{day.text.split(", ", 1)[1]} {year}', "%b %d %Y").date()
             day_key = date(year - (month_day.month >= 7), month_day.month, month_day.day)
-            key = day_key, home, away
+            key = projection_key(day_key, home, away, side == "Neutral")
             game = Game(0, home, away, None, None, spread, side == "Neutral")
             if schedule.setdefault(key, game) != game:
                 raise ValueError(f"Conflicting retained basketball projection for {key}")
@@ -104,12 +116,12 @@ def _retained_schedule(site, year, standings, routes, week_page, replayed):
             neutral = venue.text_content() == "Neutral"
             if neutral and home > away:
                 home, away, spread = away, home, -spread
-            schedule.setdefault((day_key, home, away), Game(0, home, away, None, None, spread, neutral))
+            schedule.setdefault(projection_key(day_key, home, away, neutral),
+                                Game(0, home, away, None, None, spread, neutral))
     metadata = {}
     for start, home, away, neutral in replayed:
         day = start.astimezone(EASTERN).date()
-        pair = tuple(sorted((home, away))) if neutral else (home, away)
-        metadata[day, *pair] = replayed[start, home, away, neutral]
+        metadata[projection_key(day, home, away, neutral)] = replayed[start, home, away, neutral]
     return [replace(game, conference_game=source.conference_game, postseason=source.postseason)
             if (source := metadata.get(key)) else game for key, game in schedule.items()]
 
