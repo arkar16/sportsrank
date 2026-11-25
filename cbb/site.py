@@ -5,20 +5,39 @@ from pathlib import Path
 import shutil
 
 from site_navigation import masthead
-from spread_cards import basketball_links
+from spread_cards import ConferenceSlate, basketball_links
 from .blend import VERSION, blend_seasons
-from .cors_v1 import VERSION as V1_VERSION, cors_v1_seasons
+from .cors_v1 import VERSION as V1_VERSION, _available, cors_v1_seasons
 from .early_records import read_early_records
 from .historical_replay import replay_historical_seasons
 from .home import landing_page
 from .honors import write_honors
 from .march_archive import build_tournaments
 from .program_records import read_program_records
-from .record_book import SECTIONS, _games, _write, build, season_name, team_label
+from .record_book import SECTIONS, _games, _tipoff, _write, build, conference_game, season_name, team_label
 from .team_schedule import schedule_views
 
 
 V1_START = datetime.fromisoformat("2026-11-24T00:00:00+00:00")
+
+
+def share_conferences(season, checkpoint):
+    """Attach fixture classification and league records available at the edition cutoff."""
+    cutoff = datetime.fromisoformat(checkpoint["cutoff_utc"])
+    names = {row["team_id"]: row["school"] for row in checkpoint["rows"]}
+    conferences = {row["school"]: row["conference"] for row in checkpoint["rows"]}
+    completed, fixtures = [], {}
+    for row in season["forecasts"]:
+        if row["home_team_id"] not in names or row["away_team_id"] not in names:
+            continue
+        if row["cutoff_utc"] == checkpoint["cutoff_utc"]:
+            game = conference_game(row, checkpoint["week"], names)
+            fixtures[_tipoff(row).date().isoformat(), game.home, game.away] = game
+        elif row["status"] == "final":
+            available = row.get("result_cutoff_utc") or _available(datetime.fromisoformat(row["start_utc"]))
+            if datetime.fromisoformat(available) <= cutoff:
+                completed.append(conference_game(row, checkpoint["week"], names))
+    return ConferenceSlate.build(conferences, completed, fixtures)
 
 
 def _forecasts(forecasts, prepared_at, logo_ids, current, *, year=None):
@@ -167,7 +186,7 @@ def main():
                   + _games(slate, logo_ids, as_of, year=args.season) + '</section>')
     _write(args.output, "current.html", f"{season_name(args.season)} basketball forecasts", edition_link + report)
     if blended and slate:
-        basketball_links(args.output)
+        basketball_links(args.output, share_conferences(season, checkpoint))
     (args.output / "index.html").write_bytes(landing_page(archives, routes, presentation, checkpoint, archive, years, model=model, earlier_years=earlier_years))
 
 

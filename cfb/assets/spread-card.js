@@ -35,8 +35,8 @@
 
   async function makeImage() {
     const canvas = document.createElement("canvas");
-    canvas.width = 1200;
-    canvas.height = 630;
+    canvas.width = 920;
+    canvas.height = 264;
     const ctx = canvas.getContext("2d");
     const rows = [...document.querySelectorAll(".game-line tbody tr")];
     const images = rows.map(row => row.querySelector("img"));
@@ -46,47 +46,42 @@
     ]);
     ctx.fillStyle = "#faf7ef";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#823b27";
-    ctx.fillRect(0, 0, 1200, 9);
-    drawText(ctx, "SportsRank", 52, 61, {size: 51, width: 325, color: "#823b27"});
-    drawText(ctx, document.querySelector(".edition").textContent, 1148, 62,
-      {size: 25, width: 745, align: "right", face: "Arial, sans-serif"});
+    const left = 22;
+    const right = canvas.width - left;
+    drawText(ctx, "SportsRank", left, 25, {size: 30, width: 176, color: "#823b27"});
+    drawText(ctx, document.querySelector(".edition").textContent, right, 25,
+      {size: 23, width: 660, align: "right", face: "Arial, sans-serif"});
     ctx.fillStyle = "#252a23";
-    ctx.fillRect(52, 104, 1096, 3);
-    ctx.fillRect(52, 112, 1096, 1);
-    drawText(ctx, "CORS rank · Team", 52, 152,
-      {size: 25, width: 420, color: "#565b50", face: "Arial, sans-serif"});
-    drawText(ctx, "Record", 1148, 152,
-      {size: 25, width: 200, align: "right", color: "#565b50", face: "Arial, sans-serif"});
+    ctx.fillRect(left, 49, right - left, 2);
 
-    const rankX = images.some(Boolean) ? 182 : 52;
-    ctx.font = 'bold 41px Arial, sans-serif';
+    const rankX = images.some(Boolean) ? 90 : left;
+    ctx.font = "bold 29px Arial, sans-serif";
     const rankWidth = Math.max(...rows.map(row => ctx.measureText(row.querySelector(".rank").textContent).width));
-    const nameX = rankWidth ? rankX + rankWidth + 24 : rankX;
+    const nameX = rankWidth ? rankX + rankWidth + 12 : rankX;
     rows.forEach((row, i) => {
-      const y = 235 + i * 149;
+      const y = 87 + i * 70;
       const image = images[i];
       if (image && image.naturalWidth && image.naturalHeight) {
-        const scale = Math.min(104 / image.naturalWidth, 104 / image.naturalHeight);
+        const scale = Math.min(52 / image.naturalWidth, 52 / image.naturalHeight);
         const w = image.naturalWidth * scale;
         const h = image.naturalHeight * scale;
-        ctx.drawImage(image, 104 - w / 2, y - h / 2, w, h);
+        ctx.drawImage(image, left + (52 - w) / 2, y - h / 2, w, h);
       }
       drawText(ctx, row.querySelector(".rank").textContent, rankX, y,
-        {size: 41, width: rankWidth || 1, color: "#565b50", face: "Arial, sans-serif"});
+        {size: 29, width: rankWidth || 1, color: "#565b50", face: "Arial, sans-serif"});
       drawText(ctx, row.querySelector(".school").textContent, nameX, y,
-        {size: 63, width: 940 - nameX});
-      drawText(ctx, row.querySelector("td").textContent, 1148, y,
-        {size: 58, width: 170, align: "right"});
+        {size: 44, width: 677 - nameX});
+      drawText(ctx, row.querySelector("td").textContent, right, y,
+        {size: 34, width: 206, align: "right"});
       ctx.fillStyle = "#cfcbbb";
-      ctx.fillRect(52, y + 75, 1096, 2);
+      ctx.fillRect(left, y + 35, right - left, 1);
     });
     ctx.fillStyle = "#195348";
-    ctx.fillRect(0, 498, 1200, 132);
-    drawText(ctx, "Home spread", 52, 563,
-      {size: 28, width: 225, color: "#faf7ef", face: "Arial, sans-serif"});
-    drawText(ctx, document.querySelector(".pick strong").textContent, 1148, 563,
-      {size: 57, width: 840, color: "#faf7ef", align: "right"});
+    ctx.fillRect(0, 197, canvas.width, canvas.height - 197);
+    drawText(ctx, document.querySelector(".pick strong").textContent, left, 230,
+      {size: 39, width: 525, color: "#faf7ef"});
+    drawText(ctx, document.querySelector(".game-details").textContent, right, 230,
+      {size: 22, width: 333, color: "#faf7ef", align: "right", face: "Arial, sans-serif"});
     return new Promise((resolve, reject) => canvas.toBlob(blob => {
       if (blob) resolve(blob);
       else reject(new Error("Could not encode the spread image"));
