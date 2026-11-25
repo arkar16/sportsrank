@@ -2,7 +2,8 @@
 (() => {
   const collator = new Intl.Collator("en", { sensitivity: "base" });
   const textFields = new Set([
-    "school", "team", "conference", "opponent conference", "kind", "tournament champion", "runner-up",
+    "school", "team", "conference", "opponent conference", "best conference", "worst conference",
+    "kind", "tournament champion", "runner-up",
   ]);
   const yearFields = new Set(["season", "year"]);
   const conferenceRecordFields = new Set(["overall", "conf", "proj conf", "proj overall"]);
