@@ -56,10 +56,10 @@ async function checkDownload() {
   const labels = draws.map(item => item.label);
   for (const label of ["Auburn logo", "#29", "Auburn", "7-4 (4-4)", "Alabama logo", "#3", "Alabama",
                        "9-2 (6-2)", "Alabama by 17.75 · 89% to win", "Conference (SEC) · At Alabama",
-                       "CFB · 2026 · Week 13", "sportsrank.top", "CORS rank"]) {
+                       "CFB · 2026 · Week 13", "sportsrank.top"]) {
     assert.ok(labels.includes(label), label);
   }
-  assert.ok(draws.find(d => d.label === "CORS rank").bottom < draws.find(d => d.label === "#29").top);
+  assert.ok(!labels.includes("CORS rank"));
   for (const aspect of [808 / 454, 3 / 2]) {
     const cropX = Math.max(0, (canvas.width - canvas.height * aspect) / 2);
     const cropY = Math.max(0, (canvas.height - canvas.width / aspect) / 2);

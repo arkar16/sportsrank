@@ -50,20 +50,16 @@
     const left = 80;
     const right = canvas.width - left;
     const contentWidth = right - left;
-    drawText(ctx, "sportsrank.top", left, 48, {size: 35, width: 242, color: "#823b27"});
-    drawText(ctx, document.querySelector(".edition").textContent, right, 48,
+    drawText(ctx, "sportsrank.top", left, 55, {size: 35, width: 242, color: "#823b27"});
+    drawText(ctx, document.querySelector(".edition").textContent, right, 55,
       {size: 27, width: contentWidth - 264, align: "right", face: "Arial, sans-serif"});
     ctx.fillStyle = "#252a23";
-    ctx.fillRect(left, 82, contentWidth, 2);
+    ctx.fillRect(left, 94, contentWidth, 2);
 
     const markSize = 72;
     const rankX = images.some(Boolean) ? left + markSize + 14 : left;
     ctx.font = "bold 32px Arial, sans-serif";
     const rankWidth = Math.max(...rows.map(row => ctx.measureText(row.querySelector(".rank").textContent).width));
-    if (rankWidth) {
-      drawText(ctx, "CORS rank", rankX, 107,
-        {size: 26, width: 180, color: "#565b50", face: "Arial, sans-serif"});
-    }
     const nameX = rankWidth ? rankX + rankWidth + 12 : rankX;
     ctx.font = 'bold 40px "PT Serif", Georgia, serif';
     const recordWidth = Math.min(236, Math.max(...rows.map(row => ctx.measureText(row.querySelector("td").textContent).width)));
