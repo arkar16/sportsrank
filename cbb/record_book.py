@@ -7,7 +7,7 @@ from html import escape
 from zoneinfo import ZoneInfo
 
 from cfb.archive_presentation import updated_time
-from cfb.conference_pages import build_conference_pages, conference_route
+from cfb.conference_pages import build_conference_pages, conference_route, projected_overall_records
 from cfb.program_pages import build_program_pages
 from cfb.reference_archive import Game, Season, Standing, season_team_routes
 from cfb.reference_markup import PagePresentation
@@ -267,6 +267,7 @@ def build(
         season_index.append((_season_link(year), len(final), "Final only", completed, "—"))
 
     latest_season_year = seasons[-1]["season"]
+    projections = None
     weekly_years: set[int] = set()
     for season in weekly_seasons:
         year = season["season"]
@@ -321,9 +322,12 @@ def build(
         season_obj = Season(year, rankings, games, last["cutoff_utc"])
         season_routes = season_team_routes(season_obj, routes)
         archives.append(season_obj)
-        conference_archives.append(replace(
+        conference_archive = replace(
             season_obj, games=conference_games + (list(conference_schedule) if year == latest_season_year else []),
-        ))
+        )
+        conference_archives.append(conference_archive)
+        if year == latest_season_year and schedules is not None:
+            projections = projected_overall_records(conference_archive, sport="basketball")
         program_archives.append(replace(season_obj, games=logged_games))
         performance_records.append({
             "year": year,
@@ -470,7 +474,7 @@ def build(
         return f"/cbb/seasons/{year}/index.html"
 
     for path, markup in build_program_pages(
-        program_archives, routes, sport="basketball", remaining_schedules=schedules,
+        program_archives, routes, sport="basketball", remaining_schedules=schedules, projections=projections,
         directory_route="/cbb/teams/index.html",
         season_route=lambda y: f"/cbb/seasons/{y}/index.html",
         year_label=season_name,

@@ -4,21 +4,33 @@ from contextlib import closing
 import csv
 from datetime import date, datetime, timedelta
 from decimal import Decimal
-from html import escape
 from pathlib import Path
 import sqlite3
 from zoneinfo import ZoneInfo
 
 from .cors_v1 import rounded
+from cfb.program_pages import ScheduledGame, TeamSchedule
 from cfb.reference_archive import Game
-from cfb.reference_markup import school_label
 
 EASTERN = ZoneInfo("America/New_York")
 
 
-def remaining_schedules(database, season, checkpoint, as_of, **kwargs):
-    sections, moved, _ = schedule_views(database, season, checkpoint, as_of, **kwargs)
-    return sections, moved
+def projection_key(day, home, away, neutral):
+    if neutral and home > away:
+        home, away = away, home
+    return day, home, away
+
+
+def _matchup(week, home, away, margin, neutral, tipoff, game):
+    return Game(
+        week, home, away, None, None, Decimal(str(margin)).copy_negate() if margin is not None else None,
+        neutral, tipoff,
+        conference_game=game.get("conference_game") if game else None,
+        postseason=bool(game and (
+            game.get("season_type") == "postseason" or game.get("tournament")
+            or game.get("conference_tournament") or game.get("ncaa_round")
+        )),
+    )
 
 
 def schedule_views(database, season, checkpoint, as_of, *, snapshots=Path(__file__).with_name("schedules")):
@@ -38,14 +50,23 @@ def schedule_views(database, season, checkpoint, as_of, *, snapshots=Path(__file
             "SELECT id, json_extract(raw_json,'$.sourceId') FROM games WHERE season = ?", (year,)
         ) if source is not None}
 
-    routes = {r["school"]: f'/cbb/teams/{r["team_id"]}/{year}.html' for r in teams.values()}
     fixtures = {g["game_id"]: g for g in season["forecasts"]}
     finished = {g["game_id"] for g in season["forecasts"] if g["status"] == "final"
                 and datetime.fromisoformat(g["start_utc"]) + timedelta(hours=6) < as_of}
     rows = defaultdict(list)
     moved = set()
     projections = []
+    projected_keys = set()
+    projected_ids = set()
     cutoff = datetime.fromisoformat(checkpoint["cutoff_utc"]).astimezone(EASTERN)
+    week = checkpoint.get("week", 0)
+
+    def add_fixture(matchup, tip, fixture_id, home, away):
+        for team, opponent in ((home, away), (away, home)):
+            if team is not None:
+                row = ScheduledGame(matchup, f"{tip:%a, %b %d}", opponent["rank"] if opponent else None)
+                rows[year, team["school"]].append((tip, str(fixture_id), row))
+
     with snapshot.open(encoding="utf-8", newline="") as stream:
         for fixture in csv.DictReader(stream):
             tip = datetime.fromisoformat(fixture["tipoff"]).astimezone(EASTERN)
@@ -55,6 +76,8 @@ def schedule_views(database, season, checkpoint, as_of, *, snapshots=Path(__file
             if not (on_team_schedule or after_checkpoint):
                 continue
             home, away = (teams.get(fixture[key]) for key in ("home_id", "away_id"))
+            if home is None and away is None:
+                continue
             neutral = fixture["neutral"] == "1"
             game_id = ids.get(fixture["event_id"])
             game = fixtures.get(game_id)
@@ -75,42 +98,50 @@ def schedule_views(database, season, checkpoint, as_of, *, snapshots=Path(__file
                     else:
                         venue = 0 if neutral else season["home_advantages"][h]
                         margin = round(home["cors"] - away["cors"] + venue, 2)
+            clock = tip.strftime("%I:%M %p").lstrip("0") + " ET" if known else "Time TBD"
+            matchup = _matchup(
+                week,
+                home["school"] if home else fixture["home_name"],
+                away["school"] if away else fixture["away_name"],
+                margin, neutral, clock, game,
+            )
             if after_checkpoint and margin is not None:
-                projections.append(Game(
-                    checkpoint.get("week", 0), home["school"], away["school"], None, None,
-                    -Decimal(str(margin)), neutral,
-                    conference_game=game.get("conference_game") if game else None,
-                    postseason=bool(game and (
-                        game.get("season_type") == "postseason" or game.get("tournament")
-                        or game.get("conference_tournament") or game.get("ncaa_round")
-                    )),
-                ))
+                projections.append(matchup)
+                projected_keys.add(projection_key(tip.date(), matchup.home, matchup.away, neutral))
+                if game_id is not None:
+                    projected_ids.add(game_id)
             if not on_team_schedule or game_id in finished:
                 continue
             if game_id is not None:
                 moved.add(game_id)
-            clock = tip.strftime("%I:%M %p").lstrip("0") + " ET" if known else "Time TBD"
-            for team, opponent, side, opponent_name, spread in (
-                (home, away, "Home", fixture["away_name"], -margin if margin is not None else None),
-                (away, home, "Away", fixture["home_name"], margin),
-            ):
-                if team is None:
-                    continue
-                label = escape(opponent_name)
-                if opponent:
-                    label = f'#{opponent["rank"]} {school_label(opponent["school"], routes)}'
-                line = "—" if spread is None else f"{spread:+.2f}" if spread else "Pick’em"
-                cells = (f'<th scope="row">{tip:%a, %b %d}</th><td>{clock}</td><td>{label}</td>'
-                         f'<td>{"Neutral" if neutral else side}</td><td class="num">{line}</td>')
-                rows[year, team["school"]].append((tip, fixture["event_id"], f"<tr>{cells}</tr>"))
+            add_fixture(matchup, tip, fixture["event_id"], home, away)
+
+    # The retained conference rebuild also uses the issued checkpoint's weekly
+    # slate. A fixture can be absent from the dated public schedule, including
+    # games that tipped between the ranking cutoff and publication.
+    for game_id, game in fixtures.items():
+        if game_id in projected_ids or game["cutoff_utc"] != checkpoint["cutoff_utc"]:
+            continue
+        home, away = (ratings.get(game[f"{side}_team_id"]) for side in ("home", "away"))
+        if home is None or away is None or game["home_margin"] is None:
+            continue
+        tip = datetime.fromisoformat(game["start_utc"]).astimezone(EASTERN)
+        neutral = game["neutral_site"]
+        key = projection_key(tip.date(), home["school"], away["school"], neutral)
+        if tip <= cutoff or key in projected_keys:
+            continue
+        clock = tip.strftime("%I:%M %p").lstrip("0") + " ET"
+        matchup = _matchup(week, home["school"], away["school"], game["home_margin"], neutral, clock, game)
+        projections.append(matchup)
+        projected_keys.add(key)
+        if tip > as_of:
+            add_fixture(matchup, tip, game_id, home, away)
+            moved.add(game_id)
+
     schedule_date = date.fromisoformat(snapshot.stem)
-    heading = (f'<section id="remaining-schedule"><h2>Remaining schedule</h2>'
-               f'<p>Opponent ranks and projected spreads use the {cutoff:%B %d} CORS ratings. '
-               f'Schedule as of {schedule_date:%B %d, %Y}.</p>'
-               '<div class="table-scroll" role="region" aria-label="Remaining schedule" tabindex="0"><table>'
-               '<thead><tr><th scope="col">Date</th><th scope="col">Tipoff</th><th scope="col">Opponent</th>'
-               '<th scope="col">Site</th><th scope="col" class="num">CORS spread (− if favored)</th>'
-               '</tr></thead><tbody>')
-    sections = {key: heading + "".join(row for _, _, row in sorted(games)) + "</tbody></table></div></section>"
-                for key, games in rows.items()}
-    return sections, moved, projections
+    schedules = {
+        key: TeamSchedule(tuple(row for _, _, row in sorted(games, key=lambda item: item[:2])),
+                          schedule_date, cutoff.date())
+        for key, games in rows.items()
+    }
+    return schedules, moved, projections

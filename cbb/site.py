@@ -158,7 +158,7 @@ def main():
     archive.write_text(page)
     years = build_tournaments(args.output, baseline, as_of, logo_ids, blends=seasons if blended else (), model=model)
     schedules, upcoming_ids, conference_schedule = (
-        schedule_views(args.database, season, checkpoint, as_of) if blended else ({}, set(), [])
+        schedule_views(args.database, season, checkpoint, as_of) if blended else (None, set(), [])
     )
     first_replay = min(as_of.year + (as_of.month >= 7), seasons[0]["season"])
     historical_seasons = (
