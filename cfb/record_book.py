@@ -9,7 +9,7 @@ import tempfile
 
 from spread_cards import football_links
 
-from .conference_pages import build_conference_pages, conference_route
+from .conference_pages import CONFERENCE_HONORS, build_conference_pages, conference_honors_route, conference_route
 from .history_sheets import render_history_sheet
 from .program_marks import program_logo_paths
 from .program_pages import build_program_pages
@@ -197,7 +197,8 @@ def _home(site: Path, seasons: list[Season], routes: dict[str, str], stylesheet_
     record_links = f"""<p><a href="/cfb/teams/index.html">{program_count} program histories</a></p>
 <p><a href="/cfb/conferences/index.html">Conference histories</a></p>
 <p><a href="/cfb/years/history/nc_FBS_CFB_output.html">National champions</a></p>
-<p><a href="/cfb/years/history/wt_FBS_CFB_output.html">Last-place finishers</a></p>"""
+<p><a href="/cfb/years/history/wt_FBS_CFB_output.html">Last-place finishers</a></p>
+<p><a href="{conference_honors_route()}">{CONFERENCE_HONORS}</a></p>"""
     return home_document(
         title, "College football", f"{latest.year} FBS &middot; {edition}", rankings,
         year_link, f"{latest.year} standings", record_links, archive,
@@ -298,16 +299,18 @@ def build(site: Path) -> tuple[int, int, int]:
     for relative, markup in build_program_pages(seasons, routes, directory_label=directory_label):
         sortable = relative.endswith("/index.html") and relative != "cfb/teams/index.html"
         changed += _write_changed(site / relative, presentation.render(markup.encode(), archive=False, sortable=sortable))
+    generated_pages = set()
     for relative, markup in build_conference_pages(seasons, routes):
-        changed += _write_changed(site / relative, presentation.render(
+        path = site / relative
+        changed += _write_changed(path, presentation.render(
             markup.encode(), archive=False, sortable="data-sortable" in markup,
         ))
-    season_pages = set()
+        generated_pages.add(path)
     for season in seasons:
         for relative, markup in build_season_pages(site, season, routes):
             path = site / relative
             changed += _write_changed(path, presentation.render(markup.encode(), archive=False))
-            season_pages.add(path)
+            generated_pages.add(path)
     stylesheet_revision = sha256((site / "cfb/assets/record-book.css").read_bytes()).hexdigest()[:12]
     for relative in ("index.html", "cfb/cfb.html"):
         markup = _home(site, seasons, routes, stylesheet_revision, is_root=relative == "index.html")
@@ -327,7 +330,7 @@ def build(site: Path) -> tuple[int, int, int]:
     # the exact input bytes used by forecast evaluation can all be recovered.
     for directory in ("years", "performance", "history"):
         for path in (site / "cfb" / directory).rglob("*.html"):
-            if path in season_pages:
+            if path in generated_pages:
                 continue
             relative = path.relative_to(site).as_posix()
             if relative in honors:

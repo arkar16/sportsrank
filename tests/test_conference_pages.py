@@ -45,7 +45,7 @@ class ConferencePagesTest(unittest.TestCase):
             [Season(2024, {"W0": preseason, "FINAL": rows}, []),
              Season(2025, {"W0": preseason, "W1": rows}, games)], routes, sport="basketball"))
         page = html.fromstring(pages["cbb/conferences/east/2025.html"])
-        summary = dict(zip(page.xpath("//dl//dt/text()"), page.xpath("//dl//dd/text()"), strict=True))
+        summary = dict(zip(page.xpath("//dl//dt/text()"), (dd.text_content() for dd in page.xpath("//dl//dd")), strict=True))
         self.assertEqual(summary["Conference rank"], "#1 of 2")
         self.assertEqual(summary["Combined OOC"], "1–0 (100.0%)")
         self.assertEqual(summary["Preseason Mean CORS"], "6.50 (+2.00)")

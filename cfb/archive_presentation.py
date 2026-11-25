@@ -187,7 +187,9 @@ def decorate_archive(markup: str, relative: str, targets: set[str], routes: dict
         heading = "CORS national champions" if prefix == "NC" else "CORS last-place finishers"
         link(f"/cfb/years/history/CORS_{prefix}_FBS_CFB.html", "Archived record sheet")
 
-        from .conference_pages import conference_route
+        from .conference_pages import CONFERENCE_HONORS, conference_honors_route, conference_route
+
+        link(conference_honors_route(), CONFERENCE_HONORS)
 
         def link_honors_row(match: re.Match) -> str:
             year_url = f"/cfb/years/{match[2]}/{match[2]}_CFB.html"

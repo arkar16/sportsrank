@@ -2,7 +2,8 @@
 from collections import defaultdict
 from contextlib import closing
 import csv
-from datetime import date, datetime, timedelta
+from dataclasses import replace
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 from pathlib import Path
 import sqlite3
@@ -15,10 +16,25 @@ from cfb.reference_archive import Game
 EASTERN = ZoneInfo("America/New_York")
 
 
+def tipoff_clock(tip):
+    return tip.strftime("%I:%M %p").lstrip("0") + " ET"
+
+
+def conference_tipoff(tip, *, time_known=True):
+    """Label an Eastern date and use local midnight for date-only sort keys."""
+    tip = tip.astimezone(EASTERN)
+    label = tip.strftime("%b %d, %Y")
+    if time_known:
+        label += f" · {tipoff_clock(tip)}"
+    else:
+        tip = datetime.combine(tip.date(), time.min, EASTERN)
+    return {"tipoff_label": label, "start_utc": tip.astimezone(UTC).isoformat()}
+
+
 def projection_key(day, home, away, neutral):
     if neutral and home > away:
         home, away = away, home
-    return day, home, away
+    return day, home, away, neutral
 
 
 def _matchup(week, home, away, margin, neutral, tipoff, game):
@@ -34,7 +50,7 @@ def _matchup(week, home, away, margin, neutral, tipoff, game):
 
 
 def schedule_views(database, season, checkpoint, as_of, *, snapshots=Path(__file__).with_name("schedules")):
-    """Build the team schedule and projections anchored to the ranking cutoff."""
+    """Build the team schedule and known conference fixtures at the ranking cutoff."""
     year = season["season"]
     local_day = as_of.astimezone(EASTERN).date()
     available = [p for p in (snapshots / str(year)).glob("*.csv") if date.fromisoformat(p.stem) <= local_day]
@@ -98,16 +114,18 @@ def schedule_views(database, season, checkpoint, as_of, *, snapshots=Path(__file
                     else:
                         venue = 0 if neutral else season["home_advantages"][h]
                         margin = round(home["cors"] - away["cors"] + venue, 2)
-            clock = tip.strftime("%I:%M %p").lstrip("0") + " ET" if known else "Time TBD"
+            clock = tipoff_clock(tip) if known else "Time TBD"
             matchup = _matchup(
                 week,
                 home["school"] if home else fixture["home_name"],
                 away["school"] if away else fixture["away_name"],
                 margin, neutral, clock, game,
             )
-            if after_checkpoint and margin is not None:
-                projections.append(matchup)
-                projected_keys.add(projection_key(tip.date(), matchup.home, matchup.away, neutral))
+            if after_checkpoint:
+                key = projection_key(tip.date(), matchup.home, matchup.away, neutral)
+                if key not in projected_keys:
+                    projections.append(replace(matchup, **conference_tipoff(tip, time_known=known)))
+                    projected_keys.add(key)
                 if game_id is not None:
                     projected_ids.add(game_id)
             if not on_team_schedule or game_id in finished:
@@ -130,9 +148,8 @@ def schedule_views(database, season, checkpoint, as_of, *, snapshots=Path(__file
         key = projection_key(tip.date(), home["school"], away["school"], neutral)
         if tip <= cutoff or key in projected_keys:
             continue
-        clock = tip.strftime("%I:%M %p").lstrip("0") + " ET"
-        matchup = _matchup(week, home["school"], away["school"], game["home_margin"], neutral, clock, game)
-        projections.append(matchup)
+        matchup = _matchup(week, home["school"], away["school"], game["home_margin"], neutral, tipoff_clock(tip), game)
+        projections.append(replace(matchup, **conference_tipoff(tip)))
         projected_keys.add(key)
         if tip > as_of:
             add_fixture(matchup, tip, game_id, home, away)
