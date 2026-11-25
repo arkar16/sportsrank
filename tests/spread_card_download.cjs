@@ -37,7 +37,7 @@ async function checkDownload() {
     "#game-link": {}, "#save-card": save, "#share-status": {},
     ".edition": {textContent: "CFB · 2026 · Week 13"},
     ".pick strong": {textContent: "Alabama by 17.75", dataset: {imagePick: "Alabama by 17.75 · 89% to win"}},
-    ".game-details": {textContent: "Conference (SEC) · At Alabama"},
+    ".game-details": {textContent: "Conference (SEC) · @ Alabama"},
   };
   const document = {
     querySelector: selector => selectors[selector],
@@ -55,7 +55,7 @@ async function checkDownload() {
   assert.equal(download.download, "auburn-at-alabama.png");
   const labels = draws.map(item => item.label);
   for (const label of ["Auburn logo", "#29", "Auburn", "7-4 (4-4)", "Alabama logo", "#3", "Alabama",
-                       "9-2 (6-2)", "Alabama by 17.75 · 89% to win", "Conference (SEC) · At Alabama",
+                       "9-2 (6-2)", "Alabama by 17.75 · 89% to win", "Conference (SEC) · @ Alabama",
                        "CFB · 2026 · Week 13", "sportsrank.top"]) {
     assert.ok(labels.includes(label), label);
   }

@@ -34,10 +34,11 @@ class GameSharingTests(unittest.TestCase):
         link = BeautifulSoup(linked, "html.parser").find("a")
         self.assertEqual(link.get_text(strip=True), "Home +2.50")
         page = BeautifulSoup((directory.parent / link["href"][1:]).read_text(), "html.parser")
-        self.assertEqual(page.h1.text, "Away & Co. at Home")
+        self.assertEqual(page.h1.text, "Away & Co. @ Home")
+        self.assertTrue(link["href"].endswith("/away-co-at-home.html"))
         self.assertEqual(page.select_one(".pick strong").text, "Home to lose by 2.50")
         self.assertEqual(page.select_one(".pick strong")["data-image-pick"], "Home to lose by 2.50 · 43% to win")
-        self.assertEqual(page.select_one(".game-details").text, "OOC · At Home")
+        self.assertEqual(page.select_one(".game-details").text, "OOC · @ Home")
         self.assertEqual([td.text for td in page.select(".game-line td")], ["—", "0-0 (0-0)"])
         self.assertEqual([tag.text for tag in page.select(".rank")], ["", "#24"])
         self.assertEqual(page.main.get_text().count("2.50"), 1)
@@ -56,10 +57,13 @@ class GameSharingTests(unittest.TestCase):
                f'<tr><td><img class="school-mark" src="{mark}">Home</td><td>Away</td><td>False</td>'
                '<td>Home -1.75</td></tr></table>').encode()
         slate = directory / "years/2026/spread/2026_W1_FBS_spread.html"
-        season = Season(2026, {}, [])
+        season = Season(2026, {"W0": [Standing("Away", 2, Decimal(7), "0-0", "SEC"),
+                                      Standing("Home", 3, Decimal(5), "0-0", "ACC")]},
+                        [Game(1, "Home", "Away", None, None, None)])
         linked = football_links(raw, slate, directory, season)
         href = BeautifulSoup(linked, "html.parser").select_one("a.share-spread")["href"]
         game = BeautifulSoup((site / href[1:]).read_text(), "html.parser")
+        self.assertEqual(game.select_one(".game-details").text, "OOC (SEC vs ACC) · @ Home")
         self.assertEqual(game.select_one(".game-line img")["src"], mark)
         url = game.select_one('meta[property="og:image"]')["content"]
         for selector, attr in [('link[rel="apple-touch-icon"]', "href"), ('link[rel="icon"]', "href"),
@@ -135,8 +139,8 @@ class GameSharingTests(unittest.TestCase):
         self.assertEqual(second.select_one(".pick strong").text, "Pick’em")
         self.assertEqual(first.select_one(".pick strong")["data-image-pick"], "Duke by 0.34 · 51% to win")
         self.assertEqual(second.select_one(".pick strong")["data-image-pick"], "Pick’em · 50% to win")
-        self.assertEqual(first.select_one(".game-details").text, "OOC · Neutral site")
-        self.assertEqual(second.select_one(".game-details").text, "Conference (ACC) · At Duke")
+        self.assertEqual(first.select_one(".game-details").text, "OOC (ACC vs ACC) · Neutral site")
+        self.assertEqual(second.select_one(".game-details").text, "Conference (ACC) · @ Duke")
         self.assertNotIn("97–95", second.get_text())
         self.assertEqual(list(directory.rglob("*.png")), [mark])
         self.assertEqual(edition.read_bytes(), original)

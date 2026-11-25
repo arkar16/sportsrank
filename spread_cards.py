@@ -47,10 +47,14 @@ class ConferenceSlate:
                 records[game.away].add_game(-margin)
         play = {}
         for key, game in fixtures.items():
+            away = conferences.get(game.away)
+            home = conferences.get(game.home)
+            known_leagues = all(league not in (None, "", "—") for league in (away, home))
             if league_game(game):
-                play[key] = f"Conference ({conferences[game.home]})"
-            elif (game.conference_game is False or game.postseason
-                  or all(conferences.get(team) not in (None, "", "—") for team in (game.home, game.away))):
+                play[key] = f"Conference ({home})"
+            elif known_leagues:
+                play[key] = f"OOC ({away} vs {home})"
+            elif game.conference_game is False or game.postseason:
                 play[key] = "OOC"
         return cls(records, play)
 
@@ -95,7 +99,7 @@ class Spread:
 
     @property
     def matchup(self):
-        at = "vs." if self.neutral else "at"
+        at = "vs." if self.neutral else "@"
         return f"{self.away.name} {at} {self.home.name}"
 
     @property
@@ -107,7 +111,10 @@ class Spread:
 
     @property
     def path(self):
-        name = unicodedata.normalize("NFKD", self.matchup).encode("ascii", "ignore").decode()
+        # Retain the published -at- URLs when displaying an @ for home games.
+        separator = "vs" if self.neutral else "at"
+        matchup = f"{self.away.name} {separator} {self.home.name}"
+        name = unicodedata.normalize("NFKD", matchup).encode("ascii", "ignore").decode()
         slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
         return f"/{self.sport}/picks/{self.edition}/{slug}.html"
 
@@ -141,7 +148,7 @@ def _document(game: Spread, icon: tuple[str, int] | None) -> str:
     line = escape(game.prediction)
     home_chance = win_probability(game.home_margin, sport="football" if game.sport == "cfb" else "basketball")
     context = escape(f"{game.sport_label} · {game.date_label}")
-    details = escape(f"{game.play} · " + ("Neutral site" if game.neutral else f"At {game.home.name}"))
+    details = escape(f"{game.play} · " + ("Neutral site" if game.neutral else f"@ {game.home.name}"))
     description = escape(f"{game.away.summary} vs. {game.home.summary}") + f" · {context} · {details}"
     canonical = ORIGIN + game.path
     preview = ""
