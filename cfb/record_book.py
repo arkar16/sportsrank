@@ -316,6 +316,7 @@ def build(site: Path) -> tuple[int, int, int]:
     changed += _write_changed(site / "404.html", presentation.render(_not_found(seasons[-1].year, include_cbb=has_cbb).encode(), archive=False))
     targets = {"/" + path.relative_to(site).as_posix() for path in site.rglob("*.html")}
     latest_year = seasons[-1].year
+    seasons_by_year = {str(season.year): season for season in seasons}
     spread_dir = site / f"cfb/years/{latest_year}/spread"
     current_spread = max(spread_dir.glob(f"{latest_year}_W*_FBS_spread.html"),
                          key=lambda p: int(p.name.split("_")[1][1:]), default=None)
@@ -340,7 +341,7 @@ def build(site: Path) -> tuple[int, int, int]:
             if path.parent.name == "spread" and path.name.endswith("_FBS_spread.html"):
                 year, checkpoint = path.name.split("_")[:2]
                 if path == current_spread or (site / "cfb/picks" / year / f"week-{checkpoint[1:]}").is_dir():
-                    markup = football_links(markup, path, site / "cfb")
+                    markup = football_links(markup, path, site / "cfb", seasons_by_year[year])
             if raw != markup:
                 changed += _write_changed(path, markup)
     return len(seasons), len(routes), changed
