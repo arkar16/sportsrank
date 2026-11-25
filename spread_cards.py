@@ -14,7 +14,7 @@ from bs4 import BeautifulSoup
 from PIL import Image
 
 from cfb.archive_markup import ui
-from cfb.conference_pages import Record, _is_conference_game, _UNAFFILIATED
+from cfb.conference_pages import Record, _is_conference_game, _UNAFFILIATED, _win_probability
 from cfb.performance import _saved_margin
 from cfb.program_marks import _atomic_write
 from cfb.reference_archive import Season, _rows
@@ -138,6 +138,7 @@ def _preview_icon(directory: Path, sport: str, mark: str) -> tuple[str, int] | N
 def _document(game: Spread, icon: tuple[str, int] | None) -> str:
     title = escape(game.matchup)
     line = escape(game.prediction)
+    home_chance = _win_probability(float(game.home_margin), 15.0 if game.sport == "cfb" else 11.0)
     context = escape(f"{game.sport_label} · {game.date_label}")
     details = escape(f"{game.play} · " + ("Neutral site" if game.neutral else f"At {game.home.name}"))
     description = escape(f"{game.away.summary} vs. {game.home.summary}") + f" · {context} · {details}"
@@ -170,11 +171,11 @@ def _document(game: Spread, icon: tuple[str, int] | None) -> str:
 <meta property="og:description" content="{description}">
 <meta name="twitter:card" content="summary">{preview}
 <link rel="stylesheet" href="/cfb/assets/record-book.css"><link rel="stylesheet" href="/cfb/assets/spread-card.css?v=3">
-<script src="/cfb/assets/spread-card.js?v=4" defer></script></head><body>{masthead(compact=True)}
+<script src="/cfb/assets/spread-card.js?v=5" defer></script></head><body>{masthead(compact=True)}
 <main class="spread-page"><h1 class="sr-only">{title}</h1><p class="edition">{context}</p>
 <table class="game-line"><thead><tr><th scope="col">CORS rank · Team</th><th scope="col">Overall (conf)</th></tr></thead>
 <tbody>{''.join(teams)}</tbody></table>
-<p class="pick"><strong>{line}</strong> <span class="game-details">{details}</span></p>
+<p class="pick"><strong data-image-pick="{line} · {home_chance:.0%} to win">{line}</strong> <span class="game-details">{details}</span></p>
 <div class="share-actions"><a id="game-link" href="{canonical}">Game link</a>
 <button id="save-card" type="button" hidden>Save image</button><span id="share-status" role="status"></span></div>
 <nav aria-label="Forecasts"><a class="back" href="{back}">{game.sport_label} forecasts</a>{edition_link}</nav></main></body></html>

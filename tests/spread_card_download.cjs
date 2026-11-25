@@ -35,7 +35,8 @@ async function checkDownload() {
   const download = {click() { this.clicked = true; }, remove() {}};
   const selectors = {
     "#game-link": {}, "#save-card": save, "#share-status": {},
-    ".edition": {textContent: "CFB · 2026 · Week 13"}, ".pick strong": {textContent: "Alabama by 17.75"},
+    ".edition": {textContent: "CFB · 2026 · Week 13"},
+    ".pick strong": {textContent: "Alabama by 17.75", dataset: {imagePick: "Alabama by 17.75 · 89% to win"}},
     ".game-details": {textContent: "Conference (SEC) · At Alabama"},
   };
   const document = {
@@ -54,9 +55,11 @@ async function checkDownload() {
   assert.equal(download.download, "auburn-at-alabama.png");
   const labels = draws.map(item => item.label);
   for (const label of ["Auburn logo", "#29", "Auburn", "7-4 (4-4)", "Alabama logo", "#3", "Alabama",
-                       "9-2 (6-2)", "Alabama by 17.75", "Conference (SEC) · At Alabama", "CFB · 2026 · Week 13"]) {
+                       "9-2 (6-2)", "Alabama by 17.75 · 89% to win", "Conference (SEC) · At Alabama",
+                       "CFB · 2026 · Week 13", "sportsrank.top", "CORS rank"]) {
     assert.ok(labels.includes(label), label);
   }
+  assert.ok(draws.find(d => d.label === "CORS rank").bottom < draws.find(d => d.label === "#29").top);
   for (const aspect of [808 / 454, 3 / 2]) {
     const cropX = Math.max(0, (canvas.width - canvas.height * aspect) / 2);
     const cropY = Math.max(0, (canvas.height - canvas.width / aspect) / 2);
