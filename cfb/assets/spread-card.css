@@ -11,7 +11,7 @@
 .spread-page .edition { margin: .65rem 0 1.75rem; }
 .spread-page .game-line { width: 100%; min-width: 0; table-layout: fixed; }
 .game-line thead th { padding: .65rem .75rem; }
-.game-line th:last-child, .game-line td { width: 30%; text-align: right; }
+.game-line th:last-child, .game-line td { width: 22%; text-align: right; }
 .game-line tbody th, .game-line tbody td {
   padding: 1rem .75rem;
   vertical-align: middle;
@@ -19,18 +19,20 @@
   font: 700 clamp(1.15rem, 4.2vw, 2.25rem)/1.15 var(--headline);
 }
 .game-line tbody th { text-align: left; }
+.team-line { display: flex; gap: clamp(.35rem, 1.2vw, .8rem); align-items: center; }
+.game-line .rank {
+  flex: none;
+  color: var(--muted);
+  font: 700 clamp(.9rem, 2.7vw, 1.4rem)/1 Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.game-line .rank:empty { display: none; }
+.game-line .school { overflow-wrap: anywhere; }
 .game-line th img {
-  float: left;
+  flex: none;
   width: clamp(2.25rem, 8vw, 3.75rem);
   height: clamp(2.25rem, 8vw, 3.75rem);
-  margin-right: .75rem;
   object-fit: contain;
-}
-.game-line small {
-  display: block;
-  margin-top: .25rem;
-  color: var(--muted);
-  font: .85rem/1.25 Arial, sans-serif;
 }
 .spread-page .pick {
   display: flex;

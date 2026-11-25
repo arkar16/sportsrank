@@ -13,6 +13,7 @@ from bs4 import BeautifulSoup
 
 from cfb.archive_markup import ui
 from cfb.performance import _saved_margin
+from cfb.reference_archive import _rows
 from site_navigation import masthead
 
 
@@ -23,11 +24,26 @@ ORIGIN = "https://www.sportsrank.top"
 class Team:
     name: str
     mark: str
+    rank: str
+    record: str
 
     @classmethod
-    def from_cell(cls, cell):
+    def from_cell(cls, cell, standings):
         image = cell.find("img", class_="school-mark")
-        return cls(cell.get_text(strip=True), image["src"] if image else "")
+        name = cell.get_text(strip=True)
+        rank, record = standings.get(name, ("", "—"))
+        return cls(name, image["src"] if image else "", rank, record)
+
+    @property
+    def summary(self):
+        return " ".join(filter(None, (self.rank, self.name, self.record)))
+
+
+def _rank_records(path: Path, name: str, rank: str, record: str):
+    if not path.is_file():
+        return {}
+    return {row[name]: (f"#{row[rank]}", row[record].replace("-", "–"))
+            for row in _rows(path)}
 
 
 @dataclass(frozen=True)
@@ -51,11 +67,9 @@ class Spread:
         return f"{self.away.name} {at} {self.home.name}"
 
     @property
-    def pick(self):
-        if not self.home_margin:
-            return "Pick’em"
-        favorite = self.home if self.home_margin > 0 else self.away
-        return f"{favorite.name} by {abs(self.home_margin)}"
+    def home_spread(self):
+        handicap = f"{-self.home_margin:+f}".replace("-", "−") if self.home_margin else "Pick’em"
+        return f"{self.home.name} {handicap}"
 
     @property
     def path(self):
@@ -66,44 +80,41 @@ class Spread:
 
 def _document(game: Spread) -> str:
     title = escape(game.matchup)
-    pick = escape(game.pick)
-    context = escape(f"{game.sport_label} · {game.date_label}")
+    line = escape(game.home_spread)
+    context = escape(f"{game.sport_label} · {game.date_label}" + (" · Neutral site" if game.neutral else ""))
+    description = escape(f"{game.away.summary} vs. {game.home.summary}") + f" · {context}"
     section = "Football" if game.sport == "cfb" else "Basketball"
     canonical = ORIGIN + game.path
-    favorite = game.home if game.home_margin > 0 else game.away
     preview = ""
-    if game.home_margin and favorite.mark:
-        mark = ORIGIN + escape(favorite.mark)
-        alt = f"{escape(favorite.name)} school mark"
+    if game.home.mark:
+        mark = ORIGIN + escape(game.home.mark)
+        alt = f"{escape(game.home.name)} school mark"
         preview = (f'<meta property="og:image" content="{mark}"><meta property="og:image:alt" content="{alt}">\n'
                    f'<meta name="twitter:image" content="{mark}"><meta name="twitter:image:alt" content="{alt}">')
     source = escape(game.source)
     back = source if game.sport == "cfb" else "/cbb/current.html#forecasts"
     edition_link = f' · <a href="{source}">Dated edition</a>' if game.sport == "cbb" else ""
     teams = []
-    for team, side, handicap in ((game.away, "Away", game.home_margin),
-                                 (game.home, "Home", -game.home_margin)):
-        label = "Neutral site" if game.neutral else side
+    for team in (game.away, game.home):
         logo = f'<img src="{escape(team.mark)}" width="60" height="60" alt="">' if team.mark else ""
-        points = f"{handicap:+f}".replace("-", "−") if handicap else "0"
-        teams.append(f'<tr><th scope="row">{logo}<span class="school">{escape(team.name)}</span>'
-                     f'<small>{label}</small></th><td>{points}</td></tr>')
+        teams.append(f'<tr><th scope="row"><span class="team-line">{logo}<span class="rank">{escape(team.rank)}</span>'
+                     f'<span class="school">{escape(team.name)}</span></span></th><td>{escape(team.record)}</td></tr>')
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{title} · {pick} | SportsRank</title>
+<title>{title} · {line} | SportsRank</title>
 <link rel="canonical" href="{canonical}">
-<meta name="description" content="{context} · CORS spread · {pick}">
+<meta name="description" content="{description} · Home spread {line}">
 <meta property="og:type" content="website"><meta property="og:site_name" content="SportsRank">
-<meta property="og:url" content="{canonical}"><meta property="og:title" content="{title} · {pick}">
-<meta property="og:description" content="{context} · CORS spread">
+<meta property="og:url" content="{canonical}"><meta property="og:title" content="{title} · {line}">
+<meta property="og:description" content="{description}">
 <meta name="twitter:card" content="summary">{preview}
-<link rel="stylesheet" href="/cfb/assets/record-book.css"><link rel="stylesheet" href="/cfb/assets/spread-card.css">
-<script src="/cfb/assets/spread-card.js" defer></script></head><body>{masthead()}
+<link rel="stylesheet" href="/cfb/assets/record-book.css"><link rel="stylesheet" href="/cfb/assets/spread-card.css?v=2">
+<script src="/cfb/assets/spread-card.js?v=2" defer></script></head><body>{masthead()}
 <main class="spread-page"><nav aria-label="Forecasts"><a class="back" href="{back}">{section} forecasts</a>{edition_link}</nav>
 <h1>{title}</h1><p class="edition">{context}</p>
-<table class="game-line"><thead><tr><th scope="col">Team</th><th scope="col">CORS spread</th></tr></thead>
+<table class="game-line"><thead><tr><th scope="col">CORS rank · Team</th><th scope="col">Record</th></tr></thead>
 <tbody>{''.join(teams)}</tbody></table>
-<p class="pick">CORS pick <strong>{pick}</strong></p>
+<p class="pick">Home spread <strong>{line}</strong></p>
 <div class="share-actions"><a id="game-link" href="{canonical}">Game link</a>
 <button id="save-card" type="button" hidden>Save image</button><span id="share-status" role="status"></span></div>
 </main></body></html>
@@ -141,7 +152,7 @@ def _link_table(markup: str, directory: Path, pick_field: str, read_game) -> str
         games[game.path] = game
         cell = list(_CELL.finditer(row[0]))[index]
         start, end = cell.span(1)
-        opening = ui(f'<a class="share-spread" href="{game.path}" aria-label="Share {escape(game.matchup)}: {escape(game.pick)}">')
+        opening = ui(f'<a class="share-spread" href="{game.path}" aria-label="Share {escape(game.matchup)}: {escape(game.home_spread)}">')
         edits.append((row.start() + start, row.start() + end, opening + cell[1] + ui("</a>")))
     if not games:
         return markup
@@ -166,10 +177,14 @@ def _link_table(markup: str, directory: Path, pick_field: str, read_game) -> str
 def football_links(raw: bytes, path: Path, directory: Path) -> bytes:
     year, week = path.stem.split("_")[:2]
     source = f"/cfb/years/{year}/spread/{path.name}"
+    number = int(week[1:])
+    checkpoint = f"W{number - 1}" if number else "PRESEASON"
+    ranking = path.parent.parent / "rankings" / f"{year}_{checkpoint}_FBS_cors.html"
+    standings = _rank_records(ranking, "school", "rank", "record")
 
     def read_game(cells):
-        home = Team.from_cell(cells["home_team"])
-        away = Team.from_cell(cells["away_team"])
+        home = Team.from_cell(cells["home_team"], standings)
+        away = Team.from_cell(cells["away_team"], standings)
         values = {field: cell.get_text(strip=True) for field, cell in cells.items()}
         margin, _ = _saved_margin(values, home.name)
         return Spread("cfb", f"{year}/week-{week[1:]}", f"{year} · Week {week[1:]}", source,
@@ -190,10 +205,11 @@ def basketball_links(directory: Path) -> None:
     source = re.search(r'href="(editions/[\dTZ-]+\.html)"', markup)
     if source is None:
         raise ValueError("The basketball forecast has no dated edition")
+    standings = _rank_records(directory / source[1], "Team", "Rank", "Record")
 
     def read_game(cells):
-        home = Team.from_cell(cells["Home"])
-        away = Team.from_cell(cells["Away"])
+        home = Team.from_cell(cells["Home"], standings)
+        away = Team.from_cell(cells["Away"], standings)
         tipoff = cells["Tipoff (Eastern)"].get_text(strip=True)
         date, sep, _ = tipoff.partition(" · ")
         day = datetime.strptime(date, "%b %d, %Y").date()

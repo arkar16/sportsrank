@@ -54,9 +54,15 @@
     ctx.fillStyle = "#252a23";
     ctx.fillRect(52, 104, 1096, 3);
     ctx.fillRect(52, 112, 1096, 1);
-    drawText(ctx, "CORS spread", 1148, 150,
-      {size: 25, width: 260, align: "right", color: "#565b50", face: "Arial, sans-serif"});
+    drawText(ctx, "CORS rank · Team", 52, 152,
+      {size: 25, width: 420, color: "#565b50", face: "Arial, sans-serif"});
+    drawText(ctx, "Record", 1148, 152,
+      {size: 25, width: 200, align: "right", color: "#565b50", face: "Arial, sans-serif"});
 
+    const rankX = images.some(Boolean) ? 182 : 52;
+    ctx.font = 'bold 41px Arial, sans-serif';
+    const rankWidth = Math.max(...rows.map(row => ctx.measureText(row.querySelector(".rank").textContent).width));
+    const nameX = rankWidth ? rankX + rankWidth + 24 : rankX;
     rows.forEach((row, i) => {
       const y = 235 + i * 149;
       const image = images[i];
@@ -66,20 +72,19 @@
         const h = image.naturalHeight * scale;
         ctx.drawImage(image, 104 - w / 2, y - h / 2, w, h);
       }
-      const x = images.some(Boolean) ? 185 : 52;
-      drawText(ctx, row.querySelector(".school").textContent, x, y - 10,
-        {size: 60, width: 866 - x});
-      drawText(ctx, row.querySelector("small").textContent, x, y + 41,
-        {size: 25, width: 490, face: "Arial, sans-serif", color: "#565b50"});
+      drawText(ctx, row.querySelector(".rank").textContent, rankX, y,
+        {size: 41, width: rankWidth || 1, color: "#565b50", face: "Arial, sans-serif"});
+      drawText(ctx, row.querySelector(".school").textContent, nameX, y,
+        {size: 63, width: 940 - nameX});
       drawText(ctx, row.querySelector("td").textContent, 1148, y,
-        {size: 72, width: 245, align: "right"});
+        {size: 58, width: 170, align: "right"});
       ctx.fillStyle = "#cfcbbb";
       ctx.fillRect(52, y + 75, 1096, 2);
     });
     ctx.fillStyle = "#195348";
     ctx.fillRect(0, 498, 1200, 132);
-    drawText(ctx, "CORS pick", 52, 563,
-      {size: 28, width: 195, color: "#faf7ef", face: "Arial, sans-serif"});
+    drawText(ctx, "Home spread", 52, 563,
+      {size: 28, width: 225, color: "#faf7ef", face: "Arial, sans-serif"});
     drawText(ctx, document.querySelector(".pick strong").textContent, 1148, 563,
       {size: 57, width: 840, color: "#faf7ef", align: "right"});
     return new Promise((resolve, reject) => canvas.toBlob(blob => {
