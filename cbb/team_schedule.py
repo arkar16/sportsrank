@@ -12,6 +12,7 @@ from zoneinfo import ZoneInfo
 from .cors_v1 import rounded
 from cfb.reference_archive import Game
 from cfb.reference_markup import school_label
+from cfb.win_probability import format_win_chance
 
 EASTERN = ZoneInfo("America/New_York")
 
@@ -100,8 +101,10 @@ def schedule_views(database, season, checkpoint, as_of, *, snapshots=Path(__file
                 if opponent:
                     label = f'#{opponent["rank"]} {school_label(opponent["school"], routes)}'
                 line = "—" if spread is None else f"{spread:+.2f}" if spread else "Pick’em"
+                chance = format_win_chance(spread, sport="basketball")
                 cells = (f'<th scope="row">{tip:%a, %b %d}</th><td>{clock}</td><td>{label}</td>'
-                         f'<td>{"Neutral" if neutral else side}</td><td class="num">{line}</td>')
+                         f'<td>{"Neutral" if neutral else side}</td><td class="num">{line}</td>'
+                         f'<td class="num">{chance}</td>')
                 rows[year, team["school"]].append((tip, fixture["event_id"], f"<tr>{cells}</tr>"))
     schedule_date = date.fromisoformat(snapshot.stem)
     heading = (f'<section id="remaining-schedule"><h2>Remaining schedule</h2>'
@@ -110,6 +113,7 @@ def schedule_views(database, season, checkpoint, as_of, *, snapshots=Path(__file
                '<div class="table-scroll" role="region" aria-label="Remaining schedule" tabindex="0"><table>'
                '<thead><tr><th scope="col">Date</th><th scope="col">Tipoff</th><th scope="col">Opponent</th>'
                '<th scope="col">Site</th><th scope="col" class="num">CORS spread (− if favored)</th>'
+               '<th scope="col" class="num">Win chance</th>'
                '</tr></thead><tbody>')
     sections = {key: heading + "".join(row for _, _, row in sorted(games)) + "</tbody></table></div></section>"
                 for key, games in rows.items()}

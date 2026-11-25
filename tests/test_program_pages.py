@@ -183,7 +183,7 @@ class ProgramPagesTests(unittest.TestCase):
         link = page.select_one("table tbody td:nth-of-type(4) a")
         self.assertEqual(link.attrs, {"href": href, "title": label, "aria-label": f"2026 best rank 6, {label}"})
 
-    def test_games_keep_multiple_matchups_bye_and_pending_forecast_in_order(self):
+    def test_weekly_results_keep_multiple_matchups_and_bye_in_order(self):
         page = self.pages[TEAM_PATH + "2026.html"]
         headings = page.select("main [data-program]")
         self.assertEqual([(tag.text, tag["data-program"]) for tag in headings], [(TEAM, TEAM)])
@@ -199,12 +199,39 @@ class ProgramPagesTests(unittest.TestCase):
             ["Week 1", "12", "17.25", "1-0", FORMER, "Home", "-7.25", "31–17"],
             [OPPONENT, "Away", "+3.50", "0–21"],
             ["Week 2", "15", "-2.40", "2-1", OPPONENT, "Home", "0.0", "7–6"],
-            ["Week 3", "—", "—", "—", OPPONENT, "Away", "-6", "—"],
         ])
         week_one = table.find("th", string="Week 1")
         self.assertEqual(week_one["rowspan"], "2")
         self.assertEqual(week_one.find_parent("tbody").a["href"], "/cfb/teams/former-state/2026.html")
         self.assertEqual([a.get_text() for a in table.select("tbody td a")], [FORMER])
+
+    def test_current_football_schedule_lists_all_retained_future_games_once(self):
+        season = Season(2026, {"W12": [standing(TEAM, 1), standing(FORMER, 2)]}, [
+            Game(15, TEAM, OPPONENT, None, None, None),
+            Game(14, TEAM, FORMER, None, None, Decimal("-15.125"), neutral_site=True),
+            Game(13, TEAM, FORMER, None, None, Decimal("6")),
+            Game(14, OPPONENT, TEAM, None, None, Decimal("0.00")),
+            Game(12, TEAM, OPPONENT, None, None, None),
+            Game(13, TEAM, OPPONENT, 13, 10, Decimal("-3.00")),
+        ])
+        pages = dict(build_program_pages([season], ROUTES))
+        home = BeautifulSoup(pages[TEAM_PATH + "2026.html"], "html5lib")
+        other = BeautifulSoup(pages["cfb/teams/former-state/2026.html"], "html5lib")
+        self.assertIsNotNone(home.select_one('a[href="#remaining-schedule"]'))
+        self.assertEqual(cell_text(home.select_one("#remaining-schedule thead tr"))[-1], "Win chance")
+        self.assertEqual([cell_text(row) for row in home.select("#remaining-schedule tbody tr")], [
+            ["Week 13", FORMER, "Home", "+6", "34%"],
+            ["Week 14", FORMER, "Neutral", "-15.125", "85%"],
+            ["Week 14", OPPONENT, "Away", "0.00", "50%"],
+            ["Week 15", OPPONENT, "Home", "—", "—"],
+        ])
+        self.assertEqual([cell_text(row)[2:] for row in other.select("#remaining-schedule tbody tr")], [
+            ["Away", "-6", "66%"], ["Neutral", "+15.125", "15%"],
+        ])
+        results = home.select('table[aria-label="Rankings and games"] tbody tr')
+        self.assertEqual([cell_text(row)[-4:] for row in results], [
+            [OPPONENT, "Home", "—", "—"], [OPPONENT, "Home", "-3.00", "13–10"],
+        ])
 
     def test_postseason_game_without_checkpoint_precedes_final(self):
         page = self.pages[TEAM_PATH + "1905.html"]

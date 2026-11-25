@@ -3,11 +3,11 @@ from collections import defaultdict
 from dataclasses import dataclass
 from functools import partial
 from html import escape
-from math import atan, cos, sin, sqrt
 import re
 from statistics import mean, median
 
 from .reference_archive import Season, season_team_routes
+from .win_probability import win_probability
 
 
 _PREFIX = {"football": "cfb", "basketball": "cbb"}
@@ -58,18 +58,6 @@ class Record:
     def __str__(self):
         parts = (self.wins, self.losses, self.ties) if self.ties else (self.wins, self.losses)
         return "–".join(map(str, parts))
-
-
-def _win_probability(margin, sigma):
-    # With z = sqrt(14) tan(theta), the t(14) density is proportional
-    # to cos(theta)^13. Integrate by reducing the odd powers of cosine.
-    theta = atan(margin / (sigma * sqrt(12 / 14) * sqrt(14)))
-    sine, cosine = sin(theta), cos(theta)
-    integral, half_integral = sine, 1.0
-    for power in range(3, 14, 2):
-        integral = (sine * cosine ** (power - 1) + (power - 1) * integral) / power
-        half_integral *= (power - 1) / power
-    return min(1.0, max(0.0, 0.5 + integral / (2 * half_integral)))
 
 
 def _is_conference_game(game, home_conference, away_conference):
@@ -194,7 +182,7 @@ def _season_records(season, checkpoint, standings, groups, sport):
                 margin = -float(game.home_handicap)
             else:
                 continue
-            home_prob = _win_probability(margin, 15.0 if football else 11.0)
+            home_prob = win_probability(margin, sport=sport)
             stats.remaining[game.home].append(home_prob)
             stats.remaining[game.away].append(1 - home_prob)
             if _is_conference_game(game, *conferences(game)):

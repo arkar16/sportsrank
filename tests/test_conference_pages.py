@@ -7,7 +7,8 @@ from lxml import html
 import numpy as np
 
 from cbb.cors_v1 import _update
-from cfb.conference_pages import _football_deltas, _win_probability, build_conference_pages
+from cfb.conference_pages import _football_deltas, build_conference_pages
+from cfb.win_probability import win_probability
 from cfb.reference_archive import Game, Season, Standing, _postseason
 
 
@@ -84,7 +85,7 @@ class ConferencePagesTest(unittest.TestCase):
     def test_student_t_win_probability_matches_integrated_density(self):
         nu = 14
         density_constant = gamma((nu + 1) / 2) / (sqrt(nu * pi) * gamma(nu / 2))
-        for sigma in (11, 15):
+        for sport, sigma in (("basketball", 11), ("football", 15)):
             for margin in (-50, -5, 0, 5, 50):
                 upper = margin / (sigma * sqrt((nu - 2) / nu))
                 step = upper / 10000
@@ -92,7 +93,7 @@ class ConferencePagesTest(unittest.TestCase):
                     density_constant * (1 + ((i + .5) * step)**2 / nu)**(-(nu + 1) / 2)
                     for i in range(10000)
                 ) * step
-                self.assertAlmostEqual(_win_probability(margin, sigma), .5 + integral, places=8)
+                self.assertAlmostEqual(win_probability(margin, sport=sport), .5 + integral, places=8)
 
     def test_basketball_game_delta_matches_omitting_game_from_same_fit(self):
         mu = np.array([2., -2., 0., -26., 3.6])

@@ -12,6 +12,7 @@ from .archive_presentation import updated_time
 from .conference_pages import conference_route
 from .reference_archive import _checkpoint_order, program_season_route, season_team_routes
 from .reference_markup import school_label
+from .win_probability import format_win_chance
 
 if TYPE_CHECKING:
     from cfb.reference_archive import Game, Season, Standing
@@ -48,17 +49,32 @@ def build_program_pages(
     """Yield the program index and one history and season page per ranked program."""
     histories: dict[str, list[_ProgramSeason]] = defaultdict(list)
     opponent_routes = {season.year: season_team_routes(season, routes) for season in seasons}
+    schedules = dict(remaining_schedules or {})
+    latest_year = max(opponent_routes, default=None)
     for season in sorted(seasons, key=lambda season: season.year, reverse=True):
         standings: dict[str, dict[str, Standing]] = defaultdict(dict)
         for checkpoint, rows in season.rankings.items():
             for row in rows:
                 standings[row.school][checkpoint] = row
 
+        last_week = None
+        if sport == "football" and season.year == latest_year and not season.rankings.get("FINAL"):
+            last_week = max((int(key[1:]) for key, rows in season.rankings.items()
+                             if key.startswith("W") and rows), default=-1)
         games: dict[str, dict[int, list[Game]]] = defaultdict(lambda: defaultdict(list))
+        upcoming: dict[str, list[Game]] = defaultdict(list)
         for game in season.games:
+            remaining = (last_week is not None and game.week > last_week
+                         and game.home_score is None and game.away_score is None)
             for school in (game.home, game.away):
                 if school in standings:
-                    games[school][game.week].append(game)
+                    if remaining:
+                        upcoming[school].append(game)
+                    else:
+                        games[school][game.week].append(game)
+
+        for school, fixtures in upcoming.items():
+            schedules[season.year, school] = _football_schedule(school, fixtures, opponent_routes[season.year])
 
         for school, checkpoints in standings.items():
             histories[school].append(_ProgramSeason(season, checkpoints, games.get(school, {})))
@@ -88,8 +104,9 @@ def build_program_pages(
             standing = entry.standings.get(entry.latest_checkpoint)
             if standing and standing.conference and standing.conference != "—":
                 links.append((conference_route(standing.conference, year, sport=sport), f"{year_label(year)} {standing.conference}"))
-            remaining = (remaining_schedules or {}).get((year, school), "")
-            log = _season_table(school, entry, opponent_routes[year], has_schedule=bool(remaining))
+            remaining = schedules.get((year, school), "")
+            log = _season_table(school, entry, opponent_routes[year],
+                                has_schedule=bool(remaining) and sport == "basketball")
             if remaining:
                 log = ('<p><a href="#remaining-schedule">Remaining schedule</a></p>'
                        '<h2>Weekly rankings and results</h2>' + log + remaining)
@@ -315,7 +332,20 @@ def _season_table(school: str, entry: _ProgramSeason, routes: dict[str, str], *,
     )
 
 
-def _game_cells(school: str, game: Game, routes: dict[str, str]) -> str:
+def _football_schedule(school: str, games: list[Game], routes: dict[str, str]) -> str:
+    rows = []
+    for game in sorted(games, key=lambda game: game.week):
+        rows.append(f'<tr><th scope="row">Week {game.week}</th>'
+                    + _game_cells(school, game, routes, upcoming=True) + "</tr>")
+    table = _table(
+        "Remaining schedule",
+        ("Week", "Opponent", "Site", "CORS spread <small>Negative if favored</small>", "Win chance"),
+        "<tbody>" + "".join(rows) + "</tbody>",
+    )
+    return '<section id="remaining-schedule"><h2>Remaining schedule</h2>' + table + "</section>"
+
+
+def _game_cells(school: str, game: Game, routes: dict[str, str], *, upcoming=False) -> str:
     at_home = game.home == school
     if at_home:
         opponent, side = game.away, "Home"
@@ -327,16 +357,20 @@ def _game_cells(school: str, game: Game, routes: dict[str, str]) -> str:
     if game.neutral_site:
         side = "Neutral"
 
-    score = _MISSING
-    if team_score is not None and opponent_score is not None:
-        score = f"{team_score}–{opponent_score}"
-
+    handicap = game.home_handicap
     spread = _MISSING
-    if game.home_handicap is not None:
-        handicap = game.home_handicap if at_home else game.home_handicap.copy_negate()
+    if handicap is not None:
+        if not at_home:
+            handicap = handicap.copy_negate()
         spread = format(handicap, "+f") if handicap else format(handicap.copy_abs(), "f")
+
+    outcome = _MISSING
+    if upcoming:
+        outcome = format_win_chance(handicap, sport="football")
+    elif team_score is not None and opponent_score is not None:
+        outcome = f"{team_score}–{opponent_score}"
 
     name = school_label(opponent, routes)
     if game.tipoff_label:
         name += f'<small>{escape(game.tipoff_label)}</small>'
-    return f'<td>{name}</td><td>{side}</td><td class="num">{spread}</td><td class="num">{score}</td>'
+    return f'<td>{name}</td><td>{side}</td><td class="num">{spread}</td><td class="num">{outcome}</td>'
