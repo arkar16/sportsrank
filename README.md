@@ -152,6 +152,18 @@ in `website/cfb/years/history/`.
 The [program and season page spec](docs/plans/cfb-team-and-season-pages.md)
 describes what each page shows.
 
+## Football game excitement
+
+The current and archived FBS forecasts show Before Excitement Value (BEV).
+Results and team game logs also show After Excitement Value (AEV) when the
+scoring history qualifies. Open **Game excitement** from a season page for the
+pregame watch guide and completed games ordered by AEV. Initial coverage is
+2024–2026. Both values use a 0–100 scale.
+
+The normal offline `cfb.record_book` build generates these tables. The
+[game evidence runbook](docs/operations/game-excitement.md) covers inputs,
+quarter-score estimates and subsequent season updates.
+
 ## CORS model performance
 
 Evaluate every archived season using the predictions and final scores already

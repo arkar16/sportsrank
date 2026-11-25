@@ -3,6 +3,7 @@ import argparse
 from collections import defaultdict
 from hashlib import sha256
 from html import escape
+import json
 import os
 from pathlib import Path
 import tempfile
@@ -10,6 +11,8 @@ import tempfile
 from spread_cards import football_links
 
 from .conference_pages import CONFERENCE_HONORS, build_conference_pages, conference_honors_route, conference_route
+from .excitement_pages import add_score_columns, season_guide
+from .game_excitement import FIRST_SEASON, season_scores, site_reference
 from .history_sheets import render_history_sheet
 from .program_marks import program_logo_paths
 from .program_pages import build_program_pages
@@ -296,10 +299,27 @@ def build(site: Path) -> tuple[int, int, int]:
         mark = _image(marks[school]) if school in marks else ""
         return f'<a href="{escape(routes[school])}">{mark}{escape(school)}</a>'
 
-    for relative, markup in build_program_pages(seasons, routes, directory_label=directory_label):
+    generated_pages = set()
+    excitement = {}
+    for season in seasons:
+        directory = site / f"cfb/years/{season.year}"
+        if season.year >= FIRST_SEASON:
+            scores, ledger = season_scores(directory, season, site_reference())
+            if scores:
+                excitement[season.year] = scores
+                folder = directory / "excitement"
+                changed += _write_changed(folder / "bev-v1.json", (json.dumps(ledger, ensure_ascii=False,
+                    sort_keys=True, separators=(",", ":")) + "\n").encode())
+                guide = folder / "index.html"
+                changed += _write_changed(guide, presentation.render(
+                    season_guide(season.year, scores, year_routes[season.year]).encode(), archive=False,
+                ))
+                generated_pages.add(guide)
+    for relative, markup in build_program_pages(
+        seasons, routes, directory_label=directory_label, excitement_by_year=excitement,
+    ):
         sortable = relative.endswith("/index.html") and relative != "cfb/teams/index.html"
         changed += _write_changed(site / relative, presentation.render(markup.encode(), archive=False, sortable=sortable))
-    generated_pages = set()
     for relative, markup in build_conference_pages(seasons, routes):
         path = site / relative
         changed += _write_changed(path, presentation.render(
@@ -345,6 +365,11 @@ def build(site: Path) -> tuple[int, int, int]:
                 year, checkpoint = path.name.split("_")[:2]
                 if path == current_spread or (site / "cfb/picks" / year / f"week-{checkpoint[1:]}").is_dir():
                     markup = football_links(markup, path, site / "cfb", seasons_by_year[year])
+            if directory == "years":
+                year_text = path.relative_to(site / "cfb/years").parts[0]
+                if year_text.isdecimal() and int(year_text) in excitement:
+                    markup = add_score_columns(markup, site / "cfb/years" / year_text, path,
+                                               excitement[int(year_text)], int(year_text))
             if raw != markup:
                 changed += _write_changed(path, markup)
     return len(seasons), len(routes), changed

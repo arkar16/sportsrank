@@ -58,8 +58,9 @@ hosted generation in #54 remains separate.
   and exact public-workbook transport repair [#25](https://github.com/arkar16/sportsrank/pull/25)
   are merged. Read the current audit/publication evidence before asserting that
   deployed state is fully verified; a merge alone does not establish that.
-- Excitement and conference projections are
-  parked by owner direction. Preserve their existing branches and evidence.
+- Football game excitement for current and historical games is tracked in
+  [#179](https://github.com/arkar16/sportsrank/issues/179) under ADR-0021.
+  Conference projections remain parked. Preserve their branches and evidence.
   The selected forecast-comparison providers are recorded in
   [#23](https://github.com/arkar16/sportsrank/pull/23) and now reconciled into
   ADR-0019 with the October 11 implementation direction. Excitement’s separate
