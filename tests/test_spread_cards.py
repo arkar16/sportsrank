@@ -34,9 +34,13 @@ class GameSharingTests(unittest.TestCase):
         link = BeautifulSoup(linked, "html.parser").find("a")
         self.assertEqual(link.get_text(strip=True), "Home +2.50")
         page = BeautifulSoup((directory.parent / link["href"][1:]).read_text(), "html.parser")
-        self.assertEqual(page.h1.text, "Away & Co. at Home")
-        self.assertEqual(page.select_one(".pick strong").text, "Home to lose by 2.50")
-        self.assertEqual(page.select_one(".game-details").text, "OOC · At Home")
+        self.assertEqual(page.h1.text, "Away & Co. @ Home")
+        self.assertTrue(link["href"].endswith("/away-co-at-home.html"))
+        forecast = "Home to lose by 2.50 · 43% to win"
+        self.assertEqual(page.select_one(".pick strong").text, forecast)
+        self.assertEqual(page.select_one('meta[property="og:title"]')["content"], f"Away & Co. @ Home · {forecast}")
+        self.assertIn(forecast, page.title.text)
+        self.assertEqual(page.select_one(".game-details").text, "OOC · @ Home")
         self.assertEqual([td.text for td in page.select(".game-line td")], ["—", "0-0 (0-0)"])
         self.assertEqual([tag.text for tag in page.select(".rank")], ["", "#24"])
         self.assertEqual(page.main.get_text().count("2.50"), 1)
@@ -55,10 +59,13 @@ class GameSharingTests(unittest.TestCase):
                f'<tr><td><img class="school-mark" src="{mark}">Home</td><td>Away</td><td>False</td>'
                '<td>Home -1.75</td></tr></table>').encode()
         slate = directory / "years/2026/spread/2026_W1_FBS_spread.html"
-        season = Season(2026, {}, [])
+        season = Season(2026, {"W0": [Standing("Away", 2, Decimal(7), "0-0", "SEC"),
+                                      Standing("Home", 3, Decimal(5), "0-0", "ACC")]},
+                        [Game(1, "Home", "Away", None, None, None)])
         linked = football_links(raw, slate, directory, season)
         href = BeautifulSoup(linked, "html.parser").select_one("a.share-spread")["href"]
         game = BeautifulSoup((site / href[1:]).read_text(), "html.parser")
+        self.assertEqual(game.select_one(".game-details").text, "OOC (SEC vs ACC) · @ Home")
         self.assertEqual(game.select_one(".game-line img")["src"], mark)
         url = game.select_one('meta[property="og:image"]')["content"]
         for selector, attr in [('link[rel="apple-touch-icon"]', "href"), ('link[rel="icon"]', "href"),
@@ -126,14 +133,18 @@ class GameSharingTests(unittest.TestCase):
                          "https://www.sportsrank.top/cbb/assets/team-logos/72.png")
         self.assertEqual(first.select_one('link[rel="apple-touch-icon"]')["href"],
                          first.select_one('meta[property="og:image"]')["content"])
-        self.assertIn("Duke by 0.34", first.select_one('meta[property="og:title"]')["content"])
         self.assertIn("#4 UConn 4-1 (0-1) vs. #3 Duke 4-2 (1-0)", first.select_one('meta[property="og:description"]')["content"])
         self.assertEqual([r.get_text(" ", strip=True) for r in first.select(".game-line tbody tr")],
                          ["#4 UConn 4-1 (0-1)", "#3 Duke 4-2 (1-0)"])
         self.assertEqual(first.main.get_text().count("0.34"), 1)
-        self.assertEqual(second.select_one(".pick strong").text, "Pick’em")
-        self.assertEqual(first.select_one(".game-details").text, "OOC · Neutral site")
-        self.assertEqual(second.select_one(".game-details").text, "Conference (ACC) · At Duke")
+        for page, matchup, forecast in [(first, "UConn vs. Duke", "Duke by 0.34 · 51% to win"),
+                                        (second, "UConn @ Duke", "Pick’em · 50% to win")]:
+            with self.subTest(matchup=matchup):
+                self.assertEqual(page.select_one(".pick strong").text, forecast)
+                self.assertEqual(page.select_one('meta[property="og:title"]')["content"], f"{matchup} · {forecast}")
+                self.assertIn(forecast, page.title.text)
+        self.assertEqual(first.select_one(".game-details").text, "OOC (ACC vs ACC) · Neutral site")
+        self.assertEqual(second.select_one(".game-details").text, "Conference (ACC) · @ Duke")
         self.assertNotIn("97–95", second.get_text())
         self.assertEqual(list(directory.rglob("*.png")), [mark])
         self.assertEqual(edition.read_bytes(), original)

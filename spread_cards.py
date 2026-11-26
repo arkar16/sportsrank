@@ -18,6 +18,7 @@ from cfb.conference_pages import Record, _is_conference_game, _UNAFFILIATED
 from cfb.performance import _saved_margin
 from cfb.program_marks import _atomic_write
 from cfb.reference_archive import Season, _rows
+from cfb.win_probability import format_win_chance
 from site_navigation import masthead
 
 
@@ -46,10 +47,14 @@ class ConferenceSlate:
                 records[game.away].add_game(-margin)
         play = {}
         for key, game in fixtures.items():
+            away = conferences.get(game.away)
+            home = conferences.get(game.home)
+            known_leagues = all(league not in (None, "", "—") for league in (away, home))
             if league_game(game):
-                play[key] = f"Conference ({conferences[game.home]})"
-            elif (game.conference_game is False or game.postseason
-                  or all(conferences.get(team) not in (None, "", "—") for team in (game.home, game.away))):
+                play[key] = f"Conference ({home})"
+            elif known_leagues:
+                play[key] = f"OOC ({away} vs {home})"
+            elif game.conference_game is False or game.postseason:
                 play[key] = "OOC"
         return cls(records, play)
 
@@ -94,7 +99,7 @@ class Spread:
 
     @property
     def matchup(self):
-        at = "vs." if self.neutral else "at"
+        at = "vs." if self.neutral else "@"
         return f"{self.away.name} {at} {self.home.name}"
 
     @property
@@ -106,7 +111,10 @@ class Spread:
 
     @property
     def path(self):
-        name = unicodedata.normalize("NFKD", self.matchup).encode("ascii", "ignore").decode()
+        # Retain the published -at- URLs when displaying an @ for home games.
+        separator = "vs" if self.neutral else "at"
+        matchup = f"{self.away.name} {separator} {self.home.name}"
+        name = unicodedata.normalize("NFKD", matchup).encode("ascii", "ignore").decode()
         slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
         return f"/{self.sport}/picks/{self.edition}/{slug}.html"
 
@@ -137,9 +145,11 @@ def _preview_icon(directory: Path, sport: str, mark: str) -> tuple[str, int] | N
 
 def _document(game: Spread, icon: tuple[str, int] | None) -> str:
     title = escape(game.matchup)
-    line = escape(game.prediction)
+    sport = "football" if game.sport == "cfb" else "basketball"
+    home_chance = format_win_chance(-game.home_margin, sport=sport)
+    line = escape(f"{game.prediction} · {home_chance} to win")
     context = escape(f"{game.sport_label} · {game.date_label}")
-    details = escape(f"{game.play} · " + ("Neutral site" if game.neutral else f"At {game.home.name}"))
+    details = escape(f"{game.play} · " + ("Neutral site" if game.neutral else f"@ {game.home.name}"))
     description = escape(f"{game.away.summary} vs. {game.home.summary}") + f" · {context} · {details}"
     canonical = ORIGIN + game.path
     preview = ""
@@ -170,7 +180,7 @@ def _document(game: Spread, icon: tuple[str, int] | None) -> str:
 <meta property="og:description" content="{description}">
 <meta name="twitter:card" content="summary">{preview}
 <link rel="stylesheet" href="/cfb/assets/record-book.css"><link rel="stylesheet" href="/cfb/assets/spread-card.css?v=3">
-<script src="/cfb/assets/spread-card.js?v=4" defer></script></head><body>{masthead(compact=True)}
+<script src="/cfb/assets/spread-card.js?v=5" defer></script></head><body>{masthead(compact=True)}
 <main class="spread-page"><h1 class="sr-only">{title}</h1><p class="edition">{context}</p>
 <table class="game-line"><thead><tr><th scope="col">CORS rank · Team</th><th scope="col">Overall (conf)</th></tr></thead>
 <tbody>{''.join(teams)}</tbody></table>

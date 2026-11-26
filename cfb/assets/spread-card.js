@@ -50,9 +50,9 @@
     const left = 80;
     const right = canvas.width - left;
     const contentWidth = right - left;
-    drawText(ctx, "SportsRank", left, 55, {size: 37, width: 206, color: "#823b27"});
+    drawText(ctx, "sportsrank.top", left, 55, {size: 35, width: 242, color: "#823b27"});
     drawText(ctx, document.querySelector(".edition").textContent, right, 55,
-      {size: 27, width: contentWidth - 228, align: "right", face: "Arial, sans-serif"});
+      {size: 27, width: contentWidth - 264, align: "right", face: "Arial, sans-serif"});
     ctx.fillStyle = "#252a23";
     ctx.fillRect(left, 94, contentWidth, 2);
 
@@ -83,7 +83,8 @@
     });
     ctx.fillStyle = "#195348";
     ctx.fillRect(0, 352, canvas.width, canvas.height - 352);
-    drawText(ctx, document.querySelector(".pick strong").textContent, left, 420,
+    const pick = document.querySelector(".pick strong");
+    drawText(ctx, pick.dataset.imagePick || pick.textContent, left, 420,
       {size: 55, width: contentWidth, color: "#faf7ef"});
     drawText(ctx, document.querySelector(".game-details").textContent, left, 482,
       {size: 29, width: contentWidth, color: "#faf7ef", face: "Arial, sans-serif"});
