@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 
 from alltime_excitement import football_anchor
+from excitement_grades import SCALE_LINK, graded_number
 
 from .archive_markup import ui
 from .game_excitement import GameAppeal, Matchup, score_for
@@ -21,18 +22,23 @@ _METHOD = "https://github.com/arkar16/sportsrank/blob/main/docs/plans/2026-game-
 ESTIMATE_NOTE = "* AEV estimated from the available scoring totals and comparable games."
 
 
-def aev_label(score: GameAppeal | None, *, plain=False):
+def aev_label(score: GameAppeal | None, *, sport="cfb", plain=False):
     if score is None or score.aev is None:
         return "&mdash;"
     basis = score.evidence_label
     number = f'{score.aev:.1f}{"*" if score.estimated else ""}'
-    return f"{number} · {basis}" if plain else f"{number}<small> · {basis}</small>"
+    if plain:
+        return f"{number} · {basis}"
+    return f'{graded_number(sport, "AEV", number)}<small> · {basis}</small>'
 
 
-def bev_label(score):
+def bev_label(score, *, sport="cfb", plain=False):
     if not score:
         return "&mdash;"
-    return score.bev + (f"<small> · {score.bev_basis}</small>" if score.bev_basis else "")
+    if plain:
+        return score.bev + (f" · {score.bev_basis}" if score.bev_basis else "")
+    value = graded_number(sport, "BEV", score.bev)
+    return value + (f"<small> · {score.bev_basis}</small>" if score.bev_basis else "")
 
 
 def add_score_columns(markup: bytes, directory: Path, path: Path, scores, year: int) -> bytes:
@@ -133,7 +139,7 @@ def season_guide(year, scores, routes, directory=None, *, completed_season=False
 <p><a href="../{year}_CFB.html">{year} college football</a></p><h1>{year} game excitement</h1>
 <p>Before Excitement Value (BEV) rates a matchup from its pregame CORS ranks and predicted margin.
 After Excitement Value (AEV) rates how long the score stayed close, lead changes, comebacks and overtime.
-Both run from 0 to 100. Game data comes from CollegeFootballData.</p>
+Both run from 0 to 100. Game data comes from CollegeFootballData. {SCALE_LINK}.</p>
 <p>{estimated_note}A final-score estimate uses comparable games with the same or a nearby margin. A pregame baseline uses only information available before kickoff.</p>
 {table(pending, True)}{table(completed, False)}
 <p>BEV uses the preceding CORS v1.0.0 checkpoint, including for reconstructed historical forecasts.

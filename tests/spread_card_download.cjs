@@ -29,13 +29,14 @@ function team(name, rank, record) {
   return {querySelector: selector => cells[selector]};
 }
 
-async function checkDownload(bev) {
+async function checkDownload(bev, grade = null) {
   draws.length = 0;
   const canvas = {getContext: () => ctx, toBlob: (done, type) => done({type})};
   const save = {addEventListener: (event, handler) => { save[event] = handler; }};
   const download = {click() { this.clicked = true; }, remove() {}};
   const selectors = {
     'meta[name="sportsrank:bev"]': bev === null ? null : {content: bev},
+    'meta[name="sportsrank:bev-grade"]': grade === null ? null : {content: grade},
     "#game-link": {}, "#save-card": save, "#share-status": {},
     ".edition": {textContent: "CFB · 2026 · Week 13"},
     ".pick strong": {textContent: "Alabama by 17.75 · 89% to win", dataset: {}},
@@ -56,9 +57,10 @@ async function checkDownload(bev) {
   assert.ok(download.clicked);
   assert.equal(download.download, "auburn-at-alabama.png");
   const labels = draws.map(item => item.label);
-  assert.deepEqual(labels.filter(label => label.startsWith("BEV ")), bev === null ? [] : ["BEV " + bev]);
+  const scoreLabel = "BEV " + bev + (grade ? " (" + grade + ")" : "");
+  assert.deepEqual(labels.filter(label => label.startsWith("BEV ")), bev === null ? [] : [scoreLabel]);
   if (bev !== null) {
-    const score = draws.find(item => item.label === "BEV " + bev);
+    const score = draws.find(item => item.label === scoreLabel);
     const venue = draws.find(item => item.label.startsWith("Conference (SEC)"));
     assert.ok(venue.right < score.left, "venue and BEV overlap");
   }
@@ -78,5 +80,6 @@ async function checkDownload(bev) {
   }
 }
 
-checkDownload("52.5").then(() => checkDownload("0.0")).then(() => checkDownload(null))
+checkDownload("52.5", "B-").then(() => checkDownload("100.0", "A+")).then(() => checkDownload("0.0", "F"))
+  .then(() => checkDownload("52.5")).then(() => checkDownload(null))
   .catch(error => { console.error(error); process.exitCode = 1; });

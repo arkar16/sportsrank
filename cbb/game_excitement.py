@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 
 from cfb.excitement import BASKETBALL, QualifiedPregame, calculate_bev, matchup_quality
 from cfb.excitement_pages import ESTIMATE_NOTE, aev_label, bev_label
+from excitement_grades import SCALE_LINK
 from cfb.game_excitement import GameAppeal
 from cfb.record_book import _write_changed
 from hashlib import sha256
@@ -242,7 +243,7 @@ def guide(year, games, season_name, label, week_link, table, as_of):
                '<p>Before Excitement Value (BEV) rates pregame appeal using CORS ranks and the projected margin. '
                'After Excitement Value (AEV) measures score-and-clock drama over two halves, with lead changes, '
                'comebacks and overtime. Both use a 0–100 scale. Six points is a two-possession margin. '
-               'A pregame baseline uses the ratings available before tipoff.</p>')
+               f'A pregame baseline uses the ratings available before tipoff. {SCALE_LINK}.</p>')
     if any(row[4].estimated for row in completed):
         content += f'<p>{ESTIMATE_NOTE} The score label identifies the available evidence.</p>'
     for heading, rows in (("Current and upcoming games by BEV", upcoming),
@@ -254,13 +255,13 @@ def guide(year, games, season_name, label, week_link, table, as_of):
         for day, away, home, week, score in rows:
             gid = escape(score.source_game or "")
             row = (day, week_link(year, week, "Preseason" if not week else f"Week {week}"), label(away), label(home),
-                   f'<span data-cbbd-fixture="{gid}">{bev_label(score)}</span>')
+                   f'<span data-cbbd-fixture="{gid}">{bev_label(score, sport="cbb")}</span>')
             if has_final:
                 h, a = score.final
                 final = f"{a}–{h}"
                 if score.source_game:
                     final = f'<span data-cbbd-game="{escape(score.source_game)}">{final}</span>'
-                aev = aev_label(score)
+                aev = aev_label(score, sport="cbb")
                 if score.tier == "halftime":
                     aev = (f'<span title="Halftime estimate from {score.support} comparable games" '
                            f'data-reference-distance="{score.reference_distance}">{aev}</span>')

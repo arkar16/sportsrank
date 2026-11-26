@@ -5,6 +5,7 @@ from html import escape
 import json
 from pathlib import Path
 
+from excitement_grades import LETTERS, MINIMUMS, SCALE_LINK, letter_grade
 from site_navigation import masthead
 
 
@@ -129,7 +130,8 @@ def _page(scope, metric, games, count, scopes):
         star = "*" if metric == "AEV" and evidence != "Play-by-play" else ""
         season = str(game.year) if game.sport == "cfb" else f"{game.year-1}–{str(game.year)[-2:]}"
         sport_cell = "" if scope else f"<td>{'CFB' if game.sport == 'cfb' else 'MBB'}</td>"
-        rows.append(f'<tr><td class="num">{rank}</td><td class="num"><strong>{value}{star}</strong></td>'
+        grade = letter_grade(game.sport, metric, value)
+        rows.append(f'<tr><td class="num">{rank}</td><td class="num"><strong>{value}{star}</strong> ({grade})</td>'
                     f'<th scope="row"><a href="{escape(game.href)}">'
                     f'{escape(game.away)} vs. {escape(game.home)}</a></th>{sport_cell}'
                     f'<td>{season}</td><td>{escape(game.when)}</td><td class="num">{escape(game.final) or "Pending"}</td>'
@@ -147,9 +149,33 @@ def _page(scope, metric, games, count, scopes):
 <main class="archive-content"><h1>All-time {metric} leaders</h1>
 <p class="edition">{sport_name} · {name}</p>
 <nav aria-label="Excitement score">{metric_links}</nav><nav aria-label="Sport">{scope_links}</nav>
-<p>{intro} Scores run from 0 to 100. Equal scores share a rank, including ties at tenth.</p>
+<p>{intro} Scores run from 0 to 100. Equal scores share a rank, including ties at tenth. {SCALE_LINK}.</p>
 {table if rows else "<p>No qualifying games yet.</p>"}
 <p>Final scores follow the team order shown.{note} Game data from {sources}.</p>
+</main></body></html>
+'''
+
+
+def _grade_scale_page():
+    rows = []
+    columns = [(sport, metric) for sport in SPORTS for metric in ("BEV", "AEV")]
+    for i in reversed(range(len(LETTERS))):
+        bounds = [f"{MINIMUMS[key][i - 1]:.1f}" if i else f"Below {MINIMUMS[key][0]:.1f}" for key in columns]
+        rows.append(f'<tr><th scope="row">{LETTERS[i]}</th>'
+                    + "".join(f'<td class="num">{bound}</td>' for bound in bounds) + "</tr>")
+    heads = "".join(f'<th scope="col">{SPORTS[sport]} {metric}</th>' for sport, metric in columns)
+    return f'''<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Excitement letter grades | SportsRank</title>
+<link rel="stylesheet" href="/cfb/assets/record-book.css"></head><body>{masthead()}
+<main class="archive-content"><h1>Excitement letter grades</h1>
+<p>A+ marks roughly the top 1% of historical games for that sport and metric. BEV grades pregame appeal.
+AEV grades how the game unfolded. An asterisk marks an estimated AEV and grade.</p>
+<div class="table-scroll" tabindex="0"><table><caption>Minimum score for each grade</caption>
+<thead><tr><th scope="col">Grade</th>{heads}</tr></thead><tbody>{"".join(rows)}</tbody></table></div>
+<p>The cutoffs are fixed. They use ten football seasons (2014–2023) and ten men's basketball seasons
+(2014–15 through 2023–24). BEV uses games with pregame CORS ranks and spreads. AEV uses games
+with verified play-by-play. A score right on a cutoff earns that grade.</p>
+<p><a href="/excitement/bev.html">All-time BEV leaders</a> · <a href="/excitement/aev.html">All-time AEV leaders</a></p>
 </main></body></html>
 '''
 
@@ -165,6 +191,8 @@ def publish_pages(root: Path, sport: str):
         return current
 
     changed = 0
+    if root.name == sport:
+        changed += _write(root.parent / "excitement/grades.html", _grade_scale_page())
     before = snapshot()
     while True:
         changed += _publish(root, sport, before)

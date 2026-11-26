@@ -338,3 +338,22 @@ other football ties, use verified games tied after regulation, remove overtime,
 and match on the tied score. The tied score alone has little power to order
 those games. Labels distinguish measured play-by-play, period-score estimates
 and final-only estimates on the same scale.
+
+## Letter grade calibration
+
+The four [frozen grade scales](../../excitement_grades.py) use reference games
+from the ten seasons starting in autumn 2014 through autumn 2023. Football
+uses CollegeFootballData and men's basketball uses CollegeBasketballData.
+BEV calibration uses qualified pregame CORS spreads and ranks. AEV calibration
+uses play-by-play. Baselines and estimates receive grades on the same scale as
+the better-documented games in their sport. The AEV asterisk applies to both
+the number and its letter.
+
+Sort the reference scores at their published one-decimal precision. For
+percentile p and N games, take the score at position ⌈pN/100⌉, counting from one.
+The inclusive lower bounds for A+, A, A−, B+, B, B−, C+, C, C−, D+, D, and D−
+use percentiles 99, 95, 90, 85, 75, 65, 55, 40, 30, 20, 15, and 10.
+Lower scores receive F. The next two completed seasons in each sport were
+reserved to check transfer. Ordinary builds reuse the frozen cutoffs.
+Changes to the grading scale require a new decision. Exact letter frequencies
+can vary by season and by evidence tier.
