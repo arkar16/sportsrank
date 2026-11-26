@@ -5,6 +5,7 @@ from datetime import datetime
 from html import escape
 import json
 from zoneinfo import ZoneInfo
+from cfb.excitement_pages import ESTIMATE_NOTE, aev_label
 
 from .grade import grade_game, grade_margins, grade_performance
 from .issued import VERIFIED_EDITIONS, grade_edition
@@ -148,6 +149,7 @@ def write_performance(
         label = season_name(year)
         evaluated = record["evaluated"]
         pending = record["pending"]
+        appeal = record.get("excitement")
         date_only = record["date_only"]
         pairs = [(g["home_margin"], g["actual_home_margin"]) for _, g in evaluated]
         all_pairs.extend(pairs)
@@ -200,6 +202,7 @@ def write_performance(
                 else team_label(pred_winner, pred_id, (), year=year)
             )
             when = _date_text(g)
+            score = appeal.get(g["game_id"]) if appeal is not None else None
             game_rows_html.append((
                 f'<a href="/cbb/seasons/{year}/weeks/{week}.html">{week}</a>',
                 when,
@@ -215,7 +218,7 @@ def write_performance(
                 su,
                 cov,
                 f"{err:.2f}",
-            ))
+            ) + ((score.bev if score else "—", aev_label(score)) if appeal is not None else ()))
             game_rows_csv.append((
                 week, g["start_utc"], g["home_team"], g["away_team"], g["neutral_site"],
                 _checkpoint_label(week), f"{handicap:.2f}", pred_winner,
@@ -240,6 +243,7 @@ def write_performance(
                 pred_winner = "Pick’em" if margin == 0 else g["home_team"] if margin > 0 else g["away_team"]
                 pred_id = None if margin == 0 else g["home_team_id"] if margin > 0 else g["away_team_id"]
                 pred_cell = "Pick’em" if margin == 0 else team_label(pred_winner, pred_id, (), year=year)
+                score = appeal.get(g["game_id"]) if appeal is not None else None
                 prows.append((
                     f'<a href="/cbb/seasons/{year}/weeks/{week}.html">{week}</a>',
                     _date_text(g),
@@ -248,7 +252,7 @@ def write_performance(
                     "Neutral" if g["neutral_site"] else "Home",
                     f"{handicap:+.2f}" if handicap else "0.00",
                     pred_cell,
-                ))
+                ) + ((score.bev if score else "—",) if appeal is not None else ()))
                 pending_json.append({
                     "week": week, "start_utc": g["start_utc"], "home": g["home_team"], "away": g["away_team"],
                     "neutral_site": g["neutral_site"], "home_handicap": round(handicap, 2),
@@ -258,7 +262,8 @@ def write_performance(
                 '<h2 id="pending-forecasts">Ungraded forecasts</h2>'
                 '<p>Current-week forecasts awaiting final scores.</p>'
                 + '<div class="sr-report-matchups">'
-                + _table(("Week", "Tipoff (Eastern)", "Home", "Away", "Court", "CORS spread (home)", "Predicted winner"),
+                + _table(("Week", "Tipoff (Eastern)", "Home", "Away", "Court", "CORS spread (home)", "Predicted winner")
+                         + (("BEV",) if appeal is not None else ()),
                          prows, numeric_from=5)
                 + "</div>"
             )
@@ -315,11 +320,12 @@ def write_performance(
             + _table(
                 ("Week", time_col, "Home", "Away", "Court", "Checkpoint", "CORS spread (home)",
                  "Predicted winner", "Home score", "Away score", "Actual margin",
-                 "Straight up", "Line coverage", "Abs. error"),
+                 "Straight up", "Line coverage", "Abs. error") + (("BEV", "AEV") if appeal is not None else ()),
                 game_rows_html,
                 numeric_from=6,
             )
             + "</div>"
+            + (f"<p>{ESTIMATE_NOTE}</p>" if appeal and any(a.estimated for a in appeal.values()) else "")
         )
         write_page(root, f"performance/{year}/index.html", f"{label} basketball model performance", body, index=False)
 

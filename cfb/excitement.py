@@ -15,6 +15,18 @@ from typing import Iterable, Literal
 SCORING_VERSION = "sportsrank-excitement-v1"
 
 
+@dataclass(frozen=True)
+class ScoreScale:
+    version: str
+    regulation_minutes: int
+    close_margin: int
+    comeback_margin: int
+
+
+FOOTBALL = ScoreScale(SCORING_VERSION, 60, 14, 21)
+BASKETBALL = ScoreScale("sportsrank-mbb-excitement-v1", 40, 6, 9)
+
+
 class ExcitementInputError(ValueError):
     """Raised when purportedly-qualified scoring evidence is invalid."""
 
@@ -232,18 +244,18 @@ def matchup_quality(home_rank: int, away_rank: int) -> float:
     return exp(-((home_rank + away_rank - 2) / 100))
 
 
-def calculate_bev(pregame: QualifiedPregame) -> ExcitementScore:
+def calculate_bev(pregame: QualifiedPregame, *, scale: ScoreScale = FOOTBALL) -> ExcitementScore:
     if pregame.cors_home_margin is None:
         raise ExcitementInputError("BEV requires a qualified CORS forecast margin")
     quality = matchup_quality(pregame.home_rank, pregame.away_rank)
-    scaled_margin = abs(pregame.cors_home_margin) / 14
+    scaled_margin = abs(pregame.cors_home_margin) / scale.close_margin
     competitiveness = exp(-(scaled_margin * scaled_margin))
     boost = 0.0
     if pregame.market is not None:
         market_margin = pregame.market.home_margin
-        closer = _clip((abs(market_margin) - abs(pregame.cors_home_margin)) / 14)
+        closer = _clip((abs(market_margin) - abs(pregame.cors_home_margin)) / scale.close_margin)
         upset = (
-            _clip(abs(pregame.cors_home_margin) / 2)
+            _clip(abs(pregame.cors_home_margin) / (scale.close_margin / 7))
             if pregame.cors_home_margin * market_margin < 0
             else 0.0
         )
@@ -252,7 +264,7 @@ def calculate_bev(pregame: QualifiedPregame) -> ExcitementScore:
     remaining = 100 - base
     value = base + boost * remaining / (5 + remaining)
     evidence = ScoreEvidence(
-        scoring_version=SCORING_VERSION,
+        scoring_version=scale.version,
         forecast_id=pregame.forecast_id,
         pregame_snapshot_id=pregame.source_snapshot_id,
         market_basis="market" if pregame.market else "missing",
@@ -336,7 +348,7 @@ def normalize_timeline(
 
 
 def _surprise(
-    pregame: QualifiedPregame, final: QualifiedFinal
+    pregame: QualifiedPregame, final: QualifiedFinal, scale: ScoreScale = FOOTBALL
 ) -> tuple[float, Literal["market", "cors", "missing"]]:
     if final.home_score == final.away_score:
         if pregame.market is not None:
@@ -346,12 +358,34 @@ def _surprise(
     if pregame.market is not None:
         reference = pregame.market.home_margin
         winner_was_underdog = (home_won and reference < 0) or (not home_won and reference > 0)
-        return (_clip(abs(reference) / 14) if winner_was_underdog else 0.0), "market"
+        return (_clip(abs(reference) / scale.close_margin) if winner_was_underdog else 0.0), "market"
     if pregame.cors_home_margin is None:
         return 0.0, "missing"
     reference = pregame.cors_home_margin
     winner_was_underdog = (home_won and reference < 0) or (not home_won and reference > 0)
-    return (_clip(abs(reference) / 14) if winner_was_underdog else 0.0), "cors"
+    return (_clip(abs(reference) / scale.close_margin) if winner_was_underdog else 0.0), "cors"
+
+
+def score_path_drama(regulation, margins, scale: ScoreScale) -> tuple[float, int, int]:
+    """Time-weighted regulation tension, all-period lead reversals and winner's largest deficit.
+
+    Sport adapters verify the score path and its regulation endpoints. Regulation
+    rows are (elapsed minutes, margin). All-period margins include overtime in order.
+    """
+    integral = 0.0
+    for (start, margin), (end, _) in zip(regulation, regulation[1:]):
+        midpoint = (start + end) / 2
+        weight = 1 + 3 * midpoint / scale.regulation_minutes
+        integral += exp(-abs(margin) / scale.close_margin) * weight * (end - start)
+    last_lead = switches = 0
+    for margin in margins:
+        lead = (margin > 0) - (margin < 0)
+        if lead:
+            switches += int(bool(last_lead) and lead != last_lead)
+            last_lead = lead
+    winner = (margins[-1] > 0) - (margins[-1] < 0)
+    deficit = max(0, max(-winner * margin for margin in margins))
+    return integral / (2.5 * scale.regulation_minutes), switches, deficit
 
 
 def calculate_full_aev(
@@ -365,33 +399,11 @@ def calculate_full_aev(
             raise TimelineQualificationError("normalized timeline contains unbound score states")
     else:
         normalized = normalize_timeline(timeline, final)
-    tension_integral = 0.0
-    for current, following in zip(normalized.regulation, normalized.regulation[1:]):
-        start = float(current.elapsed_minute)
-        end = float(following.elapsed_minute)
-        midpoint = (start + end) / 2
-        weight = 1 + 3 * midpoint / 60
-        margin = current.home_score - current.away_score
-        tension_integral += exp(-abs(margin) / 14) * weight * (end - start)
-    tension = tension_integral / 150
-    lead_changes = 0
-    last_nonzero_lead = 0
-    for home_score, away_score in normalized.observed_states:
-        lead = (home_score > away_score) - (home_score < away_score)
-        if lead and last_nonzero_lead and lead != last_nonzero_lead:
-            lead_changes += 1
-        if lead:
-            last_nonzero_lead = lead
-    lead_component = _clip(lead_changes / 3)
-    if final.home_score == final.away_score:
-        comeback = 0.0
-    else:
-        home_won = final.home_score > final.away_score
-        deficits = [
-            max(0, away - home) if home_won else max(0, home - away)
-            for home, away in normalized.observed_states
-        ]
-        comeback = _clip(max(deficits) / 21)
+    regulation = [(p.elapsed_minute, p.home_score - p.away_score) for p in normalized.regulation]
+    margins = [home - away for home, away in normalized.observed_states]
+    tension, switches, deficit = score_path_drama(regulation, margins, FOOTBALL)
+    lead_component = _clip(switches / 3)
+    comeback = _clip(deficit / FOOTBALL.comeback_margin)
     overtime = 1.0 if final.overtime else 0.0
     quality = matchup_quality(pregame.home_rank, pregame.away_rank)
     surprise, surprise_basis = _surprise(pregame, final)

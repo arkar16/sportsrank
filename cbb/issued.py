@@ -19,8 +19,13 @@ def grade_edition(path, verified_at, fixtures):
         return [], 0, 0
     eligible = []
     unresolved = late = 0
-    for row in heading.find_next("table").select("tbody tr"):
-        tipoff, away, home, pick, line = (cell.get_text(strip=True) for cell in row.select("td"))
+    table = heading.find_next("table")
+    headers = [th.get_text(strip=True) for th in table.select("thead th")]
+    for row in table.select("tbody tr"):
+        cells = row.select("td")
+        if headers[-1:] == ["BEV"] and len(cells) == 6:
+            cells = cells[:-1]
+        tipoff, away, home, pick, line = (cell.get_text(strip=True) for cell in cells)
         matches = fixtures.get((tipoff, away, home), ())
         if len(matches) != 1:
             unresolved += 1

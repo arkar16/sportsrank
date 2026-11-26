@@ -23,6 +23,11 @@ from site_navigation import masthead
 ORIGIN = "https://www.sportsrank.top"
 
 
+def _matchup_slug(matchup):
+    name = unicodedata.normalize("NFKD", matchup).encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+
+
 @dataclass
 class ConferenceSlate:
     records: dict[str, Record]
@@ -105,9 +110,7 @@ class Spread:
 
     @property
     def path(self):
-        name = unicodedata.normalize("NFKD", self.matchup).encode("ascii", "ignore").decode()
-        slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
-        return f"/{self.sport}/picks/{self.edition}/{slug}.html"
+        return f"/{self.sport}/picks/{self.edition}/{_matchup_slug(self.matchup)}.html"
 
 
 def _document(game: Spread) -> str:
@@ -126,14 +129,7 @@ def _document(game: Spread) -> str:
     source = escape(game.source)
     back = source if game.sport == "cfb" else "/cbb/current.html#forecasts"
     edition_link = f' · <a href="{source}">Dated edition</a>' if game.sport == "cbb" else ""
-    appeal = ""
-    if game.bev:
-        metrics = [f"Pregame appeal (BEV) <strong>{escape(game.bev)}</strong>"]
-        if game.aev:
-            metrics.append(f"Game drama (AEV) <strong>{escape(game.aev)}</strong>")
-        appeal = '<p class="game-excitement">' + " · ".join(metrics) + "</p>"
-        if game.aev and game.aev.endswith("*"):
-            appeal += f"<p>{ESTIMATE_NOTE}</p>"
+    appeal = _score_details(game.bev, game.aev)
     teams = []
     for team in (game.away, game.home):
         logo = f'<img src="{escape(team.mark)}" width="60" height="60" alt="">' if team.mark else ""
@@ -165,6 +161,38 @@ _ROW = re.compile(r"<tr\b[^>]*>.*?</tr>", re.I | re.S)
 _CELL = re.compile(r"<td\b[^>]*>(.*?)</td>", re.I | re.S)
 _SHARE = re.compile(r'<!--sr-ui--><a class="share-spread" [^>]*><!--/sr-ui-->(.*?)<!--sr-ui--></a><!--/sr-ui-->', re.S)
 _HINT = ui('<p class="spread-hint">Select a spread to share that game.</p>')
+
+
+def _score_details(bev, aev):
+    if not bev:
+        return ""
+    metrics = [f"Pregame appeal (BEV) <strong>{escape(bev)}</strong>"]
+    if aev:
+        metrics.append(f"Game drama (AEV) <strong>{escape(aev)}</strong>")
+    text = '<p class="game-excitement">' + " · ".join(metrics) + "</p>"
+    return text + (f"<p>{ESTIMATE_NOTE}</p>" if aev and aev.endswith("*") else "")
+
+
+def complete_basketball_card(directory, day, game, score):
+    """Add the reconciled final's AEV to individual pregame cards retained from an earlier slate."""
+    matchup = f"{game.away} {'vs.' if game.neutral_site else 'at'} {game.home}"
+    target = directory / "picks" / day / f"{_matchup_slug(matchup)}.html"
+    if not target.is_file():
+        return
+    raw = target.read_text(encoding="utf-8")
+    page = BeautifulSoup(raw, "html.parser")
+    old = page.select_one(".game-excitement strong")
+    if old is None or old.get_text(strip=True) != score.bev or page.h1.get_text(strip=True) != matchup:
+        return
+    margin = -game.home_handicap
+    line = "Pick’em" if not margin else f"{game.home} {'by' if margin > 0 else 'to lose by'} {abs(margin):.2f}"
+    if page.select_one(".pick strong").get_text(strip=True) != line:
+        return
+    start = raw.index('<p class="game-excitement">')
+    end = raw.index('<div class="share-actions">', start)
+    updated = raw[:start] + _score_details(score.bev, unescape(aev_label(score))) + raw[end:]
+    if updated != raw:
+        target.write_text(updated, encoding="utf-8")
 
 
 def _link_table(markup: str, directory: Path, pick_field: str, read_game) -> str:
@@ -274,9 +302,13 @@ def basketball_links(directory: Path, conference: ConferenceSlate) -> None:
             if winner not in (away.name, home.name) or not points.is_finite() or points <= 0:
                 raise ValueError(f"Invalid basketball pick: {pick}")
             margin = points if winner == home.name else -points
+        bev = cells["BEV"].get_text(strip=True) if "BEV" in cells else None
+        final = cells.get("Final (away–home)")
+        aev = cells["AEV"].get_text(strip=True) if "AEV" in cells and final and final.get_text(strip=True) != "—" else None
         return Spread("cbb", day.isoformat(), label, "/cbb/" + source[1],
                       home, away, cells["Court"].get_text(strip=True) == "Neutral", margin,
-                      conference.play.get((day.isoformat(), home.name, away.name), "Play type unavailable"))
+                      conference.play.get((day.isoformat(), home.name, away.name), "Play type unavailable"),
+                      bev if bev != "—" else None, aev)
 
     updated = _link_table(markup, directory, "Reconstructed pick", read_game)
     if updated != markup:

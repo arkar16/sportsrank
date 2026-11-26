@@ -13,10 +13,13 @@ from cfb.reference_markup import PagePresentation
 from cfb.season_pages import _document, _standings, _rankings as standings_table, _upsets
 
 from site_navigation import masthead
+from spread_cards import complete_basketball_card
 from .archive_finals import read_archive
 from .cors_v1 import _available
 from .early_records import SOURCE as EARLY_SOURCE, record_rows
 from .grade import grade_margins
+from .game_excitement import guide as excitement_guide, local_date, weekly_scores
+from cfb.excitement_pages import aev_label
 from .performance import write_performance
 from .program_records import program_record_rows
 from .progression import write_progression
@@ -128,21 +131,28 @@ def _pick(game):
     return f'{escape(game["home_team"] if margin > 0 else game["away_team"])} by {abs(margin):.2f}'
 
 
-def _games(games, logos, as_of, *, year=None, date_only=False):
+def _games(games, logos, as_of, *, year=None, date_only=False, excitement=None):
     if not games:
         return "<p>No Division I games in this period.</p>"
     rows = []
     for g in games:
         score = f'{g["away_points"]}–{g["home_points"]}' if _has_score(g, as_of) else "—"
         when = _tipoff(g).strftime("%b %d, %Y") if (date_only or g.get("date_only")) else _tipoff(g).strftime("%b %d, %Y · %I:%M %p")
-        rows.append((
+        cells = (
             when,
             team_label(g["away_team"], g["away_team_id"], logos, year=year),
             team_label(g["home_team"], g["home_team_id"], logos, year=year),
             "Neutral" if g["neutral_site"] else "Home", _pick(g), score,
-        ))
+        )
+        if excitement is not None:
+            appeal = excitement.get(g["game_id"])
+            cells += (appeal.bev if appeal else "—", aev_label(appeal))
+        rows.append(cells)
     first_col = "Date" if date_only else "Tipoff (Eastern)"
-    return _table((first_col, "Away", "Home", "Court", "Reconstructed pick", "Final (away–home)"), rows)
+    headers = (first_col, "Away", "Home", "Court", "Reconstructed pick", "Final (away–home)")
+    if excitement is not None:
+        headers += ("BEV", "AEV")
+    return _table(headers, rows)
 
 
 def _grade_row(label, pairs):
@@ -210,6 +220,7 @@ def build(
     early_records=None,
     program_records=None,
     historical_seasons=(),
+    current_excitement=None,
 ):
     """Export only checkpoints available by as_of and their corresponding slates."""
     weekly_seasons = [*historical_seasons, *seasons]
@@ -282,6 +293,8 @@ def build(
     latest_season_year = seasons[-1]["season"]
     projections = None
     weekly_years: set[int] = set()
+    excitement_logs = {}
+    card_dates = {p.name for p in (root / "picks").glob("*") if p.is_dir()}
     for season in weekly_seasons:
         year = season["season"]
         date_only = bool(season.get("date_only"))
@@ -306,6 +319,14 @@ def build(
         weekly_games = defaultdict(list)
         evaluated = []
         pending = []
+        scores = None
+        guide_rows = []
+        if model == "CORS v1.0.0":
+            scores, future = weekly_scores(root, season, checkpoints, as_of, schedules)
+            excitement_logs[year] = dict(future)
+            guide_rows.extend((local_date(g.start_utc), g.away, g.home, g.week, score) for g, score in future.items())
+            if current_excitement is not None and year == latest_season_year:
+                current_excitement.update(scores)
         for g in season["forecasts"]:
             if g["cutoff_utc"] not in weeks:
                 continue
@@ -322,7 +343,14 @@ def build(
             tip_text = _tipoff(g).strftime("%b %d") if date_only else _tipoff(g).strftime("%b %d · %I:%M %p ET")
             game = Game(week, names[g["home_team_id"]], names[g["away_team_id"]],
                         g["home_points"] if visible else None, g["away_points"] if visible else None,
-                        -Decimal(str(g["home_margin"])), g["neutral_site"], tip_text)
+                        -Decimal(str(g["home_margin"])), g["neutral_site"], tip_text, start_utc=g["start_utc"])
+            if scores is not None and (score := scores.get(g["game_id"])):
+                excitement_logs[year][game] = score
+                day = local_date(g["start_utc"])
+                if score.final and day in card_dates:
+                    complete_basketball_card(root, day, game, score)
+                if visible or year != latest_season_year or g["game_id"] not in upcoming_ids:
+                    guide_rows.append((day, game.away, game.home, week, score))
             games.append(game)
             if visible:
                 result_cutoff = g.get("result_cutoff_utc") or _available(datetime.fromisoformat(g["start_utc"]))
@@ -346,6 +374,7 @@ def build(
             "year": year,
             "evaluated": evaluated,
             "pending": pending,
+            "excitement": scores,
             "date_only": date_only,
         })
         season_index.append((
@@ -357,6 +386,11 @@ def build(
         ))
 
         metadata = _season_notes(last["cutoff_utc"])
+        if scores is not None and guide_rows:
+            guide_title = f"{season_name(year)} basketball game excitement"
+            body = excitement_guide(year, guide_rows, season_name, lambda n: team_label(n, ids[n], logos, year=year),
+                                    _week_link, _table, as_of)
+            _write(root, f"seasons/{year}/excitement/index.html", guide_title, body)
         for c in checkpoints:
             week = c["week"]
             key = f"W{week}"
@@ -376,8 +410,10 @@ def build(
                 f'<p>{" · ".join(week_jumps)}</p>'
                 + nav + '<div id="rankings">' + standings + "</div>"
                 + '<h2 id="games">Scores and reconstructed forecasts</h2>'
-                + _games(slates[week], logos, as_of, year=year, date_only=date_only)
+                + _games(slates[week], logos, as_of, year=year, date_only=date_only, excitement=scores)
             )
+            if scores is not None and guide_rows:
+                body += '<p><a href="../excitement/index.html">Game excitement and scoring method</a></p>'
             publish(f"seasons/{year}/weeks/{week}.html", _document(title, title, body, metadata=_season_notes(c["cutoff_utc"])))
         weekly_years.add(year)
 
@@ -445,6 +481,8 @@ def build(
             )
             + "</section>"
         )
+        if scores is not None and guide_rows:
+            jumps.append('<a href="excitement/index.html">Game excitement</a>')
         publish(
             f"seasons/{year}/index.html",
             _document(
@@ -494,6 +532,7 @@ def build(
         directory_label=lambda school: team_label(school, ids[school], logos),
         checkpoint_route=checkpoint_route,
         best_checkpoint_label=_best_checkpoint_label,
+        excitement_by_year=excitement_logs,
     ):
         sortable = path.endswith("/index.html") and path != "cbb/teams/index.html"
         publish(path.removeprefix("cbb/"), markup, sortable=sortable)

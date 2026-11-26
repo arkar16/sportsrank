@@ -50,6 +50,19 @@ at most 5 points, absolute signed bias at most 2 points and Spearman rank
 correlation at least 0.90. The [delivery issue](https://github.com/arkar16/sportsrank/issues/179)
 records the confirmation and coverage.
 
+## Men’s basketball
+
+On 2026-11-26 the owner selected the same rank quality, scoring weights and
+pregame/postgame distinction for Division I men’s basketball and requested
+possession-based point scales. A three-point margin represents one possession
+on the scoreboard. Two possessions set the closeness and surprise scale. Three
+set the comeback scale. Use the regulation clock for two 20-minute halves.
+Each verified overtime contributes to observed lead changes and the winner’s
+deficit. The two-point overtime bonus applies once. Football and basketball
+have separate scoring versions and reference populations. The
+[basketball delivery](https://github.com/arkar16/sportsrank/issues/181) owns
+the empirical coverage and acceptance.
+
 ## Delivery prerequisites
 
 - Inspect the API's actual provider coverage before finalizing the excitement

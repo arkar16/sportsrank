@@ -9,6 +9,7 @@ from spread_cards import ConferenceSlate, basketball_links
 from .blend import VERSION, blend_seasons
 from .cors_v1 import VERSION as V1_VERSION, _available, cors_v1_seasons
 from .early_records import read_early_records
+from .game_excitement import basketball_bev
 from .historical_replay import replay_historical_seasons
 from .home import landing_page
 from .honors import write_honors
@@ -19,6 +20,7 @@ from .team_schedule import schedule_views
 
 
 V1_START = datetime.fromisoformat("2026-11-24T00:00:00+00:00")
+BEV_EDITION_START = datetime.fromisoformat("2026-11-26T00:00:00+00:00")
 
 
 def share_conferences(season, checkpoint):
@@ -42,19 +44,21 @@ def share_conferences(season, checkpoint):
 
 def _forecasts(forecasts, prepared_at, logo_ids, current, *, year=None):
     forecast_rows = []
+    has_bev = any("bev" in row for row in forecasts)
     for row in forecasts:
         margin = row["predicted_home_margin"]
         pick = "Pick’em" if margin == 0 else escape(row["home"] if margin > 0 else row["away"])
         forecast_rows.append(
             f'<tr><td>{escape(row["tipoff"])}</td><td>{team_label(row["away"], row.get("away_id"), logo_ids, linked=current, year=year if current else None)}</td>'
-            f'<td>{team_label(row["home"], row.get("home_id"), logo_ids, linked=current, year=year if current else None)}</td><td>{pick}</td><td class="num">{abs(margin):.2f}</td></tr>'
+            f'<td>{team_label(row["home"], row.get("home_id"), logo_ids, linked=current, year=year if current else None)}</td><td>{pick}</td><td class="num">{abs(margin):.2f}</td>'
+            + (f'<td class="num">{row.get("bev", "—")}</td>' if has_bev else "") + "</tr>"
         )
     section_id = ' id="forecasts"' if current else ""
     forecast_section = ""
     if forecast_rows:
         forecast_section = f"""
 <section{section_id}><h2>Game forecasts</h2><p>Prepared {prepared_at:%B %d, %Y at %H:%M %Z}. Tipoffs reflect the schedule at preparation.</p><div class="table-scroll"><table>
-<thead><tr><th>Tipoff (Eastern)</th><th>Away</th><th>Home</th><th>CORS pick</th><th>Margin</th></tr></thead>
+<thead><tr><th>Tipoff (Eastern)</th><th>Away</th><th>Home</th><th>CORS pick</th><th>Margin</th>{"<th>BEV</th>" if has_bev else ""}</tr></thead>
 <tbody>{''.join(forecast_rows)}</tbody></table></div></section>"""
     return forecast_section
 
@@ -122,6 +126,7 @@ def main():
     cutoff = checkpoint["cutoff_utc"]
     et = ZoneInfo("America/New_York")
     edition_games = []
+    ranks = {r["team_id"]: r["rank"] for r in checkpoint["rows"]}
     for row in season["forecasts"]:
         tipoff = datetime.fromisoformat(row["start_utc"])
         if row["cutoff_utc"] == cutoff and (blended or (row["status"] == "scheduled" and tipoff > as_of)):
@@ -129,6 +134,9 @@ def main():
                              "home": row["home_team"], "away": row["away_team"],
                              "home_id": row["home_team_id"], "away_id": row["away_team_id"],
                              "predicted_home_margin": row["home_margin"]})
+            if model == V1_VERSION and as_of >= BEV_EDITION_START:
+                edition_games[-1]["bev"] = basketball_bev(ranks[row["home_team_id"]], ranks[row["away_team_id"]],
+                                                          row["home_margin"], row["game_id"], cutoff)
     rankings = [{"rank": r["rank"], "team": r["school"], "team_id": r["team_id"], "rating": r["cors"],
                  "wins": r["wins"], "losses": r["losses"]} for r in checkpoint["rows"]]
     logo_dir = Path(__file__).resolve().parents[1] / "website/cbb/assets/team-logos"
@@ -168,12 +176,14 @@ def main():
     program_records = read_program_records(first_replay)
     early_records = read_early_records(first_replay)
     earlier_years = early_records.keys() | program_records.keys()
+    current_excitement = {} if model == V1_VERSION else None
     archives, routes, presentation = build(
         args.output, seasons, as_of, logo_ids, tournament_years=years, model=model,
         schedules=schedules, upcoming_ids=upcoming_ids, conference_schedule=conference_schedule,
         include_early_finals=True,
         early_records=early_records, program_records=program_records,
         historical_seasons=historical_seasons,
+        current_excitement=current_excitement,
     )
     write_honors(args.output, archives, routes, presentation, as_of, earlier_years=earlier_years)
     edition_link = f'<nav class="sr-report-nav"><a href="editions/{archive.name}">Dated edition</a></nav>'
@@ -183,7 +193,9 @@ def main():
     if blended:
         slate = [g for g in season["forecasts"] if g["cutoff_utc"] == cutoff]
         report = (f'<section id="forecasts"><h2>{model} weekly picks</h2>'
-                  + _games(slate, logo_ids, as_of, year=args.season) + '</section>')
+                  + _games(slate, logo_ids, as_of, year=args.season, excitement=current_excitement) + '</section>')
+        if current_excitement:
+            report += f'<p><a href="/cbb/seasons/{args.season}/excitement/index.html">Game excitement and scoring method</a></p>'
     _write(args.output, "current.html", f"{season_name(args.season)} basketball forecasts", edition_link + report)
     if blended and slate:
         basketball_links(args.output, share_conferences(season, checkpoint))

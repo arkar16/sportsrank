@@ -78,9 +78,10 @@ def schedule_views(database, season, checkpoint, as_of, *, snapshots=Path(__file
     week = checkpoint.get("week", 0)
 
     def add_fixture(matchup, tip, fixture_id, home, away):
+        matchup = replace(matchup, start_utc=tip.astimezone(UTC).isoformat())
         for team, opponent in ((home, away), (away, home)):
             if team is not None:
-                row = ScheduledGame(matchup, f"{tip:%a, %b %d}", opponent["rank"] if opponent else None)
+                row = ScheduledGame(matchup, f"{tip:%a, %b %d}", opponent["rank"] if opponent else None, str(fixture_id))
                 rows[year, team["school"]].append((tip, str(fixture_id), row))
 
     with snapshot.open(encoding="utf-8", newline="") as stream:
@@ -132,7 +133,7 @@ def schedule_views(database, season, checkpoint, as_of, *, snapshots=Path(__file
                 continue
             if game_id is not None:
                 moved.add(game_id)
-            add_fixture(matchup, tip, fixture["event_id"], home, away)
+            add_fixture(matchup, tip, game_id if game_id is not None else f"espn-{fixture['event_id']}", home, away)
 
     # The retained conference rebuild also uses the issued checkpoint's weekly
     # slate. A fixture can be absent from the dated public schedule, including

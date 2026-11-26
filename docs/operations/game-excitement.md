@@ -1,4 +1,4 @@
-# Football game excitement
+# Game excitement
 
 Run the normal offline `uv run --locked python -m cfb.record_book` after
 updating CORS game inputs. The season watch guide orders upcoming games by BEV
@@ -83,3 +83,50 @@ The [football delivery issue](https://github.com/arkar16/sportsrank/issues/179)
 records the thresholds and results. The site reads the approved checksum and
 quarter-score tier from `reference-policy.json`. An asterisk identifies each
 estimate in the watch guide, score sheets and team game logs.
+
+## Men's basketball
+
+The regular `cbb.site` build writes weekly BEV and measured AEV to the current
+slate, weekly game tables, model results, team logs and each season’s game
+excitement guide. The guide links to the versioned pregame CSV. Each weekly
+entry retains the checkpoint, game identity, teams, site, ranks and signed
+home margin. Advance projections use their dated schedule and current
+checkpoint. The build preserves existing rows and rejects changed scoring
+inputs. Dated editions issued from November 26, 2026 include BEV.
+[Basketball build command](../../README.md#basketball-record-book)
+
+The evidence importer checks the play order, period format, countdown,
+scoring team and points on every scoring play, tied period ends preceding
+overtime, terminal clocks, period box totals where available and the official
+final. The compact season files retain the weighted tension, observed lead
+changes and eventual winner’s largest deficit. The site matches the dated
+teams and final to CORS and orients the underdog bonus to the winner. Missing
+or ambiguous histories retain BEV. An official final with a complete score
+path also gets AEV. [Retained source hashes](../../cbb/excitement_data/sources.json)
+
+To reproduce season evidence, place the pinned Parquet files in
+`plays/play_by_play_YEAR.parquet` and `schedule/mbb_schedule_YEAR.parquet`
+under the inputs directory. The cached basketball team table maps ESPN IDs
+to SportsRank program IDs. The Parquet dependency is needed only for data
+preparation.
+
+```sh
+uv run --locked --with duckdb==1.4.1 python -m scripts.prepare_basketball_drama \
+  --inputs /path/to/hoopr-seasons --database /path/to/history.sqlite3 \
+  --output .sportsrank/basketball-game-review 2024 2025 2026
+```
+
+To reproduce the development test for older games with halftime and final
+scores, run the following command against the same basketball archive and
+the generated pregame CSVs. The evaluator masks the play-by-play for an
+entire season and compares the estimated scores with measured AEV.
+
+```sh
+uv run --locked python -m scripts.evaluate_basketball_excitement \
+  --training 2024 2026 --database /path/to/history.sqlite3 \
+  --reference .sportsrank/basketball-halftime-reference.csv
+```
+
+The [basketball delivery issue](https://github.com/arkar16/sportsrank/issues/181)
+records the frozen reference checksum and validation status. Only measured
+AEV currently appears on basketball game pages.

@@ -169,6 +169,22 @@ field position or down-and-distance. Games with the same score path can differ
 on those dimensions. The owner accepted this first-pass method; empirical
 validation and the estimated-data method remain separate work.
 
+## Men’s basketball point and clock scales
+
+For `sportsrank-mbb-excitement-v1`, keep the 60/40 BEV and 80/8/4/2/3/3 AEV
+weights. Use six points for the two-possession competitiveness, sustained
+tension and upset scales and nine points for a three-possession comeback.
+The pregame market sign-change taper keeps the same fraction of the closeness
+scale, or 6/7 of a basketball point. Eligible market inputs are currently
+absent. Pregame quality uses the same CORS-rank horizon as football.
+
+Use 40 regulation minutes and a denominator of 100 weighted minutes for
+two 20-minute halves. Five-minute overtimes preserve the order of score
+changes and add to lead reversals and comeback evidence. The regulation
+tension integral ends at 40:00. Each game can receive at most two points
+for overtime. The [basketball build instructions](../operations/game-excitement.md#mens-basketball)
+describe the pregame ledger and evidence qualification.
+
 ## Estimated AEV: comparable-game method
 
 The owner accepted this approach on 2026-09-29. See the
