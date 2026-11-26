@@ -110,6 +110,12 @@ class SitewideRecordBookTests(unittest.TestCase):
                     "vs (FCS) Samford --",
                     "Bye",
                 ])
+                card = "/cfb/picks/2026/week-12/kansas-state-at-iowa-state.html"
+                self.assertEqual([(a.text, a["href"]) for a in page.select(".home-game-score a")],
+                                 [("-3.5", card), ("+3.5", card)])
+                self.assertTrue((site / card.lstrip("/")).is_file())
+                self.assertEqual(rows[0].select_one("td:last-child .home-opponent a")["href"],
+                                 "/cfb/teams/kansas-state/2026.html")
                 link = rows[0].select(".home-result")[0].a["href"]
                 self.assertEqual(link, "/cfb/teams/kansas-state/2026.html")
                 self.assertTrue((site / link.lstrip("/")).is_file())
@@ -125,6 +131,7 @@ class SitewideRecordBookTests(unittest.TestCase):
         home = BeautifulSoup((site / "index.html").read_bytes(), "html.parser")
         self.assertEqual(home.find("a", string="Week 12 reconstructed forecasts")["href"],
                          "/cfb/years/2026/reconstructed/2026_W12_FBS_spread.html")
+        self.assertFalse(home.select(".home-game-score a"))
         reconstructed.unlink()
         build(site)
         home = BeautifulSoup((site / "index.html").read_bytes(), "html.parser")

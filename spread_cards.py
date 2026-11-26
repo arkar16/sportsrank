@@ -23,6 +23,8 @@ from site_navigation import masthead
 
 
 ORIGIN = "https://www.sportsrank.top"
+# Edition (football week or Eastern basketball date), home, away, neutral site.
+CardURLs = dict[tuple[str, str, str, bool], str]
 # Messages recommends icons of at least 108 px and may present images below 150 px as icons.
 _ICON_SIZE = 120
 
@@ -198,7 +200,7 @@ _SHARE = re.compile(r'<!--sr-ui--><a class="share-spread" [^>]*><!--/sr-ui-->(.*
 _HINT = ui('<p class="spread-hint">Select a spread to share that game.</p>')
 
 
-def _link_table(markup: str, directory: Path, pick_field: str, read_game) -> str:
+def _link_table(markup: str, directory: Path, pick_field: str, read_game, card_urls: CardURLs | None) -> str:
     """Insert only presentation markup so archived football source bytes remain recoverable."""
     markup = _SHARE.sub(r"\1", markup).replace(_HINT, "")
     table = _TABLE.search(markup)
@@ -228,14 +230,16 @@ def _link_table(markup: str, directory: Path, pick_field: str, read_game) -> str
         return markup
     # Write every destination before exposing its link in the slate.
     icons = {}
-    for game in games.values():
+    for url, game in games.items():
         if game.home.mark not in icons:
             icons[game.home.mark] = _preview_icon(directory, game.sport, game.home.mark)
-        target = directory / game.path.removeprefix(f"/{game.sport}/")
+        target = directory / url.removeprefix(f"/{game.sport}/")
         content = _document(game, icons[game.home.mark]).encode()
         if not target.exists() or target.read_bytes() != content:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(content)
+        if card_urls is not None:
+            card_urls[game.edition, game.home.name, game.away.name, game.neutral] = url
     parts = []
     pos = 0
     for start, end, link in edits:
@@ -247,7 +251,7 @@ def _link_table(markup: str, directory: Path, pick_field: str, read_game) -> str
     return markup.replace("</h1>", "</h1>" + _HINT, 1)
 
 
-def football_links(raw: bytes, path: Path, directory: Path, season: Season) -> bytes:
+def football_links(raw: bytes, path: Path, directory: Path, season: Season, *, card_urls: CardURLs | None = None) -> bytes:
     year, week = path.stem.split("_")[:2]
     source = f"/cfb/years/{year}/spread/{path.name}"
     number = int(week[1:])
@@ -275,10 +279,10 @@ def football_links(raw: bytes, path: Path, directory: Path, season: Season) -> b
     except UnicodeDecodeError:
         markup = raw.decode("latin-1")
         encoding = "latin-1"
-    return _link_table(markup, directory, "spread", read_game).encode(encoding, errors="xmlcharrefreplace")
+    return _link_table(markup, directory, "spread", read_game, card_urls).encode(encoding, errors="xmlcharrefreplace")
 
 
-def basketball_links(directory: Path, conference: ConferenceSlate) -> None:
+def basketball_links(directory: Path, conference: ConferenceSlate, *, card_urls: CardURLs | None = None) -> None:
     path = directory / "current.html"
     markup = path.read_text(encoding="utf-8")
     source = re.search(r'href="(editions/[\dTZ-]+\.html)"', markup)
@@ -309,6 +313,6 @@ def basketball_links(directory: Path, conference: ConferenceSlate) -> None:
                       home, away, cells["Court"].get_text(strip=True) == "Neutral", margin,
                       conference.play.get((day.isoformat(), home.name, away.name), "Play type unavailable"))
 
-    updated = _link_table(markup, directory, "Reconstructed pick", read_game)
+    updated = _link_table(markup, directory, "Reconstructed pick", read_game, card_urls)
     if updated != markup:
         path.write_text(updated, encoding="utf-8")
