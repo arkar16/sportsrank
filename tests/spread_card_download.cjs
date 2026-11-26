@@ -29,11 +29,13 @@ function team(name, rank, record) {
   return {querySelector: selector => cells[selector]};
 }
 
-async function checkDownload() {
+async function checkDownload(bev) {
+  draws.length = 0;
   const canvas = {getContext: () => ctx, toBlob: (done, type) => done({type})};
   const save = {addEventListener: (event, handler) => { save[event] = handler; }};
   const download = {click() { this.clicked = true; }, remove() {}};
   const selectors = {
+    'meta[name="sportsrank:bev"]': bev === null ? null : {content: bev},
     "#game-link": {}, "#save-card": save, "#share-status": {},
     ".edition": {textContent: "CFB · 2026 · Week 13"},
     ".pick strong": {textContent: "Alabama by 17.75 · 89% to win", dataset: {}},
@@ -54,6 +56,12 @@ async function checkDownload() {
   assert.ok(download.clicked);
   assert.equal(download.download, "auburn-at-alabama.png");
   const labels = draws.map(item => item.label);
+  assert.deepEqual(labels.filter(label => label.startsWith("BEV ")), bev === null ? [] : ["BEV " + bev]);
+  if (bev !== null) {
+    const score = draws.find(item => item.label === "BEV " + bev);
+    const venue = draws.find(item => item.label.startsWith("Conference (SEC)"));
+    assert.ok(venue.right < score.left, "venue and BEV overlap");
+  }
   for (const label of ["Auburn logo", "#29", "Auburn", "7-4 (4-4)", "Alabama logo", "#3", "Alabama",
                        "9-2 (6-2)", "Alabama by 17.75 · 89% to win", "Conference (SEC) · @ Alabama",
                        "CFB · 2026 · Week 13", "sportsrank.top"]) {
@@ -70,4 +78,5 @@ async function checkDownload() {
   }
 }
 
-checkDownload().catch(error => { console.error(error); process.exitCode = 1; });
+checkDownload("52.5").then(() => checkDownload("0.0")).then(() => checkDownload(null))
+  .catch(error => { console.error(error); process.exitCode = 1; });
