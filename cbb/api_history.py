@@ -21,7 +21,9 @@ CREATE INDEX games_season ON games(season);
 def materialize(source, output, through):
     """Ignore unprovenanced table overlays. A later API response can correct an earlier response."""
     with (
-        closing(sqlite3.connect(Path(source).resolve().as_uri() + "?mode=ro", uri=True)) as src,
+        closing(
+            sqlite3.connect(Path(source).resolve().as_uri() + "?mode=ro", uri=True)
+        ) as src,
         closing(sqlite3.connect(output)) as dst,
     ):
         dst.executescript(SCHEMA)
@@ -32,7 +34,10 @@ def materialize(source, output, through):
             "SELECT url,rows,compressed_json,acquired_utc FROM responses ORDER BY acquired_utc,url"
         ):
             uri = urlsplit(url)
-            if (uri.scheme, uri.netloc) != ("https", HOST) or uri.path not in ("/games", "/teams"):
+            if (uri.scheme, uri.netloc) != ("https", HOST) or uri.path not in (
+                "/games",
+                "/teams",
+            ):
                 continue
             params = parse_qs(uri.query)
             if (
@@ -70,14 +75,20 @@ def materialize(source, output, through):
             for row in rows:
                 raw = json.dumps(row, separators=(",", ":"))
                 if uri.path == "/teams":
-                    dst.execute("INSERT OR REPLACE INTO teams VALUES(?,?,?)", (year, row["id"], raw))
+                    dst.execute(
+                        "INSERT OR REPLACE INTO teams VALUES(?,?,?)",
+                        (year, row["id"], raw),
+                    )
                     continue
                 if row["season"] != year or not isinstance(row["id"], int):
                     raise ValueError("basketball API season or game identity mismatch")
                 status = row["status"]
                 home, away = row.get("homePoints"), row.get("awayPoints")
                 if status == "final" and (
-                    type(home) is not int or type(away) is not int or min(home, away) < 0 or home == away
+                    type(home) is not int
+                    or type(away) is not int
+                    or min(home, away) < 0
+                    or home == away
                 ):
                     status = "unverified"
                 updated = dst.execute(
@@ -107,24 +118,42 @@ def materialize(source, output, through):
                 required = min(required, max(end for _, end in intervals))
             if frontier < required:
                 raise ValueError(f"incomplete CBBD games response range for {year}")
-        years = [y for (y,) in dst.execute("SELECT DISTINCT season FROM games ORDER BY season")]
+        years = [
+            y
+            for (y,) in dst.execute("SELECT DISTINCT season FROM games ORDER BY season")
+        ]
         if through not in years or (through, "/teams") not in endpoints:
-            raise ValueError(f"No retained CBBD games and teams responses for {through}")
+            raise ValueError(
+                f"No retained CBBD games and teams responses for {through}"
+            )
         dst.commit()
     return years
 
 
+def national_final(label):
+    # The provider's historical round may include the final's host city.
+    round_name = (label or "").split(" - ")[-1].casefold().split(" at ", 1)[0].strip()
+    return round_name in {
+        "national final",
+        "national championship",
+        "ncaa championship",
+        "ncaa-championship",
+        "championship",
+    }
+
+
 def championship_finals(database, as_of):
     games = []
-    with closing(sqlite3.connect(Path(database).resolve().as_uri() + "?mode=ro", uri=True)) as db:
+    with closing(
+        sqlite3.connect(Path(database).resolve().as_uri() + "?mode=ro", uri=True)
+    ) as db:
         for year, raw in db.execute(
             "SELECT season,raw_json FROM games WHERE status='final' ORDER BY season,id"
         ):
             g = json.loads(raw)
             if (
                 g.get("tournament") != "NCAA"
-                or (g.get("gameNotes") or "").split(" - ")[-1].casefold()
-                not in ("national championship", "championship", "ncaa-championship")
+                or not national_final(g.get("gameNotes"))
                 or not g.get("startDate")
                 or datetime.fromisoformat(g["startDate"]) >= as_of
             ):
@@ -135,8 +164,33 @@ def championship_finals(database, as_of):
             home = g["homeTeam"], g["awayTeam"]
             winner, runner = home if h > a else home[::-1]
             games.append(
-                dict(year=year, winner=winner, runner_up=runner, record="", score=f"{max(h, a)}–{min(h, a)}")
+                dict(
+                    year=year,
+                    winner=winner,
+                    runner_up=runner,
+                    record="",
+                    score=f"{max(h, a)}–{min(h, a)}",
+                )
             )
     if len({g["year"] for g in games}) != len(games):
         raise ValueError("ambiguous API national championship")
     return games
+
+
+if __name__ == "__main__":
+    import argparse
+    from tempfile import TemporaryDirectory
+
+    cli = argparse.ArgumentParser(description=__doc__)
+    cli.add_argument("--database", type=Path, required=True)
+    cli.add_argument("--output", type=Path, required=True)
+    cli.add_argument("--season", type=int, required=True)
+    args = cli.parse_args()
+    if args.database.resolve() == args.output.resolve():
+        cli.error("the input response cache and prepared database need distinct paths")
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    with TemporaryDirectory(dir=args.output.parent) as scratch:
+        target = Path(scratch) / "games.sqlite3"
+        years = materialize(args.database, target, args.season)
+        target.replace(args.output)
+    print(f"Prepared {len(years)} CollegeBasketballData seasons")

@@ -278,7 +278,7 @@ def football_links(raw: bytes, path: Path, directory: Path, season: Season, *, e
 def basketball_links(directory: Path, conference: ConferenceSlate) -> None:
     path = directory / "current.html"
     markup = path.read_text(encoding="utf-8")
-    source = re.search(r'href="(editions/[\dTZ-]+(?:-api)?\.html)"', markup)
+    source = re.search(r'href="(editions/[\dTZ-]+(?:-cbbd)?\.html)"', markup)
     if source is None:
         raise ValueError("The basketball forecast has no dated edition")
     edition = directory / source[1]

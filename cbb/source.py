@@ -191,8 +191,8 @@ def _read_season(db: sqlite3.Connection, year: int) -> Season:
         ))
 
     games.sort(key=lambda game: (game.start_utc, game.id))
-    if not any(game.score is not None for game in games):
-        raise ValueError(f"No completed Division I games in season {year}")
+    if not games:
+        raise ValueError(f"No Division I fixtures in season {year}")
     return Season(year, teams, tuple(games))
 
 

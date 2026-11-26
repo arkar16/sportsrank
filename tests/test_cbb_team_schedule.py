@@ -1,5 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
+import json
 from pathlib import Path
 import sqlite3
 from tempfile import TemporaryDirectory
@@ -20,23 +21,19 @@ class TeamScheduleTest(unittest.TestCase):
             root = Path(tmp)
             db = root / "history.sqlite3"
             with sqlite3.connect(db) as conn:
-                conn.executescript("""
-                    CREATE TABLE teams(season, id, raw_json);
-                    CREATE TABLE games(season, id, raw_json);
-                    INSERT INTO teams VALUES (2027,1,'{"sourceId":"11"}'),(2027,2,'{"sourceId":"22"}');
-                    INSERT INTO games VALUES (2027,51,'{"sourceId":"101"}'),
-                        (2027,52,'{"sourceId":"104"}'),(2027,53,'{"sourceId":"106"}');
-                """)
-            folder = root / "2027"
-            folder.mkdir()
-            (folder / "2026-11-23.csv").write_text(
-                "event_id,tipoff,time_known,neutral,home_id,home_name,away_id,away_name\n"
-                "101,2026-11-24T22:00Z,1,1,11,A,22,B\n"
-                "102,2027-03-02T02:00Z,1,0,22,B,11,A\n"
-                "103,2027-03-06T05:00Z,0,0,11,A,33,Small College\n"
-                "104,2027-03-06T21:00Z,1,0,11,A,22,B\n"
-                "105,2026-11-24T12:00Z,1,0,11,A,22,B\n"
-                "106,2027-03-07T21:00Z,1,0,11,A,22,B\n")
+                conn.execute("CREATE TABLE games(season,id,start_utc,status,raw_json)")
+                for gid, stamp, h, home, a, away, neutral, tbd in (
+                    (51, '2026-11-24T22:00Z', 1, 'A', 2, 'B', True, False),
+                    (102, '2027-03-02T02:00Z', 2, 'B', 1, 'A', False, False),
+                    (103, '2027-03-06T05:00Z', 1, 'A', 3, 'Small College', False, True),
+                    (52, '2027-03-06T21:00Z', 1, 'A', 2, 'B', False, False),
+                    (105, '2026-11-24T12:00Z', 1, 'A', 2, 'B', False, False),
+                    (53, '2027-03-07T21:00Z', 1, 'A', 2, 'B', False, False),
+                ):
+                    raw = dict(homeTeamId=h, awayTeamId=a, homeTeam=home, awayTeam=away,
+                               neutralSite=neutral, startTimeTbd=tbd)
+                    conn.execute("INSERT INTO games VALUES(?,?,?,?,?)",
+                                 (2027, gid, stamp, "scheduled", json.dumps(raw)))
             cutoff = "2026-11-23T11:00:00Z"
             checkpoint = {"cutoff_utc": cutoff, "rows": [
                 {"team_id": 1, "rank": 1, "school": "A", "cors": 14.5},
@@ -51,11 +48,11 @@ class TeamScheduleTest(unittest.TestCase):
                       "home_advantages": {1: 2.5, 2: 3.25}}
 
             def render(stamp):
-                return schedule_views(db, season, checkpoint, datetime.fromisoformat(stamp), snapshots=root)
+                return schedule_views(db, season, checkpoint, datetime.fromisoformat(stamp))
 
             self.assertEqual(render("2026-11-22T21:00Z"), ({}, set(), []))
             schedules, moved, projected_games = render("2026-11-24T16:00Z")
-            self.assertEqual(moved, {51, 53})
+            self.assertEqual(moved, {51, 53, 102, 103})
             rankings = {"W3": [
                 Standing("A", 1, Decimal("14.50"), "2–1", "Test"),
                 Standing("B", 2, Decimal("10.00"), "1–2", "Test"),

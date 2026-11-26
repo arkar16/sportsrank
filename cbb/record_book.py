@@ -326,14 +326,15 @@ def build(
                 # Previously issued weeks cannot see results or fixtures from a later checkpoint.
                 checkpoint = next((c for c in reversed(checkpoints) if datetime.fromisoformat(c["cutoff_utc"]) < stamp), None)
                 if checkpoint is None:
-                    checkpoint = {"week": 0, "cutoff_utc": stamp.isoformat(), "rows": []}
+                    checkpoint = {"week": 0, "cutoff_utc": (stamp - timedelta(microseconds=1)).isoformat()}
                 week = checkpoint["week"]
                 day = local_date(g["start_utc"])
                 home, away = g["home_team"], g["away_team"]
                 if str(g["game_id"]) in covered_fixtures:
                     continue
                 basis = checkpoint_prior(directory_by_cutoff.get(checkpoint["cutoff_utc"], {}), g["home_team_id"],
-                                         g["away_team_id"], g["neutral_site"], checkpoint)
+                                         g["away_team_id"], g["neutral_site"], checkpoint,
+                                         field_size=len(checkpoints[0]["rows"]))
                 bev = baselines.capture(checkpoint["cutoff_utc"], g["game_id"], g["home_team_id"], g["away_team_id"], day, basis)
                 score = after_game(g, bev, {}, evidence, as_of, prior=basis)
                 h, a = score.final or (None, None)
@@ -516,7 +517,7 @@ def build(
 
     editions = []
     for path in sorted((root / "editions").glob("*.html"), reverse=True):
-        stamp = datetime.strptime(path.stem.removesuffix("-api"), "%Y-%m-%dT%H%M%SZ").replace(tzinfo=UTC)
+        stamp = datetime.strptime(path.stem.removesuffix("-cbbd"), "%Y-%m-%dT%H%M%SZ").replace(tzinfo=UTC)
         if stamp <= as_of:
             editions.append((stamp, path))
     write_performance(

@@ -19,6 +19,10 @@ DATA = Path(__file__).with_name("cbbd_excitement")
 FEATURES = ("abs_margin", "total", "halftime_margin")
 
 
+def passes_halftime_standard(mae, bias, spearman):
+    return mae <= 7 and abs(bias) <= 2 and spearman >= 0.85
+
+
 @lru_cache(maxsize=1)
 def policy():
     record = json.loads((DATA / "policy.json").read_bytes())
@@ -29,7 +33,7 @@ def policy():
     if sha256(json.dumps(frozen, sort_keys=True, separators=(",", ":")).encode()).hexdigest() != record["frozen_sha256"]:
         raise ValueError("corrupt frozen basketball reference")
     m = record["halftime"]
-    if record["halftime_qualified"] != (m["mae"] <= 7 and abs(m["bias"]) <= 2 and m["spearman"] >= .85):
+    if record["halftime_qualified"] != passes_halftime_standard(m["mae"], m["bias"], m["spearman"]):
         raise ValueError("basketball halftime validation disagrees with release criteria")
     return record
 

@@ -173,11 +173,11 @@ def after_game(g, bev, ranks, evidence, as_of, *, prior=None):
     return GameAppeal(bev, final, value, "halftime", identity, support, distance, basis)
 
 
-def checkpoint_prior(rows, home, away, neutral, checkpoint):
+def checkpoint_prior(rows, home, away, neutral, checkpoint, *, field_size=None):
     def team(key):
         return (rows[key]["rank"], rows[key]["cors"]) if key in rows else None
     venue = 0 if neutral else (checkpoint.get("home_advantages") or {}).get(home, 3.6)
-    return pregame_prior(team(home), team(away), field_size=len(rows), close=BASKETBALL.close_margin,
+    return pregame_prior(team(home), team(away), field_size=field_size if field_size is not None else len(rows), close=BASKETBALL.close_margin,
                          venue=venue, missing_rating=checkpoint.get("non_d1_rating", -26.0))
 
 

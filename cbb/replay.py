@@ -76,6 +76,7 @@ class ForecastRow(TypedDict):
     season_type: NotRequired[str | None]
     tournament: NotRequired[str | None]
     date_only: NotRequired[bool]
+    verified_at: NotRequired[str | None]
     conference_tournament: NotRequired[bool]
     overtime: NotRequired[bool | None]
     halftime: NotRequired[tuple[int, int] | None]
@@ -85,6 +86,7 @@ class ForecastRow(TypedDict):
 
 
 class SeasonReplay(TypedDict):
+    date_only: NotRequired[bool]
     season: int
     rankings: tuple[Checkpoint, ...]
     final_cutoff_utc: str
@@ -216,10 +218,14 @@ def _replay(
         slates[_previous_monday(game.start_utc)].append(game)
     finals = sorted(((latest_start(g.start_utc, g.date_only), g) for g in season.games if g.score is not None),
                     key=lambda pair: (pair[0], pair[1].id))
-    last_result_start = finals[-1][0]
-    final_cutoff = _previous_monday(last_result_start) + _WEEK
-    if last_result_start + _RESULT_BUFFER >= final_cutoff:
-        final_cutoff += _WEEK
+    if finals:
+        last_result_start = finals[-1][0]
+        final_cutoff = _previous_monday(last_result_start) + _WEEK
+        if last_result_start + _RESULT_BUFFER >= final_cutoff:
+            final_cutoff += _WEEK
+    else:
+        # An announced schedule can precede the first result by months.
+        final_cutoff = max(slates) + _WEEK
     first_cutoff = min(slates)
     last_cutoff = max(max(slates), final_cutoff)
 
@@ -254,7 +260,7 @@ def _replay(
         cutoff += _WEEK
         week += 1
     return SeasonReplay(
-        season=season.year, rankings=tuple(rankings), final_cutoff_utc=_iso_utc(final_cutoff),
+        season=season.year, date_only=all(g.date_only for g in season.games), rankings=tuple(rankings), final_cutoff_utc=_iso_utc(final_cutoff),
         final_rankings=final_rankings, forecasts=tuple(forecasts),
     )
 

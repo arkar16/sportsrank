@@ -6,6 +6,7 @@ from html import escape
 from math import isfinite
 from pathlib import Path
 
+from .api_history import national_final
 from .record_book import EASTERN, _grade_row, _season_link, _table, _write, team_label
 
 MODELS = (
@@ -105,7 +106,7 @@ def build_tournaments(root, seasons, as_of, logos, *, blends=(), model="CORS v0.
         year = season["season"]
         if api_only:
             tournament = [g for g in season["forecasts"] if g["ncaa_round"]]
-            if not tournament or not any(g["ncaa_round"].lower() in ("championship", "national championship", "ncaa-championship")
+            if not tournament or not any(national_final(g["ncaa_round"])
                                          for g in tournament):
                 continue
             if any(g["status"] != "final" or datetime.fromisoformat(g["start_utc"]) + timedelta(hours=6) >= as_of

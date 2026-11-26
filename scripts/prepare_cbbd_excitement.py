@@ -21,7 +21,7 @@ import numpy as np
 from cfb.excitement_evaluation import _correlation, _ranks
 
 from cbb.api_history import HOST
-from cbb.halftime import FEATURES, HalftimePool
+from cbb.halftime import FEATURES, HalftimePool, passes_halftime_standard
 from cbb.source import period_evidence
 from cfb.excitement import BASKETBALL, score_path_drama
 from cfb.sparse_excitement import MarginPool
@@ -48,7 +48,9 @@ def measure(game, shots):
     overtime, half = period_evidence(game)
     if half is None or ABNORMAL.search(game.get("gameNotes") or ""):
         return None
-    ends = list(zip(accumulate(game["homePeriodPoints"]), accumulate(game["awayPeriodPoints"])))
+    ends = list(
+        zip(accumulate(game["homePeriodPoints"]), accumulate(game["awayPeriodPoints"]))
+    )
     score = (0, 0)
     regulation, margins = [(0.0, 0)], [0]
     events = defaultdict(list)
@@ -56,7 +58,11 @@ def measure(game, shots):
     try:
         for raw in shots:
             gid, period, clock, sec, h, a, team, is_home, scored, value = raw[1:11]
-            if gid != game["id"] or type(period) is not int or not 1 <= period <= len(ends):
+            if (
+                gid != game["id"]
+                or type(period) is not int
+                or not 1 <= period <= len(ends)
+            ):
                 return None
             identity = raw[0]
             if identity in seen:
@@ -66,15 +72,23 @@ def measure(game, shots):
             seen[identity] = raw
             length = 1200 if period <= 2 else 300
             minutes, seconds = map(int, clock.split(":"))
-            if not (0 <= seconds < 60 and 0 <= sec <= length and minutes * 60 + seconds == sec):
+            if not (
+                0 <= seconds < 60
+                and 0 <= sec <= length
+                and minutes * 60 + seconds == sec
+            ):
                 return None
             if type(h) is not int or type(a) is not int or min(h, a) < 0:
                 return None
-            events[period].append((-sec, h + a, identity, h, a, team, is_home, scored, value))
+            events[period].append(
+                (-sec, h + a, identity, h, a, team, is_home, scored, value)
+            )
         for period, end in enumerate(ends, 1):
             if not events[period]:
                 return None
-            for minus_sec, _, _, h, a, team, is_home, scored, value in sorted(events[period]):
+            for minus_sec, _, _, h, a, team, is_home, scored, value in sorted(
+                events[period]
+            ):
                 if not scored:
                     if (h, a) != score:
                         return None
@@ -120,20 +134,32 @@ def write_rows(path, fields, rows):
     return sha256(path.read_bytes()).hexdigest()
 
 
-def read_measured(database, plays):
+def read_measured(database, plays, *, include=None, exclude=()):
     result = defaultdict(dict)
     with (
-        closing(sqlite3.connect(database.resolve().as_uri() + "?mode=ro", uri=True)) as box,
-        closing(sqlite3.connect(plays.resolve().as_uri() + "?mode=ro", uri=True)) as events,
+        closing(
+            sqlite3.connect(database.resolve().as_uri() + "?mode=ro", uri=True)
+        ) as box,
+        closing(
+            sqlite3.connect(plays.resolve().as_uri() + "?mode=ro", uri=True)
+        ) as events,
     ):
-        for url, count, blob in events.execute("SELECT url,rows,compressed_json FROM responses ORDER BY url"):
+        for url, count, blob in events.execute(
+            "SELECT url,rows,compressed_json FROM responses ORDER BY url"
+        ):
             uri = urlsplit(url)
             query = parse_qs(uri.query)
             kind = uri.path.removeprefix("/plays/")
-            if (uri.scheme, uri.netloc) != ("https", HOST) or kind not in ("date", "team", "tournament"):
+            if (uri.scheme, uri.netloc) != ("https", HOST) or kind not in (
+                "date",
+                "team",
+                "tournament",
+            ):
                 continue
             required = {"date"} if kind == "date" else {"season", kind}
-            if set(query) - {"shootingPlaysOnly"} != required or any(len(v) != 1 for v in query.values()):
+            if set(query) - {"shootingPlaysOnly"} != required or any(
+                len(v) != 1 for v in query.values()
+            ):
                 continue
             if query.get("shootingPlaysOnly", ["true"]) != ["true"]:
                 continue
@@ -146,22 +172,31 @@ def read_measured(database, plays):
                 if kind == "date" and raw[-1][:10] != query["date"][0]:
                     # CBBD also includes games at the following UTC midnight in a date response.
                     next_day = date.fromisoformat(query["date"][0]) + timedelta(days=1)
-                    if raw[-1].startswith(f"{next_day}T00:00:00"):
-                        continue
-                    raise ValueError("CBBD play date mismatch")
+                    if not raw[-1].startswith(f"{next_day}T00:00:00"):
+                        raise ValueError("CBBD play date mismatch")
                 by_game[raw[1]].append(raw)
             for gid, shots in by_game.items():
                 found = box.execute(
-                    "SELECT raw_json FROM games WHERE id=? AND status='final'", (gid,)
+                    "SELECT season,raw_json FROM games WHERE id=? AND status='final'",
+                    (gid,),
                 ).fetchone()
-                if not found:
+                if (
+                    not found
+                    or (include is not None and found[0] not in include)
+                    or found[0] in exclude
+                ):
                     continue
-                game = json.loads(found[0])
+                game = json.loads(found[1])
                 if kind != "date" and int(query["season"][0]) != game["season"]:
                     raise ValueError("CBBD play season mismatch")
-                if kind == "team" and query["team"][0] not in (game["homeTeam"], game["awayTeam"]):
+                if kind == "team" and query["team"][0] not in (
+                    game["homeTeam"],
+                    game["awayTeam"],
+                ):
                     raise ValueError("CBBD play team mismatch")
-                if kind == "tournament" and query["tournament"][0] != game.get("tournament"):
+                if kind == "tournament" and query["tournament"][0] != game.get(
+                    "tournament"
+                ):
                     raise ValueError("CBBD play tournament mismatch")
                 record = measure(game, shots)
                 if record is not None:
@@ -177,7 +212,8 @@ def read_measured(database, plays):
                         halftime_margin=half if delta > 0 else -half,
                         drama=80 * record["tension"]
                         + 8 * min(1, record["lead_changes"] / 3)
-                        + 4 * min(1, record["winner_deficit"] / BASKETBALL.comeback_margin),
+                        + 4
+                        * min(1, record["winner_deficit"] / BASKETBALL.comeback_margin),
                     )
                     pair = record, comparison
                     if result[year].setdefault(gid, pair) != pair:
@@ -200,25 +236,32 @@ def pregame_bonuses(database):
     from cbb.cors_v1 import cors_v1_seasons
     from cfb.excitement import matchup_quality
 
-    with closing(sqlite3.connect(database.resolve().as_uri()+"?mode=ro",uri=True)) as db:
+    with closing(
+        sqlite3.connect(database.resolve().as_uri() + "?mode=ro", uri=True)
+    ) as db:
         first = db.execute("SELECT MIN(season) FROM games").fetchone()[0]
     baseline = replay_seasons(database, RESERVED, first_season=first)
     season = cors_v1_seasons(database, baseline, api_only=True)[-1]
-    ranks = {c["cutoff_utc"]: {r["team_id"]:r["rank"] for r in c["rows"]} for c in season["rankings"]}
+    ranks = {
+        c["cutoff_utc"]: {r["team_id"]: r["rank"] for r in c["rows"]}
+        for c in season["rankings"]
+    }
     bonuses = {}
     for game in season["forecasts"]:
         delta = game["actual_home_margin"]
         if delta is None:
             continue
         pos = ranks[game["cutoff_utc"]]
-        quality = matchup_quality(pos[game["home_team_id"]],pos[game["away_team_id"]])
+        quality = matchup_quality(pos[game["home_team_id"]], pos[game["away_team_id"]])
         margin = game["home_margin"] * (1 if delta > 0 else -1)
-        bonuses[str(game["game_id"])] = 3*quality + 3*min(1,max(0,-margin/BASKETBALL.close_margin))
+        bonuses[str(game["game_id"])] = 3 * quality + 3 * min(
+            1, max(0, -margin / BASKETBALL.close_margin)
+        )
     return bonuses
 
 
-def build(database, plays, output):
-    records = read_measured(database, plays)
+def build(database, plays, output, existing):
+    records = read_measured(database, plays, include=TRAIN)
     output.mkdir(parents=True, exist_ok=True)
     train = [pair[1] for year in TRAIN for _, pair in sorted(records[year].items())]
     if not train:
@@ -231,7 +274,9 @@ def build(database, plays, output):
         group = [r for r in train if r["overtime"] == ot]
         features = np.array([[r[k] for k in FEATURES] for r in group], dtype=float)
         if len(group) < 50:
-            raise ValueError("insufficient comparable regulation or overtime games in training seasons")
+            raise ValueError(
+                "insufficient comparable regulation or overtime games in training seasons"
+            )
         widths[ot] = np.maximum(
             1, np.percentile(features, 75, axis=0) - np.percentile(features, 25, axis=0)
         ).tolist()
@@ -242,22 +287,52 @@ def build(database, plays, output):
             widths[ot],
         )
     policy = dict(
-        provider="CollegeBasketballData", training=list(TRAIN), file=filename, sha256=checksum, widths=widths
+        provider="CollegeBasketballData",
+        training=list(TRAIN),
+        file=filename,
+        sha256=checksum,
+        widths=widths,
     )
     # Freeze training before evaluating the owner's reserved season. The reserved rows never enter these pools.
     frozen = json.dumps(policy, sort_keys=True, separators=(",", ":")).encode()
     policy["frozen_sha256"] = sha256(frozen).hexdigest()
+    freeze = existing / "frozen-reference-v1.json"
+    existing.mkdir(parents=True, exist_ok=True)
+    if freeze.is_file():
+        if freeze.read_bytes() != frozen:
+            raise ValueError(
+                "basketball training sample differs from the frozen reference"
+            )
+    else:
+        with freeze.open("xb") as stream:
+            stream.write(frozen)
+    print(
+        "Frozen reference",
+        policy["frozen_sha256"],
+        "training games",
+        len(train),
+        flush=True,
+    )
+    records.update(read_measured(database, plays, exclude=TRAIN))
     values = pregame_bonuses(database)
-    held = [pair[1] for _, pair in sorted(records[RESERVED].items()) if pair[1]["game"] in values]
+    held = [
+        pair[1]
+        for _, pair in sorted(records[RESERVED].items())
+        if pair[1]["game"] in values
+    ]
     if not held:
         raise ValueError("no reserved games with a pregame CORS checkpoint")
     final_pool = {
         ot: MarginPool(
-            (r["game"], r["abs_margin"], r["drama"] + 2 * ot) for r in train if r["overtime"] == ot
+            (r["game"], r["abs_margin"], r["drama"] + 2 * ot)
+            for r in train
+            if r["overtime"] == ot
         )
         for ot in (0, 1)
     }
-    mixed = MarginPool((r["game"], r["abs_margin"], r["drama"] + 2 * r["overtime"]) for r in train)
+    mixed = MarginPool(
+        (r["game"], r["abs_margin"], r["drama"] + 2 * r["overtime"]) for r in train
+    )
     obs, half, final, hidden = [], [], [], []
     for r in held:
         gid, ot = r["game"], r["overtime"]
@@ -274,13 +349,17 @@ def build(database, plays, output):
         final_unknown_ot=metrics(hidden, obs),
     )
     m = policy["halftime"]
-    policy["halftime_qualified"] = bool(m["mae"] <= 7 and abs(m["bias"]) <= 2 and m["spearman"] >= 0.85)
+    policy["halftime_qualified"] = passes_halftime_standard(
+        m["mae"], m["bias"], m["spearman"]
+    )
     policy["seasons"] = {}
     for year, data in sorted(records.items()):
         policy["seasons"][year] = write_rows(
             output / f"{year}.csv", MEASURES, (r[0] for _, r in sorted(data.items()))
         )
-    (output / "policy.json").write_text(json.dumps(policy, sort_keys=False, indent=2) + "\n")
+    (output / "policy.json").write_text(
+        json.dumps(policy, sort_keys=False, indent=2) + "\n"
+    )
     print(
         "train",
         len(train),
@@ -298,37 +377,66 @@ def build(database, plays, output):
 
 def extend(database, plays, output, existing):
     # Adding historical measurements cannot refit a reference or change the reserved evaluation.
-    policy = json.loads((existing/"policy.json").read_bytes())
+    policy = json.loads((existing / "policy.json").read_bytes())
     if policy["provider"] != "CollegeBasketballData":
         raise ValueError("unapproved basketball measurement source")
-    records = read_measured(database,plays)
-    if set(records).intersection((*TRAIN,RESERVED)):
-        raise ValueError("historical additions overlap the frozen reference or reserved season")
-    for year,data in sorted(records.items()):
-        policy["seasons"][str(year)] = write_rows(output/f"{year}.csv",MEASURES,
-                                                 (r[0] for _,r in sorted(data.items())))
-    (output/"policy.json").write_text(json.dumps(policy,indent=2)+"\n")
-    print("Qualified additional CBBD measurements", {y:len(r) for y,r in sorted(records.items())})
+    records = read_measured(database, plays)
+    if set(records).intersection((*TRAIN, RESERVED)):
+        raise ValueError(
+            "historical additions overlap the frozen reference or reserved season"
+        )
+    for year, data in sorted(records.items()):
+        filename = f"{year}.csv"
+        previous = existing / filename
+        combined = {}
+        if str(year) in policy["seasons"]:
+            if (
+                sha256(previous.read_bytes()).hexdigest()
+                != policy["seasons"][str(year)]
+            ):
+                raise ValueError(f"corrupt prior CBBD measurements for {year}")
+            with previous.open(newline="") as stream:
+                combined = {int(row["game_id"]): row for row in csv.DictReader(stream)}
+        for gid, (measurement, _) in data.items():
+            row = {k: str(v) for k, v in measurement.items()}
+            if combined.setdefault(gid, row) != row:
+                raise ValueError(f"changed CBBD measurement for {gid}")
+        policy["seasons"][str(year)] = write_rows(
+            output / filename, MEASURES, (combined[gid] for gid in sorted(combined))
+        )
+    (output / "policy.json").write_text(json.dumps(policy, indent=2) + "\n")
+    print(
+        "Qualified additional CBBD measurements",
+        {y: len(r) for y, r in sorted(records.items())},
+    )
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     for arg in ("database", "plays", "output"):
-        parser.add_argument("--"+arg,required=True,type=Path)
-    parser.add_argument("--extend",action="store_true",help="Add other seasons with the existing frozen reference")
-    args=parser.parse_args()
-    args.output.parent.mkdir(parents=True,exist_ok=True)
+        parser.add_argument("--" + arg, required=True, type=Path)
+    parser.add_argument(
+        "--extend",
+        action="store_true",
+        help="Add other seasons with the existing frozen reference",
+    )
+    args = parser.parse_args()
+    args.output.parent.mkdir(parents=True, exist_ok=True)
     with TemporaryDirectory(dir=args.output.parent) as directory:
-        stage=Path(directory)
+        stage = Path(directory)
         if args.extend:
-            extend(args.database,args.plays,stage,args.output)
+            extend(args.database, args.plays, stage, args.output)
         else:
-            build(args.database,args.plays,stage)
-            previous=args.output/"policy.json"
-            if previous.exists() and (json.loads(previous.read_bytes())["frozen_sha256"] !=
-                                      json.loads((stage/"policy.json").read_bytes())["frozen_sha256"]):
-                raise ValueError("basketball training sample differs from the reserved-season reference")
-        args.output.mkdir(parents=True,exist_ok=True)
+            build(args.database, args.plays, stage, args.output)
+            previous = args.output / "policy.json"
+            if previous.exists() and (
+                json.loads(previous.read_bytes())["frozen_sha256"]
+                != json.loads((stage / "policy.json").read_bytes())["frozen_sha256"]
+            ):
+                raise ValueError(
+                    "basketball training sample differs from the reserved-season reference"
+                )
+        args.output.mkdir(parents=True, exist_ok=True)
         for file in sorted(stage.glob("*.csv")):
-            file.replace(args.output/file.name)
-        (stage/"policy.json").replace(args.output/"policy.json")
+            file.replace(args.output / file.name)
+        (stage / "policy.json").replace(args.output / "policy.json")

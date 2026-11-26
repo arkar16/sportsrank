@@ -1,5 +1,5 @@
 """Reader-visible basketball excitement at the pre-tip checkpoint and final."""
-from datetime import date, datetime
+from datetime import datetime
 from decimal import Decimal
 from math import exp
 from pathlib import Path
@@ -9,13 +9,13 @@ import unittest
 import numpy as np
 
 from cbb.game_excitement import PregameLedger, after_game
-from cbb.halftime import HalftimePool
+from cbb.halftime import HalftimePool, passes_halftime_standard
 from cfb.excitement import BASKETBALL, QualifiedPregame, calculate_bev
 from cfb.excitement_pages import ESTIMATE_NOTE, aev_label
 from cfb.game_excitement import GameAppeal
 from cfb.reference_archive import Game
-from scripts.evaluate_basketball_excitement import passes_halftime_standard
-from scripts.prepare_basketball_drama import matched_box, measure, period_totals, qualified_halftime
+from cbb.source import period_evidence
+from scripts.prepare_cbbd_excitement import measure
 from spread_cards import Spread, Team, _document, complete_basketball_card
 
 
@@ -67,26 +67,25 @@ class BasketballExcitementTests(unittest.TestCase):
                 saved.capture(tip, 99, cutoff, 1, 2, False, {1: 1, 2: 2}, 0)
 
     def test_two_halves_timed_overtime_and_scoring_team(self):
-        def play(seq, period, clock, h, a, team=None, points=0):
-            return (seq, period, ("1st Half", "2nd Half", "OT")[period-1],
-                    clock, h, a, points > 0, points, team, 10, 11)
-        events = [play(1, 1, "20:00", 0, 0), play(2, 1, "10:00", 0, 3, 11, 3),
-                  play(3, 1, "0:00", 0, 3), play(4, 2, "20:00", 0, 3),
-                  play(5, 2, "0:00", 3, 3, 10, 3), play(6, 3, "5:00", 3, 3),
-                  play(7, 3, "0:00", 5, 3, 10, 2)]
-        boxes = [(0, 3), (3, 3), (5, 3)]
-        measured = measure(events, (10, 11, 5, 3, 3), boxes)
-        self.assertEqual(measured[:2], (0, 3))
-        self.assertEqual(measured[-2:], (1, 3))
-        # First ten minutes tied, then 30 minutes at a three-point margin.
+        def play(seq, period, seconds, h, a, team=None, points=0):
+            return [seq, 99, period, f"{seconds // 60}:{seconds % 60:02}", seconds,
+                    h, a, team, team == 10, points > 0, points, "2024-12-01T12:00:00Z"]
+        game = dict(id=99, homeTeamId=10, awayTeamId=11, homePoints=5, awayPoints=3,
+                    homePeriodPoints=[0, 3, 2], awayPeriodPoints=[3, 0, 0])
+        events = [play(1, 1, 1200, 0, 0), play(2, 1, 600, 0, 3, 11, 3),
+                  play(3, 2, 1200, 0, 3), play(4, 2, 0, 3, 3, 10, 3),
+                  play(5, 3, 300, 3, 3), play(6, 3, 0, 5, 3, 10, 2)]
+        measured = measure(game, events)
+        self.assertEqual((measured["periods"], measured["lead_changes"], measured["winner_deficit"]), (3, 1, 3))
+        # First ten minutes tied, then 30 regulation minutes with a three-point margin.
         area = 10*(1+3*5/40) + 30*(1+3*25/40)*exp(-3/6)
-        self.assertAlmostEqual(float(measured[2]), area / 100)
-        for changed in (events[:-1], [*events[:1], play(2,1,"10:00",0,3,10,3), *events[2:]],
-                        [*events[:3], play(4,2,"10:00",0,3), *events[4:]]):
-            with self.assertRaises(ValueError):
-                measure(changed, (10, 11, 5, 3, 3), boxes)
-        with self.assertRaisesRegex(ValueError, "conflict"):
-            period_totals("[{'value':20.0} {'value':21.0}]", "[{'value':19.0} {'value':20.0}]", (42, 39), 2)
+        self.assertAlmostEqual(measured["tension"], area / 100)
+        self.assertEqual(measure(game, [*reversed(events), events[1]]), measured)
+        bad_clock = [*events[1]]
+        bad_clock[3] = "11:00"
+        for changed in (events[:-1], [*events[:1], play(2,1,600,0,3,10,3), *events[2:]],
+                        [*events[:1], bad_clock, *events[2:]], [*events[1:3], *events[4:]]):
+            self.assertIsNone(measure(game, changed))
 
     def test_final_cutoff_and_cbbd_game_identity(self):
         game = dict(game_id=99, home_team_id=12, away_team_id=18, home_points=53, away_points=50,
@@ -102,32 +101,12 @@ class BasketballExcitementTests(unittest.TestCase):
         for stale in (dict(game, away_points=49), dict(game, game_id=23)):
             self.assertEqual(after_game(stale, "85.0", ranks, {"99": row}, after).tier, "final")
 
-    def test_verified_break_can_survive_missing_plays_but_conflicting_scores_cannot(self):
-        event = (10, 11, 65, 72, 2)
-        boxes = [(27, 31), (65, 72)]
-        end = (71, 1, "1st Half", "0:00", 27, 31, False, 0, None, 10, 11, "End Period")
-        start = (72, 2, "2nd Half", "19:42", 27, 33, True, 2, 11, 10, 11, "LayupShot")
-        # A complete reconciled box or an explicit break verified from both halves suffices.
-        self.assertEqual(qualified_halftime([], event, boxes), (27, 31))
-        self.assertEqual(qualified_halftime([end, start], event, None), (27, 31))
-        self.assertIsNone(qualified_halftime([end], event, None))
-        self.assertIsNone(qualified_halftime([end, start], event, [(26, 31), boxes[1]]))
-        wrong_scorer = (*start[:8], 10, *start[9:])
-        self.assertIsNone(qualified_halftime([end, wrong_scorer], event, None))
-        wrong_format = (*start[:2], "2nd Quarter", *start[3:])
-        self.assertIsNone(qualified_halftime([end, wrong_format], event, boxes))
-        wrong_final = (180, 2, "2nd Half", "0:00", 65, 73, False, 0, None, 10, 11, "End Game")
-        self.assertIsNone(qualified_halftime([end, start, wrong_final], event, boxes))
-
-    def test_cached_halves_match_date_programs_and_final_in_either_orientation(self):
-        day = date(2020, 1, 15)
-        record = day.isoformat(), (12, 18), (65, 72), ([27, 38], [31, 41])
-        self.assertEqual(matched_box(record, day, (18, 12), (72, 65), 2), [(31, 27), (72, 65)])
-        self.assertIsNone(matched_box(record, date(2020, 1, 16), (12, 18), (65, 72), 2))
-        self.assertIsNone(matched_box(record, day, (12, 17), (65, 72), 2))
-        self.assertIsNone(matched_box(record, day, (12, 18), (65, 73), 2))
-        with self.assertRaisesRegex(ValueError, "conflict"):
-            matched_box((*record[:3], ([27, 31], [31, 41])), day, (12, 18), (65, 72), 2)
+    def test_halftime_uses_both_official_period_lines_and_qualifies_overtime(self):
+        game = dict(homePoints=75, awayPoints=71, homePeriodPoints=[30,35,10], awayPeriodPoints=[32,33,6])
+        self.assertEqual(period_evidence(game), (True,(30,32)))
+        for update in ({"homePoints":74}, {"homePeriodPoints":[30,34,11]}, {"awayPeriodPoints":[32,39]},
+                       {"homePeriodPoints":None}, {"homePeriodPoints":[30,46,-1]}):
+            self.assertEqual(period_evidence(dict(game,**update)), (None,None))
 
     def test_halftime_and_final_use_frozen_official_references(self):
         import csv

@@ -1,6 +1,7 @@
 """Render the public basketball page from a frozen weekly ranking."""
-from datetime import datetime
+from datetime import datetime, timezone
 from html import escape
+from hashlib import sha256
 from pathlib import Path
 import shutil
 
@@ -132,7 +133,12 @@ def _build_api_site(database, output, args, first_season):
     season = seasons[-1]
     checkpoints = [c for c in season["rankings"] if datetime.fromisoformat(c["cutoff_utc"]) <= as_of]
     if not checkpoints:
-        raise ValueError("No ranking checkpoint precedes this timestamp")
+        # The published schedule can arrive before opening week. Its preseason
+        # ratings depend only on the returning roster and preceding seasons.
+        checkpoint = {**season["rankings"][0], "cutoff_utc": as_of.astimezone(timezone.utc).isoformat()}
+        season = {**season, "rankings": (checkpoint, *season["rankings"])}
+        seasons = (*seasons[:-1], season)
+        checkpoints = [checkpoint]
     checkpoint = checkpoints[-1]
     cutoff = checkpoint["cutoff_utc"]
     et = ZoneInfo("America/New_York")
@@ -161,7 +167,7 @@ def _build_api_site(database, output, args, first_season):
         page = page.replace("Division I · Rankings", f"Division I · {model} · Rankings")
     stamp = as_of.astimezone(ZoneInfo("UTC")).strftime("%Y-%m-%dT%H%M%SZ")
     issued = f"editions/{stamp}.html"
-    archive = output / (issued if issued in ISSUED else f"editions/{stamp}-cbbd.html")
+    archive = output / (issued if ISSUED.get(issued) == sha256(page.encode()).hexdigest() else f"editions/{stamp}-cbbd.html")
     archive.parent.mkdir(parents=True, exist_ok=True)
     if archive.exists() and archive.read_bytes() != page.encode():
         raise ValueError("API edition changed at the same preparation time")
