@@ -5,7 +5,7 @@ approach on 2026-09-29. [ADR-0021](../adr/0021-define-versioned-game-excitement-
 records the decision and its trade-offs.
 
 [Football game excitement #179](https://github.com/arkar16/sportsrank/issues/179)
-tracks the current and historical FBS rollout, initially covering 2024–2026.
+covers the first 2024–2026 FBS rollout. The [historical football extension](https://github.com/arkar16/sportsrank/issues/182) covers the earlier CORS archive.
 The earlier SR-27 specification established that scope. The
 [v1 calculation contract](2026-game-excitement-scoring-v1.md) defines the
 formulas, comparable-game estimator and examples. [CONTEXT.md](../../CONTEXT.md)

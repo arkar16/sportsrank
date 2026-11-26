@@ -134,7 +134,7 @@ def game_evidence(summary, row, year):
     return evidence
 
 
-def prepare(site: Path, inputs: Path, repository: Path, year: int, pins: dict):
+def prepare(site: Path, inputs: Path, repository: Path, year: int, pins: dict, summaries: Path | None = None):
     schedule_path = inputs / f"schedule-{year}.csv"
     if sha256(schedule_path.read_bytes()).hexdigest() != pins["schedule"]["sha256"]:
         raise ValueError(f"schedule differs from pinned {year} snapshot")
@@ -174,7 +174,10 @@ def prepare(site: Path, inputs: Path, repository: Path, year: int, pins: dict):
         relative = f"cfb/json/raw/{gid}.json"
         if relative not in objects:
             continue
-        raw = (repository / relative).read_bytes()
+        local = repository / relative
+        if summaries is not None and not local.is_file():
+            local = summaries / relative
+        raw = local.read_bytes()
         if sha1(f"blob {len(raw)}\0".encode() + raw).hexdigest() != objects[relative]:
             raise ValueError(f"summary differs from pinned revision for {gid}")
         evidence = game_evidence(json.loads(raw), schedule, year)
@@ -196,6 +199,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--inputs", type=Path, required=True, help="directory of pinned season schedule CSVs")
     parser.add_argument("--espn-repo", type=Path, required=True, help="checkout containing retained game summaries")
+    parser.add_argument("--summaries", type=Path, help="directory containing individually retained blobs from the same revision")
     parser.add_argument("--site", type=Path, default=Path("website"))
     parser.add_argument("--output", type=Path, default=DATA)
     parser.add_argument("seasons", type=int, nargs="+")
@@ -203,7 +207,7 @@ def main():
     pins = json.loads((DATA / "sources.json").read_bytes())
     args.output.mkdir(parents=True, exist_ok=True)
     for year in args.seasons:
-        result = prepare(args.site, args.inputs, args.espn_repo, year, pins[str(year)])
+        result = prepare(args.site, args.inputs, args.espn_repo, year, pins[str(year)], args.summaries)
         path = args.output / f"{year}.json"
         header = {k: v for k, v in result.items() if k != "games"}
         # One game per line keeps source refreshes reviewable.

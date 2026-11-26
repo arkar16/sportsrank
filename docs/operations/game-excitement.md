@@ -3,8 +3,7 @@
 Run the normal offline `uv run --locked python -m cfb.record_book` after
 updating CORS game inputs. The season watch guide orders upcoming games by BEV
 and completed games by AEV. Weekly forecast and score sheets, forecast results,
-and team-season logs use the same values. The initial rollout covers FBS
-matchups from 2024. [ADR-0021](../adr/0021-define-versioned-game-excitement-scores.md)
+and team-season logs use the same values. The archive covers every FBS season with retained checkpoint-matched CORS v1 forecasts. [ADR-0021](../adr/0021-define-versioned-game-excitement-scores.md)
 and the [scoring contract](../plans/2026-game-excitement-scoring-v1.md) define the scores.
 
 ## Pregame inputs
@@ -41,7 +40,7 @@ A missing or contradictory game identity or final precludes both evidence tiers.
 With the matching public archive and season schedule CSVs retained locally,
 reproduce the normalized evidence without a network request. The input directory
 contains `schedule-YEAR.csv`. The checkout must include the listed summaries
-under `cfb/json/raw/`. Public
+under `cfb/json/raw/`. Individually retained summaries from the same revision can be supplied with `--summaries DIRECTORY`. Public
 [ESPN summary archive](https://github.com/sportsdataverse/cfbfastR-cfb-raw) ·
 [ESPN season schedules](https://github.com/sportsdataverse/sportsdataverse-data/releases/tag/espn_cfb_schedules).
 

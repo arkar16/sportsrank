@@ -28,6 +28,17 @@ def sheet(path, title, rows):
 
 
 class ArchiveExcitementTests(unittest.TestCase):
+    def test_early_forecasts_and_historical_quarter_estimates_use_their_own_seasons(self):
+        years = Path(__file__).resolve().parents[1] / "website/cfb/years"
+        early = read_forecasts(years / "1897", 1897)
+        tufts = next(v for k, v in early.items() if k.week == 3 and (k.home, k.away) == ("Brown", "Tufts"))
+        self.assertEqual((tufts.checkpoint, tufts.bev()), ("W2", "85.9"))
+
+        final = Game(9, "Tennessee", "South Carolina", 15, 16, None)
+        scores, _ = season_scores(years / "2005", Season(2005, {}, [final]), site_reference())
+        score = scores[Matchup(9, "Tennessee", "South Carolina", False)]
+        self.assertEqual((score.bev, f"{score.aev:.1f}", score.tier), ("39.7", "76.1", "quarter"))
+
     def test_forecast_uses_only_previous_checkpoint_and_remains_frozen(self):
         with TemporaryDirectory() as tmp:
             base = Path(tmp)

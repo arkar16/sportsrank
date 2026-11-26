@@ -17,7 +17,6 @@ from .reference_archive import _rows
 from .reference_markup import source_bytes
 
 DATA = Path(__file__).with_name("excitement_data")
-FIRST_SEASON = 2024
 
 
 class Matchup(NamedTuple):

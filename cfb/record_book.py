@@ -12,7 +12,7 @@ from spread_cards import football_links
 
 from .conference_pages import CONFERENCE_HONORS, build_conference_pages, conference_honors_route, conference_route
 from .excitement_pages import add_score_columns, season_guide
-from .game_excitement import FIRST_SEASON, season_scores, site_reference
+from .game_excitement import season_scores, site_reference
 from .history_sheets import render_history_sheet
 from .program_marks import program_logo_paths
 from .program_pages import build_program_pages
@@ -303,18 +303,17 @@ def build(site: Path) -> tuple[int, int, int]:
     excitement = {}
     for season in seasons:
         directory = site / f"cfb/years/{season.year}"
-        if season.year >= FIRST_SEASON:
-            scores, ledger = season_scores(directory, season, site_reference())
-            if scores:
-                excitement[season.year] = scores
-                folder = directory / "excitement"
-                changed += _write_changed(folder / "bev-v1.json", (json.dumps(ledger, ensure_ascii=False,
-                    sort_keys=True, separators=(",", ":")) + "\n").encode())
-                guide = folder / "index.html"
-                changed += _write_changed(guide, presentation.render(
-                    season_guide(season.year, scores, year_routes[season.year]).encode(), archive=False,
-                ))
-                generated_pages.add(guide)
+        scores, ledger = season_scores(directory, season, site_reference())
+        if scores:
+            excitement[season.year] = scores
+            folder = directory / "excitement"
+            changed += _write_changed(folder / "bev-v1.json", (json.dumps(ledger, ensure_ascii=False,
+                sort_keys=True, separators=(",", ":")) + "\n").encode())
+            guide = folder / "index.html"
+            changed += _write_changed(guide, presentation.render(
+                season_guide(season.year, scores, year_routes[season.year]).encode(), archive=False,
+            ))
+            generated_pages.add(guide)
     for relative, markup in build_program_pages(
         seasons, routes, directory_label=directory_label, excitement_by_year=excitement,
     ):
