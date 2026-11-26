@@ -5,22 +5,28 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 from html import escape, unescape
+from io import BytesIO
 from pathlib import Path
 import re
 import unicodedata
 
 from bs4 import BeautifulSoup
+from PIL import Image
 
 from cfb.archive_markup import ui
 from cfb.conference_pages import Record, _is_conference_game, _UNAFFILIATED
 from cfb.excitement_pages import ESTIMATE_NOTE, aev_label
 from cfb.game_excitement import Matchup
 from cfb.performance import _saved_margin
+from cfb.program_marks import _atomic_write
 from cfb.reference_archive import Season, _rows
+from cfb.win_probability import format_win_chance
 from site_navigation import masthead
 
 
 ORIGIN = "https://www.sportsrank.top"
+# Messages recommends icons of at least 108 px and may present images below 150 px as icons.
+_ICON_SIZE = 120
 
 
 def _matchup_slug(matchup):
@@ -48,10 +54,14 @@ class ConferenceSlate:
                 records[game.away].add_game(-margin)
         play = {}
         for key, game in fixtures.items():
+            away = conferences.get(game.away)
+            home = conferences.get(game.home)
+            known_leagues = all(league not in (None, "", "—") for league in (away, home))
             if league_game(game):
-                play[key] = f"Conference ({conferences[game.home]})"
-            elif (game.conference_game is False or game.postseason
-                  or all(conferences.get(team) not in (None, "", "—") for team in (game.home, game.away))):
+                play[key] = f"Conference ({home})"
+            elif known_leagues:
+                play[key] = f"OOC ({away} vs {home})"
+            elif game.conference_game is False or game.postseason:
                 play[key] = "OOC"
         return cls(records, play)
 
@@ -98,7 +108,7 @@ class Spread:
 
     @property
     def matchup(self):
-        at = "vs." if self.neutral else "at"
+        at = "vs." if self.neutral else "@"
         return f"{self.away.name} {at} {self.home.name}"
 
     @property
@@ -110,21 +120,53 @@ class Spread:
 
     @property
     def path(self):
-        return f"/{self.sport}/picks/{self.edition}/{_matchup_slug(self.matchup)}.html"
+        separator = "vs" if self.neutral else "at"
+        slug = _matchup_slug(f"{self.away.name} {separator} {self.home.name}")
+        return f"/{self.sport}/picks/{self.edition}/{slug}.html"
 
 
-def _document(game: Spread) -> str:
+def _preview_icon(directory: Path, sport: str, mark: str) -> tuple[str, int] | None:
+    path = Path(mark)
+    if not path.is_relative_to(f"/{sport}/assets") or ".." in path.parts:
+        return None
+    source = directory / path.relative_to(f"/{sport}")
+    if not source.is_file():
+        return None
+    with Image.open(source) as image:
+        if image.width == image.height and image.width <= _ICON_SIZE:
+            return mark, image.width
+        artwork = image.convert("RGBA")
+    artwork.thumbnail((_ICON_SIZE - 12, _ICON_SIZE - 12), Image.Resampling.LANCZOS)
+    icon = Image.new("RGBA", (_ICON_SIZE, _ICON_SIZE))
+    icon.paste(artwork, ((_ICON_SIZE - artwork.width) // 2, (_ICON_SIZE - artwork.height) // 2))
+    buffer = BytesIO()
+    icon.save(buffer, format="PNG")
+    data = buffer.getvalue()
+    target = directory / "assets/share-icons" / path.name
+    if not target.is_file() or target.read_bytes() != data:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        _atomic_write(target, data)
+    return f"/{sport}/assets/share-icons/{path.name}", _ICON_SIZE
+
+
+def _document(game: Spread, icon: tuple[str, int] | None) -> str:
     title = escape(game.matchup)
-    line = escape(game.prediction)
+    sport = "football" if game.sport == "cfb" else "basketball"
+    home_chance = format_win_chance(-game.home_margin, sport=sport)
+    line = escape(f"{game.prediction} · {home_chance} to win")
     context = escape(f"{game.sport_label} · {game.date_label}")
-    details = escape(f"{game.play} · " + ("Neutral site" if game.neutral else f"At {game.home.name}"))
+    details = escape(f"{game.play} · " + ("Neutral site" if game.neutral else f"@ {game.home.name}"))
     description = escape(f"{game.away.summary} vs. {game.home.summary}") + f" · {context} · {details}"
     canonical = ORIGIN + game.path
     preview = ""
-    if game.home.mark:
-        mark = ORIGIN + escape(game.home.mark)
+    if icon:
+        path, size = icon
+        mark = ORIGIN + escape(path)
         alt = f"{escape(game.home.name)} school mark"
-        preview = (f'<meta property="og:image" content="{mark}"><meta property="og:image:alt" content="{alt}">\n'
+        preview = (f'<link rel="apple-touch-icon" sizes="{size}x{size}" href="{mark}">\n'
+                   f'<link rel="icon" type="image/png" sizes="{size}x{size}" href="{mark}">\n'
+                   f'<meta property="og:image" content="{mark}"><meta property="og:image:alt" content="{alt}">\n'
+                   f'<meta property="og:image:width" content="{size}"><meta property="og:image:height" content="{size}">\n'
                    f'<meta name="twitter:image" content="{mark}"><meta name="twitter:image:alt" content="{alt}">')
     source = escape(game.source)
     back = source if game.sport == "cfb" else "/cbb/current.html#forecasts"
@@ -145,7 +187,7 @@ def _document(game: Spread) -> str:
 <meta property="og:description" content="{description}">
 <meta name="twitter:card" content="summary">{preview}
 <link rel="stylesheet" href="/cfb/assets/record-book.css"><link rel="stylesheet" href="/cfb/assets/spread-card.css?v=3">
-<script src="/cfb/assets/spread-card.js?v=3" defer></script></head><body>{masthead(compact=True)}
+<script src="/cfb/assets/spread-card.js?v=5" defer></script></head><body>{masthead(compact=True)}
 <main class="spread-page"><h1 class="sr-only">{title}</h1><p class="edition">{context}</p>
 <table class="game-line"><thead><tr><th scope="col">CORS rank · Team</th><th scope="col">Overall (conf)</th></tr></thead>
 <tbody>{''.join(teams)}</tbody></table>
@@ -182,11 +224,13 @@ def complete_basketball_card(directory, day, game, score):
     raw = target.read_text(encoding="utf-8")
     page = BeautifulSoup(raw, "html.parser")
     old = page.select_one(".game-excitement strong")
-    if old is None or old.get_text(strip=True) != score.bev or page.h1.get_text(strip=True) != matchup:
+    current_title = f"{game.away} {'vs.' if game.neutral_site else '@'} {game.home}"
+    if old is None or old.get_text(strip=True) != score.bev or page.h1.get_text(strip=True) not in (matchup, current_title):
         return
     margin = -game.home_handicap
     line = "Pick’em" if not margin else f"{game.home} {'by' if margin > 0 else 'to lose by'} {abs(margin):.2f}"
-    if page.select_one(".pick strong").get_text(strip=True) != line:
+    displayed = page.select_one(".pick strong").get_text(strip=True)
+    if displayed not in (line, f"{line} · {format_win_chance(game.home_handicap, sport='basketball')} to win"):
         return
     start = raw.index('<p class="game-excitement">')
     end = raw.index('<div class="share-actions">', start)
@@ -224,9 +268,12 @@ def _link_table(markup: str, directory: Path, pick_field: str, read_game) -> str
     if not games:
         return markup
     # Write every destination before exposing its link in the slate.
+    icons = {}
     for game in games.values():
+        if game.home.mark not in icons:
+            icons[game.home.mark] = _preview_icon(directory, game.sport, game.home.mark)
         target = directory / game.path.removeprefix(f"/{game.sport}/")
-        content = _document(game).encode()
+        content = _document(game, icons[game.home.mark]).encode()
         if not target.exists() or target.read_bytes() != content:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(content)

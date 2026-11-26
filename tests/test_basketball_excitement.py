@@ -29,7 +29,7 @@ class BasketballExcitementTests(unittest.TestCase):
                               Decimal("3.00"), "OOC", "66.2")
             target = root / forecast.path.removeprefix("/cbb/")
             target.parent.mkdir(parents=True)
-            target.write_text(_document(forecast))
+            target.write_text(_document(forecast, None))
             g = Game(3, "Home", "Away", 70, 72, Decimal("-3.00"))
             estimate = GameAppeal("66.2", (70, 72), 72.5, "halftime", "99", 50, .5)
             complete_basketball_card(root, day, g, estimate)
