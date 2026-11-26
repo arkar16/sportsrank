@@ -8,6 +8,7 @@ import shutil
 from alltime_excitement import publish_pages
 from site_navigation import masthead
 from spread_cards import ConferenceSlate, basketball_links
+from spread_preview import refresh_retained_previews
 from .cors_v1 import VERSION as V1_VERSION, _available, cors_v1_seasons
 from .source import supplemental_fixtures
 from .api_history import championship_finals, materialize
@@ -115,6 +116,7 @@ def main():
         as_of = datetime.fromisoformat(args.as_of)
         restore_artifacts(args.output, site, as_of)
         _build_api_site(database, site, args, years[0])
+        refresh_retained_previews(site, "cbb")
         record_artifacts(site, as_of)
         install_pages(site, args.output)
         publish_pages(args.output, "cbb")

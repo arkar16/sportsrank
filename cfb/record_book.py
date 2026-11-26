@@ -11,6 +11,7 @@ import tempfile
 
 from alltime_excitement import Game as LeaderGame, Leaders, football_anchor, publish_pages
 from spread_cards import football_links
+from spread_preview import refresh_retained_previews
 
 from .football_impact import attach_football_impacts
 from .conference_pages import CONFERENCE_HONORS, build_conference_pages, conference_honors_route, conference_route
@@ -370,6 +371,7 @@ def build(site: Path, *, replays=None) -> tuple[int, int, int]:
     spread_dir = site / f"cfb/years/{latest_year}/spread"
     current_spread = max(spread_dir.glob(f"{latest_year}_W*_FBS_spread.html"),
                          key=lambda p: int(p.name.split("_")[1][1:]), default=None)
+    refresh_retained_previews(site / "cfb", "cfb")
     for relative, raw in honors.items():
         markup = presentation.render(raw, archive=True, relative=relative, targets=targets, sortable=True)
         changed += _write_changed(site / relative, markup)
