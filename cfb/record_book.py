@@ -364,7 +364,8 @@ def build(site: Path) -> tuple[int, int, int]:
             if path.parent.name == "spread" and path.name.endswith("_FBS_spread.html"):
                 year, checkpoint = path.name.split("_")[:2]
                 if path == current_spread or (site / "cfb/picks" / year / f"week-{checkpoint[1:]}").is_dir():
-                    markup = football_links(markup, path, site / "cfb", seasons_by_year[year])
+                    markup = football_links(markup, path, site / "cfb", seasons_by_year[year],
+                                            excitement=excitement.get(int(year)))
             if directory == "years":
                 year_text = path.relative_to(site / "cfb/years").parts[0]
                 if year_text.isdecimal() and int(year_text) in excitement:

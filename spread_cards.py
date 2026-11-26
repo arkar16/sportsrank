@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from html import escape
+from html import escape, unescape
 from pathlib import Path
 import re
 import unicodedata
@@ -13,6 +13,8 @@ from bs4 import BeautifulSoup
 
 from cfb.archive_markup import ui
 from cfb.conference_pages import Record, _is_conference_game, _UNAFFILIATED
+from cfb.excitement_pages import ESTIMATE_NOTE, aev_label
+from cfb.game_excitement import Matchup
 from cfb.performance import _saved_margin
 from cfb.reference_archive import Season, _rows
 from site_navigation import masthead
@@ -82,6 +84,8 @@ class Spread:
     neutral: bool
     home_margin: Decimal
     play: str
+    bev: str | None = None
+    aev: str | None = None
 
     @property
     def sport_label(self):
@@ -122,6 +126,14 @@ def _document(game: Spread) -> str:
     source = escape(game.source)
     back = source if game.sport == "cfb" else "/cbb/current.html#forecasts"
     edition_link = f' · <a href="{source}">Dated edition</a>' if game.sport == "cbb" else ""
+    appeal = ""
+    if game.bev:
+        metrics = [f"Pregame appeal (BEV) <strong>{escape(game.bev)}</strong>"]
+        if game.aev:
+            metrics.append(f"Game drama (AEV) <strong>{escape(game.aev)}</strong>")
+        appeal = '<p class="game-excitement">' + " · ".join(metrics) + "</p>"
+        if game.aev and game.aev.endswith("*"):
+            appeal += f"<p>{ESTIMATE_NOTE}</p>"
     teams = []
     for team in (game.away, game.home):
         logo = f'<img src="{escape(team.mark)}" width="60" height="60" alt="">' if team.mark else ""
@@ -142,7 +154,7 @@ def _document(game: Spread) -> str:
 <table class="game-line"><thead><tr><th scope="col">CORS rank · Team</th><th scope="col">Overall (conf)</th></tr></thead>
 <tbody>{''.join(teams)}</tbody></table>
 <p class="pick"><strong>{line}</strong> <span class="game-details">{details}</span></p>
-<div class="share-actions"><a id="game-link" href="{canonical}">Game link</a>
+{appeal}<div class="share-actions"><a id="game-link" href="{canonical}">Game link</a>
 <button id="save-card" type="button" hidden>Save image</button><span id="share-status" role="status"></span></div>
 <nav aria-label="Forecasts"><a class="back" href="{back}">{game.sport_label} forecasts</a>{edition_link}</nav></main></body></html>
 """
@@ -201,7 +213,7 @@ def _link_table(markup: str, directory: Path, pick_field: str, read_game) -> str
     return markup.replace("</h1>", "</h1>" + _HINT, 1)
 
 
-def football_links(raw: bytes, path: Path, directory: Path, season: Season) -> bytes:
+def football_links(raw: bytes, path: Path, directory: Path, season: Season, *, excitement=None) -> bytes:
     year, week = path.stem.split("_")[:2]
     source = f"/cfb/years/{year}/spread/{path.name}"
     number = int(week[1:])
@@ -219,9 +231,12 @@ def football_links(raw: bytes, path: Path, directory: Path, season: Season) -> b
         away = Team.from_cell(cells["away_team"], standings, conference)
         values = {field: cell.get_text(strip=True) for field, cell in cells.items()}
         margin, _ = _saved_margin(values, home.name)
+        neutral = values["neutral_site"].lower() == "true"
+        score = (excitement or {}).get(Matchup(number, home.name, away.name, neutral))
         return Spread("cfb", f"{year}/week-{week[1:]}", f"{year} · Week {week[1:]}", source,
-                      home, away, values["neutral_site"].lower() == "true", margin,
-                      conference.play.get(("", home.name, away.name), "Play type unavailable"))
+                      home, away, neutral, margin,
+                      conference.play.get(("", home.name, away.name), "Play type unavailable"),
+                      score.bev if score else None, unescape(aev_label(score)) if score and score.final else None)
 
     try:
         markup = raw.decode("utf-8")
