@@ -16,12 +16,13 @@ _ROW = re.compile(r"<tr\b[^>]*>.*?</tr>", re.I | re.S)
 _FORECAST = re.compile(r"spread/\d{4}_W\d+_FBS_spread\.html")
 _RESULT = re.compile(r"(?:data/results/(?:weekly_results/)?\d{4}(?:_W\d+)?_FBS_results|spread/\d{4}_W\d+_FBS_spread_results)\.html")
 _METHOD = "https://github.com/arkar16/sportsrank/blob/main/docs/plans/2026-game-excitement-scoring-v1.md"
+ESTIMATE_NOTE = "* AEV estimated from the available scoring totals and comparable games."
 
 
 def aev_label(score: GameAppeal | None):
     if score is None or score.aev is None:
         return "&mdash;"
-    return f"{score.aev:.1f}" + ("*" if score.tier != "full" else "")
+    return f"{score.aev:.1f}" + ("*" if score.estimated else "")
 
 
 def add_score_columns(markup: bytes, directory: Path, path: Path, scores, year: int) -> bytes:
@@ -50,6 +51,7 @@ def add_score_columns(markup: bytes, directory: Path, path: Path, scores, year: 
     if not forecast:
         heads += '<th scope="col"><abbr title="After Excitement Value">AEV</abbr></th>'
     cells = [heads]
+    has_estimate = False
     for row in rows:
         week, home, away, neutral = (("Week", "Home", "Away", "Neutral site") if report else
                                      ("week", "home_team", "away_team", "neutral_site"))
@@ -66,14 +68,16 @@ def add_score_columns(markup: bytes, directory: Path, path: Path, scores, year: 
             if score and score.aev is not None and has_final and observed != score.final:
                 raise ValueError(f"AEV differs from the displayed game's final in {path}")
             extra += f'<td class="num">{aev_label(score if has_final else None)}</td>'
+            if has_final and score and score.estimated:
+                has_estimate = True
         cells.append(extra)
 
     rows_iter = iter(cells)
     decorated = _ROW.sub(lambda m: m[0][:-5] + ui(next(rows_iter)) + m[0][-5:], table[0])
     link = f'<a href="/cfb/years/{year}/excitement/index.html">{year} game excitement</a>'
     after = "" if forecast else " AEV measures game drama."
-    if not forecast and any(score.tier in ("quarter", "final") for score in scores.values()):
-        after += " * Estimated from comparable games."
+    if has_estimate:
+        after += " " + ESTIMATE_NOTE
     note = ui(f'<p>BEV rates pregame appeal on a 0&ndash;100 scale.{after} {link}</p>')
     # Insert outside any existing presentation marker, so stripping the added
     # columns and link restores the same input on every subsequent build.
@@ -108,8 +112,7 @@ def season_guide(year, scores, routes):
                      key=lambda item: (-float(item[1].bev), item[0]))
     completed = sorted(((k, s) for k, s in scores.items() if s.final is not None),
                        key=lambda item: (-(item[1].aev if item[1].aev is not None else -1), item[0]))
-    estimated_note = ("* Estimated from comparable games using available period or final scores. "
-                      if any(s.tier in ("quarter", "final") for s in scores.values()) else "")
+    estimated_note = ESTIMATE_NOTE + " " if any(s.estimated for s in scores.values()) else ""
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>{year} game excitement · CORS</title>
 <link rel="stylesheet" href="/cfb/assets/record-book.css"></head><body><main>

@@ -10,6 +10,7 @@ from dataclasses import replace
 import unittest
 
 from cfb.excitement import QualifiedFinal, QualifiedPregame, TimelinePoint
+from cfb.excitement_reference import fit_reference_artifact, reference_game_from_timeline
 from cfb.excitement_evaluation import (
     EvaluationGame,
     evaluate_season_holdouts,
@@ -125,6 +126,21 @@ class EvaluationPreparationTests(unittest.TestCase):
             self.assertEqual(variant["scored"], 0)
             self.assertEqual(variant["unavailable"], 2)
             self.assertTrue(all("no qualified quarter-tier references" in row["reason"] for row in variant["unavailable_games"]))
+
+    def test_reserved_evaluation_checks_the_frozen_reference_against_training_only(self):
+        training = [reference_game_from_timeline(g.pregame, g.final, g.timeline) for g in self.games[:2]]
+        frozen = fit_reference_artifact(training, artifact_id="frozen-before-opening-2024")
+        partition = dict(data_kind="synthetic", training_seasons=[2023], evaluation_seasons=[2024],
+                         reservation_id="test-reservation")
+        fold = evaluate_season_holdouts(self.games, frozen_reference=frozen, **partition)["folds"][0]
+        self.assertEqual(fold["reference_identity"], frozen.checksum)
+        held_out = self.games[-1]
+        contaminated = fit_reference_artifact(
+            [*training, reference_game_from_timeline(held_out.pregame, held_out.final, held_out.timeline)],
+            artifact_id="includes-held-out-game",
+        )
+        with self.assertRaisesRegex(ValueError, "declared training games"):
+            evaluate_season_holdouts(self.games, frozen_reference=contaminated, **partition)
 
     def test_summary_metrics_are_independent_of_row_order_and_include_cutoff_ties(self):
         rows = [

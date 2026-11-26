@@ -43,7 +43,12 @@ surprise bonuses outside the estimate and freeze the reference artifact.
 The calculation document specifies the initial matching and missing-overtime
 rules. Test on whole seasons withheld from fitting. The asterisk identifies
 the estimate; it does not establish numerical comparability. The approach is
-accepted; its reference artifact still requires empirical validation.
+accepted. Each reference artifact requires empirical validation. On 2026-11-26
+the owner approved publishing starred football quarter-score estimates if the
+frozen reference passed the reserved 2025 season with mean absolute error
+at most 5 points, absolute signed bias at most 2 points and Spearman rank
+correlation at least 0.90. The [delivery issue](https://github.com/arkar16/sportsrank/issues/179)
+records the confirmation and coverage.
 
 ## Delivery prerequisites
 

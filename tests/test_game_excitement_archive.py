@@ -10,7 +10,9 @@ from lxml import html
 from cfb.excitement import QualifiedFinal, normalize_timeline
 from cfb.reference_archive import Game, Season
 from cfb.excitement_pages import add_score_columns, season_guide
-from cfb.game_excitement import Forecast, GameAppeal, Matchup, flow_inputs, frozen_forecasts, read_forecasts, season_scores
+from cfb.game_excitement import (
+    Forecast, GameAppeal, Matchup, flow_inputs, frozen_forecasts, read_forecasts, season_scores, site_reference,
+)
 from cfb.reference_markup import source_bytes
 from scripts.prepare_game_drama import cumulative_quarters, scoring_states, supports_regulation
 
@@ -107,6 +109,25 @@ class ArchiveExcitementTests(unittest.TestCase):
             season.games = [Game(0, "Home", "Away", 0, 3, None)]
             with self.assertRaisesRegex(ValueError, "disagrees with the CORS final"):
                 season_scores(base, season, None)
+
+    def test_released_reference_scores_quarters_and_leaves_final_only_unrated(self):
+        base = Path(__file__).resolve().parents[1] / "website/cfb/years/2024"
+        duke = Game(2, "Northwestern", "Duke", 20, 26, None, neutral_site=True)
+        policy = site_reference()
+        self.assertEqual(policy.tiers, {"quarter"})
+        scores, _ = season_scores(base, Season(2024, {}, [duke]), policy)
+        score = scores[Matchup(2, "Northwestern", "Duke", True)]
+        self.assertTrue(score.estimated)
+        self.assertEqual(f"{score.aev:.1f}", "70.7")
+        self.assertEqual(score.support, 50)
+        row = {"matchup": [2, "Northwestern", "Duke", True], "game_id": "401635533",
+               "final": [20, 26], "quarters": None, "overtime": True, "reduced_because": "missing quarters"}
+        with TemporaryDirectory() as tmp, patch("cfb.game_excitement.DATA", Path(tmp)):
+            (Path(tmp) / "2024.json").write_text(json.dumps({
+                "schema": "espn-scoring-summary/v1", "season": 2024, "source": "test", "games": [row],
+            }))
+            limited, _ = season_scores(base, Season(2024, {}, [duke]), policy)
+        self.assertIsNone(limited[Matchup(*row["matchup"])].aev)
 
     def test_scoring_summary_checks_scorer_clock_event_order_and_box_score(self):
         teams = [{"linescores": [{"displayValue": str(s)} for s in vals]} for vals in ((0, 7, 0, 0), (0, 0, 0, 3))]

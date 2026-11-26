@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 from .archive_presentation import updated_time
 from .conference_pages import conference_route, projected_overall_records
-from .excitement_pages import aev_label
+from .excitement_pages import ESTIMATE_NOTE, aev_label
 from .game_excitement import Matchup
 from .reference_archive import _checkpoint_order, program_season_route, season_team_routes
 from .reference_markup import school_label
@@ -336,11 +336,16 @@ def _season_table(
             return start
         return "<tr>"
 
+    has_estimate = False
+
     def excitement_cells(game):
+        nonlocal has_estimate
         if not excitement:
             return ""
         key = Matchup(game.week, game.home, game.away, game.neutral_site)
         score = excitement.get(key)
+        if score and score.estimated:
+            has_estimate = True
         return f'<td class="num">{score.bev if score else _MISSING}</td><td class="num">{aev_label(score)}</td>'
 
     groups = []
@@ -394,6 +399,8 @@ def _season_table(
     if excitement:
         headers += ("BEV <small>Pregame appeal</small>", "AEV <small>Postgame drama</small>")
     log = _table("Rankings and games", headers, "".join(groups))
+    if has_estimate:
+        log += f"<p>{ESTIMATE_NOTE}</p>"
     if has_upcoming:
         log = ('<p><a href="#remaining-schedule">Remaining schedule</a></p>'
                '<h2>Weekly rankings and games</h2>' + note + log)

@@ -22,9 +22,11 @@ from .excitement import (
     calculate_full_aev,
 )
 from .excitement_reference import (
+    ReferenceArtifact,
     estimate_aev,
     fit_reference_artifact,
     reference_game_from_timeline,
+    validate_reference_artifact,
 )
 
 EVALUATION_VERSION = "excitement-whole-season-evaluation-v1"
@@ -133,6 +135,7 @@ def evaluate_season_holdouts(
     training_seasons: Iterable[int] | None = None,
     evaluation_seasons: Iterable[int] | None = None,
     reservation_id: str | None = None,
+    frozen_reference: ReferenceArtifact | None = None,
     top_fraction: float = 0.1,
 ) -> dict:
     """Fit solely on training seasons and hide each test game's richer inputs.
@@ -164,6 +167,8 @@ def evaluate_season_holdouts(
     if (training_seasons is None) != (evaluation_seasons is None):
         raise ExcitementInputError("supply both training and evaluation season partitions")
     if training_seasons is None:
+        if frozen_reference is not None:
+            raise ExcitementInputError("a frozen reference requires explicit season partitions")
         if len(seasons) < 2:
             raise ExcitementInputError("whole-season holdout requires at least two seasons")
         folds = [(season, seasons - {season}) for season in sorted(seasons)]
@@ -184,10 +189,14 @@ def evaluate_season_holdouts(
     for season, train_seasons in folds:
         training = tuple(game for game in cases if game.final.season in train_seasons)
         testing = tuple(game for game in cases if game.final.season == season)
-        artifact = fit_reference_artifact(
-            (references[game.final.game_id] for game in training),
-            artifact_id=f"{EVALUATION_VERSION}:holdout-{season}",
-        )
+        training_rows = tuple(references[game.final.game_id] for game in training)
+        if frozen_reference is None:
+            artifact = fit_reference_artifact(training_rows, artifact_id=f"{EVALUATION_VERSION}:holdout-{season}")
+        else:
+            validate_reference_artifact(frozen_reference)
+            if frozen_reference.games != training_rows:
+                raise ExcitementInputError("frozen reference differs from the declared training games")
+            artifact = frozen_reference
         variants = []
         for tier in ("final", "quarter"):
             eligible = tuple(

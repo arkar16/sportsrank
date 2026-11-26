@@ -4,7 +4,9 @@ import json
 from pathlib import Path
 
 from cfb.excitement_evaluation import EvaluationGame, evaluate_season_holdouts
-from cfb.excitement_reference import dump_reference_artifact, fit_reference_artifact, reference_game_from_timeline
+from cfb.excitement_reference import (
+    dump_reference_artifact, fit_reference_artifact, load_reference_artifact, reference_game_from_timeline,
+)
 from cfb.game_excitement import DATA, Matchup, flow_inputs, read_forecasts
 
 
@@ -25,12 +27,17 @@ def main():
     cli.add_argument("--reservation-id", help="identifier of the agreed holdout and release criteria")
     cli.add_argument("--report", type=Path, required=True)
     cli.add_argument("--reference", type=Path, help="write the training-only reference candidate")
+    cli.add_argument("--frozen-reference", type=Path, help="evaluate this previously frozen candidate")
+    cli.add_argument("--checksum", help="expected checksum of the reserved candidate")
     args = cli.parse_args()
+    if bool(args.frozen_reference) != bool(args.checksum) or (args.frozen_reference and not args.holdout):
+        cli.error("--frozen-reference and --checksum require each other and a holdout season")
+    frozen = load_reference_artifact(args.frozen_reference, expected_checksum=args.checksum) if args.frozen_reference else None
     games = [case for year in sorted(set(args.training + (args.holdout or []))) for case in cases(args.site, year)]
     report = evaluate_season_holdouts(games, data_kind="qualified_retained",
                                       training_seasons=args.training if args.holdout else None,
                                       evaluation_seasons=args.holdout,
-                                      reservation_id=args.reservation_id)
+                                      reservation_id=args.reservation_id, frozen_reference=frozen)
     args.report.write_text(json.dumps(report, separators=(",", ":")) + "\n")
     if args.reference:
         training = [reference_game_from_timeline(g.pregame, g.final, g.timeline) for g in games

@@ -130,6 +130,10 @@ class GameAppeal:
     source_game: str | None = None
     support: int | None = None
 
+    @property
+    def estimated(self) -> bool:
+        return self.tier in ("quarter", "final") and self.aev is not None
+
 
 def season_scores(directory: Path, season, reference):
     year = season.year

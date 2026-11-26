@@ -3,7 +3,9 @@
 Status: BEV, full-data AEV and the comparable-game estimated-AEV approach
 accepted on 2026-09-29 under
 [ADR-0021](../adr/0021-define-versioned-game-excitement-scores.md).
-No historical calibration is claimed.
+The first football quarter-score reference passed its reserved-season test in
+November 2026. The [delivery issue](https://github.com/arkar16/sportsrank/issues/179)
+records the empirical results.
 The [product plan](2026-game-excitement.md) owns the accepted behavior.
 
 ## Shared definitions
@@ -169,8 +171,9 @@ validation and the estimated-data method remain separate work.
 
 ## Estimated AEV: comparable-game method
 
-The owner accepted this approach on 2026-09-29. The initial reference artifact
-has not been fitted or calibrated.
+The owner accepted this approach on 2026-09-29. See the
+[reproduction command](../operations/game-excitement.md#comparable-game-estimates)
+for the frozen football quarter-score reference.
 Estimate typical drama from complete reference games with similar results.
 Use quarter scores when available and final scores otherwise. Two games with
 the same limited evidence can receive the same estimate even if their actual
@@ -236,8 +239,7 @@ Do not promise that final scores can distinguish every tense game from a late
 comeback. The combined ranking requires evidence that the chosen estimate is
 useful on its shared scale; the asterisk alone does not establish that.
 Reference sufficiency and numerical release criteria must be set from the
-coverage and held-out results before accepting a production artifact. No
-historical error rates or fitted reference artifact are claimed here.
+coverage and held-out results before accepting a production artifact.
 
 Every published estimate retains `*` and the agreed
 footnote, regardless of which input tier supplied it.

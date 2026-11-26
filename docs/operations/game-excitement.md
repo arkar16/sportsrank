@@ -67,10 +67,19 @@ uv run --locked python -m scripts.evaluate_game_excitement \
   --reference .sportsrank/excitement-reference.json
 ```
 
-The reserved-season run accepts `--holdout YEAR` and `--reservation-id ID`
-after the acceptance criteria and partition are agreed. The development command
-above leaves the 2025 confirmation season untouched. The delivery issue owns
-the results and release decision. An accepted reference requires the exact
-artifact checksum and approved evidence tiers in `reference-policy.json`
-beside the retained evidence. Normal builds never select a candidate artifact
-automatically. An asterisk identifies an enabled estimate.
+The 2025 confirmation uses the reference frozen from 2024 and 2026. Reproduce
+it offline with the original checksum. The evaluator verifies every reference
+game against the declared training seasons and hides each test game's timeline.
+
+```sh
+uv run --locked python -m scripts.evaluate_game_excitement \
+  --training 2024 2026 --holdout 2025 --reservation-id owner-2026-11-26-quarter-known \
+  --frozen-reference cfb/excitement_data/reference-2024-2026.json \
+  --checksum 40dda2d3f20be6da72f6fd5e965374434ede94dd7e277e015e8eade0658fde96 \
+  --report .sportsrank/excitement-confirmation-2025.json
+```
+
+The [football delivery issue](https://github.com/arkar16/sportsrank/issues/179)
+records the thresholds and results. The site reads the approved checksum and
+quarter-score tier from `reference-policy.json`. An asterisk identifies each
+estimate in the watch guide, score sheets and team game logs.
