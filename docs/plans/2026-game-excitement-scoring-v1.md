@@ -185,6 +185,16 @@ tension integral ends at 40:00. Each game can receive at most two points
 for overtime. The [basketball build instructions](../operations/game-excitement.md#mens-basketball)
 describe the pregame ledger and evidence qualification.
 
+When only the halftime and final scores qualify, the accepted basketball
+reference matches on absolute final margin, combined final points and the
+eventual winner’s halftime margin. Use the regulation or overtime pool
+matching the verified period count. Divide each feature difference by that
+pool’s frozen interquartile range, with a one-point minimum divisor. Average
+the observed drama of the 50 nearest games, including all ties at the cutoff
+and excluding the target game. Add the known overtime, pregame quality and
+upset bonuses. Mark the result with an asterisk. A final alone or an unknown
+overtime status cannot support this tier.
+
 ## Estimated AEV: comparable-game method
 
 The owner accepted this approach on 2026-09-29. See the

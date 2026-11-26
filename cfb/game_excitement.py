@@ -129,10 +129,11 @@ class GameAppeal:
     tier: str | None = None
     source_game: str | None = None
     support: int | None = None
+    reference_distance: float | None = None
 
     @property
     def estimated(self) -> bool:
-        return self.tier in ("quarter", "final") and self.aev is not None
+        return self.tier in ("quarter", "halftime", "final") and self.aev is not None
 
 
 def season_scores(directory: Path, season, reference):

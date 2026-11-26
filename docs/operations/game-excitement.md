@@ -86,7 +86,8 @@ estimate in the watch guide, score sheets and team game logs.
 
 ## Men's basketball
 
-The regular `cbb.site` build writes weekly BEV and measured AEV to the current
+The regular `cbb.site` build writes weekly BEV, measured AEV and starred
+halftime estimates to the current
 slate, weekly game tables, model results, team logs and each season’s game
 excitement guide. The guide links to the versioned pregame CSV. Each weekly
 entry retains the checkpoint, game identity, teams, site, ranks and signed
@@ -102,13 +103,24 @@ final. The compact season files retain the weighted tension, observed lead
 changes and eventual winner’s largest deficit. The site matches the dated
 teams and final to CORS and orients the underdog bonus to the winner. Missing
 or ambiguous histories retain BEV. An official final with a complete score
-path also gets AEV. [Retained source hashes](../../cbb/excitement_data/sources.json)
+path also gets measured AEV. [Retained source hashes](../../cbb/excitement_data/sources.json)
+
+For a halftime estimate, the schedule must confirm an ordinary two-half
+final, a stopped clock and the number of overtimes. The importer checks
+official per-period totals against the final and any available period-end
+markers. It also checks matching cached CollegeBasketballData period boxes
+from the season ending in 2020 onward. Earlier play files can establish a
+halftime score directly when an explicit end-of-half score agrees with the
+score entering the first recorded second-half play. Conflicting evidence
+leaves the estimate unavailable. Each estimated value in the season guide
+retains its source game, number of comparable games and cutoff distance.
 
 To reproduce season evidence, place the pinned Parquet files in
 `plays/play_by_play_YEAR.parquet` and `schedule/mbb_schedule_YEAR.parquet`
-under the inputs directory. The cached basketball team table maps ESPN IDs
-to SportsRank program IDs. The Parquet dependency is needed only for data
-preparation.
+under the inputs directory. The retained basketball database supplies the
+team ID crosswalk and period boxes. For seasons with cached boxes, the
+importer verifies a content hash of the dated teams, final and period scores
+in game ID order. The Parquet dependency is needed only for data preparation.
 
 ```sh
 uv run --locked --with duckdb==1.4.1 python -m scripts.prepare_basketball_drama \
@@ -127,6 +139,16 @@ uv run --locked python -m scripts.evaluate_basketball_excitement \
   --reference .sportsrank/basketball-halftime-reference.csv
 ```
 
+Reproduce the reserved 2024–25 validation with the checked-in reference.
+The evaluator verifies its checksum, training rows and separation of training
+and test games before checking the three basketball release criteria.
+
+```sh
+uv run --locked python -m scripts.evaluate_basketball_excitement \
+  --training 2024 2026 --holdout 2025 --database /path/to/history.sqlite3 \
+  --reference cbb/excitement_data/halftime-reference-v1.csv \
+  --checksum 3e6cd747ca8259debd07edfbd33a99d12fa18dd9c39f53b602ab287a65f613e5
+```
+
 The [basketball delivery issue](https://github.com/arkar16/sportsrank/issues/181)
-records the frozen reference checksum and validation status. Only measured
-AEV currently appears on basketball game pages.
+records the validation results, coverage and limitations.

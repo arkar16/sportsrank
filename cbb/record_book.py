@@ -19,7 +19,7 @@ from .cors_v1 import _available
 from .early_records import SOURCE as EARLY_SOURCE, record_rows
 from .grade import grade_margins
 from .game_excitement import guide as excitement_guide, local_date, weekly_scores
-from cfb.excitement_pages import aev_label
+from cfb.excitement_pages import ESTIMATE_NOTE, aev_label
 from .performance import write_performance
 from .program_records import program_record_rows
 from .progression import write_progression
@@ -135,6 +135,7 @@ def _games(games, logos, as_of, *, year=None, date_only=False, excitement=None):
     if not games:
         return "<p>No Division I games in this period.</p>"
     rows = []
+    has_estimate = False
     for g in games:
         score = f'{g["away_points"]}–{g["home_points"]}' if _has_score(g, as_of) else "—"
         when = _tipoff(g).strftime("%b %d, %Y") if (date_only or g.get("date_only")) else _tipoff(g).strftime("%b %d, %Y · %I:%M %p")
@@ -147,12 +148,14 @@ def _games(games, logos, as_of, *, year=None, date_only=False, excitement=None):
         if excitement is not None:
             appeal = excitement.get(g["game_id"])
             cells += (appeal.bev if appeal else "—", aev_label(appeal))
+            if appeal and appeal.estimated:
+                has_estimate = True
         rows.append(cells)
     first_col = "Date" if date_only else "Tipoff (Eastern)"
     headers = (first_col, "Away", "Home", "Court", "Reconstructed pick", "Final (away–home)")
     if excitement is not None:
         headers += ("BEV", "AEV")
-    return _table(headers, rows)
+    return _table(headers, rows) + (f"<p>{ESTIMATE_NOTE}</p>" if has_estimate else "")
 
 
 def _grade_row(label, pairs):

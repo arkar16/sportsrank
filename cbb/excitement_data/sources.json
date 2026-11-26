@@ -1,6 +1,7 @@
 {
   "plays": "https://github.com/sportsdataverse/sportsdataverse-data/releases/tag/espn_mens_college_basketball_pbp",
   "schedule": "https://github.com/sportsdataverse/sportsdataverse-data/releases/tag/espn_mens_college_basketball_schedules",
+  "cached_periods": "CollegeBasketballData /games period totals from the retained CORS basketball history cache, hashed in game ID order.",
   "seasons": {
     "2003": {
       "plays": "b19378d7b609e6b1b14d05d2708f54f0c0475a4adee2018054a10a7b00acec98",
@@ -64,35 +65,43 @@
     },
     "2020": {
       "plays": "5f0e2fa74c7fe18e13c5b37b4c3cea68a3f66ea6cb627135b23d8431ce8f6659",
-      "schedule": "f87d7a04d905c95221b1201a4fd43bdf9bad3bfae7b3f880800e9eb8ae1cfa3a"
+      "schedule": "f87d7a04d905c95221b1201a4fd43bdf9bad3bfae7b3f880800e9eb8ae1cfa3a",
+      "cached_periods": "d5b15c978474789564e0ed6e4e6f958e546fe65499f5c43f1d0215614a13a747"
     },
     "2021": {
       "plays": "66cf0ed8446fe5d60cc135da81a08d8863b491d4dcf73a754435799c3be6ffd4",
-      "schedule": "26b26e9fd035a567ca66e65fadd8a3df9482e25e4a1c63ff40466e0d99c9cc76"
+      "schedule": "26b26e9fd035a567ca66e65fadd8a3df9482e25e4a1c63ff40466e0d99c9cc76",
+      "cached_periods": "1ec22fd120850e096d0d0e7f4a6c505a035a8c332217bb79d8c117a4de3ee23a"
     },
     "2022": {
       "plays": "9994531e9914c08ec6566a30ad9871bd3b3c4a49913d16da23e49dd7c3814755",
-      "schedule": "75a702d5c8db85bfd7ad30bc046a801742b88ac3f7a900d7e05450a6a4c10276"
+      "schedule": "75a702d5c8db85bfd7ad30bc046a801742b88ac3f7a900d7e05450a6a4c10276",
+      "cached_periods": "c0b4747b79966434acdb9a2b99396484b8eabe570d8838e9a1d0b081a5e19c09"
     },
     "2023": {
       "plays": "5362f30bac8b37b8b153f759a25d8432df2a79b646a1c25c90b0372cabba9d53",
-      "schedule": "1a75500bd669a2e0f01b39623a1aa28d8d4cc1b8658f8adbabfc5319c73c496c"
+      "schedule": "1a75500bd669a2e0f01b39623a1aa28d8d4cc1b8658f8adbabfc5319c73c496c",
+      "cached_periods": "3a4b089225cd2f20787196edbe6c3d631087244200974a7ac41f51cd96ed9fc2"
     },
     "2024": {
       "plays": "0b628b0bcfcfeda5bf5829747b6699e994313f8a45fa22731f3353927fd476aa",
-      "schedule": "27889ecf392a9a6281e7898dc39d51a2f4a4576f689533dda0d67c4d57d52602"
+      "schedule": "27889ecf392a9a6281e7898dc39d51a2f4a4576f689533dda0d67c4d57d52602",
+      "cached_periods": "d8f2d57a7018379534b06dd276fa5354fcd524a66ce26b5c806ef545ab6dfeb3"
     },
     "2025": {
       "plays": "60cfc53e65c8779544aa470371814534ac695e2f32705b4132996106063a191f",
-      "schedule": "e01bf54b51c8d71b00cd8144e9a022ed170af2c2e57787b1cef672340891c45b"
+      "schedule": "e01bf54b51c8d71b00cd8144e9a022ed170af2c2e57787b1cef672340891c45b",
+      "cached_periods": "f858c4a72bc7759d8fb201ea1765894efce1a09a5c36ec8ab2ed4b3dc7f8f40f"
     },
     "2026": {
       "plays": "d3fb9ebe459a9b6a4a0ad03583bd5058b4e52423970897b5ce0880b53d284bfe",
-      "schedule": "480896940f9502e537513386efa1ece6ed9cac0bcd8bd30f3493aa6254912aec"
+      "schedule": "480896940f9502e537513386efa1ece6ed9cac0bcd8bd30f3493aa6254912aec",
+      "cached_periods": "8cac92fc36902286e0d5adbd00919428c6dbbd82d167bfaea01034dc67bc59e7"
     },
     "2027": {
       "plays": "27356c8f0ea2e57ee5c637efe8f1b89e98f476e4ddb2be0393edfc4a223bc119",
-      "schedule": "d01639738bb2f5afd896058003124920cdefd361f48574a55bc1c97d472aae44"
+      "schedule": "d01639738bb2f5afd896058003124920cdefd361f48574a55bc1c97d472aae44",
+      "cached_periods": "9ba275bf55ce2e093879fd6284c67b9547400ecc1efe26c20427cdca1d11c441"
     }
   }
 }

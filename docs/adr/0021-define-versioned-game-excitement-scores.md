@@ -63,6 +63,14 @@ have separate scoring versions and reference populations. The
 [basketball delivery](https://github.com/arkar16/sportsrank/issues/181) owns
 the empirical coverage and acceptance.
 
+On 2026-11-26 the owner set the release standard for basketball games with a
+verified halftime score, final and overtime status. The frozen basketball
+reference had to average at most 7 AEV points of absolute error, stay within
+2 points of signed bias in either direction and reach a Spearman rank
+correlation of at least 0.85 on the reserved 2024–25 season. It passed all
+three criteria. The season guides rank these starred estimates alongside
+measured scores. Finals alone remain insufficient for basketball AEV.
+
 ## Delivery prerequisites
 
 - Inspect the API's actual provider coverage before finalizing the excitement

@@ -63,6 +63,7 @@ def evaluate(training, testing):
     if {r[0] for r in training} & {r[0] for r in testing}:
         raise ValueError("a test game appears in the reference")
     ref = np.array([r[2:7] for r in training], dtype=float)
+    results = {}
     for dimensions, name in ((1, "margin baseline"), (2, "final"), (3, "halftime")):
         estimated, actual = [], []
         for ot in (0, 1):
@@ -85,9 +86,16 @@ def evaluate(training, testing):
         top_n = (len(actual) + 9) // 10
         actual_top = np.array(actual) >= np.sort(actual)[-top_n]
         predicted_top = np.array(estimated) >= np.sort(estimated)[-top_n]
-        print(name, len(actual), "MAE", float(np.mean(abs(errors))), "bias", float(errors.mean()),
-              "Spearman", correlation(estimated, actual, method="ranked"),
+        mae, bias = float(np.mean(abs(errors))), float(errors.mean())
+        rho = correlation(estimated, actual, method="ranked")
+        results[name] = (mae, bias, rho)
+        print(name, len(actual), "MAE", mae, "bias", bias, "Spearman", rho,
               "top-decile overlap", np.count_nonzero(actual_top & predicted_top), "of", top_n)
+    return results
+
+
+def passes_halftime_standard(mae, bias, rho):
+    return mae <= 7 and abs(bias) <= 2 and rho >= 0.85
 
 
 def main():
@@ -123,7 +131,10 @@ def main():
                 raise ValueError("the frozen basketball reference differs from its training seasons")
             frozen = [(r[0], *map(int, r[1:6]), float(r[6])) for r in records[1:]]
             print("Reserved season", args.holdout)
-            evaluate(frozen, cases(args.holdout, db, args.site))
+            results = evaluate(frozen, cases(args.holdout, db, args.site))
+            if not passes_halftime_standard(*results["halftime"]):
+                raise SystemExit("Halftime estimates failed the basketball release standard")
+            print("Halftime estimates passed the basketball release standard")
 
 
 if __name__ == "__main__":

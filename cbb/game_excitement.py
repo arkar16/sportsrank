@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from collections import defaultdict
 import csv
-from dataclasses import dataclass
 from datetime import datetime, timedelta
 from html import escape
 from io import StringIO
@@ -11,9 +10,10 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from cfb.excitement import BASKETBALL, QualifiedPregame, calculate_bev, matchup_quality
-from cfb.excitement_pages import aev_label
+from cfb.excitement_pages import ESTIMATE_NOTE, aev_label
 from cfb.game_excitement import GameAppeal
 from cfb.record_book import _write_changed
+from .halftime import halftime_pools
 
 DATA = Path(__file__).with_name("excitement_data")
 EASTERN = ZoneInfo("America/New_York")
@@ -93,19 +93,38 @@ def after_game(g, bev, ranks, evidence, as_of):
         scores = (int(row["home_score"]), int(row["away_score"]))
         if final == (scores[::-1] if flipped else scores):
             candidates.append(row)
-    if len(candidates) != 1 or not candidates[0]["tension"]:
+    if len(candidates) != 1 or final[0] == final[1]:
         return GameAppeal(bev, final)
     row = candidates[0]
-    tension = float(row["tension"])
-    leads, deficit, periods = (int(row[k]) for k in ("lead_changes", "winner_deficit", "periods"))
-    if not (0 <= tension <= 1 and leads >= 0 and deficit >= 0 and periods >= 2):
-        raise ValueError(f"invalid basketball score path for {row['game_id']}")
+    if not row["periods"]:
+        return GameAppeal(bev, final)
+    periods = int(row["periods"])
+    if periods < 2:
+        raise ValueError(f"invalid basketball period count for {row['game_id']}")
     quality = matchup_quality(ranks[g["home_team_id"]], ranks[g["away_team_id"]])
     margin = g["home_margin"] if final[0] > final[1] else -g["home_margin"]
     surprise = min(1, max(0, -margin / BASKETBALL.close_margin))
-    value = (80 * tension + 8 * min(1, leads / 3) + 4 * min(1, deficit / BASKETBALL.comeback_margin)
-             + 2 * (periods > 2) + 3 * quality + 3 * surprise)
-    return GameAppeal(bev, final, value, "full", row["game_id"])
+    overtime = periods > 2
+    if row["tension"]:
+        tension = float(row["tension"])
+        leads, deficit = int(row["lead_changes"]), int(row["winner_deficit"])
+        if not (0 <= tension <= 1 and leads >= 0 and deficit >= 0):
+            raise ValueError(f"invalid basketball score path for {row['game_id']}")
+        drama = 80 * tension + 8 * min(1, leads / 3) + 4 * min(1, deficit / BASKETBALL.comeback_margin)
+        return GameAppeal(bev, final, drama + 2 * overtime + 3 * quality + 3 * surprise, "full", row["game_id"])
+
+    if not row["half_home"] or not row["half_away"]:
+        return GameAppeal(bev, final)
+    half = int(row["half_home"]), int(row["half_away"])
+    source_final = int(row["home_score"]), int(row["away_score"])
+    if any(h < 0 or h > f for h, f in zip(half, source_final)):
+        raise ValueError(f"invalid basketball halftime score for {row['game_id']}")
+    winner_margin = (half[0] - half[1]) * (1 if source_final[0] > source_final[1] else -1)
+    drama, support, distance = halftime_pools()[overtime].estimate(
+        row["game_id"], abs(final[0] - final[1]), sum(final), winner_margin,
+    )
+    value = drama + 2 * overtime + (3 * quality + 3 * surprise)
+    return GameAppeal(bev, final, value, "halftime", row["game_id"], support, distance)
 
 
 def weekly_scores(root, season, checkpoints, as_of, schedules=None):
@@ -161,6 +180,8 @@ def guide(year, games, season_name, label, week_link, table, as_of):
                'After Excitement Value (AEV) measures score-and-clock drama over two halves, with lead changes, '
                'comebacks and overtime. Both use a 0–100 scale. Six points is a two-possession margin. '
                'A dash means the scoring evidence is insufficient.</p>')
+    if any(row[4].estimated for row in completed):
+        content += f'<p>{ESTIMATE_NOTE} Basketball estimates use the halftime and final scores.</p>'
     for heading, rows in (("Current and upcoming games by BEV", upcoming),
                           ("Completed games by AEV", completed), ("Games awaiting a verified final", missing)):
         if not rows:
@@ -174,7 +195,11 @@ def guide(year, games, season_name, label, week_link, table, as_of):
                 final = f"{a}–{h}"
                 if score.source_game:
                     final = f'<a href="https://www.espn.com/mens-college-basketball/game/_/gameId/{escape(score.source_game)}">{final}</a>'
-                row += (final, aev_label(score))
+                aev = aev_label(score)
+                if score.estimated:
+                    aev = (f'<span title="Halftime estimate from {score.support} comparable games" '
+                           f'data-reference-distance="{score.reference_distance}">{aev}</span>')
+                row += (final, aev)
             values.append(row)
         headers = ("Date", "Checkpoint", "Away", "Home", "BEV") + (("Final (away–home)", "AEV") if has_final else ())
         content += f"<h2>{heading}</h2>" + table(headers, values)
