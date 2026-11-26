@@ -3,6 +3,7 @@
 from html import escape
 import json
 
+from alltime_excitement import Game as LeaderGame
 from .cfbd_appeal import DATA, load
 from .excitement import QualifiedPregame, calculate_bev, matchup_quality
 from .game_excitement import GameAppeal, _sparse_final
@@ -17,7 +18,7 @@ def early_seasons():
     return {int(y): r for y, r in data["seasons"].items()}
 
 
-def build_guides():
+def build_guides(*, leaders=None):
     from .cors_v1 import CompletedGame, SeasonInput, replay_seasons, OTHER_INIT_MEAN
 
     years = early_seasons()
@@ -39,6 +40,7 @@ def build_guides():
     for season, replay in zip(inputs, replays, strict=True):
         rows = []
         ledger = []
+        candidates = []
         ranks = {-1: replay.preseason, **replay.weekly_rankings}
         spreads = {
             w: {(r["home_team"], r["away_team"], r["neutral_site"]): float(r["home_margin"]) for r in rr}
@@ -74,12 +76,18 @@ def build_guides():
                     bev=score.bev,
                 )
             )
+            anchor = f"game-{g.game_id}"
+            if leaders is not None:
+                candidates.append(LeaderGame.from_score("cfb", season.year, g.game_date, g.away_team,
+                                                        g.home_team, anchor, score))
             rows.append(
-                f'<tr data-cfbd-game="{g.game_id}"><td>{g.game_date}</td><td>{escape(g.away_team)}</td>'
+                f'<tr id="{anchor}" data-cfbd-game="{g.game_id}"><td>{g.game_date}</td><td>{escape(g.away_team)}</td>'
                 f"<td>{escape(g.home_team)}</td><td>{bev_label(score)}</td><td>{g.away_score}–{g.home_score}</td>"
                 f"<td>{aev_label(score)}</td></tr>"
             )
         y = season.year
+        if leaders is not None:
+            leaders.add_season(candidates)
         text = (
             f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
             f'<title>{y} football game excitement | SportsRank</title><link rel="stylesheet" href="/cfb/assets/record-book.css"></head>'

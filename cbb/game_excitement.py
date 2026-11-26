@@ -252,7 +252,9 @@ def guide(year, games, season_name, label, week_link, table, as_of):
         has_final = rows is completed
         values = []
         for day, away, home, week, score in rows:
-            row = (day, week_link(year, week, "Preseason" if not week else f"Week {week}"), label(away), label(home), f'<span data-cbbd-fixture="{escape(score.source_game or "")}">{bev_label(score)}</span>')
+            gid = escape(score.source_game or "")
+            row = (day, week_link(year, week, "Preseason" if not week else f"Week {week}"), label(away), label(home),
+                   f'<span data-cbbd-fixture="{gid}">{bev_label(score)}</span>')
             if has_final:
                 h, a = score.final
                 final = f"{a}–{h}"
@@ -265,5 +267,6 @@ def guide(year, games, season_name, label, week_link, table, as_of):
                 row += (final, aev)
             values.append(row)
         headers = ("Date", "Checkpoint", "Away", "Home", "BEV") + (("Final (away–home)", "AEV") if has_final else ())
-        content += f"<h2>{heading}</h2>" + table(headers, values)
+        row_ids = [f"game-{score.source_game}" for _, _, _, _, score in rows]
+        content += f"<h2>{heading}</h2>" + table(headers, values, row_ids=row_ids)
     return content

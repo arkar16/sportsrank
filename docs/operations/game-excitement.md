@@ -5,6 +5,12 @@ CollegeFootballData evidence in `cfb/cfbd_excitement`. Each result shows its
 evidence level. A scheduled game shows BEV. A retained final that corrects a
 previous score requires requalification against its scoring plays.
 
+The all-time rankings live at `/excitement/aev.html` and `/excitement/bev.html`.
+Each page links to the football and men's basketball rankings and to the
+individual games in their season guides. Both record-book builds refresh the
+rankings from the saved scores. Games tied at the displayed tenth-place score
+all appear. AEV requires a verified final, while scheduled games can earn BEV.
+
 ## Build and verify football pages
 
 ```sh

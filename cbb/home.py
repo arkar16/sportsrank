@@ -44,6 +44,8 @@ def landing_page(archives, routes, presentation, checkpoint, edition_path, tourn
              '<p><a href="/cbb/history/ncaa-champions.html">NCAA tournament champions</a></p>'
              f'<p id="forecasts"><a href="current.html#forecasts">Game forecasts</a></p>'
              f'<p><a href="editions/{edition_path.name}">Dated edition</a></p>')
+    links += ('<p>All-time game excitement · <a href="/cbb/excitement/aev.html">AEV leaders</a>'
+              ' · <a href="/cbb/excitement/bev.html">BEV leaders</a></p>')
     if tournaments:
         links += '<p><a href="/cbb/tournaments/index.html">March Madness picks and results</a></p>'
     date = datetime.fromisoformat(checkpoint["cutoff_utc"]).astimezone(EASTERN)

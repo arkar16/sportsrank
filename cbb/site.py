@@ -5,6 +5,7 @@ from hashlib import sha256
 from pathlib import Path
 import shutil
 
+from alltime_excitement import publish_pages
 from site_navigation import masthead
 from spread_cards import ConferenceSlate, basketball_links
 from .cors_v1 import VERSION as V1_VERSION, _available, cors_v1_seasons
@@ -116,6 +117,7 @@ def main():
         _build_api_site(database, site, args, years[0])
         record_artifacts(site, as_of)
         install_pages(site, args.output)
+        publish_pages(args.output, "cbb")
 
 
 def _build_api_site(database, output, args, first_season):

@@ -5,6 +5,8 @@ from html import escape
 from pathlib import Path
 import re
 
+from alltime_excitement import football_anchor
+
 from .archive_markup import ui
 from .game_excitement import GameAppeal, Matchup, score_for
 from .historical_rebuild import _school
@@ -22,8 +24,7 @@ ESTIMATE_NOTE = "* AEV estimated from the available scoring totals and comparabl
 def aev_label(score: GameAppeal | None, *, plain=False):
     if score is None or score.aev is None:
         return "&mdash;"
-    basis = {"full": "Play-by-play", "quarter": "Quarter scores", "halftime": "Halftime score",
-             "final": "Final score only"}[score.tier]
+    basis = score.evidence_label
     number = f'{score.aev:.1f}{"*" if score.estimated else ""}'
     return f"{number} · {basis}" if plain else f"{number}<small> · {basis}</small>"
 
@@ -115,7 +116,7 @@ def season_guide(year, scores, routes, directory=None, *, completed_season=False
                 source = (f'<span data-cfbd-game="{escape(score.source_game)}">{aws}&ndash;{hs}</span>'
                           if score.source_game else f"{aws}&ndash;{hs}")
                 cells += f'<td class="num">{source}</td><td class="num">{aev_label(score)}</td>'
-            rows.append("<tr>" + cells + "</tr>")
+            rows.append(f'<tr id="{football_anchor(key)}">{cells}</tr>')
         headers = ["Week", "Away", "Home", "BEV"] + ([] if pending else ["Score (away–home)", "AEV"])
         return (f'<h2>{title}</h2><div class="table-scroll" tabindex="0"><table><thead><tr>'
                 + "".join(f'<th scope="col">{h}</th>' for h in headers) + "</tr></thead><tbody>"
