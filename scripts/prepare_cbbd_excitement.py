@@ -352,11 +352,25 @@ def build(database, plays, output, existing):
     policy["halftime_qualified"] = passes_halftime_standard(
         m["mae"], m["bias"], m["spearman"]
     )
-    policy["seasons"] = {}
-    for year, data in sorted(records.items()):
-        policy["seasons"][year] = write_rows(
-            output / f"{year}.csv", MEASURES, (r[0] for _, r in sorted(data.items()))
-        )
+    policy["training_games"] = len(train)
+    policy["reserved_ids_sha256"] = sha256(
+        "\n".join(r["game"] for r in held).encode()
+    ).hexdigest()
+    previous_path = existing / "policy.json"
+    previous = json.loads(previous_path.read_bytes()) if previous_path.is_file() else {}
+    for key in (
+        "provider",
+        "frozen_sha256",
+        "reserved",
+        "halftime",
+        "final",
+        "final_unknown_ot",
+        "reserved_ids_sha256",
+    ):
+        if key in previous and previous[key] != policy[key]:
+            raise ValueError(f"basketball confirmation changed for {key}")
+    policy["seasons"] = previous.get("seasons", {})
+    store_measurements(policy, records, existing, output)
     (output / "policy.json").write_text(
         json.dumps(policy, sort_keys=False, indent=2) + "\n"
     )
@@ -375,16 +389,8 @@ def build(database, plays, output, existing):
     )
 
 
-def extend(database, plays, output, existing):
-    # Adding historical measurements cannot refit a reference or change the reserved evaluation.
-    policy = json.loads((existing / "policy.json").read_bytes())
-    if policy["provider"] != "CollegeBasketballData":
-        raise ValueError("unapproved basketball measurement source")
-    records = read_measured(database, plays)
-    if set(records).intersection((*TRAIN, RESERVED)):
-        raise ValueError(
-            "historical additions overlap the frozen reference or reserved season"
-        )
+def store_measurements(policy, records, existing, output):
+    """Keep qualified prior seasons and reconcile overlapping game IDs on retry."""
     for year, data in sorted(records.items()):
         filename = f"{year}.csv"
         previous = existing / filename
@@ -404,6 +410,19 @@ def extend(database, plays, output, existing):
         policy["seasons"][str(year)] = write_rows(
             output / filename, MEASURES, (combined[gid] for gid in sorted(combined))
         )
+
+
+def extend(database, plays, output, existing):
+    # Adding historical measurements cannot refit a reference or change the reserved evaluation.
+    policy = json.loads((existing / "policy.json").read_bytes())
+    if policy["provider"] != "CollegeBasketballData":
+        raise ValueError("unapproved basketball measurement source")
+    records = read_measured(database, plays)
+    if set(records).intersection((*TRAIN, RESERVED)):
+        raise ValueError(
+            "historical additions overlap the frozen reference or reserved season"
+        )
+    store_measurements(policy, records, existing, output)
     (output / "policy.json").write_text(json.dumps(policy, indent=2) + "\n")
     print(
         "Qualified additional CBBD measurements",
@@ -428,14 +447,6 @@ if __name__ == "__main__":
             extend(args.database, args.plays, stage, args.output)
         else:
             build(args.database, args.plays, stage, args.output)
-            previous = args.output / "policy.json"
-            if previous.exists() and (
-                json.loads(previous.read_bytes())["frozen_sha256"]
-                != json.loads((stage / "policy.json").read_bytes())["frozen_sha256"]
-            ):
-                raise ValueError(
-                    "basketball training sample differs from the reserved-season reference"
-                )
         args.output.mkdir(parents=True, exist_ok=True)
         for file in sorted(stage.glob("*.csv")):
             file.replace(args.output / file.name)

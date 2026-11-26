@@ -7,7 +7,6 @@ from tempfile import TemporaryDirectory
 import unittest
 import zlib
 
-from cbb.source import read_history
 from cbb.replay import replay_seasons
 from cbb.cors_v1 import cors_v1_seasons
 from cbb.game_excitement import weekly_scores
@@ -72,6 +71,33 @@ class PublicBasketballSourcesTest(unittest.TestCase):
             self.assertLess(early["cutoff_utc"],afternoon["cutoff_utc"])
             self.assertGreater(early["result_cutoff_utc"],afternoon["cutoff_utc"])
             self.assertEqual(early["home_margin"],afternoon["home_margin"])
+
+    def test_announced_preseason_schedule_has_bev_before_opening_week(self):
+        from argparse import Namespace
+        from lxml import html
+        from cbb.site import _build_api_site
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            src = root / "source.db"
+            with sqlite3.connect(src) as db:
+                db.execute("CREATE TABLE responses(url,acquired_utc,rows,compressed_json)")
+                for year in (2027,2028):
+                    roster = [dict(id=1,school="East",conference="League"),dict(id=2,school="West",conference="League")]
+                    insert_reply(db, f"teams?season={year}", roster)
+                    row = dict(game(year,"10",65,60),season=year,startDate=f"{year-1}-11-10T21:00:00Z",
+                               status="final" if year==2027 else "scheduled")
+                    if year==2028:
+                        row.update(homePoints=None,awayPoints=None)
+                    insert_reply(db,f"games?season={year}",[row])
+            db=root/"public.db"
+            materialize(src,db,2028)
+            site=root/"site"
+            _build_api_site(db,site,Namespace(season=2028, as_of="2027-08-01T15:00:00+00:00"),2027)
+            guide=html.parse(site/"seasons/2028/excitement/index.html")
+            fixture,=guide.xpath('//*[@data-cbbd-fixture="2028"]')
+            self.assertTrue(0<=float(fixture.text_content())<=100)
+            self.assertEqual(guide.xpath('//*[@data-cbbd-game]'),[])
+            self.assertIn("2027–28",guide.xpath("//title")[0].text)
 
     def test_saturated_response_without_complete_splits_cannot_publish(self):
         with TemporaryDirectory() as tmp:
