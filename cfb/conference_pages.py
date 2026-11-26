@@ -85,41 +85,6 @@ def _opponent_conference(standing, division, sport, groups):
     return next((name for name in groups if name in _INDEPENDENTS), "Independents")
 
 
-def _football_deltas(season, games):
-    rows_by_week = defaultdict(list)
-    for index, game in enumerate(games):
-        rows_by_week[game.week, game.home].append((index, game))
-        rows_by_week[game.week, game.away].append((index, game))
-
-    deltas = {}
-    previous = {}
-    for key, rows in season.rankings.items():
-        current = {row.school: row.rating for row in rows}
-        if key.startswith("W"):
-            week = int(key[1:])
-            for school in previous.keys() & current.keys():
-                played = rows_by_week.get((week, school), ())
-                if not played:
-                    continue
-                change = float(current[school] - previous[school])
-                if len(played) == 1:
-                    deltas[played[0][0], school] = change
-                else:
-                    # Allocate the observed weekly movement in proportion to
-                    # robust-weighted absolute forecast errors. Equal residuals
-                    # (including all zero) get equal shares.
-                    weights = []
-                    for _, game in played:
-                        predicted = _football_margin(game, previous, season.home_advantage)
-                        residual = abs(game.home_score - game.away_score - predicted)
-                        weights.append(residual / (14 + residual**2 / 225))
-                    total = sum(weights)
-                    for (index, _), weight in zip(played, weights, strict=True):
-                        deltas[index, school] = change * (weight / total if total else 1 / len(played))
-        previous = current
-    return deltas
-
-
 def _football_margin(game, ratings, home_advantage):
     if game.home_handicap is not None:
         return -float(game.home_handicap)
@@ -176,7 +141,13 @@ def _season_records(season, checkpoint, standings, groups, sport):
     week = int(checkpoint[1:]) if checkpoint.startswith("W") else -1
     completed = [g for g in season.games if g.home_score is not None and g.away_score is not None
                  and (not football or checkpoint == "FINAL" or g.week <= week)]
-    deltas = _football_deltas(season, completed) if football else {}
+    ranks = {key: {r.school: r.rank for r in rows} for key, rows in season.rankings.items()}
+    pregame = {}
+    prior = ranks.get("PRESEASON", {})
+    for key, edition in ranks.items():
+        if key.startswith("W"):
+            pregame[int(key[1:])] = prior if football else edition
+            prior = edition
     remaining = list(_remaining_probabilities(season, checkpoint, standings, sport))
     stats = SeasonRecords(defaultdict(Record), defaultdict(lambda: defaultdict(Record)), set(),
                           {}, {}, _overall_probabilities(remaining), defaultdict(list), defaultdict(list))
@@ -201,7 +172,7 @@ def _season_records(season, checkpoint, standings, groups, sport):
                 if margin is not None:
                     record.add_game(sign * margin)
 
-    for index, game in enumerate(completed):
+    for game in completed:
         home_conf, away_conf = conferences(game)
         league = _is_conference_game(game, home_conf, away_conf)
         home_margin = game.home_score - game.away_score
@@ -216,13 +187,14 @@ def _season_records(season, checkpoint, standings, groups, sport):
             margin = home_margin if home else -home_margin
             if league:
                 stats.league[school].add_game(margin)
-            delta = (deltas.get((index, school)) if football else
-                     game.home_cors_delta if home else game.away_cors_delta)
+            delta = game.home_cors_delta if home else game.away_cors_delta
             if delta is not None and margin:
                 extremes = stats.best if margin > 0 else stats.worst
                 old = extremes.get(school)
                 if old is None or (delta - old[0]) * (1 if margin > 0 else -1) > 0:
-                    extremes[school] = (delta, game, home)
+                    opponent = game.away if home else game.home
+                    rank = pregame.get(game.week, {}).get(opponent)
+                    extremes[school] = (delta, game, home, rank)
 
     for game, home_prob in remaining:
         if _is_conference_game(game, *conferences(game)):
@@ -278,23 +250,23 @@ def _table(label, headers, rows, *, footer=""):
             f'<tbody>{"".join(rows)}</tbody>{footer}</table></div>')
 
 
-def _game_cell(selection, standings, team_routes):
+def _game_cell(selection, team_routes):
     if selection is None:
         return f"<td>{_DASH}</td>"
-    delta, game, home = selection
+    delta, game, home, rank = selection
     opponent = game.away if home else game.home
     wins, loses = (game.home_score, game.away_score) if home else (game.away_score, game.home_score)
     label = escape(opponent)
     if opponent in team_routes:
         label = f'<a href="{team_routes[opponent]}">{label}</a>'
-    if opponent in standings:
-        label = f"#{standings[opponent].rank} {label}"
+    if rank is not None:
+        label = f"#{rank} {label}"
     site = "vs (N)" if game.neutral_site else "vs" if home else "@"
     result = "W" if wins > loses else "L"
     return f'<td data-sort-value="{delta}">{result} {wins}–{loses} {site} {label} ({delta:+.2f})</td>'
 
 
-def _standings_table(members, stats, preseason, standings, team_routes, *, active, independent, covered):
+def _standings_table(members, stats, preseason, team_routes, *, active, independent, covered):
     def order(member):
         rec = stats.league[member.school]
         pct = rec.win_pct if rec.win_pct is not None else -1
@@ -316,8 +288,8 @@ def _standings_table(members, stats, preseason, standings, team_routes, *, activ
                f'<th scope="row"><a href="{team_routes[school]}">{escape(school)}</a></th>'
                f'<td>{escape(member.record)}</td><td>{conf if conf is not None else _DASH}</td>'
                f'<td class="num">{member.rating:.2f}</td><td class="num" data-sort-value="{pre_rank}">{pre}</td>'
-               + _game_cell(stats.best.get(school), standings, team_routes)
-               + _game_cell(stats.worst.get(school), standings, team_routes))
+               + _game_cell(stats.best.get(school), team_routes)
+               + _game_cell(stats.worst.get(school), team_routes))
         if active:
             proj_conf = _project(stats.league[school] if not independent else None, stats.remaining_league[school])
             proj_overall = _project_overall(member, stats.remaining[school])
@@ -392,7 +364,7 @@ def _edition(checkpoint):
     return f"Through Week {checkpoint[1:]}" if checkpoint.startswith("W") else checkpoint.title()
 
 
-def _season_pages(season, checkpoint, groups, standings, stats, route, team_routes, sport, label, season_route):
+def _season_pages(season, checkpoint, groups, stats, route, team_routes, sport, label, season_route):
     preseason = {r.school: r for r in season.rankings.get("PRESEASON" if sport == "football" else "W0", ())}
     averages = {name: mean(r.rating for r in members) for name, members in groups.items()}
     order = sorted((name for name, members in groups.items() if name not in _INDEPENDENTS and len(members) > 1),
@@ -421,7 +393,7 @@ def _season_pages(season, checkpoint, groups, standings, stats, route, team_rout
         if summary.rank is None:
             links.append(("Conference comparison", comparison))
         nav = _conference_nav(links) + f'<p class="edition">{_edition(checkpoint)}</p>'
-        table = _standings_table(members, stats, preseason, standings, team_routes, active=active,
+        table = _standings_table(members, stats, preseason, team_routes, active=active,
                                  independent=name in _INDEPENDENTS, covered=covered)
         notes = ""
         if covered:
@@ -429,7 +401,8 @@ def _season_pages(season, checkpoint, groups, standings, stats, route, team_rout
                               if sport == "football" else
                               " Historical game logs can include unmarked conference tournament games.")
             notes = ('<p class="conference-note">Conf counts regular-season games against league members. '
-                     'Best wins and worst losses use the opponent’s rank in this edition.'
+                     'Opponent ranks are from before the game. Best wins and worst losses show the individual '
+                     'game’s impact on the team’s CORS rating at the first update after the game.'
                      f'{classification}</p>')
             if season.conference_note:
                 notes += f'<p class="conference-note">{escape(season.conference_note)}</p>'
@@ -530,7 +503,7 @@ def build_conference_pages(seasons: list[Season], routes: dict[str, str], *, spo
         team_routes = season_team_routes(season, routes)
         stats = _season_records(season, checkpoint, standings, groups, sport)
         for name, summary, markup in _season_pages(
-            season, checkpoint, groups, standings, stats, route, team_routes, sport, year_label(year), season_route,
+            season, checkpoint, groups, stats, route, team_routes, sport, year_label(year), season_route,
         ):
             if owners.setdefault(route(name), name) != name:
                 raise ValueError(f"ambiguous conference route for {name!r}")

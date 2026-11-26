@@ -9,6 +9,7 @@ import tempfile
 
 from spread_cards import football_links
 
+from .football_impact import attach_football_impacts
 from .conference_pages import CONFERENCE_HONORS, build_conference_pages, conference_honors_route, conference_route
 from .history_sheets import render_history_sheet
 from .program_marks import program_logo_paths
@@ -278,11 +279,12 @@ def _honors_pages(site: Path, seasons: list[Season]) -> dict[str, bytes]:
     return pages
 
 
-def build(site: Path) -> tuple[int, int, int]:
+def build(site: Path, *, replays=None) -> tuple[int, int, int]:
     site = site.resolve()
     seasons = read_archive(site)
     if not seasons:
         raise ValueError(f"no college football rankings at {site}")
+    attach_football_impacts(seasons, replays)
     honors = _honors_pages(site, seasons)
     routes = program_routes(seasons)
     marks = program_logo_paths(site)

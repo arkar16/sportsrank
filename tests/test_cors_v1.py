@@ -1,6 +1,7 @@
 """Tests for college football CORS v1.0.0 (kalman-2scale + Other)."""
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 import random
 from tempfile import TemporaryDirectory
@@ -54,6 +55,22 @@ def _sample_seasons() -> list[SeasonInput]:
 
 
 class CorsV1Tests(unittest.TestCase):
+    def test_individual_impacts_match_first_postgame_rating_with_result_removed(self):
+        season = _sample_seasons()[0]
+        fcs_home = CompletedGame(1, "FCS State", "fcs", 17, "Beta", "fbs", 31, False)
+        season = replace(season, completed_games=(*season.completed_games, fcs_home))
+        full = replay_seasons([season])[0][0]
+        for game in season.completed_games:
+            rest = tuple(g for g in season.completed_games if g != game)
+            omitted = replay_seasons([replace(season, completed_games=rest)])[0][0]
+            after = {r["school"]: float(r["cors"]) for r in full.weekly_rankings[game.week]}
+            before = {r["school"]: float(r["cors"]) for r in omitted.weekly_rankings[game.week]}
+            teams = {game.home_team, game.away_team} & after.keys()
+            self.assertEqual(full.game_impacts[game].keys(), teams)
+            for team in teams:
+                # Released rankings are independently rounded to two decimals.
+                self.assertAlmostEqual(full.game_impacts[game][team], after[team] - before[team], delta=.010001)
+
     def test_cutoff_invariance_for_fbs_and_fcs_results(self):
         seasons = _sample_seasons()
         base, _ = replay_seasons(seasons)
