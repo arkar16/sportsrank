@@ -1,0 +1,63 @@
+{
+  "provider": "CollegeBasketballData",
+  "training": [
+    2024,
+    2026
+  ],
+  "file": "halftime-reference-v1.csv",
+  "sha256": "ba0f33c815dc032f4e56fd1992d5be32c9dd1d94b7d7280043baf62b23469a71",
+  "widths": {
+    "0": [
+      15.0,
+      26.0,
+      13.0
+    ],
+    "1": [
+      4.0,
+      29.0,
+      10.0
+    ]
+  },
+  "frozen_sha256": "d71de499e259e22bfffb5f0af034dea40f3a6f76d55c8b22e7e2057c3e4a214a",
+  "reserved": 2025,
+  "halftime": {
+    "games": 4813,
+    "mae": 6.577519337813705,
+    "bias": 0.3771087672570165,
+    "spearman": 0.8890696258585897
+  },
+  "final": {
+    "games": 4813,
+    "mae": 10.121241252099008,
+    "bias": 0.21332057362249077,
+    "spearman": 0.7318104499348546
+  },
+  "final_unknown_ot": {
+    "games": 4813,
+    "mae": 10.246093936147123,
+    "bias": 0.2021231847366549,
+    "spearman": 0.7210537495909884
+  },
+  "halftime_qualified": true,
+  "seasons": {
+    "2003": "e723d1737c35ec51d19dadf507e57ed47b438f1fd758ce3f74d1940e29a2e408",
+    "2024": "6995b5ec67774595623fe90c0a61c04b4992b78164bde4be629ade9253e0b2f1",
+    "2025": "69a9158f2d43eb332a256ddac65c5d8d4d4ffb4a75abb9ac3bbb3000e29f84cf",
+    "2026": "1943888e6a8ecfba5defba2c673fb1ee1dc7fc89aa018fa4b007b2896c8a624c",
+    "2027": "81ae1f7036de23ac1b5a215f1628c97336b3d18d462341bc22add956a4ead4db",
+    "2009": "f315a2d4f566eb670ce01a10dd64649c1c6a6bef4a6ec248bfee6e6714321116",
+    "2010": "68edb96cb895993ed3bcee73b852218ca5da7d99436ebc65c6e03bc1dfb4e841",
+    "2011": "db9e251bafd5381c26c01f2f6f1983d60a45373169871ab9ca2a94e46d059a02",
+    "2013": "f33617e0ec0689c8b17f37ac68622f5b725ca7bee9cef789592fd2bc26828509",
+    "2014": "aaac04d1bf25eb515763aa1996a2fdeb2c06adf073d7e9b382118190562f8487",
+    "2015": "ed04b03a9af47f216f5dc747891eee622225fe891a3a3fabfd457b879f5fb235",
+    "2016": "a9c4ec9e6bade07023567a577d0cb25edee8023e98be4a28d6409244ef56338a",
+    "2017": "34b445785800c6812079058007e051bc76996d7d84b048cda6aba53a60fd5361",
+    "2018": "020c61b6e8b198d21d3d78238fbf72a41b71bb272a7d6c6f193a0215b052473f",
+    "2019": "766293c46f7b9ca4af5698b801e5d6c8a8825899fa7edf2a696b484a44cdef3e",
+    "2020": "4a3786d10380cb53944e05c70eab05488fd87e50417b43355a852755d117e83c",
+    "2021": "6efd6aa1c24746b764049c6292d0a0177f4eb207cdffcb20839c01590837b916",
+    "2022": "8b4ad73767a1570fc44221fb4a8fc44ed1a4aa0c0380e76ed09e7137a0f0a73a",
+    "2023": "53b04631ce7eed276e0adea43e20b692695529e3be3a5383a8e945aceb87016f"
+  }
+}

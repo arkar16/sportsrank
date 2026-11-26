@@ -88,7 +88,7 @@ class CbbWebsiteParityTests(unittest.TestCase):
                 self.assertNotIn(script_path, path.read_bytes(), path)
 
     def test_cached_api_cors_seasons_have_weekly_progression_and_performance(self):
-        for year in range(2020, 2028):
+        for year in range(1949, 2028):
             base = SITE / f"cbb/seasons/{year}"
             self.assertTrue((base / "index.html").is_file(), f"missing season {year}")
             self.assertTrue((base / "weeks/0.html").is_file(), f"missing week 0 for {year}")
@@ -151,7 +151,7 @@ class CbbWebsiteParityTests(unittest.TestCase):
         self.assertIsNotNone(index.select_one('a[href="/cbb/performance/2027/index.html"]'))
         with (SITE / "cbb/performance/seasons.csv").open(encoding="utf-8") as handle:
             csv_rows = list(csv.DictReader(handle))
-        self.assertEqual([int(r["season"]) for r in csv_rows], list(range(2020, 2028)))
+        self.assertEqual([int(r["season"]) for r in csv_rows], list(range(1949, 2028)))
 
         report_2026 = self.read("cbb/performance/2026/index.html")
         self.assertIsNotNone(report_2026.select_one(".metrics"))
@@ -168,7 +168,7 @@ class CbbWebsiteParityTests(unittest.TestCase):
         for name in ("champions.html", "last-place.html"):
             page = self.read(f"cbb/history/{name}")
             conf_links = page.select('tbody a[href^="/cbb/conferences/"]')
-            self.assertEqual(len(conf_links), 7, name)
+            self.assertEqual(len(conf_links), len(range(1949, 2027)), name)
             for link in conf_links:
                 self.assertTrue((SITE / link["href"].lstrip("/")).is_file(), link["href"])
 

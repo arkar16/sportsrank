@@ -67,7 +67,8 @@ It records each attempt and splits queries that reach the provider’s row limit
 Use `scripts.cache_basketball_plays` for scoring plays. The date, team and
 tournament endpoints return both sides of each matchup. Historical acquisitions
 can use `--cover` to group source requests. The shared account's rate and
-monthly limits apply to both sports.
+monthly limits apply to both sports. Historical play acquisition accepts
+`--reserve` to preserve the balance needed for scheduled work.
 
 ```sh
 uv run --locked python -m cbb.api_history --database .sportsrank/cbbd-history.sqlite3 \

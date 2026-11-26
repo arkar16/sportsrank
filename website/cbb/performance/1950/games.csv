@@ -1,0 +1,938 @@
+week,start_utc,home,away,neutral_site,checkpoint,home_handicap,predicted_winner,home_score,away_score,actual_home_margin,straight_up,cors_line_coverage,absolute_error,status
+0,1949-11-26T05:00:00+00:00,Saint Joseph's,Rhode Island,False,Preseason,-3.60,Saint Joseph's,46,62,-16,incorrect,no_cover,19.60,Evaluated
+0,1949-11-28T05:00:00+00:00,St. John's,Virginia Tech,False,Preseason,1.53,Virginia Tech,84,52,32,incorrect,no_cover,33.53,Evaluated
+1,1949-11-29T05:00:00+00:00,Valparaiso,Toledo,False,Week 1,-3.60,Valparaiso,86,73,13,correct,cover,9.40,Evaluated
+1,1949-11-29T05:00:00+00:00,Long Island University,Virginia Tech,False,Week 1,-8.44,Long Island University,73,53,20,correct,cover,11.56,Evaluated
+1,1949-12-01T05:00:00+00:00,Northwestern,Western Michigan,False,Week 1,-3.60,Northwestern,54,43,11,correct,cover,7.40,Evaluated
+1,1949-12-01T05:00:00+00:00,New York University,Vanderbilt,False,Week 1,6.24,Vanderbilt,59,65,-6,correct,no_cover,0.24,Evaluated
+1,1949-12-01T05:00:00+00:00,Michigan State,Michigan,False,Week 1,-3.60,Michigan State,49,52,-3,incorrect,no_cover,6.60,Evaluated
+1,1949-12-02T05:00:00+00:00,NC State,Washington & Lee,False,Week 1,-3.60,NC State,67,47,20,correct,cover,16.40,Evaluated
+1,1949-12-02T05:00:00+00:00,Utah State,Oregon,False,Week 1,-3.60,Utah State,72,66,6,correct,cover,2.40,Evaluated
+1,1949-12-03T05:00:00+00:00,Canisius,Oregon State,False,Week 1,-13.33,Canisius,58,45,13,correct,no_cover,0.33,Evaluated
+1,1949-12-03T05:00:00+00:00,Minnesota,Loyola Chicago,False,Week 1,4.40,Loyola Chicago,55,51,4,incorrect,no_cover,8.40,Evaluated
+1,1949-12-03T05:00:00+00:00,Utah State,USC,False,Week 1,-3.60,Utah State,43,50,-7,incorrect,no_cover,10.60,Evaluated
+1,1949-12-03T05:00:00+00:00,Ohio State,DePaul,False,Week 1,-3.60,Ohio State,68,70,-2,incorrect,no_cover,5.60,Evaluated
+1,1949-12-03T05:00:00+00:00,Rutgers,Yale,False,Week 1,-10.67,Rutgers,60,73,-13,incorrect,no_cover,23.67,Evaluated
+1,1949-12-03T05:00:00+00:00,Virginia Tech,Maryland,False,Week 1,1.24,Maryland,63,57,6,incorrect,no_cover,7.24,Evaluated
+1,1949-12-03T05:00:00+00:00,Richmond,North Carolina,False,Week 1,-3.60,Richmond,50,58,-8,incorrect,no_cover,11.60,Evaluated
+1,1949-12-03T05:00:00+00:00,Temple,Vanderbilt,False,Week 1,-3.60,Temple,55,35,20,correct,cover,16.40,Evaluated
+1,1949-12-03T05:00:00+00:00,Georgia,Clemson,False,Week 1,-3.60,Georgia,59,40,19,correct,cover,15.40,Evaluated
+1,1949-12-03T05:00:00+00:00,Mississippi State,Florida,False,Week 1,-3.60,Mississippi State,45,63,-18,incorrect,no_cover,21.60,Evaluated
+1,1949-12-03T05:00:00+00:00,Saint Joseph's,LSU,False,Week 1,2.25,LSU,61,59,2,incorrect,no_cover,4.25,Evaluated
+1,1949-12-03T05:00:00+00:00,Wisconsin,Marquette,False,Week 1,-3.60,Wisconsin,63,48,15,correct,cover,11.40,Evaluated
+1,1949-12-03T05:00:00+00:00,Butler,Illinois,False,Week 1,-10.12,Butler,56,60,-4,incorrect,no_cover,14.12,Evaluated
+1,1949-12-05T05:00:00+00:00,Tennessee,Maryland,False,Week 1,-3.60,Tennessee,61,40,21,correct,cover,17.40,Evaluated
+1,1949-12-05T05:00:00+00:00,Ohio State,Marquette,False,Week 1,-3.60,Ohio State,82,53,29,correct,cover,25.40,Evaluated
+1,1949-12-05T05:00:00+00:00,Virginia Tech,North Carolina,False,Week 1,1.24,North Carolina,62,48,14,incorrect,no_cover,15.24,Evaluated
+1,1949-12-05T05:00:00+00:00,NC State,Davidson,False,Week 1,-3.60,NC State,77,43,34,correct,cover,30.40,Evaluated
+1,1949-12-05T05:00:00+00:00,Iowa,Michigan State,False,Week 1,-3.60,Iowa,73,53,20,correct,cover,16.40,Evaluated
+2,1949-12-06T05:00:00+00:00,Michigan,Miami (OH),False,Week 2,-5.64,Michigan,79,48,31,correct,cover,25.36,Evaluated
+2,1949-12-06T05:00:00+00:00,Virginia,Maryland,False,Week 2,-9.20,Virginia,66,56,10,correct,cover,0.80,Evaluated
+2,1949-12-06T05:00:00+00:00,Columbia,Rutgers,False,Week 2,-11.56,Columbia,59,45,14,correct,cover,2.44,Evaluated
+2,1949-12-06T05:00:00+00:00,New York University,Oregon State,False,Week 2,-2.21,New York University,45,49,-4,incorrect,no_cover,6.21,Evaluated
+2,1949-12-06T05:00:00+00:00,Clemson,Georgia,False,Week 2,5.75,Georgia,57,65,-8,correct,cover,2.25,Evaluated
+2,1949-12-06T05:00:00+00:00,St. John's,LSU,False,Week 2,-6.97,St. John's,80,49,31,correct,cover,24.03,Evaluated
+2,1949-12-06T05:00:00+00:00,Oklahoma State,Loyola Chicago,False,Week 2,2.31,Loyola Chicago,48,40,8,incorrect,no_cover,10.31,Evaluated
+2,1949-12-07T05:00:00+00:00,Princeton,Lehigh,False,Week 2,-3.60,Princeton,56,35,21,correct,cover,17.40,Evaluated
+2,1949-12-07T05:00:00+00:00,Villanova,St. Francis Brooklyn,False,Week 2,-4.89,Villanova,80,57,23,correct,cover,18.11,Evaluated
+2,1949-12-07T05:00:00+00:00,Boston College,Rhode Island,False,Week 2,2.69,Rhode Island,63,46,17,incorrect,no_cover,19.69,Evaluated
+2,1949-12-08T05:00:00+00:00,Alabama,Ole Miss,False,Week 2,-3.60,Alabama,56,38,18,correct,cover,14.40,Evaluated
+2,1949-12-08T05:00:00+00:00,Denver,Utah State,False,Week 2,-7.61,Denver,60,39,21,correct,cover,13.39,Evaluated
+2,1949-12-08T05:00:00+00:00,Notre Dame,Creighton,False,Week 2,-3.60,Notre Dame,57,50,7,correct,cover,3.40,Evaluated
+2,1949-12-08T05:00:00+00:00,NC State,George Washington,False,Week 2,-8.56,NC State,74,52,22,correct,cover,13.44,Evaluated
+2,1949-12-08T05:00:00+00:00,Wisconsin,Oregon State,False,Week 2,-16.77,Wisconsin,36,49,-13,incorrect,no_cover,29.77,Evaluated
+2,1949-12-08T05:00:00+00:00,Illinois,Toledo,False,Week 2,-2.39,Illinois,67,51,16,correct,cover,13.61,Evaluated
+2,1949-12-09T05:00:00+00:00,St. Francis Brooklyn,Manhattan,False,Week 2,-9.99,St. Francis Brooklyn,57,71,-14,incorrect,no_cover,23.99,Evaluated
+2,1949-12-09T05:00:00+00:00,USC,Loyola Marymount,False,Week 2,-3.53,USC,65,62,3,correct,no_cover,0.53,Evaluated
+2,1949-12-09T05:00:00+00:00,Colgate,Columbia,False,Week 2,-3.60,Colgate,47,64,-17,incorrect,no_cover,20.60,Evaluated
+2,1949-12-09T05:00:00+00:00,North Carolina,George Washington,False,Week 2,-7.16,North Carolina,44,54,-10,incorrect,no_cover,17.16,Evaluated
+2,1949-12-09T05:00:00+00:00,Mississippi State,Georgia,False,Week 2,7.49,Georgia,51,40,11,incorrect,no_cover,18.49,Evaluated
+2,1949-12-09T05:00:00+00:00,California,Santa Clara,False,Week 2,-3.60,California,48,56,-8,incorrect,no_cover,11.60,Evaluated
+2,1949-12-10T05:00:00+00:00,Holy Cross,Fordham,False,Week 2,-3.60,Holy Cross,75,48,27,correct,cover,23.40,Evaluated
+2,1949-12-10T05:00:00+00:00,Cornell,Colgate,False,Week 2,-3.82,Cornell,71,53,18,correct,cover,14.18,Evaluated
+2,1949-12-10T05:00:00+00:00,Maryland,Washington & Lee,False,Week 2,-2.96,Maryland,65,46,19,correct,cover,16.04,Evaluated
+2,1949-12-10T05:00:00+00:00,Minnesota,Oregon State,False,Week 2,-16.41,Minnesota,60,44,16,correct,no_cover,0.41,Evaluated
+2,1949-12-10T05:00:00+00:00,Syracuse,Columbia,False,Week 2,-3.60,Syracuse,60,48,12,correct,cover,8.40,Evaluated
+2,1949-12-10T05:00:00+00:00,Alabama,Georgia,False,Week 2,1.08,Georgia,53,38,15,incorrect,no_cover,16.08,Evaluated
+2,1949-12-10T05:00:00+00:00,Miami,Florida,False,Week 2,2.81,Florida,53,60,-7,correct,cover,4.19,Evaluated
+2,1949-12-10T05:00:00+00:00,Xavier,Western Kentucky,False,Week 2,-7.83,Xavier,57,59,-2,incorrect,no_cover,9.83,Evaluated
+2,1949-12-10T05:00:00+00:00,Harvard,Navy,False,Week 2,-3.60,Harvard,68,70,-2,incorrect,no_cover,5.60,Evaluated
+2,1949-12-10T05:00:00+00:00,New York University,Rutgers,False,Week 2,-0.50,New York University,73,72,1,correct,cover,0.50,Evaluated
+2,1949-12-10T05:00:00+00:00,St. John's,Rhode Island,False,Week 2,0.77,Rhode Island,75,54,21,incorrect,no_cover,21.77,Evaluated
+2,1949-12-10T05:00:00+00:00,Toledo,Michigan,False,Week 2,1.34,Michigan,57,36,21,incorrect,no_cover,22.34,Evaluated
+2,1949-12-10T05:00:00+00:00,DePaul,La Salle,False,Week 2,-5.34,DePaul,41,49,-8,incorrect,no_cover,13.34,Evaluated
+2,1949-12-10T05:00:00+00:00,Georgia Tech,Furman,False,Week 2,-3.60,Georgia Tech,87,56,31,correct,cover,27.40,Evaluated
+2,1949-12-10T05:00:00+00:00,California,Saint Mary's,False,Week 2,-3.60,California,46,39,7,correct,cover,3.40,Evaluated
+2,1949-12-10T05:00:00+00:00,Loyola Chicago,Wisconsin,False,Week 2,-6.75,Loyola Chicago,55,68,-13,incorrect,no_cover,19.75,Evaluated
+2,1949-12-10T05:00:00+00:00,Michigan State,Indiana,False,Week 2,-1.56,Michigan State,58,73,-15,incorrect,no_cover,16.56,Evaluated
+2,1949-12-10T05:00:00+00:00,Saint Joseph's,Oklahoma State,False,Week 2,1.97,Oklahoma State,46,57,-11,correct,cover,9.03,Evaluated
+2,1949-12-11T05:00:00+00:00,Lafayette,Princeton,False,Week 2,2.15,Princeton,48,35,13,incorrect,no_cover,15.15,Evaluated
+2,1949-12-11T05:00:00+00:00,Auburn,Ole Miss,False,Week 2,-3.60,Auburn,64,60,4,correct,cover,0.40,Evaluated
+2,1949-12-12T05:00:00+00:00,George Washington,Washington & Lee,False,Week 2,-8.56,George Washington,83,68,15,correct,cover,6.44,Evaluated
+2,1949-12-12T05:00:00+00:00,Loyola Chicago,Marquette,False,Week 2,-13.75,Loyola Chicago,76,48,28,correct,cover,14.25,Evaluated
+2,1949-12-12T05:00:00+00:00,Bradley,Nebraska,False,Week 2,-7.37,Bradley,64,54,10,correct,cover,2.63,Evaluated
+3,1949-12-13T05:00:00+00:00,Miami (OH),Dayton,False,Week 3,8.02,Dayton,50,66,-16,correct,cover,7.98,Evaluated
+3,1949-12-13T05:00:00+00:00,Holy Cross,Dartmouth,False,Week 3,-9.86,Holy Cross,85,53,32,correct,cover,22.14,Evaluated
+3,1949-12-13T05:00:00+00:00,Boston College,Harvard,False,Week 3,-10.49,Boston College,49,54,-5,incorrect,no_cover,15.49,Evaluated
+3,1949-12-13T05:00:00+00:00,New York University,Colgate,False,Week 3,-1.09,New York University,78,83,-5,incorrect,no_cover,6.09,Evaluated
+3,1949-12-13T05:00:00+00:00,Wisconsin,Notre Dame,False,Week 3,-2.95,Wisconsin,56,48,8,correct,cover,5.05,Evaluated
+3,1949-12-13T05:00:00+00:00,Indiana,DePaul,False,Week 3,-7.46,Indiana,61,55,6,correct,no_cover,1.46,Evaluated
+3,1949-12-13T05:00:00+00:00,Purdue,Drake,False,Week 3,-3.25,Purdue,81,51,30,correct,cover,26.75,Evaluated
+3,1949-12-13T05:00:00+00:00,Long Island University,Oklahoma State,False,Week 3,-2.43,Long Island University,38,31,7,correct,cover,4.57,Evaluated
+3,1949-12-14T05:00:00+00:00,Lehigh,Bucknell,False,Week 3,1.66,Bucknell,52,71,-19,correct,cover,17.34,Evaluated
+3,1949-12-14T05:00:00+00:00,Navy,Virginia,False,Week 3,-3.87,Navy,61,38,23,correct,cover,19.13,Evaluated
+3,1949-12-14T05:00:00+00:00,Georgetown,Penn State,False,Week 3,-3.60,Georgetown,70,63,7,correct,cover,3.40,Evaluated
+3,1949-12-14T05:00:00+00:00,Rutgers,Princeton,False,Week 3,9.93,Princeton,66,55,11,incorrect,no_cover,20.93,Evaluated
+3,1949-12-14T05:00:00+00:00,Miami,South Carolina,False,Week 3,-2.80,Miami,64,54,10,correct,cover,7.20,Evaluated
+3,1949-12-14T05:00:00+00:00,Michigan,Butler,False,Week 3,-6.40,Michigan,73,48,25,correct,cover,18.60,Evaluated
+3,1949-12-14T05:00:00+00:00,Louisville,Loyola Marymount,False,Week 3,-3.64,Louisville,47,46,1,correct,no_cover,2.64,Evaluated
+3,1949-12-14T05:00:00+00:00,Georgia Tech,Davidson,False,Week 3,-19.22,Georgia Tech,78,59,19,correct,no_cover,0.22,Evaluated
+3,1949-12-15T05:00:00+00:00,Canisius,USC,False,Week 3,-5.27,Canisius,55,69,-14,incorrect,no_cover,19.27,Evaluated
+3,1949-12-15T05:00:00+00:00,Niagara,Denver,False,Week 3,-0.54,Niagara,55,54,1,correct,cover,0.46,Evaluated
+3,1949-12-15T05:00:00+00:00,Miami,South Carolina,False,Week 3,-2.80,Miami,57,56,1,correct,no_cover,1.80,Evaluated
+3,1949-12-15T05:00:00+00:00,NC State,Loyola Marymount,False,Week 3,-15.23,NC State,62,47,15,correct,no_cover,0.23,Evaluated
+3,1949-12-15T05:00:00+00:00,Davidson,Duke,False,Week 3,4.09,Duke,49,66,-17,correct,cover,12.91,Evaluated
+3,1949-12-15T05:00:00+00:00,St. John's,Kentucky,False,Week 3,-4.27,St. John's,69,58,11,correct,cover,6.73,Evaluated
+3,1949-12-16T05:00:00+00:00,Santa Clara,UCLA,False,Week 3,-7.90,Santa Clara,56,68,-12,incorrect,no_cover,19.90,Evaluated
+3,1949-12-16T05:00:00+00:00,Tulane,Florida,False,Week 3,7.55,Florida,69,50,19,incorrect,no_cover,26.55,Evaluated
+3,1949-12-16T05:00:00+00:00,Maryland,Clemson,False,Week 3,-9.15,Maryland,55,60,-5,incorrect,no_cover,14.15,Evaluated
+3,1949-12-17T05:00:00+00:00,Colgate,Princeton,False,Week 3,10.63,Princeton,76,68,8,incorrect,no_cover,18.63,Evaluated
+3,1949-12-17T05:00:00+00:00,Navy,Maryland,False,Week 3,-8.49,Navy,75,62,13,correct,cover,4.51,Evaluated
+3,1949-12-17T05:00:00+00:00,George Washington,Virginia,False,Week 3,-2.44,George Washington,64,68,-4,incorrect,no_cover,6.44,Evaluated
+3,1949-12-17T05:00:00+00:00,Bradley,Purdue,False,Week 3,-8.72,Bradley,65,71,-6,incorrect,no_cover,14.72,Evaluated
+3,1949-12-17T05:00:00+00:00,Tennessee,Dayton,False,Week 3,-9.90,Tennessee,38,57,-19,incorrect,no_cover,28.90,Evaluated
+3,1949-12-17T05:00:00+00:00,Tulane,Ole Miss,False,Week 3,-4.71,Tulane,70,58,12,correct,cover,7.29,Evaluated
+3,1949-12-17T05:00:00+00:00,Washington & Lee,Duke,False,Week 3,3.46,Duke,67,81,-14,correct,cover,10.54,Evaluated
+3,1949-12-17T05:00:00+00:00,Georgetown,Harvard,False,Week 3,-5.34,Georgetown,58,53,5,correct,no_cover,0.34,Evaluated
+3,1949-12-17T05:00:00+00:00,Cornell,Yale,False,Week 3,-9.35,Cornell,60,57,3,correct,no_cover,6.35,Evaluated
+3,1949-12-17T05:00:00+00:00,Syracuse,Rutgers,False,Week 3,-16.61,Syracuse,72,53,19,correct,cover,2.39,Evaluated
+3,1949-12-17T05:00:00+00:00,Long Island University,Denver,False,Week 3,-4.15,Long Island University,58,43,15,correct,cover,10.85,Evaluated
+3,1949-12-17T05:00:00+00:00,Georgia,South Carolina,False,Week 3,-2.89,Georgia,77,62,15,correct,cover,12.11,Evaluated
+3,1949-12-17T05:00:00+00:00,New York University,Holy Cross,False,Week 3,14.14,Holy Cross,34,49,-15,correct,cover,0.86,Evaluated
+3,1949-12-17T05:00:00+00:00,Saint Mary's,Colorado State,False,Week 3,-1.21,Saint Mary's,58,67,-9,incorrect,no_cover,10.21,Evaluated
+3,1949-12-17T05:00:00+00:00,Saint Joseph's,USC,False,Week 3,4.82,USC,65,79,-14,correct,cover,9.18,Evaluated
+3,1949-12-17T05:00:00+00:00,Cincinnati,Western Kentucky,False,Week 3,-5.62,Cincinnati,55,54,1,correct,no_cover,4.62,Evaluated
+3,1949-12-17T05:00:00+00:00,Xavier,Louisville,False,Week 3,-0.21,Xavier,47,64,-17,incorrect,no_cover,17.21,Evaluated
+3,1949-12-17T05:00:00+00:00,Richmond,Clemson,False,Week 3,-4.74,Richmond,53,75,-22,incorrect,no_cover,26.74,Evaluated
+3,1949-12-17T05:00:00+00:00,Mississippi State,Alabama,False,Week 3,4.74,Alabama,47,44,3,incorrect,no_cover,7.74,Evaluated
+3,1949-12-17T05:00:00+00:00,LSU,Florida,False,Week 3,11.45,Florida,73,49,24,incorrect,no_cover,35.45,Evaluated
+3,1949-12-17T05:00:00+00:00,Canisius,California,False,Week 3,-6.49,Canisius,55,53,2,correct,no_cover,4.49,Evaluated
+3,1949-12-17T05:00:00+00:00,Marquette,Wisconsin,False,Week 3,6.50,Wisconsin,45,62,-17,correct,cover,10.50,Evaluated
+3,1949-12-18T05:00:00+00:00,San Francisco,UCLA,False,Week 3,-14.33,San Francisco,53,40,13,correct,no_cover,1.33,Evaluated
+3,1949-12-19T05:00:00+00:00,Niagara,St. Francis Brooklyn,False,Week 3,-12.79,Niagara,65,58,7,correct,no_cover,5.79,Evaluated
+3,1949-12-19T05:00:00+00:00,Washington & Lee,George Washington,False,Week 3,3.77,George Washington,61,63,-2,correct,no_cover,1.77,Evaluated
+3,1949-12-19T05:00:00+00:00,Syracuse,Princeton,False,Week 3,-3.08,Syracuse,80,48,32,correct,cover,28.92,Evaluated
+3,1949-12-19T05:00:00+00:00,Bowling Green,William & Mary,False,Week 3,-9.14,Bowling Green,74,58,16,correct,cover,6.86,Evaluated
+3,1949-12-19T05:00:00+00:00,Cornell,Rutgers,False,Week 3,-14.76,Cornell,78,46,32,correct,cover,17.24,Evaluated
+3,1949-12-19T05:00:00+00:00,Duquesne,Loyola Marymount,False,Week 3,-3.64,Duquesne,61,47,14,correct,cover,10.36,Evaluated
+3,1949-12-19T05:00:00+00:00,Notre Dame,Iowa,False,Week 3,-0.73,Notre Dame,62,64,-2,incorrect,no_cover,2.73,Evaluated
+3,1949-12-19T05:00:00+00:00,St. John's,Washington State,False,Week 3,-12.83,St. John's,67,44,23,correct,cover,10.17,Evaluated
+3,1949-12-19T05:00:00+00:00,Louisville,Denver,False,Week 3,-1.62,Louisville,81,70,11,correct,cover,9.38,Evaluated
+3,1949-12-19T05:00:00+00:00,NC State,Michigan,False,Week 3,-16.20,NC State,46,54,-8,incorrect,no_cover,24.20,Evaluated
+3,1949-12-19T05:00:00+00:00,Bradley,Georgia Tech,False,Week 3,0.99,Georgia Tech,84,60,24,incorrect,no_cover,24.99,Evaluated
+3,1949-12-19T05:00:00+00:00,LSU,Ole Miss,False,Week 3,-0.80,LSU,74,61,13,correct,cover,12.20,Evaluated
+3,1949-12-19T05:00:00+00:00,Oregon State,Indiana,False,Week 3,6.25,Indiana,60,65,-5,correct,no_cover,1.25,Evaluated
+4,1949-12-20T05:00:00+00:00,Long Island University,USC,False,Week 4,-5.03,Long Island University,70,45,25,correct,cover,19.97,Evaluated
+4,1949-12-20T05:00:00+00:00,Auburn,Alabama,False,Week 4,3.41,Alabama,45,40,5,incorrect,no_cover,8.41,Evaluated
+4,1949-12-20T05:00:00+00:00,Boston College,Loyola Marymount,False,Week 4,-2.79,Boston College,55,53,2,correct,no_cover,0.79,Evaluated
+4,1949-12-20T05:00:00+00:00,NC State,Michigan,False,Week 4,-12.49,NC State,63,52,11,correct,no_cover,1.49,Evaluated
+4,1949-12-20T05:00:00+00:00,South Carolina,Duke,False,Week 4,6.88,Duke,54,44,10,incorrect,no_cover,16.88,Evaluated
+4,1949-12-20T05:00:00+00:00,Saint Louis,Georgia Tech,False,Week 4,3.75,Georgia Tech,59,45,14,incorrect,no_cover,17.75,Evaluated
+4,1949-12-20T05:00:00+00:00,Washington,Minnesota,False,Week 4,0.39,Minnesota,53,55,-2,correct,cover,1.61,Evaluated
+4,1949-12-20T05:00:00+00:00,Oregon,Stanford,False,Week 4,1.61,Stanford,67,70,-3,correct,cover,1.39,Evaluated
+4,1949-12-20T05:00:00+00:00,New York University,California,False,Week 4,4.20,California,69,50,19,incorrect,no_cover,23.20,Evaluated
+4,1949-12-20T05:00:00+00:00,Oregon State,Indiana,False,Week 4,7.49,Indiana,53,58,-5,correct,no_cover,2.49,Evaluated
+4,1949-12-21T05:00:00+00:00,Valparaiso,Western Michigan,False,Week 4,-7.03,Valparaiso,66,64,2,correct,no_cover,5.03,Evaluated
+4,1949-12-21T05:00:00+00:00,Miami,Ole Miss,False,Week 4,-3.37,Miami,82,67,15,correct,cover,11.63,Evaluated
+4,1949-12-21T05:00:00+00:00,Xavier,Santa Clara,False,Week 4,3.87,Santa Clara,76,41,35,incorrect,no_cover,38.87,Evaluated
+4,1949-12-21T05:00:00+00:00,Toledo,Denver,False,Week 4,-2.96,Toledo,52,50,2,correct,no_cover,0.96,Evaluated
+4,1949-12-21T05:00:00+00:00,Bradley,Washington State,False,Week 4,-7.58,Bradley,67,59,8,correct,cover,0.42,Evaluated
+4,1949-12-21T05:00:00+00:00,West Virginia,Temple,False,Week 4,3.51,Temple,57,46,11,incorrect,no_cover,14.51,Evaluated
+4,1949-12-21T05:00:00+00:00,Washington,Minnesota,False,Week 4,0.39,Minnesota,53,46,7,incorrect,no_cover,7.39,Evaluated
+4,1949-12-21T05:00:00+00:00,Oregon,Stanford,False,Week 4,1.61,Stanford,58,51,7,incorrect,no_cover,8.61,Evaluated
+4,1949-12-21T05:00:00+00:00,Drake,Idaho,False,Week 4,-0.98,Drake,58,53,5,correct,cover,4.02,Evaluated
+4,1949-12-22T05:00:00+00:00,Miami,Ole Miss,False,Week 4,-3.37,Miami,55,43,12,correct,cover,8.63,Evaluated
+4,1949-12-22T05:00:00+00:00,Duquesne,Fordham,False,Week 4,-10.76,Duquesne,75,61,14,correct,cover,3.24,Evaluated
+4,1949-12-22T05:00:00+00:00,St. John's,San Francisco,False,Week 4,-3.81,St. John's,60,44,16,correct,cover,12.19,Evaluated
+4,1949-12-22T05:00:00+00:00,Wichita State,Creighton,False,Week 4,-5.84,Wichita State,70,53,17,correct,cover,11.16,Evaluated
+4,1949-12-22T05:00:00+00:00,Louisville,LSU,False,Week 4,-8.78,Louisville,75,65,10,correct,cover,1.22,Evaluated
+4,1949-12-22T05:00:00+00:00,Michigan State,Georgia Tech,False,Week 4,11.20,Georgia Tech,60,68,-8,correct,no_cover,3.20,Evaluated
+4,1949-12-22T05:00:00+00:00,Illinois,Saint Louis,False,Week 4,-2.25,Illinois,59,47,12,correct,cover,9.75,Evaluated
+4,1949-12-23T05:00:00+00:00,West Virginia,Fordham,False,Week 4,-8.05,West Virginia,61,37,24,correct,cover,15.95,Evaluated
+4,1949-12-23T05:00:00+00:00,Washington,Stanford,False,Week 4,-3.60,Washington,62,56,6,correct,cover,2.40,Evaluated
+4,1949-12-23T05:00:00+00:00,Ohio State,California,False,Week 4,-8.96,Ohio State,78,67,11,correct,cover,2.04,Evaluated
+4,1949-12-23T05:00:00+00:00,Northwestern,Michigan State,False,Week 4,-13.03,Northwestern,68,46,22,correct,cover,8.97,Evaluated
+4,1949-12-23T05:00:00+00:00,Illinois,UCLA,False,Week 4,4.60,UCLA,63,65,-2,correct,no_cover,2.60,Evaluated
+4,1949-12-23T05:00:00+00:00,Nebraska,Idaho,False,Week 4,-8.12,Nebraska,66,45,21,correct,cover,12.88,Evaluated
+4,1949-12-24T05:00:00+00:00,DePaul,USC,False,Week 4,-0.76,DePaul,52,57,-5,incorrect,no_cover,5.76,Evaluated
+4,1949-12-25T05:00:00+00:00,Purdue,Kentucky,False,Week 4,-4.16,Purdue,54,60,-6,incorrect,no_cover,10.16,Evaluated
+4,1949-12-26T05:00:00+00:00,Manhattan,Santa Clara,False,Week 4,-0.78,Manhattan,64,73,-9,incorrect,no_cover,9.78,Evaluated
+4,1949-12-26T05:00:00+00:00,Canisius,Western Kentucky,False,Week 4,-2.70,Canisius,61,74,-13,incorrect,no_cover,15.70,Evaluated
+4,1949-12-26T05:00:00+00:00,La Salle,UCLA,False,Week 4,-3.39,La Salle,57,62,-5,incorrect,no_cover,8.39,Evaluated
+5,1949-12-27T05:00:00+00:00,Oregon State,Minnesota,False,Week 5,5.58,Minnesota,41,51,-10,correct,cover,4.42,Evaluated
+5,1949-12-27T05:00:00+00:00,Bradley,DePaul,False,Week 5,-10.76,Bradley,68,65,3,correct,no_cover,7.76,Evaluated
+5,1949-12-27T05:00:00+00:00,Syracuse,Brown,False,Week 5,-13.52,Syracuse,54,52,2,correct,no_cover,11.52,Evaluated
+5,1949-12-27T05:00:00+00:00,Xavier,Holy Cross,False,Week 5,6.72,Holy Cross,51,54,-3,correct,no_cover,3.72,Evaluated
+5,1949-12-27T05:00:00+00:00,Duquesne,Idaho,False,Week 5,-14.69,Duquesne,74,55,19,correct,cover,4.31,Evaluated
+5,1949-12-27T05:00:00+00:00,Yale,Boston College,False,Week 5,-2.06,Yale,33,45,-12,incorrect,no_cover,14.06,Evaluated
+5,1949-12-27T05:00:00+00:00,Loyola Chicago,Oregon,False,Week 5,-11.11,Loyola Chicago,70,53,17,correct,cover,5.89,Evaluated
+5,1949-12-27T05:00:00+00:00,Illinois,Columbia,False,Week 5,0.84,Columbia,58,46,12,incorrect,no_cover,12.84,Evaluated
+5,1949-12-28T05:00:00+00:00,Bowling Green,Holy Cross,False,Week 5,-1.21,Bowling Green,70,71,-1,incorrect,no_cover,2.21,Evaluated
+5,1949-12-28T05:00:00+00:00,Iowa,Oregon,False,Week 5,-13.75,Iowa,81,54,27,correct,cover,13.25,Evaluated
+5,1949-12-28T05:00:00+00:00,Michigan State,Harvard,False,Week 5,8.73,Harvard,57,68,-11,correct,cover,2.27,Evaluated
+5,1949-12-29T05:00:00+00:00,USC,Loyola Marymount,False,Week 5,-5.18,USC,55,42,13,correct,cover,7.82,Evaluated
+5,1949-12-29T05:00:00+00:00,St. Bonaventure,Brown,False,Week 5,-3.60,St. Bonaventure,54,51,3,correct,no_cover,0.60,Evaluated
+5,1949-12-29T05:00:00+00:00,Northwestern,UCLA,False,Week 5,-3.83,Northwestern,64,58,6,correct,cover,2.17,Evaluated
+5,1949-12-29T05:00:00+00:00,Butler,Purdue,False,Week 5,12.95,Purdue,57,52,5,incorrect,no_cover,17.95,Evaluated
+5,1949-12-29T05:00:00+00:00,Tulane,Bradley,False,Week 5,-2.75,Tulane,46,78,-32,incorrect,no_cover,34.75,Evaluated
+5,1949-12-29T05:00:00+00:00,New York University,Yale,False,Week 5,5.62,Yale,72,62,10,incorrect,no_cover,15.62,Evaluated
+5,1949-12-29T05:00:00+00:00,Denver,Columbia,False,Week 5,0.20,Columbia,59,63,-4,correct,cover,3.80,Evaluated
+5,1949-12-29T05:00:00+00:00,Temple,Santa Clara,False,Week 5,-14.39,Temple,41,66,-25,incorrect,no_cover,39.39,Evaluated
+5,1949-12-29T05:00:00+00:00,La Salle,San Francisco,False,Week 5,-0.13,La Salle,44,46,-2,incorrect,no_cover,2.13,Evaluated
+5,1949-12-29T05:00:00+00:00,NC State,Georgia Tech,False,Week 5,-11.69,NC State,57,34,23,correct,cover,11.31,Evaluated
+5,1949-12-29T05:00:00+00:00,Michigan State,Cornell,False,Week 5,12.45,Cornell,61,54,7,incorrect,no_cover,19.45,Evaluated
+5,1949-12-30T05:00:00+00:00,Syracuse,Holy Cross,False,Week 5,-4.58,Syracuse,58,71,-13,incorrect,no_cover,17.58,Evaluated
+5,1949-12-30T05:00:00+00:00,Tulane,Villanova,False,Week 5,-6.04,Tulane,58,55,3,correct,no_cover,3.04,Evaluated
+5,1949-12-30T05:00:00+00:00,Seton Hall,William & Mary,False,Week 5,-6.62,Seton Hall,47,65,-18,incorrect,no_cover,24.62,Evaluated
+5,1949-12-30T05:00:00+00:00,Duquesne,Dartmouth,False,Week 5,-15.26,Duquesne,79,51,28,correct,cover,12.74,Evaluated
+5,1949-12-30T05:00:00+00:00,Washington,Columbia,False,Week 5,-0.60,Washington,60,56,4,correct,cover,3.40,Evaluated
+5,1949-12-30T05:00:00+00:00,Iowa,Oregon,False,Week 5,-13.75,Iowa,70,69,1,correct,no_cover,12.75,Evaluated
+5,1949-12-30T05:00:00+00:00,Wisconsin,UCLA,False,Week 5,-1.71,Wisconsin,54,52,2,correct,cover,0.29,Evaluated
+5,1949-12-30T05:00:00+00:00,Butler,Indiana,False,Week 5,7.63,Indiana,57,68,-11,correct,cover,3.37,Evaluated
+5,1949-12-30T05:00:00+00:00,Illinois,Princeton,False,Week 5,-11.47,Illinois,68,61,7,correct,no_cover,4.47,Evaluated
+5,1949-12-30T05:00:00+00:00,Drake,Tennessee,False,Week 5,3.53,Tennessee,57,64,-7,correct,cover,3.47,Evaluated
+5,1949-12-31T05:00:00+00:00,Canisius,Cornell,False,Week 5,8.04,Cornell,43,47,-4,correct,no_cover,4.04,Evaluated
+5,1949-12-31T05:00:00+00:00,Niagara,San Francisco,False,Week 5,8.02,San Francisco,48,52,-4,correct,no_cover,4.02,Evaluated
+5,1949-12-31T05:00:00+00:00,Northwestern,Princeton,False,Week 5,-14.67,Northwestern,68,49,19,correct,cover,4.33,Evaluated
+5,1949-12-31T05:00:00+00:00,Marquette,UCLA,False,Week 5,13.54,UCLA,52,68,-16,correct,cover,2.46,Evaluated
+5,1949-12-31T05:00:00+00:00,La Salle,Georgetown,False,Week 5,-7.08,La Salle,90,58,32,correct,cover,24.92,Evaluated
+5,1949-12-31T05:00:00+00:00,Washington,Columbia,False,Week 5,-0.60,Washington,49,46,3,correct,cover,2.40,Evaluated
+5,1950-01-02T05:00:00+00:00,Vanderbilt,Washington University (St. Louis),False,Week 5,0.56,Washington University (St. Louis),53,55,-2,correct,cover,1.44,Evaluated
+5,1950-01-02T05:00:00+00:00,Cornell,Brown,False,Week 5,-9.94,Cornell,39,32,7,correct,no_cover,2.94,Evaluated
+5,1950-01-02T05:00:00+00:00,Bradley,Ohio State,False,Week 5,-9.64,Bradley,65,46,19,correct,cover,9.36,Evaluated
+5,1950-01-02T05:00:00+00:00,New York University,Dartmouth,False,Week 5,-2.04,New York University,87,39,48,correct,cover,45.96,Evaluated
+5,1950-01-02T05:00:00+00:00,Duquesne,Rutgers,False,Week 5,-14.90,Duquesne,59,54,5,correct,no_cover,9.90,Evaluated
+5,1950-01-02T05:00:00+00:00,Iowa,Utah State,False,Week 5,-15.83,Iowa,62,58,4,correct,no_cover,11.83,Evaluated
+5,1950-01-02T05:00:00+00:00,North Carolina,Maryland,False,Week 5,-1.62,North Carolina,55,53,2,correct,cover,0.38,Evaluated
+5,1950-01-02T05:00:00+00:00,La Salle,Western Kentucky,False,Week 5,-10.09,La Salle,80,69,11,correct,cover,0.91,Evaluated
+5,1950-01-02T05:00:00+00:00,Louisville,Tennessee,False,Week 5,-9.25,Louisville,74,63,11,correct,cover,1.75,Evaluated
+5,1950-01-02T05:00:00+00:00,Oregon,Columbia,False,Week 5,4.99,Columbia,62,74,-12,correct,cover,7.01,Evaluated
+5,1950-01-02T05:00:00+00:00,Indiana,Michigan State,False,Week 5,-16.98,Indiana,60,50,10,correct,no_cover,6.98,Evaluated
+5,1950-01-02T05:00:00+00:00,Wisconsin,Illinois,False,Week 5,-4.69,Wisconsin,59,50,9,correct,cover,4.31,Evaluated
+6,1950-01-03T05:00:00+00:00,Manhattan,George Washington,False,Week 6,-1.02,Manhattan,76,64,12,correct,cover,10.98,Evaluated
+6,1950-01-03T05:00:00+00:00,Wake Forest,William & Mary,False,Week 6,-2.53,Wake Forest,34,48,-14,incorrect,no_cover,16.53,Evaluated
+6,1950-01-03T05:00:00+00:00,Furman,South Carolina,False,Week 6,6.82,South Carolina,41,52,-11,correct,cover,4.18,Evaluated
+6,1950-01-03T05:00:00+00:00,Oregon State,Washington State,False,Week 6,-1.28,Oregon State,38,42,-4,incorrect,no_cover,5.28,Evaluated
+6,1950-01-03T05:00:00+00:00,NC State,San Francisco,False,Week 6,-3.23,NC State,69,54,15,correct,cover,11.77,Evaluated
+6,1950-01-03T05:00:00+00:00,Oregon,Columbia,False,Week 6,3.26,Columbia,35,46,-11,correct,cover,7.74,Evaluated
+6,1950-01-03T05:00:00+00:00,Drake,Detroit Mercy,False,Week 6,4.77,Detroit Mercy,67,53,14,incorrect,no_cover,18.77,Evaluated
+6,1950-01-04T05:00:00+00:00,Saint Louis,Detroit Mercy,False,Week 6,-3.82,Saint Louis,56,41,15,correct,cover,11.18,Evaluated
+6,1950-01-04T05:00:00+00:00,Harvard,Holy Cross,False,Week 6,4.57,Holy Cross,71,102,-31,correct,cover,26.43,Evaluated
+6,1950-01-04T05:00:00+00:00,Fordham,Rutgers,False,Week 6,-4.96,Fordham,74,78,-4,incorrect,no_cover,8.96,Evaluated
+6,1950-01-04T05:00:00+00:00,Notre Dame,Butler,False,Week 6,-7.73,Notre Dame,54,33,21,correct,cover,13.27,Evaluated
+6,1950-01-04T05:00:00+00:00,Oregon State,Washington State,False,Week 6,-1.28,Oregon State,54,53,1,correct,no_cover,0.28,Evaluated
+6,1950-01-04T05:00:00+00:00,Duke,Maryland,False,Week 6,-10.77,Duke,58,46,12,correct,cover,1.23,Evaluated
+6,1950-01-04T05:00:00+00:00,Oklahoma State,DePaul,False,Week 6,-6.97,Oklahoma State,40,41,-1,incorrect,no_cover,7.97,Evaluated
+6,1950-01-05T05:00:00+00:00,Columbia,Princeton,False,Week 6,-13.88,Columbia,52,48,4,correct,no_cover,9.88,Evaluated
+6,1950-01-05T05:00:00+00:00,New York University,Temple,False,Week 6,2.05,Temple,45,50,-5,correct,cover,2.95,Evaluated
+6,1950-01-06T05:00:00+00:00,St. Francis Brooklyn,Fordham,False,Week 6,-2.40,St. Francis Brooklyn,51,56,-5,incorrect,no_cover,7.40,Evaluated
+6,1950-01-06T05:00:00+00:00,USC,Stanford,False,Week 6,-8.76,USC,73,58,15,correct,cover,6.24,Evaluated
+6,1950-01-06T05:00:00+00:00,Denver,Utah State,False,Week 6,-9.88,Denver,56,51,5,correct,no_cover,4.88,Evaluated
+6,1950-01-06T05:00:00+00:00,Wake Forest,South Carolina,False,Week 6,-4.94,Wake Forest,57,52,5,correct,cover,0.06,Evaluated
+6,1950-01-06T05:00:00+00:00,LSU,Georgia Tech,False,Week 6,-5.11,LSU,63,52,11,correct,cover,5.89,Evaluated
+6,1950-01-06T05:00:00+00:00,Washington,Idaho,False,Week 6,-13.49,Washington,67,43,24,correct,cover,10.51,Evaluated
+6,1950-01-06T05:00:00+00:00,Oregon,Washington State,False,Week 6,-1.76,Oregon,51,48,3,correct,cover,1.24,Evaluated
+6,1950-01-06T05:00:00+00:00,UCLA,California,False,Week 6,-18.00,UCLA,50,45,5,correct,no_cover,13.00,Evaluated
+6,1950-01-07T05:00:00+00:00,Navy,VMI,False,Week 6,-10.08,Navy,76,26,50,correct,cover,39.92,Evaluated
+6,1950-01-07T05:00:00+00:00,William & Mary,Washington & Lee,False,Week 6,-15.26,William & Mary,80,56,24,correct,cover,8.74,Evaluated
+6,1950-01-07T05:00:00+00:00,Western Michigan,Miami (OH),False,Week 6,-15.46,Western Michigan,94,66,28,correct,cover,12.54,Evaluated
+6,1950-01-07T05:00:00+00:00,Canisius,Saint Louis,False,Week 6,2.58,Saint Louis,55,50,5,incorrect,no_cover,7.58,Evaluated
+6,1950-01-07T05:00:00+00:00,Army,Brown,False,Week 6,-0.95,Army,51,43,8,correct,cover,7.05,Evaluated
+6,1950-01-07T05:00:00+00:00,Georgetown,Maryland,False,Week 6,-5.87,Georgetown,65,71,-6,incorrect,no_cover,11.87,Evaluated
+6,1950-01-07T05:00:00+00:00,Villanova,Valparaiso,False,Week 6,-2.57,Villanova,60,55,5,correct,cover,2.43,Evaluated
+6,1950-01-07T05:00:00+00:00,Niagara,West Virginia,False,Week 6,1.67,West Virginia,70,63,7,incorrect,no_cover,8.67,Evaluated
+6,1950-01-07T05:00:00+00:00,Minnesota,Marquette,False,Week 6,-21.76,Minnesota,74,38,36,correct,cover,14.24,Evaluated
+6,1950-01-07T05:00:00+00:00,Santa Clara,Saint Mary's,False,Week 6,-9.95,Santa Clara,49,37,12,correct,cover,2.05,Evaluated
+6,1950-01-07T05:00:00+00:00,Purdue,Northwestern,False,Week 6,-3.11,Purdue,58,60,-2,incorrect,no_cover,5.11,Evaluated
+6,1950-01-07T05:00:00+00:00,Georgia,Ole Miss,False,Week 6,-13.53,Georgia,70,52,18,correct,cover,4.47,Evaluated
+6,1950-01-07T05:00:00+00:00,Tennessee,Vanderbilt,False,Week 6,-9.89,Tennessee,52,67,-15,incorrect,no_cover,24.89,Evaluated
+6,1950-01-07T05:00:00+00:00,Florida,Alabama,False,Week 6,-0.43,Florida,48,51,-3,incorrect,no_cover,3.43,Evaluated
+6,1950-01-07T05:00:00+00:00,UCLA,Stanford,False,Week 6,-11.25,UCLA,71,55,16,correct,cover,4.75,Evaluated
+6,1950-01-07T05:00:00+00:00,Penn State,Colgate,False,Week 6,-7.19,Penn State,67,68,-1,incorrect,no_cover,8.19,Evaluated
+6,1950-01-07T05:00:00+00:00,Princeton,Harvard,False,Week 6,7.50,Harvard,77,42,35,incorrect,no_cover,42.50,Evaluated
+6,1950-01-07T05:00:00+00:00,Columbia,Yale,False,Week 6,-10.96,Columbia,51,43,8,correct,no_cover,2.96,Evaluated
+6,1950-01-07T05:00:00+00:00,Dartmouth,Cornell,False,Week 6,9.03,Cornell,48,47,1,incorrect,no_cover,10.03,Evaluated
+6,1950-01-07T05:00:00+00:00,Rutgers,Bucknell,False,Week 6,10.06,Bucknell,88,63,25,incorrect,no_cover,35.06,Evaluated
+6,1950-01-07T05:00:00+00:00,George Washington,Richmond,False,Week 6,-14.35,George Washington,66,49,17,correct,cover,2.65,Evaluated
+6,1950-01-07T05:00:00+00:00,Denver,Utah State,False,Week 6,-9.88,Denver,47,59,-12,incorrect,no_cover,21.88,Evaluated
+6,1950-01-07T05:00:00+00:00,Holy Cross,Boston College,False,Week 6,-11.58,Holy Cross,93,46,47,correct,cover,35.42,Evaluated
+6,1950-01-07T05:00:00+00:00,Michigan,Iowa,False,Week 6,-2.63,Michigan,66,46,20,correct,cover,17.37,Evaluated
+6,1950-01-07T05:00:00+00:00,Davidson,North Carolina,False,Week 6,2.13,North Carolina,53,63,-10,correct,cover,7.87,Evaluated
+6,1950-01-07T05:00:00+00:00,Temple,Syracuse,False,Week 6,4.94,Syracuse,55,52,3,incorrect,no_cover,7.94,Evaluated
+6,1950-01-07T05:00:00+00:00,St. John's,Saint Joseph's,False,Week 6,-25.18,St. John's,76,58,18,correct,no_cover,7.18,Evaluated
+6,1950-01-07T05:00:00+00:00,La Salle,Bowling Green,False,Week 6,-3.54,La Salle,72,62,10,correct,cover,6.46,Evaluated
+6,1950-01-07T05:00:00+00:00,Cincinnati,Pittsburgh,False,Week 6,-2.75,Cincinnati,63,38,25,correct,cover,22.25,Evaluated
+6,1950-01-07T05:00:00+00:00,Louisville,Xavier,False,Week 6,-8.27,Louisville,77,72,5,correct,no_cover,3.27,Evaluated
+6,1950-01-07T05:00:00+00:00,Duke,NC State,False,Week 6,3.90,NC State,58,55,3,incorrect,no_cover,6.90,Evaluated
+6,1950-01-07T05:00:00+00:00,Furman,Clemson,False,Week 6,6.54,Clemson,56,55,1,incorrect,no_cover,7.54,Evaluated
+6,1950-01-07T05:00:00+00:00,Tulane,Georgia Tech,False,Week 6,-5.46,Tulane,64,62,2,correct,no_cover,3.46,Evaluated
+6,1950-01-07T05:00:00+00:00,Mississippi State,Auburn,False,Week 6,-2.50,Mississippi State,64,65,-1,incorrect,no_cover,3.50,Evaluated
+6,1950-01-07T05:00:00+00:00,Washington,Idaho,False,Week 6,-13.49,Washington,44,40,4,correct,no_cover,9.49,Evaluated
+6,1950-01-07T05:00:00+00:00,Oregon,Washington State,False,Week 6,-1.76,Oregon,46,54,-8,incorrect,no_cover,9.76,Evaluated
+6,1950-01-07T05:00:00+00:00,USC,California,False,Week 6,-15.51,USC,61,45,16,correct,cover,0.49,Evaluated
+6,1950-01-07T05:00:00+00:00,Michigan State,Notre Dame,False,Week 6,3.45,Notre Dame,65,76,-11,correct,cover,7.55,Evaluated
+6,1950-01-07T05:00:00+00:00,Indiana,Wisconsin,False,Week 6,-7.10,Indiana,61,59,2,correct,no_cover,5.10,Evaluated
+6,1950-01-07T05:00:00+00:00,Ohio State,Illinois,False,Week 6,-3.65,Ohio State,83,62,21,correct,cover,17.35,Evaluated
+6,1950-01-07T05:00:00+00:00,Drake,Bradley,False,Week 6,12.04,Bradley,57,72,-15,correct,cover,2.96,Evaluated
+6,1950-01-07T05:00:00+00:00,Wichita State,Oklahoma State,False,Week 6,-0.61,Wichita State,38,37,1,correct,cover,0.39,Evaluated
+6,1950-01-09T05:00:00+00:00,Wake Forest,Tennessee,False,Week 6,-2.75,Wake Forest,69,62,7,correct,cover,4.25,Evaluated
+6,1950-01-09T05:00:00+00:00,Syracuse,Loyola Chicago,False,Week 6,-4.82,Syracuse,59,71,-12,incorrect,no_cover,16.82,Evaluated
+6,1950-01-09T05:00:00+00:00,Colorado State,Utah State,False,Week 6,-12.54,Colorado State,33,38,-5,incorrect,no_cover,17.54,Evaluated
+6,1950-01-09T05:00:00+00:00,DePaul,Ohio State,False,Week 6,-3.77,DePaul,62,70,-8,incorrect,no_cover,11.77,Evaluated
+6,1950-01-09T05:00:00+00:00,Northwestern,Minnesota,False,Week 6,-4.22,Northwestern,60,53,7,correct,cover,2.78,Evaluated
+6,1950-01-09T05:00:00+00:00,Florida,Ole Miss,False,Week 6,-10.89,Florida,46,54,-8,incorrect,no_cover,18.89,Evaluated
+6,1950-01-09T05:00:00+00:00,Western Kentucky,Xavier,False,Week 6,-4.32,Western Kentucky,63,51,12,correct,cover,7.68,Evaluated
+6,1950-01-09T05:00:00+00:00,Kentucky,North Carolina,False,Week 6,-20.19,Kentucky,83,44,39,correct,cover,18.81,Evaluated
+6,1950-01-09T05:00:00+00:00,Michigan State,Detroit Mercy,False,Week 6,4.30,Detroit Mercy,56,64,-8,correct,cover,3.70,Evaluated
+6,1950-01-09T05:00:00+00:00,Michigan,Indiana,False,Week 6,-3.36,Michigan,69,67,2,correct,no_cover,1.36,Evaluated
+6,1950-01-09T05:00:00+00:00,Illinois,Purdue,False,Week 6,-0.01,Illinois,59,54,5,correct,cover,4.99,Evaluated
+7,1950-01-10T05:00:00+00:00,Miami (OH),Butler,False,Week 7,0.54,Butler,50,48,2,incorrect,no_cover,2.54,Evaluated
+7,1950-01-10T05:00:00+00:00,Maryland,William & Mary,False,Week 7,6.39,William & Mary,52,56,-4,correct,no_cover,2.39,Evaluated
+7,1950-01-10T05:00:00+00:00,San Francisco,Santa Clara,False,Week 7,-10.74,San Francisco,50,36,14,correct,cover,3.26,Evaluated
+7,1950-01-10T05:00:00+00:00,Ohio,Dayton,False,Week 7,1.40,Dayton,61,71,-10,correct,cover,8.60,Evaluated
+7,1950-01-10T05:00:00+00:00,Virginia Tech,George Washington,False,Week 7,-2.53,Virginia Tech,71,59,12,correct,cover,9.47,Evaluated
+7,1950-01-10T05:00:00+00:00,South Carolina,Furman,False,Week 7,-13.84,South Carolina,49,48,1,correct,no_cover,12.84,Evaluated
+7,1950-01-10T05:00:00+00:00,Duquesne,Cincinnati,False,Week 7,-3.58,Duquesne,60,54,6,correct,cover,2.42,Evaluated
+7,1950-01-10T05:00:00+00:00,Tulsa,Wichita State,False,Week 7,-1.59,Tulsa,42,36,6,correct,cover,4.41,Evaluated
+7,1950-01-10T05:00:00+00:00,Clemson,Wake Forest,False,Week 7,-4.37,Clemson,58,66,-8,incorrect,no_cover,12.37,Evaluated
+7,1950-01-10T05:00:00+00:00,Georgia Tech,Auburn,False,Week 7,-1.53,Georgia Tech,65,49,16,correct,cover,14.47,Evaluated
+7,1950-01-11T05:00:00+00:00,Furman,Wake Forest,False,Week 7,4.09,Wake Forest,41,50,-9,correct,cover,4.91,Evaluated
+7,1950-01-11T05:00:00+00:00,Brown,Rhode Island,False,Week 7,-6.43,Brown,58,76,-18,incorrect,no_cover,24.43,Evaluated
+7,1950-01-11T05:00:00+00:00,Fordham,Columbia,False,Week 7,6.48,Columbia,51,58,-7,correct,cover,0.52,Evaluated
+7,1950-01-11T05:00:00+00:00,VMI,Virginia,False,Week 7,8.41,Virginia,55,78,-23,correct,cover,14.59,Evaluated
+7,1950-01-11T05:00:00+00:00,Cornell,Syracuse,False,Week 7,1.30,Syracuse,67,56,11,incorrect,no_cover,12.30,Evaluated
+7,1950-01-11T05:00:00+00:00,Marquette,Loyola Chicago,False,Week 7,14.19,Loyola Chicago,56,59,-3,correct,no_cover,11.19,Evaluated
+7,1950-01-11T05:00:00+00:00,Seton Hall,St. Francis Brooklyn,False,Week 7,-7.01,Seton Hall,66,64,2,correct,no_cover,5.01,Evaluated
+7,1950-01-11T05:00:00+00:00,Toledo,Bowling Green,False,Week 7,4.99,Bowling Green,54,57,-3,correct,no_cover,1.99,Evaluated
+7,1950-01-11T05:00:00+00:00,Army,Harvard,False,Week 7,-9.79,Army,61,58,3,correct,no_cover,6.79,Evaluated
+7,1950-01-11T05:00:00+00:00,Villanova,Rutgers,False,Week 7,-10.43,Villanova,84,67,17,correct,cover,6.57,Evaluated
+7,1950-01-11T05:00:00+00:00,Richmond,George Washington,False,Week 7,7.26,George Washington,56,62,-6,correct,no_cover,1.26,Evaluated
+7,1950-01-11T05:00:00+00:00,Notre Dame,DePaul,False,Week 7,-2.30,Notre Dame,58,53,5,correct,cover,2.70,Evaluated
+7,1950-01-11T05:00:00+00:00,Louisville,Western Kentucky,False,Week 7,-6.08,Louisville,70,59,11,correct,cover,4.92,Evaluated
+7,1950-01-12T05:00:00+00:00,Holy Cross,Saint Louis,False,Week 7,-20.18,Holy Cross,69,55,14,correct,no_cover,6.18,Evaluated
+7,1950-01-12T05:00:00+00:00,Manhattan,Bradley,False,Week 7,8.23,Bradley,67,89,-22,correct,cover,13.77,Evaluated
+7,1950-01-12T05:00:00+00:00,Richmond,Maryland,False,Week 7,6.05,Maryland,59,49,10,incorrect,no_cover,16.05,Evaluated
+7,1950-01-12T05:00:00+00:00,Colorado State,Denver,False,Week 7,-3.37,Colorado State,53,55,-2,incorrect,no_cover,5.37,Evaluated
+7,1950-01-12T05:00:00+00:00,The Citadel,South Carolina,False,Week 7,-4.52,The Citadel,46,67,-21,incorrect,no_cover,25.52,Evaluated
+7,1950-01-12T05:00:00+00:00,NC State,William & Mary,False,Week 7,-7.86,NC State,72,58,14,correct,cover,6.14,Evaluated
+7,1950-01-12T05:00:00+00:00,New York University,Duke,False,Week 7,3.62,Duke,80,64,16,incorrect,no_cover,19.62,Evaluated
+7,1950-01-13T05:00:00+00:00,Ohio,Western Michigan,False,Week 7,-1.25,Ohio,56,81,-25,incorrect,no_cover,26.25,Evaluated
+7,1950-01-13T05:00:00+00:00,Santa Clara,Loyola Marymount,False,Week 7,-4.37,Santa Clara,73,61,12,correct,cover,7.63,Evaluated
+7,1950-01-13T05:00:00+00:00,USC,UCLA,False,Week 7,-3.11,USC,58,45,13,correct,cover,9.89,Evaluated
+7,1950-01-13T05:00:00+00:00,Furman,Davidson,False,Week 7,-6.72,Furman,52,58,-6,incorrect,no_cover,12.72,Evaluated
+7,1950-01-13T05:00:00+00:00,Denver,Colorado State,False,Week 7,-3.83,Denver,56,43,13,correct,cover,9.17,Evaluated
+7,1950-01-13T05:00:00+00:00,St. John's,Georgetown,False,Week 7,-22.84,St. John's,67,66,1,correct,no_cover,21.84,Evaluated
+7,1950-01-13T05:00:00+00:00,Miami,North Carolina,False,Week 7,-8.82,Miami,53,55,-2,incorrect,no_cover,10.82,Evaluated
+7,1950-01-13T05:00:00+00:00,LSU,Tulane,False,Week 7,-4.44,LSU,70,75,-5,incorrect,no_cover,9.44,Evaluated
+7,1950-01-13T05:00:00+00:00,Washington State,Washington,False,Week 7,0.38,Washington,56,42,14,incorrect,no_cover,14.38,Evaluated
+7,1950-01-13T05:00:00+00:00,Oregon State,Oregon,False,Week 7,-6.22,Oregon State,65,49,16,correct,cover,9.78,Evaluated
+7,1950-01-13T05:00:00+00:00,Stanford,California,False,Week 7,-5.34,Stanford,55,60,-5,incorrect,no_cover,10.34,Evaluated
+7,1950-01-13T05:00:00+00:00,Michigan State,Marquette,False,Week 7,-10.26,Michigan State,81,64,17,correct,cover,6.74,Evaluated
+7,1950-01-14T05:00:00+00:00,Bucknell,Lehigh,False,Week 7,-13.64,Bucknell,60,41,19,correct,cover,5.36,Evaluated
+7,1950-01-14T05:00:00+00:00,Holy Cross,Georgetown,False,Week 7,-26.61,Holy Cross,77,51,26,correct,no_cover,0.61,Evaluated
+7,1950-01-14T05:00:00+00:00,Navy,Princeton,False,Week 7,-17.02,Navy,58,37,21,correct,cover,3.98,Evaluated
+7,1950-01-14T05:00:00+00:00,Maryland,George Washington,False,Week 7,-2.38,Maryland,51,72,-21,incorrect,no_cover,23.38,Evaluated
+7,1950-01-14T05:00:00+00:00,William & Mary,Wake Forest,False,Week 7,-12.41,William & Mary,49,61,-12,incorrect,no_cover,24.41,Evaluated
+7,1950-01-14T05:00:00+00:00,Syracuse,Niagara,False,Week 7,-11.16,Syracuse,62,49,13,correct,cover,1.84,Evaluated
+7,1950-01-14T05:00:00+00:00,Cornell,Columbia,False,Week 7,-2.75,Cornell,69,49,20,correct,cover,17.25,Evaluated
+7,1950-01-14T05:00:00+00:00,Northwestern,Ohio State,False,Week 7,-7.61,Northwestern,51,61,-10,incorrect,no_cover,17.61,Evaluated
+7,1950-01-14T05:00:00+00:00,Auburn,Florida,False,Week 7,-4.13,Auburn,72,46,26,correct,cover,21.87,Evaluated
+7,1950-01-14T05:00:00+00:00,Minnesota,Purdue,False,Week 7,-5.64,Minnesota,67,40,27,correct,cover,21.36,Evaluated
+7,1950-01-14T05:00:00+00:00,UCLA,USC,False,Week 7,-4.09,UCLA,68,47,21,correct,cover,16.91,Evaluated
+7,1950-01-14T05:00:00+00:00,Toledo,Xavier,False,Week 7,0.52,Xavier,65,56,9,incorrect,no_cover,9.52,Evaluated
+7,1950-01-14T05:00:00+00:00,Harvard,Dartmouth,False,Week 7,-12.46,Harvard,74,56,18,correct,cover,5.54,Evaluated
+7,1950-01-14T05:00:00+00:00,Army,Rutgers,False,Week 7,-10.21,Army,58,54,4,correct,no_cover,6.21,Evaluated
+7,1950-01-14T05:00:00+00:00,Richmond,Virginia,False,Week 7,9.57,Virginia,76,62,14,incorrect,no_cover,23.57,Evaluated
+7,1950-01-14T05:00:00+00:00,Loyola Chicago,Duquesne,False,Week 7,-1.25,Loyola Chicago,54,62,-8,incorrect,no_cover,9.25,Evaluated
+7,1950-01-14T05:00:00+00:00,Boston College,DePaul,False,Week 7,0.92,DePaul,55,88,-33,correct,cover,32.08,Evaluated
+7,1950-01-14T05:00:00+00:00,Canisius,Notre Dame,False,Week 7,2.27,Notre Dame,53,50,3,incorrect,no_cover,5.27,Evaluated
+7,1950-01-14T05:00:00+00:00,South Carolina,Georgia,False,Week 7,0.58,Georgia,54,43,11,incorrect,no_cover,11.58,Evaluated
+7,1950-01-14T05:00:00+00:00,Miami,North Carolina,False,Week 7,-8.82,Miami,51,65,-14,incorrect,no_cover,22.82,Evaluated
+7,1950-01-14T05:00:00+00:00,Saint Joseph's,Bradley,False,Week 7,12.77,Bradley,60,64,-4,correct,no_cover,8.77,Evaluated
+7,1950-01-14T05:00:00+00:00,Cincinnati,Western Michigan,False,Week 7,-2.80,Cincinnati,66,45,21,correct,cover,18.20,Evaluated
+7,1950-01-14T05:00:00+00:00,Wichita State,Detroit Mercy,False,Week 7,-14.67,Wichita State,52,53,-1,incorrect,no_cover,15.67,Evaluated
+7,1950-01-14T05:00:00+00:00,Louisville,Washington University (St. Louis),False,Week 7,-8.18,Louisville,67,44,23,correct,cover,14.82,Evaluated
+7,1950-01-14T05:00:00+00:00,NC State,La Salle,False,Week 7,-4.81,NC State,51,66,-15,incorrect,no_cover,19.81,Evaluated
+7,1950-01-14T05:00:00+00:00,Temple,Duke,False,Week 7,-1.24,Temple,59,49,10,correct,cover,8.76,Evaluated
+7,1950-01-14T05:00:00+00:00,Clemson,Davidson,False,Week 7,-15.19,Clemson,88,82,6,correct,no_cover,9.19,Evaluated
+7,1950-01-14T05:00:00+00:00,Alabama,Georgia Tech,False,Week 7,-9.42,Alabama,73,39,34,correct,cover,24.58,Evaluated
+7,1950-01-14T05:00:00+00:00,Mississippi State,Vanderbilt,False,Week 7,-1.39,Mississippi State,50,62,-12,incorrect,no_cover,13.39,Evaluated
+7,1950-01-14T05:00:00+00:00,Tennessee,Kentucky,False,Week 7,7.20,Kentucky,66,53,13,incorrect,no_cover,20.20,Evaluated
+7,1950-01-14T05:00:00+00:00,Washington State,Washington,False,Week 7,0.38,Washington,37,52,-15,correct,cover,14.62,Evaluated
+7,1950-01-14T05:00:00+00:00,California,Stanford,False,Week 7,-1.86,California,47,50,-3,incorrect,no_cover,4.86,Evaluated
+7,1950-01-14T05:00:00+00:00,Wisconsin,Michigan,False,Week 7,0.28,Michigan,53,41,12,incorrect,no_cover,12.28,Evaluated
+7,1950-01-14T05:00:00+00:00,Iowa,Indiana,False,Week 7,-2.13,Iowa,65,64,1,correct,no_cover,1.13,Evaluated
+7,1950-01-14T05:00:00+00:00,Tulsa,Drake,False,Week 7,-11.23,Tulsa,44,50,-6,incorrect,no_cover,17.23,Evaluated
+7,1950-01-15T05:00:00+00:00,Villanova,Fordham,False,Week 7,-13.65,Villanova,69,54,15,correct,cover,1.35,Evaluated
+7,1950-01-16T05:00:00+00:00,Bradley,Detroit Mercy,False,Week 7,-21.61,Bradley,71,50,21,correct,no_cover,0.61,Evaluated
+7,1950-01-16T05:00:00+00:00,Ole Miss,Vanderbilt,False,Week 7,3.80,Vanderbilt,37,44,-7,correct,cover,3.20,Evaluated
+7,1950-01-16T05:00:00+00:00,Bowling Green,Ohio,False,Week 7,-8.84,Bowling Green,74,54,20,correct,cover,11.16,Evaluated
+7,1950-01-16T05:00:00+00:00,Harvard,Brown,False,Week 7,1.17,Brown,49,48,1,incorrect,no_cover,2.17,Evaluated
+7,1950-01-16T05:00:00+00:00,Virginia,Virginia Tech,False,Week 7,-6.98,Virginia,50,63,-13,incorrect,no_cover,19.98,Evaluated
+7,1950-01-16T05:00:00+00:00,Purdue,Iowa,False,Week 7,-5.45,Purdue,64,55,9,correct,cover,3.55,Evaluated
+7,1950-01-16T05:00:00+00:00,Ohio State,Michigan,False,Week 7,-0.11,Ohio State,74,58,16,correct,cover,15.89,Evaluated
+7,1950-01-16T05:00:00+00:00,Wake Forest,North Carolina,False,Week 7,-6.42,Wake Forest,50,54,-4,incorrect,no_cover,10.42,Evaluated
+7,1950-01-16T05:00:00+00:00,Lafayette,Temple,False,Week 7,-0.36,Lafayette,64,41,23,correct,cover,22.64,Evaluated
+7,1950-01-16T05:00:00+00:00,Western Kentucky,Cincinnati,False,Week 7,-2.52,Western Kentucky,84,59,25,correct,cover,22.48,Evaluated
+7,1950-01-16T05:00:00+00:00,Georgia Tech,Kentucky,False,Week 7,6.88,Kentucky,47,61,-14,correct,cover,7.12,Evaluated
+7,1950-01-16T05:00:00+00:00,Wisconsin,Minnesota,False,Week 7,0.27,Minnesota,57,54,3,incorrect,no_cover,3.27,Evaluated
+7,1950-01-16T05:00:00+00:00,Indiana,Butler,False,Week 7,-14.53,Indiana,57,49,8,correct,no_cover,6.53,Evaluated
+7,1950-01-16T05:00:00+00:00,Illinois,Northwestern,False,Week 7,3.54,Northwestern,76,50,26,incorrect,no_cover,29.54,Evaluated
+7,1950-01-16T05:00:00+00:00,Oklahoma State,Drake,False,Week 7,-15.09,Oklahoma State,56,27,29,correct,cover,13.91,Evaluated
+8,1950-01-17T05:00:00+00:00,VMI,William & Mary,False,Week 8,17.14,William & Mary,43,68,-25,correct,cover,7.86,Evaluated
+8,1950-01-17T05:00:00+00:00,Western Michigan,Valparaiso,False,Week 8,-5.21,Western Michigan,59,78,-19,incorrect,no_cover,24.21,Evaluated
+8,1950-01-17T05:00:00+00:00,Furman,The Citadel,False,Week 8,-2.91,Furman,40,23,17,correct,cover,14.09,Evaluated
+8,1950-01-17T05:00:00+00:00,St. John's,DePaul,False,Week 8,-9.68,St. John's,68,74,-6,incorrect,no_cover,15.68,Evaluated
+8,1950-01-17T05:00:00+00:00,Rhode Island,Saint Joseph's,False,Week 8,-11.01,Rhode Island,68,62,6,correct,no_cover,5.01,Evaluated
+8,1950-01-17T05:00:00+00:00,Saint Louis,Wichita State,False,Week 8,-6.08,Saint Louis,73,60,13,correct,cover,6.92,Evaluated
+8,1950-01-17T05:00:00+00:00,Long Island University,NC State,False,Week 8,-4.57,Long Island University,52,55,-3,incorrect,no_cover,7.57,Evaluated
+8,1950-01-17T05:00:00+00:00,Duke,South Carolina,False,Week 8,-3.88,Duke,79,60,19,correct,cover,15.12,Evaluated
+8,1950-01-17T05:00:00+00:00,Georgia,Kentucky,False,Week 8,3.69,Kentucky,71,60,11,incorrect,no_cover,14.69,Evaluated
+8,1950-01-18T05:00:00+00:00,Lehigh,Lafayette,False,Week 8,8.56,Lafayette,45,67,-22,correct,cover,13.44,Evaluated
+8,1950-01-18T05:00:00+00:00,Navy,Columbia,False,Week 8,-10.81,Navy,37,45,-8,incorrect,no_cover,18.81,Evaluated
+8,1950-01-18T05:00:00+00:00,Yale,Dartmouth,False,Week 8,-12.34,Yale,68,54,14,correct,cover,1.66,Evaluated
+8,1950-01-18T05:00:00+00:00,Washington & Lee,Virginia Tech,False,Week 8,5.59,Virginia Tech,73,69,4,incorrect,no_cover,9.59,Evaluated
+8,1950-01-18T05:00:00+00:00,North Carolina,South Carolina,False,Week 8,0.82,South Carolina,64,42,22,incorrect,no_cover,22.82,Evaluated
+8,1950-01-18T05:00:00+00:00,Clemson,The Citadel,False,Week 8,-9.22,Clemson,63,38,25,correct,cover,15.78,Evaluated
+8,1950-01-18T05:00:00+00:00,Mississippi State,Ole Miss,False,Week 8,-5.67,Mississippi State,64,60,4,correct,no_cover,1.67,Evaluated
+8,1950-01-18T05:00:00+00:00,Notre Dame,Michigan State,False,Week 8,-13.94,Notre Dame,71,65,6,correct,no_cover,7.94,Evaluated
+8,1950-01-19T05:00:00+00:00,Canisius,Niagara,False,Week 8,-2.52,Canisius,49,47,2,correct,no_cover,0.52,Evaluated
+8,1950-01-19T05:00:00+00:00,Cincinnati,West Virginia,False,Week 8,-10.47,Cincinnati,69,59,10,correct,no_cover,0.47,Evaluated
+8,1950-01-20T05:00:00+00:00,Stanford,San Francisco,False,Week 8,9.63,San Francisco,39,54,-15,correct,cover,5.37,Evaluated
+8,1950-01-20T05:00:00+00:00,Santa Clara,Saint Mary's,False,Week 8,-12.77,Santa Clara,58,47,11,correct,no_cover,1.77,Evaluated
+8,1950-01-20T05:00:00+00:00,Florida,Georgia,False,Week 8,3.57,Georgia,54,49,5,incorrect,no_cover,8.57,Evaluated
+8,1950-01-20T05:00:00+00:00,VMI,Virginia Tech,False,Week 8,12.06,Virginia Tech,41,73,-32,correct,cover,19.94,Evaluated
+8,1950-01-20T05:00:00+00:00,Washington State,Oregon State,False,Week 8,-5.56,Washington State,53,39,14,correct,cover,8.44,Evaluated
+8,1950-01-20T05:00:00+00:00,Creighton,Wichita State,False,Week 8,0.04,Wichita State,71,58,13,incorrect,no_cover,13.04,Evaluated
+8,1950-01-20T05:00:00+00:00,LSU,Alabama,False,Week 8,2.35,Alabama,52,60,-8,correct,cover,5.65,Evaluated
+8,1950-01-20T05:00:00+00:00,Washington,Oregon,False,Week 8,-14.60,Washington,69,49,20,correct,cover,5.40,Evaluated
+8,1950-01-21T05:00:00+00:00,Canisius,Georgetown,False,Week 8,-5.11,Canisius,58,41,17,correct,cover,11.89,Evaluated
+8,1950-01-21T05:00:00+00:00,Colgate,Cornell,False,Week 8,4.03,Cornell,57,61,-4,correct,no_cover,0.03,Evaluated
+8,1950-01-21T05:00:00+00:00,Columbia,Army,False,Week 8,-6.64,Columbia,62,49,13,correct,cover,6.36,Evaluated
+8,1950-01-21T05:00:00+00:00,William & Mary,Maryland,False,Week 8,-12.66,William & Mary,64,56,8,correct,no_cover,4.66,Evaluated
+8,1950-01-21T05:00:00+00:00,Santa Clara,Stanford,False,Week 8,-9.57,Santa Clara,60,66,-6,incorrect,no_cover,15.57,Evaluated
+8,1950-01-21T05:00:00+00:00,Auburn,Vanderbilt,False,Week 8,-1.57,Auburn,47,58,-11,incorrect,no_cover,12.57,Evaluated
+8,1950-01-21T05:00:00+00:00,Detroit Mercy,Bradley,False,Week 8,9.76,Bradley,67,54,13,incorrect,no_cover,22.76,Evaluated
+8,1950-01-21T05:00:00+00:00,Florida,Georgia,False,Week 8,3.57,Georgia,48,57,-9,correct,cover,5.43,Evaluated
+8,1950-01-21T05:00:00+00:00,Tulane,Alabama,False,Week 8,1.16,Alabama,51,57,-6,correct,cover,4.84,Evaluated
+8,1950-01-21T05:00:00+00:00,Loyola Chicago,Toledo,False,Week 8,-4.56,Loyola Chicago,42,50,-8,incorrect,no_cover,12.56,Evaluated
+8,1950-01-21T05:00:00+00:00,Penn State,Pittsburgh,False,Week 8,-4.37,Penn State,34,21,13,correct,cover,8.63,Evaluated
+8,1950-01-21T05:00:00+00:00,Navy,Yale,False,Week 8,-16.41,Navy,61,70,-9,incorrect,no_cover,25.41,Evaluated
+8,1950-01-21T05:00:00+00:00,Richmond,VMI,False,Week 8,-13.03,Richmond,64,72,-8,incorrect,no_cover,21.03,Evaluated
+8,1950-01-21T05:00:00+00:00,Saint Mary's,San Francisco,False,Week 8,12.83,San Francisco,37,64,-27,correct,cover,14.17,Evaluated
+8,1950-01-21T05:00:00+00:00,Iowa,Northwestern,False,Week 8,-0.07,Iowa,61,56,5,correct,cover,4.93,Evaluated
+8,1950-01-21T05:00:00+00:00,Michigan,Minnesota,False,Week 8,-0.23,Michigan,52,60,-8,incorrect,no_cover,8.23,Evaluated
+8,1950-01-21T05:00:00+00:00,Washington State,Oregon State,False,Week 8,-5.56,Washington State,51,34,17,correct,cover,11.44,Evaluated
+8,1950-01-21T05:00:00+00:00,Temple,George Washington,False,Week 8,-7.15,Temple,66,44,22,correct,cover,14.85,Evaluated
+8,1950-01-21T05:00:00+00:00,Cincinnati,Ohio,False,Week 8,-17.39,Cincinnati,57,38,19,correct,cover,1.61,Evaluated
+8,1950-01-21T05:00:00+00:00,North Carolina,NC State,False,Week 8,9.44,NC State,57,61,-4,correct,no_cover,5.44,Evaluated
+8,1950-01-21T05:00:00+00:00,Clemson,South Carolina,False,Week 8,0.55,South Carolina,56,66,-10,correct,cover,9.45,Evaluated
+8,1950-01-21T05:00:00+00:00,Georgia Tech,Tennessee,False,Week 8,-0.76,Georgia Tech,68,57,11,correct,cover,10.24,Evaluated
+8,1950-01-21T05:00:00+00:00,DePaul,Kentucky,False,Week 8,0.19,Kentucky,53,86,-33,correct,cover,32.81,Evaluated
+8,1950-01-21T05:00:00+00:00,Washington,Oregon,False,Week 8,-14.60,Washington,66,51,15,correct,cover,0.40,Evaluated
+8,1950-01-21T05:00:00+00:00,Purdue,Indiana,False,Week 8,-0.49,Purdue,39,49,-10,incorrect,no_cover,10.49,Evaluated
+8,1950-01-21T05:00:00+00:00,Illinois,Ohio State,False,Week 8,2.98,Ohio State,66,50,16,incorrect,no_cover,18.98,Evaluated
+8,1950-01-21T05:00:00+00:00,Drake,Saint Louis,False,Week 8,2.62,Saint Louis,60,61,-1,correct,no_cover,1.62,Evaluated
+8,1950-01-21T05:00:00+00:00,Tulsa,Oklahoma State,False,Week 8,4.15,Oklahoma State,33,47,-14,correct,cover,9.85,Evaluated
+8,1950-01-22T05:00:00+00:00,Xavier,Dayton,False,Week 8,2.49,Dayton,55,65,-10,correct,cover,7.51,Evaluated
+8,1950-01-23T05:00:00+00:00,Alabama,Vanderbilt,False,Week 8,-6.97,Alabama,47,44,3,correct,no_cover,3.97,Evaluated
+8,1950-01-23T05:00:00+00:00,Idaho,Oregon State,False,Week 8,0.19,Oregon State,37,48,-11,correct,cover,10.81,Evaluated
+8,1950-01-23T05:00:00+00:00,Ohio State,Iowa,False,Week 8,-8.55,Ohio State,68,54,14,correct,cover,5.45,Evaluated
+8,1950-01-23T05:00:00+00:00,Mississippi State,Tennessee,False,Week 8,2.10,Tennessee,65,56,9,incorrect,no_cover,11.10,Evaluated
+8,1950-01-23T05:00:00+00:00,Notre Dame,Kentucky,False,Week 8,3.03,Kentucky,64,51,13,incorrect,no_cover,16.03,Evaluated
+8,1950-01-23T05:00:00+00:00,Michigan State,Minnesota,False,Week 8,12.77,Minnesota,56,73,-17,correct,cover,4.23,Evaluated
+9,1950-01-24T05:00:00+00:00,Idaho,Oregon State,False,Week 9,-0.67,Idaho,39,51,-12,incorrect,no_cover,12.67,Evaluated
+9,1950-01-25T05:00:00+00:00,Pittsburgh,Penn State,False,Week 9,1.44,Penn State,51,58,-7,correct,cover,5.56,Evaluated
+9,1950-01-25T05:00:00+00:00,Ohio,Cincinnati,False,Week 9,9.33,Cincinnati,51,76,-25,correct,cover,15.67,Evaluated
+9,1950-01-25T05:00:00+00:00,NC State,Louisville,False,Week 9,-4.05,NC State,79,53,26,correct,cover,21.95,Evaluated
+9,1950-01-25T05:00:00+00:00,Georgia,Georgia Tech,False,Week 9,-7.70,Georgia,67,55,12,correct,cover,4.30,Evaluated
+9,1950-01-26T05:00:00+00:00,St. Bonaventure,Niagara,False,Week 9,-3.05,St. Bonaventure,52,48,4,correct,cover,0.95,Evaluated
+9,1950-01-26T05:00:00+00:00,St. John's,St. Francis Brooklyn,False,Week 9,-23.06,St. John's,65,46,19,correct,no_cover,4.06,Evaluated
+9,1950-01-26T05:00:00+00:00,Bradley,Tulsa,False,Week 9,-19.19,Bradley,64,45,19,correct,no_cover,0.19,Evaluated
+9,1950-01-26T05:00:00+00:00,Xavier,Kentucky,False,Week 9,3.53,Kentucky,47,58,-11,correct,cover,7.47,Evaluated
+9,1950-01-27T05:00:00+00:00,San Francisco,USC,False,Week 9,-9.00,San Francisco,55,41,14,correct,cover,5.00,Evaluated
+9,1950-01-27T05:00:00+00:00,Miami,Western Kentucky,False,Week 9,7.84,Western Kentucky,61,66,-5,correct,no_cover,2.84,Evaluated
+9,1950-01-27T05:00:00+00:00,Denver,Colorado State,False,Week 9,-8.91,Denver,65,56,9,correct,cover,0.09,Evaluated
+9,1950-01-27T05:00:00+00:00,North Carolina,Virginia Tech,False,Week 9,-2.54,North Carolina,66,53,13,correct,cover,10.46,Evaluated
+9,1950-01-27T05:00:00+00:00,Seton Hall,Louisville,False,Week 9,13.72,Louisville,69,82,-13,correct,no_cover,0.72,Evaluated
+9,1950-01-27T05:00:00+00:00,Duke,Davidson,False,Week 9,-16.10,Duke,69,59,10,correct,no_cover,6.10,Evaluated
+9,1950-01-27T05:00:00+00:00,Oregon,Washington,False,Week 9,8.44,Washington,57,49,8,incorrect,no_cover,16.44,Evaluated
+9,1950-01-28T05:00:00+00:00,St. Francis Brooklyn,Boston College,False,Week 9,1.38,Boston College,77,81,-4,correct,cover,2.62,Evaluated
+9,1950-01-28T05:00:00+00:00,George Washington,Georgetown,False,Week 9,-5.65,George Washington,66,68,-2,incorrect,no_cover,7.65,Evaluated
+9,1950-01-28T05:00:00+00:00,Purdue,Marquette,False,Week 9,-18.85,Purdue,74,58,16,correct,no_cover,2.85,Evaluated
+9,1950-01-28T05:00:00+00:00,Minnesota,Ohio State,False,Week 9,-5.40,Minnesota,58,63,-5,incorrect,no_cover,10.40,Evaluated
+9,1950-01-28T05:00:00+00:00,Alabama,Auburn,False,Week 9,-11.47,Alabama,58,66,-8,incorrect,no_cover,19.47,Evaluated
+9,1950-01-28T05:00:00+00:00,Vanderbilt,Tennessee,False,Week 9,-7.85,Vanderbilt,50,44,6,correct,no_cover,1.85,Evaluated
+9,1950-01-28T05:00:00+00:00,Saint Louis,Bradley,False,Week 9,3.15,Bradley,45,54,-9,correct,cover,5.85,Evaluated
+9,1950-01-28T05:00:00+00:00,The Citadel,Furman,False,Week 9,3.51,Furman,52,48,4,incorrect,no_cover,7.51,Evaluated
+9,1950-01-28T05:00:00+00:00,Baldwin-Wallace,Toledo,False,Week 9,-0.16,Baldwin-Wallace,53,74,-21,incorrect,no_cover,21.16,Evaluated
+9,1950-01-28T05:00:00+00:00,Penn State,Syracuse,False,Week 9,4.11,Syracuse,67,61,6,incorrect,no_cover,10.11,Evaluated
+9,1950-01-28T05:00:00+00:00,Miami,Western Kentucky,False,Week 9,7.84,Western Kentucky,61,78,-17,correct,cover,9.16,Evaluated
+9,1950-01-28T05:00:00+00:00,Saint Mary's,USC,False,Week 9,11.46,USC,41,46,-5,correct,no_cover,6.46,Evaluated
+9,1950-01-28T05:00:00+00:00,North Carolina,Davidson,False,Week 9,-13.07,North Carolina,67,54,13,correct,no_cover,0.07,Evaluated
+9,1950-01-28T05:00:00+00:00,Idaho,Washington State,False,Week 9,3.64,Washington State,40,63,-23,correct,cover,19.36,Evaluated
+9,1950-01-28T05:00:00+00:00,Butler,Cincinnati,False,Week 9,7.91,Cincinnati,56,64,-8,correct,cover,0.09,Evaluated
+9,1950-01-28T05:00:00+00:00,Detroit Mercy,Tulsa,False,Week 9,-8.32,Detroit Mercy,50,47,3,correct,no_cover,5.32,Evaluated
+9,1950-01-28T05:00:00+00:00,Villanova,Louisville,False,Week 9,-0.63,Villanova,68,78,-10,incorrect,no_cover,10.63,Evaluated
+9,1950-01-28T05:00:00+00:00,NC State,Virginia Tech,False,Week 9,-12.87,NC State,81,56,25,correct,cover,12.13,Evaluated
+9,1950-01-28T05:00:00+00:00,Duke,Wake Forest,False,Week 9,-4.83,Duke,65,55,10,correct,cover,5.17,Evaluated
+9,1950-01-28T05:00:00+00:00,Georgia Tech,Tulane,False,Week 9,-1.43,Georgia Tech,59,55,4,correct,cover,2.57,Evaluated
+9,1950-01-28T05:00:00+00:00,Ole Miss,LSU,False,Week 9,2.03,LSU,75,65,10,incorrect,no_cover,12.03,Evaluated
+9,1950-01-28T05:00:00+00:00,Kentucky,Georgia,False,Week 9,-11.61,Kentucky,88,56,32,correct,cover,20.39,Evaluated
+9,1950-01-28T05:00:00+00:00,Oregon,Washington,False,Week 9,8.44,Washington,63,60,3,incorrect,no_cover,11.44,Evaluated
+9,1950-01-28T05:00:00+00:00,San Francisco,California,False,Week 9,-18.66,San Francisco,44,56,-12,incorrect,no_cover,30.66,Evaluated
+9,1950-01-28T05:00:00+00:00,Wichita State,Drake,False,Week 9,-6.36,Wichita State,64,72,-8,incorrect,no_cover,14.36,Evaluated
+9,1950-01-28T05:00:00+00:00,DePaul,Oklahoma State,False,Week 9,-2.14,DePaul,45,53,-8,incorrect,no_cover,10.14,Evaluated
+9,1950-01-29T05:00:00+00:00,Ohio,Miami (OH),False,Week 9,-7.78,Ohio,79,70,9,correct,cover,1.22,Evaluated
+9,1950-01-30T05:00:00+00:00,Marquette,Detroit Mercy,False,Week 9,8.15,Detroit Mercy,55,64,-9,correct,cover,0.85,Evaluated
+9,1950-01-30T05:00:00+00:00,Purdue,Ohio State,False,Week 9,1.36,Ohio State,52,59,-7,correct,cover,5.64,Evaluated
+9,1950-01-30T05:00:00+00:00,Ole Miss,Auburn,False,Week 9,1.84,Auburn,63,77,-14,correct,cover,12.16,Evaluated
+9,1950-01-30T05:00:00+00:00,Tennessee,Tulane,False,Week 9,-2.62,Tennessee,55,68,-13,incorrect,no_cover,15.62,Evaluated
+9,1950-01-30T05:00:00+00:00,Seton Hall,Villanova,False,Week 9,10.75,Villanova,54,71,-17,correct,cover,6.25,Evaluated
+9,1950-01-30T05:00:00+00:00,Princeton,Rutgers,False,Week 9,-3.41,Princeton,80,62,18,correct,cover,14.59,Evaluated
+9,1950-01-30T05:00:00+00:00,North Carolina,The Citadel,False,Week 9,-19.81,North Carolina,77,39,38,correct,cover,18.19,Evaluated
+9,1950-01-30T05:00:00+00:00,Mississippi State,LSU,False,Week 9,0.11,LSU,48,41,7,incorrect,no_cover,7.11,Evaluated
+9,1950-01-30T05:00:00+00:00,Vanderbilt,Kentucky,False,Week 9,3.07,Kentucky,54,58,-4,correct,cover,0.93,Evaluated
+9,1950-01-30T05:00:00+00:00,Loyola Chicago,Oklahoma State,False,Week 9,0.18,Oklahoma State,41,31,10,incorrect,no_cover,10.18,Evaluated
+10,1950-01-31T05:00:00+00:00,Wake Forest,The Citadel,False,Week 10,-19.69,Wake Forest,82,43,39,correct,cover,19.31,Evaluated
+10,1950-01-31T05:00:00+00:00,Washington University (St. Louis),Creighton,False,Week 10,-5.91,Washington University (St. Louis),52,40,12,correct,cover,6.09,Evaluated
+10,1950-01-31T05:00:00+00:00,Xavier,Miami (OH),False,Week 10,-16.64,Xavier,59,60,-1,incorrect,no_cover,17.64,Evaluated
+10,1950-01-31T05:00:00+00:00,Duquesne,Baldwin-Wallace,False,Week 10,-16.41,Duquesne,78,55,23,correct,cover,6.59,Evaluated
+10,1950-01-31T05:00:00+00:00,Virginia Tech,Richmond,False,Week 10,-13.51,Virginia Tech,61,51,10,correct,no_cover,3.51,Evaluated
+10,1950-01-31T05:00:00+00:00,Butler,Notre Dame,False,Week 10,5.31,Notre Dame,63,57,6,incorrect,no_cover,11.31,Evaluated
+10,1950-01-31T05:00:00+00:00,Davidson,South Carolina,False,Week 10,3.98,South Carolina,46,66,-20,correct,cover,16.02,Evaluated
+10,1950-02-01T05:00:00+00:00,William & Mary,George Washington,False,Week 10,-10.03,William & Mary,58,50,8,correct,no_cover,2.03,Evaluated
+10,1950-02-01T05:00:00+00:00,Georgetown,Lafayette,False,Week 10,5.34,Lafayette,59,50,9,incorrect,no_cover,14.34,Evaluated
+10,1950-02-01T05:00:00+00:00,Cornell,Fordham,False,Week 10,-15.74,Cornell,50,48,2,correct,no_cover,13.74,Evaluated
+10,1950-02-01T05:00:00+00:00,Maryland,VMI,False,Week 10,-18.11,Maryland,65,53,12,correct,no_cover,6.11,Evaluated
+10,1950-02-01T05:00:00+00:00,West Virginia,Virginia,False,Week 10,-11.13,West Virginia,65,46,19,correct,cover,7.87,Evaluated
+10,1950-02-01T05:00:00+00:00,Army,Temple,False,Week 10,1.67,Temple,52,58,-6,correct,cover,4.33,Evaluated
+10,1950-02-01T05:00:00+00:00,Georgia Tech,Georgia,False,Week 10,-0.34,Georgia Tech,56,51,5,correct,cover,4.66,Evaluated
+10,1950-02-01T05:00:00+00:00,Auburn,Mississippi State,False,Week 10,-7.92,Auburn,65,60,5,correct,no_cover,2.92,Evaluated
+10,1950-02-01T05:00:00+00:00,Saint Louis,Illinois,False,Week 10,-1.00,Saint Louis,62,42,20,correct,cover,19.00,Evaluated
+10,1950-02-02T05:00:00+00:00,George Washington,VMI,False,Week 10,-20.99,George Washington,83,72,11,correct,no_cover,9.99,Evaluated
+10,1950-02-02T05:00:00+00:00,Holy Cross,Loyola Chicago,False,Week 10,-16.72,Holy Cross,53,48,5,correct,no_cover,11.72,Evaluated
+10,1950-02-02T05:00:00+00:00,Canisius,St. Bonaventure,False,Week 10,-4.13,Canisius,49,42,7,correct,cover,2.87,Evaluated
+10,1950-02-02T05:00:00+00:00,Syracuse,Fordham,False,Week 10,-14.31,Syracuse,70,61,9,correct,no_cover,5.31,Evaluated
+10,1950-02-02T05:00:00+00:00,Creighton,Villanova,False,Week 10,3.41,Villanova,63,84,-21,correct,cover,17.59,Evaluated
+10,1950-02-02T05:00:00+00:00,Cincinnati,Duquesne,False,Week 10,-4.60,Cincinnati,54,60,-6,incorrect,no_cover,10.60,Evaluated
+10,1950-02-02T05:00:00+00:00,Wake Forest,NC State,False,Week 10,7.62,NC State,50,57,-7,correct,no_cover,0.62,Evaluated
+10,1950-02-02T05:00:00+00:00,Alabama,Kentucky,False,Week 10,2.47,Kentucky,64,66,-2,correct,no_cover,0.47,Evaluated
+10,1950-02-02T05:00:00+00:00,Purdue,Michigan State,False,Week 10,-13.00,Purdue,69,53,16,correct,cover,3.00,Evaluated
+10,1950-02-03T05:00:00+00:00,Loyola Marymount,Santa Clara,False,Week 10,-2.75,Loyola Marymount,50,53,-3,incorrect,no_cover,5.75,Evaluated
+10,1950-02-03T05:00:00+00:00,Tennessee,Florida,False,Week 10,-7.95,Tennessee,65,56,9,correct,cover,1.05,Evaluated
+10,1950-02-03T05:00:00+00:00,The Citadel,Davidson,False,Week 10,2.88,Davidson,41,34,7,incorrect,no_cover,9.88,Evaluated
+10,1950-02-03T05:00:00+00:00,Rutgers,Rhode Island,False,Week 10,1.03,Rhode Island,63,75,-12,correct,cover,10.97,Evaluated
+10,1950-02-03T05:00:00+00:00,Richmond,Wake Forest,False,Week 10,8.40,Wake Forest,54,67,-13,correct,cover,4.60,Evaluated
+10,1950-02-03T05:00:00+00:00,Saint Mary's,Stanford,False,Week 10,2.40,Stanford,36,55,-19,correct,cover,16.60,Evaluated
+10,1950-02-03T05:00:00+00:00,Maryland,North Carolina,False,Week 10,2.58,North Carolina,56,69,-13,correct,cover,10.42,Evaluated
+10,1950-02-03T05:00:00+00:00,Western Kentucky,Louisville,False,Week 10,-4.07,Western Kentucky,84,62,22,correct,cover,17.93,Evaluated
+10,1950-02-03T05:00:00+00:00,South Carolina,Clemson,False,Week 10,-6.32,South Carolina,43,40,3,correct,no_cover,3.32,Evaluated
+10,1950-02-03T05:00:00+00:00,Oregon State,Washington,False,Week 10,0.95,Washington,56,46,10,incorrect,no_cover,10.95,Evaluated
+10,1950-02-03T05:00:00+00:00,Idaho,Oregon,False,Week 10,1.11,Oregon,62,44,18,incorrect,no_cover,19.11,Evaluated
+10,1950-02-04T05:00:00+00:00,Butler,Ohio,False,Week 10,-7.32,Butler,70,49,21,correct,cover,13.68,Evaluated
+10,1950-02-04T05:00:00+00:00,Lafayette,Bucknell,False,Week 10,-12.58,Lafayette,61,49,12,correct,no_cover,0.58,Evaluated
+10,1950-02-04T05:00:00+00:00,Georgetown,New York University,False,Week 10,-0.67,Georgetown,71,60,11,correct,cover,10.33,Evaluated
+10,1950-02-04T05:00:00+00:00,St. Bonaventure,Loyola Chicago,False,Week 10,0.01,Loyola Chicago,55,51,4,incorrect,no_cover,4.01,Evaluated
+10,1950-02-04T05:00:00+00:00,Holy Cross,Brown,False,Week 10,-21.98,Holy Cross,83,39,44,correct,cover,22.02,Evaluated
+10,1950-02-04T05:00:00+00:00,Fordham,Virginia,False,Week 10,-2.43,Fordham,73,44,29,correct,cover,26.57,Evaluated
+10,1950-02-04T05:00:00+00:00,DePaul,San Francisco,False,Week 10,1.81,San Francisco,51,53,-2,correct,cover,0.19,Evaluated
+10,1950-02-04T05:00:00+00:00,Villanova,Rhode Island,False,Week 10,-7.05,Villanova,68,49,19,correct,cover,11.95,Evaluated
+10,1950-02-04T05:00:00+00:00,Canisius,Syracuse,False,Week 10,0.50,Syracuse,49,59,-10,correct,cover,9.50,Evaluated
+10,1950-02-04T05:00:00+00:00,UCLA,Santa Clara,False,Week 10,-10.39,UCLA,74,64,10,correct,no_cover,0.39,Evaluated
+10,1950-02-04T05:00:00+00:00,Vanderbilt,Florida,False,Week 10,-13.05,Vanderbilt,54,34,20,correct,cover,6.95,Evaluated
+10,1950-02-04T05:00:00+00:00,Bradley,Pittsburgh,False,Week 10,-21.20,Bradley,84,48,36,correct,cover,14.80,Evaluated
+10,1950-02-04T05:00:00+00:00,Seton Hall,Creighton,False,Week 10,2.33,Creighton,42,45,-3,correct,cover,0.67,Evaluated
+10,1950-02-04T05:00:00+00:00,Toledo,Valparaiso,False,Week 10,-1.08,Toledo,66,36,30,correct,cover,28.92,Evaluated
+10,1950-02-04T05:00:00+00:00,Dartmouth,Yale,False,Week 10,8.42,Yale,51,53,-2,correct,no_cover,6.42,Evaluated
+10,1950-02-04T05:00:00+00:00,Richmond,William & Mary,False,Week 10,11.13,William & Mary,47,50,-3,correct,no_cover,8.13,Evaluated
+10,1950-02-04T05:00:00+00:00,Notre Dame,Marquette,False,Week 10,-20.17,Notre Dame,79,61,18,correct,no_cover,2.17,Evaluated
+10,1950-02-04T05:00:00+00:00,Saint Mary's,Bowling Green,False,Week 10,14.11,Bowling Green,63,84,-21,correct,cover,6.89,Evaluated
+10,1950-02-04T05:00:00+00:00,Iowa,Purdue,False,Week 10,-3.93,Iowa,66,60,6,correct,cover,2.07,Evaluated
+10,1950-02-04T05:00:00+00:00,George Washington,North Carolina,False,Week 10,-0.30,George Washington,56,41,15,correct,cover,14.70,Evaluated
+10,1950-02-04T05:00:00+00:00,Temple,St. John's,False,Week 10,4.17,St. John's,61,75,-14,correct,cover,9.83,Evaluated
+10,1950-02-04T05:00:00+00:00,Western Michigan,Cincinnati,False,Week 10,0.26,Cincinnati,51,74,-23,correct,cover,22.74,Evaluated
+10,1950-02-04T05:00:00+00:00,Detroit Mercy,Wichita State,False,Week 10,-6.04,Detroit Mercy,61,47,14,correct,cover,7.96,Evaluated
+10,1950-02-04T05:00:00+00:00,Louisville,Duquesne,False,Week 10,-5.02,Louisville,64,58,6,correct,cover,0.98,Evaluated
+10,1950-02-04T05:00:00+00:00,NC State,Furman,False,Week 10,-25.69,NC State,74,38,36,correct,cover,10.31,Evaluated
+10,1950-02-04T05:00:00+00:00,Duke,Navy,False,Week 10,-1.72,Duke,68,53,15,correct,cover,13.28,Evaluated
+10,1950-02-04T05:00:00+00:00,The Citadel,Clemson,False,Week 10,7.74,Clemson,34,59,-25,correct,cover,17.26,Evaluated
+10,1950-02-04T05:00:00+00:00,Tennessee,Georgia Tech,False,Week 10,-4.48,Tennessee,69,56,13,correct,cover,8.52,Evaluated
+10,1950-02-04T05:00:00+00:00,Mississippi State,Tulane,False,Week 10,-0.43,Mississippi State,55,53,2,correct,cover,1.57,Evaluated
+10,1950-02-04T05:00:00+00:00,Auburn,LSU,False,Week 10,-6.99,Auburn,70,66,4,correct,no_cover,2.99,Evaluated
+10,1950-02-04T05:00:00+00:00,Oregon State,Washington,False,Week 10,0.95,Washington,44,52,-8,correct,cover,7.05,Evaluated
+10,1950-02-04T05:00:00+00:00,Idaho,Oregon,False,Week 10,1.11,Oregon,44,34,10,incorrect,no_cover,11.11,Evaluated
+10,1950-02-04T05:00:00+00:00,Ohio State,Wisconsin,False,Week 10,-6.75,Ohio State,61,47,14,correct,cover,7.25,Evaluated
+10,1950-02-04T05:00:00+00:00,Northwestern,Indiana,False,Week 10,-1.62,Northwestern,59,64,-5,incorrect,no_cover,6.62,Evaluated
+10,1950-02-04T05:00:00+00:00,Minnesota,Illinois,False,Week 10,-7.58,Minnesota,57,67,-10,incorrect,no_cover,17.58,Evaluated
+10,1950-02-04T05:00:00+00:00,Drake,Tulsa,False,Week 10,-3.86,Drake,57,56,1,correct,no_cover,2.86,Evaluated
+10,1950-02-04T05:00:00+00:00,Saint Louis,Oklahoma State,False,Week 10,1.50,Oklahoma State,41,29,12,incorrect,no_cover,13.50,Evaluated
+10,1950-02-06T05:00:00+00:00,VMI,Maryland,False,Week 10,10.91,Maryland,62,61,1,incorrect,no_cover,11.91,Evaluated
+10,1950-02-06T05:00:00+00:00,Utah State,Colorado State,False,Week 10,-7.09,Utah State,48,46,2,correct,no_cover,5.09,Evaluated
+10,1950-02-06T05:00:00+00:00,Vanderbilt,Auburn,False,Week 10,-6.77,Vanderbilt,63,51,12,correct,cover,5.23,Evaluated
+10,1950-02-06T05:00:00+00:00,Ole Miss,Tulane,False,Week 10,1.96,Tulane,66,68,-2,correct,cover,0.04,Evaluated
+10,1950-02-06T05:00:00+00:00,Baldwin-Wallace,La Salle,False,Week 10,15.34,La Salle,65,91,-26,correct,cover,10.66,Evaluated
+10,1950-02-06T05:00:00+00:00,Seton Hall,Rutgers,False,Week 10,1.26,Rutgers,59,61,-2,correct,cover,0.74,Evaluated
+10,1950-02-06T05:00:00+00:00,South Carolina,George Washington,False,Week 10,-5.27,South Carolina,46,71,-25,incorrect,no_cover,30.27,Evaluated
+10,1950-02-06T05:00:00+00:00,Michigan,Northwestern,False,Week 10,-4.11,Michigan,59,44,15,correct,cover,10.89,Evaluated
+10,1950-02-06T05:00:00+00:00,Cincinnati,Miami (OH),False,Week 10,-21.56,Cincinnati,71,48,23,correct,cover,1.44,Evaluated
+10,1950-02-06T05:00:00+00:00,Bradley,Wichita State,False,Week 10,-17.99,Bradley,61,49,12,correct,no_cover,5.99,Evaluated
+10,1950-02-06T05:00:00+00:00,Saint Louis,Tulsa,False,Week 10,-10.89,Saint Louis,70,48,22,correct,cover,11.11,Evaluated
+10,1950-02-06T05:00:00+00:00,Washington University (St. Louis),Louisville,False,Week 10,4.50,Louisville,61,57,4,incorrect,no_cover,8.50,Evaluated
+10,1950-02-06T05:00:00+00:00,Georgia Tech,LSU,False,Week 10,-4.18,Georgia Tech,85,58,27,correct,cover,22.82,Evaluated
+10,1950-02-06T05:00:00+00:00,Washington State,Oregon,False,Week 10,-11.91,Washington State,52,51,1,correct,no_cover,10.91,Evaluated
+10,1950-02-06T05:00:00+00:00,Michigan State,Wisconsin,False,Week 10,9.37,Wisconsin,47,66,-19,correct,cover,9.63,Evaluated
+10,1950-02-06T05:00:00+00:00,Indiana,Ohio State,False,Week 10,-0.81,Indiana,55,56,-1,incorrect,no_cover,1.81,Evaluated
+10,1950-02-06T05:00:00+00:00,Drake,Oklahoma State,False,Week 10,8.52,Oklahoma State,49,51,-2,correct,no_cover,6.52,Evaluated
+11,1950-02-07T05:00:00+00:00,Holy Cross,Colgate,False,Week 11,-23.00,Holy Cross,108,76,32,correct,cover,9.00,Evaluated
+11,1950-02-07T05:00:00+00:00,Detroit Mercy,Marquette,False,Week 11,-15.32,Detroit Mercy,57,44,13,correct,no_cover,2.32,Evaluated
+11,1950-02-07T05:00:00+00:00,Dayton,Ohio,False,Week 11,-22.51,Dayton,75,50,25,correct,cover,2.49,Evaluated
+11,1950-02-07T05:00:00+00:00,Harvard,Cornell,False,Week 11,4.21,Cornell,48,49,-1,correct,no_cover,3.21,Evaluated
+11,1950-02-07T05:00:00+00:00,North Carolina,Wake Forest,False,Week 11,-1.97,North Carolina,54,57,-3,incorrect,no_cover,4.97,Evaluated
+11,1950-02-07T05:00:00+00:00,DePaul,Cincinnati,False,Week 11,0.01,Cincinnati,67,59,8,incorrect,no_cover,8.01,Evaluated
+11,1950-02-07T05:00:00+00:00,William & Mary,NC State,False,Week 11,5.99,NC State,54,50,4,incorrect,no_cover,9.99,Evaluated
+11,1950-02-07T05:00:00+00:00,Duke,The Citadel,False,Week 11,-27.36,Duke,65,39,26,correct,no_cover,1.36,Evaluated
+11,1950-02-07T05:00:00+00:00,Clemson,George Washington,False,Week 11,-2.68,Clemson,61,66,-5,incorrect,no_cover,7.68,Evaluated
+11,1950-02-07T05:00:00+00:00,Washington State,Oregon,False,Week 11,-13.45,Washington State,64,48,16,correct,cover,2.55,Evaluated
+11,1950-02-08T05:00:00+00:00,Navy,Bucknell,False,Week 11,-10.34,Navy,71,54,17,correct,cover,6.66,Evaluated
+11,1950-02-08T05:00:00+00:00,Niagara,Syracuse,False,Week 11,0.95,Syracuse,55,60,-5,correct,cover,4.05,Evaluated
+11,1950-02-08T05:00:00+00:00,Villanova,Seton Hall,False,Week 11,-20.50,Villanova,77,68,9,correct,no_cover,11.50,Evaluated
+11,1950-02-08T05:00:00+00:00,Yale,Columbia,False,Week 11,2.09,Columbia,59,46,13,incorrect,no_cover,15.09,Evaluated
+11,1950-02-08T05:00:00+00:00,Dartmouth,Princeton,False,Week 11,5.42,Princeton,54,82,-28,correct,cover,22.58,Evaluated
+11,1950-02-08T05:00:00+00:00,Rutgers,Georgetown,False,Week 11,0.06,Georgetown,73,75,-2,correct,cover,1.94,Evaluated
+11,1950-02-08T05:00:00+00:00,Virginia Tech,Washington & Lee,False,Week 11,-11.57,Virginia Tech,80,71,9,correct,no_cover,2.57,Evaluated
+11,1950-02-08T05:00:00+00:00,Virginia,Richmond,False,Week 11,-6.22,Virginia,70,46,24,correct,cover,17.78,Evaluated
+11,1950-02-08T05:00:00+00:00,South Carolina,Davidson,False,Week 11,-14.30,South Carolina,58,56,2,correct,no_cover,12.30,Evaluated
+11,1950-02-08T05:00:00+00:00,Saint Joseph's,Lafayette,False,Week 11,4.66,Lafayette,54,52,2,incorrect,no_cover,6.66,Evaluated
+11,1950-02-08T05:00:00+00:00,Denver,Louisville,False,Week 11,3.06,Louisville,79,70,9,incorrect,no_cover,12.06,Evaluated
+11,1950-02-08T05:00:00+00:00,Alabama,Mississippi State,False,Week 11,-11.18,Alabama,58,38,20,correct,cover,8.82,Evaluated
+11,1950-02-08T05:00:00+00:00,Oklahoma State,Pittsburgh,False,Week 11,-19.34,Oklahoma State,43,34,9,correct,no_cover,10.34,Evaluated
+11,1950-02-09T05:00:00+00:00,Holy Cross,Rhode Island,False,Week 11,-19.88,Holy Cross,74,69,5,correct,no_cover,14.88,Evaluated
+11,1950-02-09T05:00:00+00:00,Auburn,Georgia,False,Week 11,-4.06,Auburn,67,54,13,correct,cover,8.94,Evaluated
+11,1950-02-09T05:00:00+00:00,Bowling Green,Western Kentucky,False,Week 11,-4.04,Bowling Green,87,103,-16,incorrect,no_cover,20.04,Evaluated
+11,1950-02-09T05:00:00+00:00,St. John's,Canisius,False,Week 11,-15.05,St. John's,62,50,12,correct,no_cover,3.05,Evaluated
+11,1950-02-09T05:00:00+00:00,New York University,Manhattan,False,Week 11,-6.32,New York University,55,80,-25,incorrect,no_cover,31.32,Evaluated
+11,1950-02-10T05:00:00+00:00,Colgate,Army,False,Week 11,-5.80,Colgate,61,53,8,correct,cover,2.20,Evaluated
+11,1950-02-10T05:00:00+00:00,Miami (OH),Western Michigan,False,Week 11,5.90,Western Michigan,61,54,7,incorrect,no_cover,12.90,Evaluated
+11,1950-02-10T05:00:00+00:00,Stanford,UCLA,False,Week 11,5.14,UCLA,55,65,-10,correct,cover,4.86,Evaluated
+11,1950-02-10T05:00:00+00:00,VMI,Davidson,False,Week 11,3.55,Davidson,47,68,-21,correct,cover,17.45,Evaluated
+11,1950-02-10T05:00:00+00:00,Richmond,Virginia Tech,False,Week 11,5.31,Virginia Tech,39,74,-35,correct,cover,29.69,Evaluated
+11,1950-02-10T05:00:00+00:00,Furman,North Carolina,False,Week 11,9.21,North Carolina,53,59,-6,correct,no_cover,3.21,Evaluated
+11,1950-02-10T05:00:00+00:00,Washington State,Idaho,False,Week 11,-14.37,Washington State,50,51,-1,incorrect,no_cover,15.37,Evaluated
+11,1950-02-10T05:00:00+00:00,Loyola Marymount,Louisville,False,Week 11,4.33,Louisville,68,47,21,incorrect,no_cover,25.33,Evaluated
+11,1950-02-10T05:00:00+00:00,Maryland,Duke,False,Week 11,6.76,Duke,67,57,10,incorrect,no_cover,16.76,Evaluated
+11,1950-02-10T05:00:00+00:00,Georgia Tech,Florida,False,Week 11,-7.51,Georgia Tech,69,38,31,correct,cover,23.49,Evaluated
+11,1950-02-10T05:00:00+00:00,Oregon,Oregon State,False,Week 11,2.10,Oregon State,45,34,11,incorrect,no_cover,13.10,Evaluated
+11,1950-02-10T05:00:00+00:00,California,USC,False,Week 11,2.80,USC,59,54,5,incorrect,no_cover,7.80,Evaluated
+11,1950-02-11T05:00:00+00:00,Rhode Island,Bucknell,False,Week 11,-8.85,Rhode Island,88,78,10,correct,cover,1.15,Evaluated
+11,1950-02-11T05:00:00+00:00,Butler,Western Michigan,False,Week 11,-0.86,Butler,68,49,19,correct,cover,18.14,Evaluated
+11,1950-02-11T05:00:00+00:00,Virginia,Washington & Lee,False,Week 11,-5.28,Virginia,62,68,-6,incorrect,no_cover,11.28,Evaluated
+11,1950-02-11T05:00:00+00:00,DePaul,Bradley,False,Week 11,3.01,Bradley,56,67,-11,correct,cover,7.99,Evaluated
+11,1950-02-11T05:00:00+00:00,Georgetown,Villanova,False,Week 11,5.32,Villanova,45,73,-28,correct,cover,22.68,Evaluated
+11,1950-02-11T05:00:00+00:00,Syracuse,Army,False,Week 11,-12.39,Syracuse,73,53,20,correct,cover,7.61,Evaluated
+11,1950-02-11T05:00:00+00:00,Vanderbilt,Alabama,False,Week 11,-2.99,Vanderbilt,47,38,9,correct,cover,6.01,Evaluated
+11,1950-02-11T05:00:00+00:00,Stanford,USC,False,Week 11,2.45,USC,45,59,-14,correct,cover,11.55,Evaluated
+11,1950-02-11T05:00:00+00:00,Georgia,Florida,False,Week 11,-10.57,Georgia,77,52,25,correct,cover,14.43,Evaluated
+11,1950-02-11T05:00:00+00:00,Furman,VMI,False,Week 11,-10.23,Furman,58,55,3,correct,no_cover,7.23,Evaluated
+11,1950-02-11T05:00:00+00:00,Auburn,Tulane,False,Week 11,-3.83,Auburn,64,60,4,correct,cover,0.17,Evaluated
+11,1950-02-11T05:00:00+00:00,Navy,Penn State,False,Week 11,-6.65,Navy,46,40,6,correct,no_cover,0.65,Evaluated
+11,1950-02-11T05:00:00+00:00,Yale,Cornell,False,Week 11,2.72,Cornell,60,47,13,incorrect,no_cover,15.72,Evaluated
+11,1950-02-11T05:00:00+00:00,Dartmouth,Harvard,False,Week 11,5.21,Harvard,58,60,-2,correct,no_cover,3.21,Evaluated
+11,1950-02-11T05:00:00+00:00,Lafayette,Rutgers,False,Week 11,-12.07,Lafayette,62,60,2,correct,no_cover,10.07,Evaluated
+11,1950-02-11T05:00:00+00:00,William & Mary,Virginia Tech,False,Week 11,-8.08,William & Mary,64,50,14,correct,cover,5.92,Evaluated
+11,1950-02-11T05:00:00+00:00,Seton Hall,Boston College,False,Week 11,1.96,Boston College,38,42,-4,correct,cover,2.04,Evaluated
+11,1950-02-11T05:00:00+00:00,Saint Louis,Notre Dame,False,Week 11,-5.41,Saint Louis,55,45,10,correct,cover,4.59,Evaluated
+11,1950-02-11T05:00:00+00:00,Purdue,Michigan,False,Week 11,-0.69,Purdue,61,53,8,correct,cover,7.31,Evaluated
+11,1950-02-11T05:00:00+00:00,Temple,Manhattan,False,Week 11,-9.73,Temple,73,63,10,correct,cover,0.27,Evaluated
+11,1950-02-11T05:00:00+00:00,La Salle,Toledo,False,Week 11,-9.00,La Salle,55,59,-4,incorrect,no_cover,13.00,Evaluated
+11,1950-02-11T05:00:00+00:00,West Virginia,Cincinnati,False,Week 11,1.32,Cincinnati,64,69,-5,correct,cover,3.68,Evaluated
+11,1950-02-11T05:00:00+00:00,Tulsa,Wichita State,False,Week 11,-4.24,Tulsa,44,40,4,correct,no_cover,0.24,Evaluated
+11,1950-02-11T05:00:00+00:00,NC State,Wake Forest,False,Week 11,-13.75,NC State,73,35,38,correct,cover,24.25,Evaluated
+11,1950-02-11T05:00:00+00:00,George Washington,Duke,False,Week 11,2.24,Duke,62,55,7,incorrect,no_cover,9.24,Evaluated
+11,1950-02-11T05:00:00+00:00,Kentucky,Tennessee,False,Week 11,-15.81,Kentucky,79,52,27,correct,cover,11.19,Evaluated
+11,1950-02-11T05:00:00+00:00,Oregon,Saint Mary's,False,Week 11,-6.84,Oregon,61,53,8,correct,cover,1.16,Evaluated
+11,1950-02-11T05:00:00+00:00,California,UCLA,False,Week 11,5.50,UCLA,47,54,-7,correct,cover,1.50,Evaluated
+11,1950-02-11T05:00:00+00:00,Ohio State,Michigan State,False,Week 11,-21.00,Ohio State,87,43,44,correct,cover,23.00,Evaluated
+11,1950-02-11T05:00:00+00:00,Indiana,Minnesota,False,Week 11,-2.91,Indiana,59,39,20,correct,cover,17.09,Evaluated
+11,1950-02-11T05:00:00+00:00,Iowa,Illinois,False,Week 11,-0.95,Iowa,70,65,5,correct,cover,4.05,Evaluated
+11,1950-02-11T05:00:00+00:00,Drake,Creighton,False,Week 11,-4.08,Drake,76,60,16,correct,cover,11.92,Evaluated
+11,1950-02-11T05:00:00+00:00,Detroit Mercy,Oklahoma State,False,Week 11,2.71,Oklahoma State,40,39,1,incorrect,no_cover,3.71,Evaluated
+11,1950-02-12T05:00:00+00:00,Richmond,South Carolina,False,Week 11,5.99,South Carolina,65,60,5,incorrect,no_cover,10.99,Evaluated
+11,1950-02-13T05:00:00+00:00,Princeton,Cornell,False,Week 11,4.01,Cornell,51,49,2,incorrect,no_cover,6.01,Evaluated
+11,1950-02-13T05:00:00+00:00,Santa Clara,San Francisco,False,Week 11,5.74,San Francisco,51,43,8,incorrect,no_cover,13.74,Evaluated
+11,1950-02-13T05:00:00+00:00,Dayton,Xavier,False,Week 11,-11.84,Dayton,59,42,17,correct,cover,5.16,Evaluated
+11,1950-02-13T05:00:00+00:00,Niagara,Toledo,False,Week 11,4.31,Toledo,61,50,11,incorrect,no_cover,15.31,Evaluated
+11,1950-02-13T05:00:00+00:00,Maryland,South Carolina,False,Week 11,2.44,South Carolina,56,61,-5,correct,cover,2.56,Evaluated
+11,1950-02-13T05:00:00+00:00,Minnesota,Michigan,False,Week 11,-6.15,Minnesota,53,48,5,correct,no_cover,1.15,Evaluated
+11,1950-02-13T05:00:00+00:00,William & Mary,North Carolina,False,Week 11,-5.80,William & Mary,46,52,-6,incorrect,no_cover,11.80,Evaluated
+11,1950-02-13T05:00:00+00:00,Vanderbilt,Mississippi State,False,Week 11,-10.57,Vanderbilt,85,50,35,correct,cover,24.43,Evaluated
+11,1950-02-13T05:00:00+00:00,LSU,Auburn,False,Week 11,0.30,Auburn,76,61,15,incorrect,no_cover,15.30,Evaluated
+11,1950-02-13T05:00:00+00:00,Kentucky,Alabama,False,Week 11,-9.34,Kentucky,77,57,20,correct,cover,10.66,Evaluated
+11,1950-02-13T05:00:00+00:00,Iowa,Wisconsin,False,Week 11,-0.90,Iowa,62,66,-4,incorrect,no_cover,4.90,Evaluated
+11,1950-02-13T05:00:00+00:00,Illinois,Indiana,False,Week 11,-1.85,Illinois,72,83,-11,incorrect,no_cover,12.85,Evaluated
+11,1950-02-13T05:00:00+00:00,Bradley,Oklahoma State,False,Week 11,-9.14,Bradley,59,46,13,correct,cover,3.86,Evaluated
+12,1950-02-14T05:00:00+00:00,Syracuse,New York University,False,Week 12,-12.31,Syracuse,61,49,12,correct,no_cover,0.31,Evaluated
+12,1950-02-14T05:00:00+00:00,Maryland,Virginia,False,Week 12,-4.29,Maryland,70,52,18,correct,cover,13.71,Evaluated
+12,1950-02-14T05:00:00+00:00,Oregon State,Idaho,False,Week 12,-8.33,Oregon State,48,44,4,correct,no_cover,4.33,Evaluated
+12,1950-02-14T05:00:00+00:00,Miami (OH),Xavier,False,Week 12,6.12,Xavier,37,51,-14,correct,cover,7.88,Evaluated
+12,1950-02-14T05:00:00+00:00,Washington & Lee,Richmond,False,Week 12,-9.41,Washington & Lee,88,75,13,correct,cover,3.59,Evaluated
+12,1950-02-14T05:00:00+00:00,Notre Dame,Loyola Chicago,False,Week 12,-2.53,Notre Dame,67,60,7,correct,cover,4.47,Evaluated
+12,1950-02-14T05:00:00+00:00,Cincinnati,Butler,False,Week 12,-11.77,Cincinnati,55,53,2,correct,no_cover,9.77,Evaluated
+12,1950-02-14T05:00:00+00:00,Wichita State,Saint Louis,False,Week 12,7.08,Saint Louis,54,61,-7,correct,no_cover,0.08,Evaluated
+12,1950-02-14T05:00:00+00:00,NC State,Duke,False,Week 12,-15.31,NC State,68,50,18,correct,cover,2.69,Evaluated
+12,1950-02-14T05:00:00+00:00,Davidson,Clemson,False,Week 12,1.83,Clemson,77,65,12,incorrect,no_cover,13.83,Evaluated
+12,1950-02-14T05:00:00+00:00,Michigan State,Detroit Mercy,False,Week 12,5.27,Detroit Mercy,57,54,3,incorrect,no_cover,8.27,Evaluated
+12,1950-02-15T05:00:00+00:00,Army,Fordham,False,Week 12,-0.55,Army,50,72,-22,incorrect,no_cover,22.55,Evaluated
+12,1950-02-15T05:00:00+00:00,Georgetown,George Washington,False,Week 12,-1.22,Georgetown,66,68,-2,incorrect,no_cover,3.22,Evaluated
+12,1950-02-15T05:00:00+00:00,Princeton,Columbia,False,Week 12,1.11,Columbia,50,48,2,incorrect,no_cover,3.11,Evaluated
+12,1950-02-15T05:00:00+00:00,Oregon State,Idaho,False,Week 12,-8.33,Oregon State,60,46,14,correct,cover,5.67,Evaluated
+12,1950-02-15T05:00:00+00:00,Penn State,West Virginia,False,Week 12,0.09,West Virginia,82,56,26,incorrect,no_cover,26.09,Evaluated
+12,1950-02-15T05:00:00+00:00,Western Kentucky,Miami,False,Week 12,-18.63,Western Kentucky,79,57,22,correct,cover,3.37,Evaluated
+12,1950-02-15T05:00:00+00:00,Yale,Brown,False,Week 12,-8.76,Yale,74,54,20,correct,cover,11.24,Evaluated
+12,1950-02-15T05:00:00+00:00,Dartmouth,Holy Cross,False,Week 12,26.76,Holy Cross,50,67,-17,correct,no_cover,9.76,Evaluated
+12,1950-02-15T05:00:00+00:00,Lehigh,Rutgers,False,Week 12,8.25,Rutgers,61,76,-15,correct,cover,6.75,Evaluated
+12,1950-02-15T05:00:00+00:00,VMI,Richmond,False,Week 12,1.51,Richmond,62,70,-8,correct,cover,6.49,Evaluated
+12,1950-02-15T05:00:00+00:00,Wake Forest,Clemson,False,Week 12,-8.92,Wake Forest,65,52,13,correct,cover,4.08,Evaluated
+12,1950-02-15T05:00:00+00:00,Georgia,Georgia Tech,False,Week 12,-4.31,Georgia,73,72,1,correct,no_cover,3.31,Evaluated
+12,1950-02-15T05:00:00+00:00,Kentucky,Ole Miss,False,Week 12,-22.33,Kentucky,90,50,40,correct,cover,17.67,Evaluated
+12,1950-02-16T05:00:00+00:00,Washington & Lee,William & Mary,False,Week 12,7.99,William & Mary,57,70,-13,correct,cover,5.01,Evaluated
+12,1950-02-16T05:00:00+00:00,Loyola Chicago,Western Michigan,False,Week 12,-10.21,Loyola Chicago,85,71,14,correct,cover,3.79,Evaluated
+12,1950-02-16T05:00:00+00:00,Virginia,VMI,False,Week 12,-14.56,Virginia,71,64,7,correct,no_cover,7.56,Evaluated
+12,1950-02-16T05:00:00+00:00,Vanderbilt,Ole Miss,False,Week 12,-15.51,Vanderbilt,80,47,33,correct,cover,17.49,Evaluated
+12,1950-02-16T05:00:00+00:00,Western Kentucky,Miami,False,Week 12,-18.63,Western Kentucky,83,47,36,correct,cover,17.37,Evaluated
+12,1950-02-16T05:00:00+00:00,Long Island University,Duquesne,False,Week 12,-5.15,Long Island University,53,60,-7,incorrect,no_cover,12.15,Evaluated
+12,1950-02-17T05:00:00+00:00,Ohio,Miami (OH),False,Week 12,-2.79,Ohio,45,54,-9,incorrect,no_cover,11.79,Evaluated
+12,1950-02-17T05:00:00+00:00,Rhode Island,Holy Cross,False,Week 12,10.25,Holy Cross,62,70,-8,correct,no_cover,2.25,Evaluated
+12,1950-02-17T05:00:00+00:00,Santa Clara,St. Francis Brooklyn,False,Week 12,-12.73,Santa Clara,76,64,12,correct,no_cover,0.73,Evaluated
+12,1950-02-17T05:00:00+00:00,Colorado State,Utah State,False,Week 12,-1.17,Colorado State,36,49,-13,incorrect,no_cover,14.17,Evaluated
+12,1950-02-17T05:00:00+00:00,UCLA,Stanford,False,Week 12,-14.00,UCLA,69,59,10,correct,no_cover,4.00,Evaluated
+12,1950-02-17T05:00:00+00:00,Baldwin-Wallace,Bowling Green,False,Week 12,14.30,Bowling Green,66,78,-12,correct,no_cover,2.30,Evaluated
+12,1950-02-17T05:00:00+00:00,Richmond,Davidson,False,Week 12,-0.51,Richmond,81,60,21,correct,cover,20.49,Evaluated
+12,1950-02-17T05:00:00+00:00,South Carolina,Wake Forest,False,Week 12,0.69,Wake Forest,49,43,6,incorrect,no_cover,6.69,Evaluated
+12,1950-02-17T05:00:00+00:00,North Carolina,Duke,False,Week 12,-2.23,North Carolina,58,55,3,correct,cover,0.77,Evaluated
+12,1950-02-17T05:00:00+00:00,LSU,Mississippi State,False,Week 12,-3.11,LSU,68,58,10,correct,cover,6.89,Evaluated
+12,1950-02-17T05:00:00+00:00,Washington,Washington State,False,Week 12,-4.14,Washington,46,54,-8,incorrect,no_cover,12.14,Evaluated
+12,1950-02-17T05:00:00+00:00,Oregon,Idaho,False,Week 12,-4.32,Oregon,47,53,-6,incorrect,no_cover,10.32,Evaluated
+12,1950-02-17T05:00:00+00:00,USC,California,False,Week 12,-9.94,USC,61,34,27,correct,cover,17.06,Evaluated
+12,1950-02-17T05:00:00+00:00,Oklahoma State,Detroit Mercy,False,Week 12,-8.72,Oklahoma State,39,27,12,correct,cover,3.28,Evaluated
+12,1950-02-18T05:00:00+00:00,Navy,Brown,False,Week 12,-11.73,Navy,54,35,19,correct,cover,7.27,Evaluated
+12,1950-02-18T05:00:00+00:00,William & Mary,VMI,False,Week 12,-26.11,William & Mary,74,57,17,correct,no_cover,9.11,Evaluated
+12,1950-02-18T05:00:00+00:00,Butler,Miami (OH),False,Week 12,-11.74,Butler,48,46,2,correct,no_cover,9.74,Evaluated
+12,1950-02-18T05:00:00+00:00,Bucknell,Lafayette,False,Week 12,3.07,Lafayette,61,66,-5,correct,cover,1.93,Evaluated
+12,1950-02-18T05:00:00+00:00,Canisius,Manhattan,False,Week 12,-4.45,Canisius,52,50,2,correct,no_cover,2.45,Evaluated
+12,1950-02-18T05:00:00+00:00,The Citadel,Wake Forest,False,Week 12,18.14,Wake Forest,57,62,-5,correct,no_cover,13.14,Evaluated
+12,1950-02-18T05:00:00+00:00,Colgate,Syracuse,False,Week 12,5.14,Syracuse,62,77,-15,correct,cover,9.86,Evaluated
+12,1950-02-18T05:00:00+00:00,Cornell,Princeton,False,Week 12,-8.30,Cornell,42,44,-2,incorrect,no_cover,10.30,Evaluated
+12,1950-02-18T05:00:00+00:00,Northwestern,Ohio State,False,Week 12,5.22,Ohio State,46,68,-22,correct,cover,16.78,Evaluated
+12,1950-02-18T05:00:00+00:00,Auburn,Alabama,False,Week 12,0.15,Alabama,67,58,9,incorrect,no_cover,9.15,Evaluated
+12,1950-02-18T05:00:00+00:00,USC,Stanford,False,Week 12,-11.28,USC,62,59,3,correct,no_cover,8.28,Evaluated
+12,1950-02-18T05:00:00+00:00,Florida,Miami,False,Week 12,0.35,Miami,66,46,20,incorrect,no_cover,20.35,Evaluated
+12,1950-02-18T05:00:00+00:00,Maryland,Davidson,False,Week 12,-7.04,Maryland,64,61,3,correct,no_cover,4.04,Evaluated
+12,1950-02-18T05:00:00+00:00,Marquette,Creighton,False,Week 12,1.85,Creighton,80,68,12,incorrect,no_cover,13.85,Evaluated
+12,1950-02-18T05:00:00+00:00,Toledo,Washington University (St. Louis),False,Week 12,-11.29,Toledo,55,41,14,correct,cover,2.71,Evaluated
+12,1950-02-18T05:00:00+00:00,Yale,Army,False,Week 12,-9.45,Yale,62,47,15,correct,cover,5.55,Evaluated
+12,1950-02-18T05:00:00+00:00,Dartmouth,Columbia,False,Week 12,13.05,Columbia,56,74,-18,correct,cover,4.95,Evaluated
+12,1950-02-18T05:00:00+00:00,Penn State,Rutgers,False,Week 12,-7.52,Penn State,51,64,-13,incorrect,no_cover,20.52,Evaluated
+12,1950-02-18T05:00:00+00:00,Virginia Tech,Virginia,False,Week 12,-10.51,Virginia Tech,78,64,14,correct,cover,3.49,Evaluated
+12,1950-02-18T05:00:00+00:00,Boston College,Villanova,False,Week 12,7.36,Villanova,64,61,3,incorrect,no_cover,10.36,Evaluated
+12,1950-02-18T05:00:00+00:00,Temple,West Virginia,False,Week 12,-2.39,Temple,82,48,34,correct,cover,31.61,Evaluated
+12,1950-02-18T05:00:00+00:00,Wichita State,Bradley,False,Week 12,12.76,Bradley,56,68,-12,correct,no_cover,0.76,Evaluated
+12,1950-02-18T05:00:00+00:00,Tulsa,Detroit Mercy,False,Week 12,1.29,Detroit Mercy,53,49,4,incorrect,no_cover,5.29,Evaluated
+12,1950-02-18T05:00:00+00:00,Louisville,NC State,False,Week 12,3.97,NC State,52,66,-14,correct,cover,10.03,Evaluated
+12,1950-02-18T05:00:00+00:00,Duke,George Washington,False,Week 12,-5.39,Duke,55,52,3,correct,no_cover,2.39,Evaluated
+12,1950-02-18T05:00:00+00:00,Clemson,Furman,False,Week 12,-11.91,Clemson,52,56,-4,incorrect,no_cover,15.91,Evaluated
+12,1950-02-18T05:00:00+00:00,Tulane,Mississippi State,False,Week 12,-8.16,Tulane,73,53,20,correct,cover,11.84,Evaluated
+12,1950-02-18T05:00:00+00:00,Kentucky,Georgia Tech,False,Week 12,-15.52,Kentucky,97,62,35,correct,cover,19.48,Evaluated
+12,1950-02-18T05:00:00+00:00,Washington,Washington State,False,Week 12,-4.14,Washington,42,60,-18,incorrect,no_cover,22.14,Evaluated
+12,1950-02-18T05:00:00+00:00,Oregon,Idaho,False,Week 12,-4.32,Oregon,54,48,6,correct,cover,1.68,Evaluated
+12,1950-02-18T05:00:00+00:00,UCLA,California,False,Week 12,-12.66,UCLA,64,56,8,correct,no_cover,4.66,Evaluated
+12,1950-02-18T05:00:00+00:00,Wisconsin,Iowa,False,Week 12,-6.53,Wisconsin,53,44,9,correct,cover,2.47,Evaluated
+12,1950-02-18T05:00:00+00:00,Indiana,Purdue,False,Week 12,-8.63,Indiana,60,50,10,correct,cover,1.37,Evaluated
+12,1950-02-18T05:00:00+00:00,Illinois,Michigan,False,Week 12,-3.31,Illinois,70,60,10,correct,cover,6.69,Evaluated
+12,1950-02-18T05:00:00+00:00,Saint Louis,Drake,False,Week 12,-13.48,Saint Louis,79,54,25,correct,cover,11.52,Evaluated
+12,1950-02-19T05:00:00+00:00,San Francisco,St. Francis Brooklyn,False,Week 12,-21.54,San Francisco,73,42,31,correct,cover,9.46,Evaluated
+12,1950-02-20T05:00:00+00:00,Northwestern,Marquette,False,Week 12,-18.23,Northwestern,61,52,9,correct,no_cover,9.23,Evaluated
+12,1950-02-20T05:00:00+00:00,Columbia,Brown,False,Week 12,-11.63,Columbia,54,51,3,correct,no_cover,8.63,Evaluated
+12,1950-02-20T05:00:00+00:00,Florida,Auburn,False,Week 12,6.58,Auburn,43,41,2,incorrect,no_cover,8.58,Evaluated
+12,1950-02-20T05:00:00+00:00,Bradley,Saint Louis,False,Week 12,-9.28,Bradley,52,45,7,correct,no_cover,2.28,Evaluated
+12,1950-02-20T05:00:00+00:00,Washington & Lee,Clemson,False,Week 12,-0.89,Washington & Lee,63,78,-15,incorrect,no_cover,15.89,Evaluated
+12,1950-02-20T05:00:00+00:00,Seton Hall,Lafayette,False,Week 12,6.20,Lafayette,50,59,-9,correct,cover,2.80,Evaluated
+12,1950-02-20T05:00:00+00:00,Virginia Tech,William & Mary,False,Week 12,1.04,William & Mary,60,47,13,incorrect,no_cover,14.04,Evaluated
+12,1950-02-20T05:00:00+00:00,Colorado State,Denver,False,Week 12,2.17,Denver,36,41,-5,correct,cover,2.83,Evaluated
+12,1950-02-20T05:00:00+00:00,Minnesota,Iowa,False,Week 12,-6.84,Minnesota,62,64,-2,incorrect,no_cover,8.84,Evaluated
+12,1950-02-20T05:00:00+00:00,Michigan,Michigan State,False,Week 12,-18.50,Michigan,70,53,17,correct,no_cover,1.50,Evaluated
+12,1950-02-20T05:00:00+00:00,Wisconsin,Purdue,False,Week 12,-6.66,Wisconsin,56,45,11,correct,cover,4.34,Evaluated
+12,1950-02-20T05:00:00+00:00,Ohio State,Indiana,False,Week 12,-6.93,Ohio State,75,65,10,correct,cover,3.07,Evaluated
+13,1950-02-21T05:00:00+00:00,Western Michigan,Butler,False,Week 13,-0.96,Western Michigan,70,57,13,correct,cover,12.04,Evaluated
+13,1950-02-21T05:00:00+00:00,Virginia,George Washington,False,Week 13,5.67,George Washington,57,64,-7,correct,cover,1.33,Evaluated
+13,1950-02-21T05:00:00+00:00,Syracuse,Cornell,False,Week 13,-7.19,Syracuse,55,68,-13,incorrect,no_cover,20.19,Evaluated
+13,1950-02-21T05:00:00+00:00,Harvard,Columbia,False,Week 13,4.38,Columbia,52,62,-10,correct,cover,5.62,Evaluated
+13,1950-02-21T05:00:00+00:00,Maryland,Richmond,False,Week 13,-8.36,Maryland,67,48,19,correct,cover,10.64,Evaluated
+13,1950-02-21T05:00:00+00:00,Boston College,Holy Cross,False,Week 13,13.97,Holy Cross,63,71,-8,correct,no_cover,5.97,Evaluated
+13,1950-02-21T05:00:00+00:00,South Carolina,The Citadel,False,Week 13,-19.87,South Carolina,68,42,26,correct,cover,6.13,Evaluated
+13,1950-02-21T05:00:00+00:00,Manhattan,La Salle,False,Week 13,9.65,La Salle,60,65,-5,correct,no_cover,4.65,Evaluated
+13,1950-02-21T05:00:00+00:00,NC State,North Carolina,False,Week 13,-16.45,NC State,70,44,26,correct,cover,9.55,Evaluated
+13,1950-02-21T05:00:00+00:00,Wake Forest,Duke,False,Week 13,-1.92,Wake Forest,72,54,18,correct,cover,16.08,Evaluated
+13,1950-02-21T05:00:00+00:00,VMI,Clemson,False,Week 13,7.03,Clemson,73,83,-10,correct,cover,2.97,Evaluated
+13,1950-02-21T05:00:00+00:00,Oklahoma State,Wichita State,False,Week 13,-13.07,Oklahoma State,49,40,9,correct,no_cover,4.07,Evaluated
+13,1950-02-22T05:00:00+00:00,Army,Colgate,False,Week 13,-0.52,Army,50,48,2,correct,cover,1.48,Evaluated
+13,1950-02-22T05:00:00+00:00,Lafayette,Lehigh,False,Week 13,-23.07,Lafayette,76,53,23,correct,no_cover,0.07,Evaluated
+13,1950-02-22T05:00:00+00:00,Niagara,St. Bonaventure,False,Week 13,-5.34,Niagara,58,45,13,correct,cover,7.66,Evaluated
+13,1950-02-22T05:00:00+00:00,Ole Miss,Alabama,False,Week 13,9.46,Alabama,61,52,9,incorrect,no_cover,18.46,Evaluated
+13,1950-02-22T05:00:00+00:00,Davidson,Furman,False,Week 13,-5.45,Davidson,68,58,10,correct,cover,4.55,Evaluated
+13,1950-02-22T05:00:00+00:00,Yale,Princeton,False,Week 13,-5.34,Yale,49,51,-2,incorrect,no_cover,7.34,Evaluated
+13,1950-02-22T05:00:00+00:00,Navy,Rutgers,False,Week 13,-10.25,Navy,57,48,9,correct,no_cover,1.25,Evaluated
+13,1950-02-22T05:00:00+00:00,Richmond,Washington & Lee,False,Week 13,0.22,Washington & Lee,70,72,-2,correct,cover,1.78,Evaluated
+13,1950-02-22T05:00:00+00:00,Penn State,Temple,False,Week 13,0.32,Temple,66,61,5,incorrect,no_cover,5.32,Evaluated
+13,1950-02-22T05:00:00+00:00,Auburn,Georgia Tech,False,Week 13,-4.48,Auburn,53,61,-8,incorrect,no_cover,12.48,Evaluated
+13,1950-02-23T05:00:00+00:00,Fordham,Georgetown,False,Week 13,-4.96,Fordham,64,63,1,correct,no_cover,3.96,Evaluated
+13,1950-02-23T05:00:00+00:00,Notre Dame,Saint Louis,False,Week 13,-0.65,Notre Dame,55,52,3,correct,cover,2.35,Evaluated
+13,1950-02-23T05:00:00+00:00,Long Island University,Cincinnati,False,Week 13,-4.80,Long Island University,65,83,-18,incorrect,no_cover,22.80,Evaluated
+13,1950-02-23T05:00:00+00:00,Ole Miss,Mississippi State,False,Week 13,-0.72,Ole Miss,62,45,17,correct,cover,16.28,Evaluated
+13,1950-02-23T05:00:00+00:00,Kentucky,Xavier,False,Week 13,-16.23,Kentucky,58,53,5,correct,no_cover,11.23,Evaluated
+13,1950-02-23T05:00:00+00:00,Oklahoma State,Tulsa,False,Week 13,-13.22,Oklahoma State,34,27,7,correct,no_cover,6.22,Evaluated
+13,1950-02-24T05:00:00+00:00,Washington & Lee,Virginia,False,Week 13,-5.20,Washington & Lee,95,83,12,correct,cover,6.80,Evaluated
+13,1950-02-24T05:00:00+00:00,Stanford,USC,False,Week 13,3.71,USC,60,57,3,incorrect,no_cover,6.71,Evaluated
+13,1950-02-24T05:00:00+00:00,Colgate,Penn State,False,Week 13,0.64,Penn State,57,72,-15,correct,cover,14.36,Evaluated
+13,1950-02-24T05:00:00+00:00,Columbia,Dartmouth,False,Week 13,-20.02,Columbia,74,51,23,correct,cover,2.98,Evaluated
+13,1950-02-24T05:00:00+00:00,South Carolina,Maryland,False,Week 13,-6.26,South Carolina,59,44,15,correct,cover,8.74,Evaluated
+13,1950-02-24T05:00:00+00:00,Duke,North Carolina,False,Week 13,-4.13,Duke,46,64,-18,incorrect,no_cover,22.13,Evaluated
+13,1950-02-24T05:00:00+00:00,Tulane,LSU,False,Week 13,-7.91,Tulane,77,71,6,correct,no_cover,1.91,Evaluated
+13,1950-02-24T05:00:00+00:00,Idaho,Washington,False,Week 13,3.15,Washington,57,40,17,incorrect,no_cover,20.15,Evaluated
+13,1950-02-24T05:00:00+00:00,Oregon State,Oregon,False,Week 13,-8.17,Oregon State,51,42,9,correct,cover,0.83,Evaluated
+13,1950-02-24T05:00:00+00:00,California,UCLA,False,Week 13,5.66,UCLA,44,46,-2,correct,no_cover,3.66,Evaluated
+13,1950-02-25T05:00:00+00:00,Butler,Ohio,False,Week 13,-13.69,Butler,67,56,11,correct,no_cover,2.69,Evaluated
+13,1950-02-25T05:00:00+00:00,St. Bonaventure,Canisius,False,Week 13,-2.78,St. Bonaventure,53,51,2,correct,no_cover,0.78,Evaluated
+13,1950-02-25T05:00:00+00:00,Brown,Holy Cross,False,Week 13,19.46,Holy Cross,45,70,-25,correct,cover,5.54,Evaluated
+13,1950-02-25T05:00:00+00:00,George Washington,Wake Forest,False,Week 13,-4.07,George Washington,83,67,16,correct,cover,11.93,Evaluated
+13,1950-02-25T05:00:00+00:00,Georgia,Auburn,False,Week 13,-3.36,Georgia,46,55,-9,incorrect,no_cover,12.36,Evaluated
+13,1950-02-25T05:00:00+00:00,Detroit Mercy,Saint Louis,False,Week 13,4.36,Saint Louis,73,60,13,incorrect,no_cover,17.36,Evaluated
+13,1950-02-25T05:00:00+00:00,Purdue,Minnesota,False,Week 13,-0.24,Purdue,55,39,16,correct,cover,15.76,Evaluated
+13,1950-02-25T05:00:00+00:00,Tennessee,Ole Miss,False,Week 13,-11.19,Tennessee,79,57,22,correct,cover,10.81,Evaluated
+13,1950-02-25T05:00:00+00:00,Stanford,UCLA,False,Week 13,5.59,UCLA,57,62,-5,correct,no_cover,0.59,Evaluated
+13,1950-02-25T05:00:00+00:00,Davidson,The Citadel,False,Week 13,-13.69,Davidson,87,48,39,correct,cover,25.31,Evaluated
+13,1950-02-25T05:00:00+00:00,Pittsburgh,West Virginia,False,Week 13,2.89,West Virginia,55,53,2,incorrect,no_cover,4.89,Evaluated
+13,1950-02-25T05:00:00+00:00,Xavier,Toledo,False,Week 13,1.91,Toledo,53,48,5,incorrect,no_cover,6.91,Evaluated
+13,1950-02-25T05:00:00+00:00,Syracuse,Penn State,False,Week 13,-10.09,Syracuse,46,44,2,correct,no_cover,8.09,Evaluated
+13,1950-02-25T05:00:00+00:00,Cornell,Harvard,False,Week 13,-10.59,Cornell,57,47,10,correct,no_cover,0.59,Evaluated
+13,1950-02-25T05:00:00+00:00,Princeton,Yale,False,Week 13,-1.86,Princeton,54,51,3,correct,cover,1.14,Evaluated
+13,1950-02-25T05:00:00+00:00,Virginia Tech,VMI,False,Week 13,-20.90,Virginia Tech,78,58,20,correct,no_cover,0.90,Evaluated
+13,1950-02-25T05:00:00+00:00,William & Mary,Richmond,False,Week 13,-18.27,William & Mary,81,54,27,correct,cover,8.73,Evaluated
+13,1950-02-25T05:00:00+00:00,Navy,Notre Dame,False,Week 13,-3.44,Navy,59,65,-6,incorrect,no_cover,9.44,Evaluated
+13,1950-02-25T05:00:00+00:00,Northwestern,Michigan,False,Week 13,0.14,Michigan,76,53,23,incorrect,no_cover,23.14,Evaluated
+13,1950-02-25T05:00:00+00:00,La Salle,Cincinnati,False,Week 13,-9.64,La Salle,76,65,11,correct,cover,1.36,Evaluated
+13,1950-02-25T05:00:00+00:00,NC State,Villanova,False,Week 13,-9.60,NC State,64,65,-1,incorrect,no_cover,10.60,Evaluated
+13,1950-02-25T05:00:00+00:00,Clemson,Maryland,False,Week 13,-3.32,Clemson,70,68,2,correct,no_cover,1.32,Evaluated
+13,1950-02-25T05:00:00+00:00,Florida,Georgia Tech,False,Week 13,4.10,Georgia Tech,59,41,18,incorrect,no_cover,22.10,Evaluated
+13,1950-02-25T05:00:00+00:00,Kentucky,Vanderbilt,False,Week 13,-11.19,Kentucky,70,66,4,correct,no_cover,7.19,Evaluated
+13,1950-02-25T05:00:00+00:00,Idaho,Washington,False,Week 13,3.15,Washington,48,45,3,incorrect,no_cover,6.15,Evaluated
+13,1950-02-25T05:00:00+00:00,Oregon,Oregon State,False,Week 13,0.97,Oregon State,45,40,5,incorrect,no_cover,5.97,Evaluated
+13,1950-02-25T05:00:00+00:00,California,USC,False,Week 13,3.78,USC,60,58,2,incorrect,no_cover,5.78,Evaluated
+13,1950-02-25T05:00:00+00:00,Marquette,Michigan State,False,Week 13,-1.18,Marquette,75,58,17,correct,cover,15.82,Evaluated
+13,1950-02-25T05:00:00+00:00,Indiana,Iowa,False,Week 13,-9.77,Indiana,53,59,-6,incorrect,no_cover,15.77,Evaluated
+13,1950-02-25T05:00:00+00:00,Illinois,Wisconsin,False,Week 13,-1.96,Illinois,76,58,18,correct,cover,16.04,Evaluated
+13,1950-02-25T05:00:00+00:00,Drake,Wichita State,False,Week 13,-3.70,Drake,79,61,18,correct,cover,14.30,Evaluated
+13,1950-02-25T05:00:00+00:00,Oklahoma State,Bradley,False,Week 13,3.63,Bradley,35,42,-7,correct,cover,3.37,Evaluated
+13,1950-02-27T05:00:00+00:00,Utah State,Colorado State,False,Week 13,-7.82,Utah State,53,48,5,correct,no_cover,2.82,Evaluated
+13,1950-02-27T05:00:00+00:00,New York University,Notre Dame,False,Week 13,3.49,Notre Dame,66,63,3,incorrect,no_cover,6.49,Evaluated
+13,1950-02-27T05:00:00+00:00,Michigan,Ohio State,False,Week 13,3.43,Ohio State,58,69,-11,correct,cover,7.57,Evaluated
+13,1950-02-27T05:00:00+00:00,Tulsa,Bradley,False,Week 13,13.25,Bradley,56,57,-1,correct,no_cover,12.25,Evaluated
+13,1950-02-27T05:00:00+00:00,LSU,Tennessee,False,Week 13,-1.95,LSU,65,67,-2,incorrect,no_cover,3.95,Evaluated
+13,1950-02-27T05:00:00+00:00,Wisconsin,Northwestern,False,Week 13,-8.95,Wisconsin,67,53,14,correct,cover,5.05,Evaluated
+13,1950-02-27T05:00:00+00:00,Indiana,Illinois,False,Week 13,-7.43,Indiana,80,66,14,correct,cover,6.57,Evaluated
+13,1950-02-27T05:00:00+00:00,Creighton,Drake,False,Week 13,-0.20,Creighton,55,58,-3,incorrect,no_cover,3.20,Evaluated
+14,1950-02-28T05:00:00+00:00,Holy Cross,Valparaiso,False,Week 14,-15.16,Holy Cross,84,52,32,correct,cover,16.84,Evaluated
+14,1950-02-28T05:00:00+00:00,Western Michigan,Loyola Chicago,False,Week 14,1.82,Loyola Chicago,57,61,-4,correct,cover,2.18,Evaluated
+14,1950-02-28T05:00:00+00:00,Saint Louis,Marquette,False,Week 14,-18.89,Saint Louis,69,44,25,correct,cover,6.11,Evaluated
+14,1950-02-28T05:00:00+00:00,Seton Hall,Georgetown,False,Week 14,2.79,Georgetown,77,65,12,incorrect,no_cover,14.79,Evaluated
+14,1950-02-28T05:00:00+00:00,Harvard,Princeton,False,Week 14,1.53,Princeton,48,65,-17,correct,cover,15.47,Evaluated
+14,1950-02-28T05:00:00+00:00,San Francisco,Saint Mary's,False,Week 14,-24.43,San Francisco,49,35,14,correct,no_cover,10.43,Evaluated
+14,1950-02-28T05:00:00+00:00,Miami (OH),Cincinnati,False,Week 14,11.26,Cincinnati,46,82,-36,correct,cover,24.74,Evaluated
+14,1950-03-01T05:00:00+00:00,Cornell,Canisius,False,Week 14,-6.47,Cornell,65,43,22,correct,cover,15.53,Evaluated
+14,1950-03-01T05:00:00+00:00,Villanova,Toledo,False,Week 14,-4.30,Villanova,82,62,20,correct,cover,15.70,Evaluated
+14,1950-03-01T05:00:00+00:00,West Virginia,Penn State,False,Week 14,-0.17,West Virginia,59,56,3,correct,cover,2.83,Evaluated
+14,1950-03-01T05:00:00+00:00,Yale,Fordham,False,Week 14,-6.21,Yale,53,72,-19,incorrect,no_cover,25.21,Evaluated
+14,1950-03-01T05:00:00+00:00,Rutgers,Lehigh,False,Week 14,-17.65,Rutgers,75,58,17,correct,no_cover,0.65,Evaluated
+14,1950-03-01T05:00:00+00:00,Syracuse,Temple,False,Week 14,-5.38,Syracuse,105,76,29,correct,cover,23.62,Evaluated
+14,1950-03-01T05:00:00+00:00,Lafayette,Saint Joseph's,False,Week 14,-10.61,Lafayette,60,59,1,correct,no_cover,9.61,Evaluated
+14,1950-03-02T05:00:00+00:00,Seton Hall,Valparaiso,False,Week 14,9.22,Valparaiso,81,61,20,incorrect,no_cover,29.22,Evaluated
+14,1950-03-02T05:00:00+00:00,Duke,South Carolina,False,Week 14,-6.33,Duke,53,41,12,correct,cover,5.67,Evaluated
+14,1950-03-03T05:00:00+00:00,UCLA,USC,False,Week 14,-6.19,UCLA,43,45,-2,incorrect,no_cover,8.19,Evaluated
+14,1950-03-03T05:00:00+00:00,St. Francis Brooklyn,Toledo,False,Week 14,11.68,Toledo,73,85,-12,correct,cover,0.32,Evaluated
+14,1950-03-03T05:00:00+00:00,Utah State,Denver,False,Week 14,-0.09,Utah State,52,44,8,correct,cover,7.91,Evaluated
+14,1950-03-03T05:00:00+00:00,Idaho,Washington State,False,Week 14,4.48,Washington State,34,39,-5,correct,cover,0.52,Evaluated
+14,1950-03-03T05:00:00+00:00,Duke,William & Mary,False,Week 14,-0.14,Duke,60,50,10,correct,cover,9.86,Evaluated
+14,1950-03-03T05:00:00+00:00,Washington,Oregon State,False,Week 14,-4.81,Washington,47,45,2,correct,no_cover,2.81,Evaluated
+14,1950-03-03T05:00:00+00:00,California,Stanford,False,Week 14,-3.72,California,46,58,-12,incorrect,no_cover,15.72,Evaluated
+14,1950-03-04T05:00:00+00:00,Army,Navy,False,Week 14,7.54,Navy,50,46,4,incorrect,no_cover,11.54,Evaluated
+14,1950-03-04T05:00:00+00:00,Western Michigan,Ohio,False,Week 14,-11.67,Western Michigan,79,52,27,correct,cover,15.33,Evaluated
+14,1950-03-04T05:00:00+00:00,Niagara,Canisius,False,Week 14,-4.81,Niagara,51,42,9,correct,cover,4.19,Evaluated
+14,1950-03-04T05:00:00+00:00,Columbia,Holy Cross,False,Week 14,9.30,Holy Cross,61,54,7,incorrect,no_cover,16.30,Evaluated
+14,1950-03-04T05:00:00+00:00,Villanova,St. Bonaventure,False,Week 14,-13.55,Villanova,55,35,20,correct,cover,6.45,Evaluated
+14,1950-03-04T05:00:00+00:00,Syracuse,Colgate,False,Week 14,-13.96,Syracuse,63,65,-2,incorrect,no_cover,15.96,Evaluated
+14,1950-03-04T05:00:00+00:00,USC,UCLA,False,Week 14,-1.01,USC,57,74,-17,incorrect,no_cover,18.01,Evaluated
+14,1950-03-04T05:00:00+00:00,West Virginia,Pittsburgh,False,Week 14,-8.66,West Virginia,59,53,6,correct,no_cover,2.66,Evaluated
+14,1950-03-04T05:00:00+00:00,Baldwin-Wallace,Duquesne,False,Week 14,14.53,Duquesne,62,55,7,incorrect,no_cover,21.53,Evaluated
+14,1950-03-04T05:00:00+00:00,DePaul,Bowling Green,False,Week 14,-0.77,DePaul,55,73,-18,incorrect,no_cover,18.77,Evaluated
+14,1950-03-04T05:00:00+00:00,Penn State,Georgetown,False,Week 14,-7.25,Penn State,65,56,9,correct,cover,1.75,Evaluated
+14,1950-03-04T05:00:00+00:00,Harvard,Yale,False,Week 14,2.21,Yale,57,55,2,incorrect,no_cover,4.21,Evaluated
+14,1950-03-04T05:00:00+00:00,Princeton,Dartmouth,False,Week 14,-16.99,Princeton,55,43,12,correct,no_cover,4.99,Evaluated
+14,1950-03-04T05:00:00+00:00,Rutgers,Lafayette,False,Week 14,1.83,Lafayette,67,62,5,incorrect,no_cover,6.83,Evaluated
+14,1950-03-04T05:00:00+00:00,Utah State,Denver,False,Week 14,-0.09,Utah State,50,53,-3,incorrect,no_cover,3.09,Evaluated
+14,1950-03-04T05:00:00+00:00,Marquette,Notre Dame,False,Week 14,10.07,Notre Dame,58,65,-7,correct,no_cover,3.07,Evaluated
+14,1950-03-04T05:00:00+00:00,Iowa,Creighton,False,Week 14,-15.71,Iowa,70,46,24,correct,cover,8.29,Evaluated
+14,1950-03-04T05:00:00+00:00,Washington State,Idaho,False,Week 14,-11.68,Washington State,45,50,-5,incorrect,no_cover,16.68,Evaluated
+14,1950-03-04T05:00:00+00:00,Duke,NC State,False,Week 14,10.32,NC State,47,67,-20,correct,cover,9.68,Evaluated
+14,1950-03-04T05:00:00+00:00,Tennessee,LSU,False,Week 14,-6.12,Tennessee,81,79,2,correct,no_cover,4.12,Evaluated
+14,1950-03-04T05:00:00+00:00,Washington,Oregon State,False,Week 14,-4.81,Washington,57,54,3,correct,no_cover,1.81,Evaluated
+14,1950-03-04T05:00:00+00:00,Stanford,California,False,Week 14,-3.48,Stanford,55,64,-9,incorrect,no_cover,12.48,Evaluated
+14,1950-03-04T05:00:00+00:00,Minnesota,Wisconsin,False,Week 14,-2.11,Minnesota,54,60,-6,incorrect,no_cover,8.11,Evaluated
+14,1950-03-04T05:00:00+00:00,Northwestern,Illinois,False,Week 14,-0.02,Northwestern,52,69,-17,incorrect,no_cover,17.02,Evaluated
+14,1950-03-04T05:00:00+00:00,Bradley,Drake,False,Week 14,-19.63,Bradley,92,63,29,correct,cover,9.37,Evaluated
+14,1950-03-04T05:00:00+00:00,Oklahoma State,Saint Louis,False,Week 14,-1.69,Oklahoma State,37,35,2,correct,cover,0.31,Evaluated
+14,1950-03-05T05:00:00+00:00,Michigan,Purdue,False,Week 14,-3.75,Michigan,70,60,10,correct,cover,6.25,Evaluated
+14,1950-03-06T05:00:00+00:00,Villanova,Georgetown,False,Week 14,-13.95,Villanova,82,72,10,correct,no_cover,3.95,Evaluated
+14,1950-03-06T05:00:00+00:00,Columbia,Cornell,False,Week 14,-3.50,Columbia,60,53,7,correct,cover,3.50,Evaluated
+14,1950-03-06T05:00:00+00:00,Seton Hall,St. Bonaventure,False,Week 14,3.19,St. Bonaventure,42,41,1,incorrect,no_cover,4.19,Evaluated
+14,1950-03-06T05:00:00+00:00,Dartmouth,Brown,False,Week 14,2.70,Brown,48,54,-6,correct,cover,3.30,Evaluated
+14,1950-03-06T05:00:00+00:00,Iowa,Minnesota,False,Week 14,-2.92,Iowa,49,64,-15,incorrect,no_cover,17.92,Evaluated
+14,1950-03-06T05:00:00+00:00,Boston College,La Salle,False,Week 14,10.69,La Salle,61,83,-22,correct,cover,11.31,Evaluated
+14,1950-03-06T05:00:00+00:00,Tulsa,Saint Louis,False,Week 14,6.64,Saint Louis,51,72,-21,correct,cover,14.36,Evaluated
+14,1950-03-06T05:00:00+00:00,Detroit Mercy,Drake,False,Week 14,-7.43,Detroit Mercy,61,47,14,correct,cover,6.57,Evaluated
+15,1950-03-07T05:00:00+00:00,Princeton,Georgetown,False,Week 15,-7.26,Princeton,63,49,14,correct,cover,6.74,Evaluated
+15,1950-03-07T05:00:00+00:00,Virginia,William & Mary,False,Week 15,8.83,William & Mary,58,76,-18,correct,cover,9.17,Evaluated
+15,1950-03-07T05:00:00+00:00,Washington University (St. Louis),Creighton,False,Week 15,-12.23,Washington University (St. Louis),40,38,2,correct,no_cover,10.23,Evaluated
+15,1950-03-08T05:00:00+00:00,Rhode Island,Brown,False,Week 15,-13.80,Rhode Island,67,53,14,correct,cover,0.20,Evaluated
+15,1950-03-08T05:00:00+00:00,Syracuse,Canisius,False,Week 15,-9.95,Syracuse,64,65,-1,incorrect,no_cover,10.95,Evaluated
+15,1950-03-08T05:00:00+00:00,Columbia,Harvard,False,Week 15,-13.08,Columbia,71,60,11,correct,no_cover,2.08,Evaluated
+15,1950-03-08T05:00:00+00:00,Yale,Holy Cross,False,Week 15,12.62,Holy Cross,66,62,4,incorrect,no_cover,16.62,Evaluated
+15,1950-03-08T05:00:00+00:00,Rutgers,Colgate,False,Week 15,-5.31,Rutgers,67,57,10,correct,cover,4.69,Evaluated
+15,1950-03-08T05:00:00+00:00,Villanova,Duquesne,False,Week 15,-4.88,Villanova,68,52,16,correct,cover,11.12,Evaluated
+15,1950-03-09T05:00:00+00:00,Cincinnati,Xavier,False,Week 15,-9.92,Cincinnati,53,54,-1,incorrect,no_cover,10.92,Evaluated
+15,1950-03-10T05:00:00+00:00,UCLA,Washington State,False,Week 15,-10.12,UCLA,60,58,2,correct,no_cover,8.12,Evaluated
+15,1950-03-11T05:00:00+00:00,Yale,Harvard,False,Week 15,-8.81,Yale,56,55,1,correct,no_cover,7.81,Evaluated
+15,1950-03-11T05:00:00+00:00,Cornell,Dartmouth,False,Week 15,-20.61,Cornell,56,43,13,correct,no_cover,7.61,Evaluated
+15,1950-03-11T05:00:00+00:00,UCLA,Washington State,False,Week 15,-10.12,UCLA,52,49,3,correct,no_cover,7.12,Evaluated
+15,1950-03-11T05:00:00+00:00,Niagara,Western Kentucky,False,Week 15,6.92,Western Kentucky,72,79,-7,correct,cover,0.08,Evaluated
+15,1950-03-11T05:00:00+00:00,Long Island University,Syracuse,False,Week 15,-4.18,Long Island University,52,80,-28,incorrect,no_cover,32.18,Evaluated
+15,1950-03-13T05:00:00+00:00,Syracuse,Bradley,False,Week 15,3.31,Bradley,66,78,-12,correct,cover,8.69,Evaluated
+15,1950-03-13T05:00:00+00:00,St. John's,Western Kentucky,False,Week 15,-2.80,St. John's,69,60,9,correct,cover,6.20,Evaluated
+16,1950-03-14T05:00:00+00:00,La Salle,Duquesne,False,Week 16,-10.47,La Salle,47,49,-2,incorrect,no_cover,12.47,Evaluated
+16,1950-03-16T05:00:00+00:00,St. John's,Bradley,False,Week 16,-2.65,St. John's,72,83,-11,incorrect,no_cover,13.65,Evaluated
+16,1950-03-17T05:00:00+00:00,Cincinnati,William & Mary,False,Week 16,-9.96,Cincinnati,80,44,36,correct,cover,26.04,Evaluated
+16,1950-03-18T05:00:00+00:00,Ohio State,DePaul,False,Week 16,-12.40,Ohio State,70,63,7,correct,no_cover,5.40,Evaluated
+16,1950-03-18T05:00:00+00:00,Cincinnati,Xavier,False,Week 16,-8.38,Cincinnati,59,48,11,correct,cover,2.62,Evaluated
+16,1950-03-18T05:00:00+00:00,St. John's,Duquesne,False,Week 16,-7.58,St. John's,69,67,2,correct,no_cover,5.58,Evaluated
+17,1950-03-24T05:00:00+00:00,Bradley,UCLA,True,Week 17,-5.70,Bradley,73,59,14,correct,cover,8.30,Evaluated
+17,1950-03-24T05:00:00+00:00,Holy Cross,NC State,True,Week 17,-2.15,Holy Cross,74,87,-13,incorrect,no_cover,15.15,Evaluated
+17,1950-03-25T05:00:00+00:00,Holy Cross,Ohio State,True,Week 17,-2.33,Holy Cross,52,72,-20,incorrect,no_cover,22.33,Evaluated
