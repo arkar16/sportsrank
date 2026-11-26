@@ -12,7 +12,8 @@ from spread_cards import football_links
 
 from .conference_pages import CONFERENCE_HONORS, build_conference_pages, conference_honors_route, conference_route
 from .excitement_pages import add_score_columns, season_guide
-from .game_excitement import FIRST_SEASON, season_scores, site_reference
+from .game_excitement import season_scores, site_reference
+from .early_excitement import build_guides, early_seasons
 from .history_sheets import render_history_sheet
 from .program_marks import program_logo_paths
 from .program_pages import build_program_pages
@@ -195,6 +196,9 @@ def _home(site: Path, seasons: list[Season], routes: dict[str, str], stylesheet_
     for season in reversed(seasons):
         year = season.year
         decades[year // 10 * 10].append(f'<a href="/cfb/years/{year}/{year}_CFB.html">{year}</a>')
+    if any(s.year == 1897 for s in seasons):
+        for year in sorted(early_seasons(), reverse=True):
+            decades[year // 10 * 10].append(f'<a href="/cfb/years/{year}/excitement/index.html">{year}</a>')
     archive = "".join(f'<div><h3>{decade}s</h3><p>{" ".join(links)}</p></div>' for decade, links in decades.items())
     title = "SportsRank" if is_root else "College Football | SportsRank"
     record_links = f"""<p><a href="/cfb/teams/index.html">{program_count} program histories</a></p>
@@ -301,20 +305,26 @@ def build(site: Path) -> tuple[int, int, int]:
 
     generated_pages = set()
     excitement = {}
+    if seasons[0].year == 1897:
+        for year, page, ledger in build_guides():
+            directory = site / f"cfb/years/{year}/excitement"
+            path = directory / "index.html"
+            changed += _write_changed(path, presentation.render(page.encode(), archive=False))
+            changed += _write_changed(directory / "bev-v1.json", (json.dumps(ledger,separators=(",",":"))+"\n").encode())
+            generated_pages.add(path)
     for season in seasons:
         directory = site / f"cfb/years/{season.year}"
-        if season.year >= FIRST_SEASON:
-            scores, ledger = season_scores(directory, season, site_reference())
-            if scores:
-                excitement[season.year] = scores
-                folder = directory / "excitement"
-                changed += _write_changed(folder / "bev-v1.json", (json.dumps(ledger, ensure_ascii=False,
-                    sort_keys=True, separators=(",", ":")) + "\n").encode())
-                guide = folder / "index.html"
-                changed += _write_changed(guide, presentation.render(
-                    season_guide(season.year, scores, year_routes[season.year]).encode(), archive=False,
-                ))
-                generated_pages.add(guide)
+        scores, ledger = season_scores(directory, season, site_reference())
+        if scores:
+            excitement[season.year] = scores
+            folder = directory / "excitement"
+            changed += _write_changed(folder / "bev-v1.json", (json.dumps(ledger, ensure_ascii=False,
+                sort_keys=True, separators=(",", ":")) + "\n").encode())
+            guide = folder / "index.html"
+            changed += _write_changed(guide, presentation.render(
+                season_guide(season.year, scores, year_routes[season.year], directory).encode(), archive=False,
+            ))
+            generated_pages.add(guide)
     for relative, markup in build_program_pages(
         seasons, routes, directory_label=directory_label, excitement_by_year=excitement,
     ):

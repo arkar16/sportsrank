@@ -3,9 +3,10 @@
 Status: BEV, full-data AEV and the comparable-game estimated-AEV approach
 accepted on 2026-09-29 under
 [ADR-0021](../adr/0021-define-versioned-game-excitement-scores.md).
-The first football quarter-score reference passed its reserved-season test in
-November 2026. The [delivery issue](https://github.com/arkar16/sportsrank/issues/179)
-records the empirical results.
+CollegeFootballData supplies the public football game inventory, scoring plays and
+comparison sample. The 2025 confirmation season is held out from the frozen
+2024 and 2026 sample. The public policy records its metrics and reference
+checksum. [Football delivery](https://github.com/arkar16/sportsrank/issues/182)
 The [product plan](2026-game-excitement.md) owns the accepted behavior.
 
 ## Shared definitions
@@ -314,3 +315,26 @@ six points for closeness and nine points for a full comeback bonus.
 Every verified final can use the final-margin reference. Each public score
 shows its evidence level. The versioned reference policy retains the measured
 errors and checksum. [Basketball delivery](https://github.com/arkar16/sportsrank/issues/181)
+
+
+## Games with incomplete pregame information or only a final
+
+Where a qualified pregame spread exists, keep its frozen BEV. Otherwise show
+“Pregame baseline”. Use the available pregame team ratings. Integrate a
+missing rank uniformly over the pregame field, and average predicted closeness
+over the rating prior and values one close-game margin on either side of it.
+A qualified football lower-division classification selects that population's
+CORS prior. The fallback awards zero upset bonus without a pregame spread.
+
+The “Final score only” estimate averages the drama of reference games nearest
+in absolute final margin. Include all ties at the 50th neighbour, omit the
+target game, and use verified overtime when known. With unknown overtime the
+reference averages the overtime contribution across comparable games. Mean
+absolute error is the average distance to the play-by-play AEV, in points on
+the same 0–100 scale.
+
+A 0–0 football final determines the regulation score path throughout. For
+other football ties, use verified games tied after regulation, remove overtime,
+and match on the tied score. The tied score alone has little power to order
+those games. Labels distinguish measured play-by-play, period-score estimates
+and final-only estimates on the same scale.

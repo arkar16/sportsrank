@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 from .archive_presentation import updated_time
 from .conference_pages import conference_route, projected_overall_records
 from .excitement_pages import ESTIMATE_NOTE, aev_label, bev_label
-from .game_excitement import Matchup
+from .game_excitement import Matchup, score_for
 from .reference_archive import _checkpoint_order, program_season_route, season_team_routes
 from .reference_markup import school_label
 from .win_probability import format_win_chance
@@ -344,8 +344,11 @@ def _season_table(
         nonlocal has_estimate
         if not excitement:
             return ""
-        key = game if sport == "basketball" else Matchup(game.week, game.home, game.away, game.neutral_site)
-        score = excitement.get(key)
+        if sport == "basketball":
+            score = excitement.get(game)
+        else:
+            key = Matchup(game.week, game.home, game.away, game.neutral_site)
+            score = score_for(excitement, key, (game.home_score, game.away_score))
         if score and score.estimated:
             has_estimate = True
         return f'<td class="num">{bev_label(score)}</td><td class="num">{aev_label(score)}</td>'

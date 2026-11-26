@@ -530,6 +530,29 @@ class ProductionSeasonSource:
         return self.meter.execute(purpose=self.category, endpoint="lines", season=year,
                                   cache_decision="refresh", transport=transport)
 
+    def fetch_excitement_response(self, year: int, week: int | None, season_type: str) -> bytes:
+        """Retain the official games or weekly plays response behind the same request meter."""
+        endpoint = "games" if week is None else "plays"
+        def transport():
+            with create_api_client() as api_client:
+                args = dict(year=year, season_type=cfbd.SeasonType.BOTH if season_type == "roster" else cfbd.SeasonType(season_type),
+                            _preload_content=False, _request_timeout=(15, 120))
+                if season_type == "roster":
+                    response = cfbd.TeamsApi(api_client).get_fbs_teams_with_http_info(year=year, _preload_content=False, _request_timeout=(15, 120))
+                elif week is None:
+                    response = cfbd.GamesApi(api_client).get_games_with_http_info(**args)
+                else:
+                    response = cfbd.PlaysApi(api_client).get_plays_with_http_info(
+                        week=week, classification=division_classification("fbs"), **args)
+                raw = response.raw_data
+                if not isinstance(raw, bytes) or not isinstance(json.loads(raw), list):
+                    raise ValueError("invalid CFBD excitement response")
+                return raw
+
+        label = ("teams/fbs" if season_type == "roster" else f"{endpoint}/{season_type}") + (f"/{week}" if week is not None else "")
+        return self.meter.execute(purpose=self.category, endpoint=label, season=year,
+                                  cache_decision="miss", transport=transport)
+
     def fetch_program_catalog_response(self) -> bytes:
         """Retain one unfiltered /teams response, including provider logo URLs."""
         def transport():

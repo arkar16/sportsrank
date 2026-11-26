@@ -60,6 +60,8 @@ hosted generation in #54 remains separate.
   deployed state is fully verified; a merge alone does not establish that.
 - Football game excitement for current and historical games is tracked in
   [#179](https://github.com/arkar16/sportsrank/issues/179) under ADR-0021.
+  The [historical football extension](https://github.com/arkar16/sportsrank/issues/182) covers the earlier archive.
+  [Men’s basketball excitement](https://github.com/arkar16/sportsrank/issues/181) uses basketball possession scales.
   Conference projections remain parked. Preserve their branches and evidence.
   The selected forecast-comparison providers are recorded in
   [#23](https://github.com/arkar16/sportsrank/pull/23) and now reconciled into

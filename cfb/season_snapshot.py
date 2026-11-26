@@ -685,6 +685,16 @@ class SeasonSnapshotService:
             (destination / "failure.json").write_text(json.dumps({"error_type": type(error).__name__}) + "\n")
             raise
 
+    def fetch_excitement_response(self, year: int, *, week=None, season_type="both"):
+        """Explicit historical acquisition. Ordinary builds use retained response evidence."""
+        if type(year) is not int or year < 1869:
+            raise ValueError("invalid football season")
+        if week is not None and (type(week) is not int or week < 0 or season_type not in ("regular", "postseason")):
+            raise ValueError("invalid football scoring-play selection")
+        if week is None and season_type not in ("both","roster"):
+            raise ValueError("game inventory must include regular season and postseason")
+        return self.source.fetch_excitement_response(year, week, season_type)
+
     def fetch_program_catalog_response(self) -> bytes:
         """Explicit source acquisition for the season-independent marks catalog."""
         fetch = getattr(self.source, "fetch_program_catalog_response", None)

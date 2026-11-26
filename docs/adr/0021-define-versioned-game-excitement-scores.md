@@ -71,6 +71,17 @@ correlation of at least 0.85 on the reserved 2024–25 season. It passed all
 three criteria. The season guides rank these starred estimates alongside
 measured scores. A separately labelled final-only estimate covers games without a verified halftime score.
 
+## Coverage of the API game archive
+
+On 2026-11-26 the owner requested a BEV and AEV for every historical football
+and men's basketball game with a verified final, and limited the public site to
+sports data originating in an API. A scheduled game gets BEV. AEV follows a
+verified final. A numeric score carries its evidence label wherever it appears.
+A prior-season aggregate or an inferred scoreline cannot establish that two
+schools played. Retain an early basketball season when its API supplies
+individual games. See the [scoring rules](../plans/2026-game-excitement-scoring-v1.md)
+and [football delivery](https://github.com/arkar16/sportsrank/issues/182).
+
 ## Delivery prerequisites
 
 - Inspect the API's actual provider coverage before finalizing the excitement
@@ -92,3 +103,12 @@ validation prerequisites belong in the first-pass implementation contract;
 they do not reopen the accepted scoring direction. Acceptance of this ADR
 does not itself authorize live CFBD calls, implementation dispatch, merge or
 production publication.
+
+## Public source decision, 26 November 2026
+
+The owner selected CollegeFootballData for football and CollegeBasketballData
+for men's basketball. Public pregame checkpoints, schedules, final scores,
+scoring evidence and comparison references must come from these providers.
+Each sport qualifies its period estimator against its reserved season. Every
+verified ordinary final can receive a labeled final-score estimate when richer
+evidence is unavailable. Scheduled games receive pregame appeal.
