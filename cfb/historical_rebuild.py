@@ -142,7 +142,7 @@ class HistoricalInputs:
         raw = self.games[year]
         regular = defaultdict(list)
         for row in raw:
-            if row["season_type"] == "regular" and row["home_points"] and row["away_points"]:
+            if row["season_type"] in ("regular", "spring_regular") and row["home_points"] and row["away_points"]:
                 regular[_key(row, source=True)].append(row)
         origins = Counter()
         for row in retained:

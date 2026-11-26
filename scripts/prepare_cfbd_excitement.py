@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from collections import defaultdict
+from contextlib import closing
 import csv
 from dataclasses import replace
 from functools import lru_cache
@@ -11,8 +12,15 @@ from itertools import accumulate
 import json
 from pathlib import Path
 import re
+import sqlite3
+import zlib
 
-from cfb.excitement import QualifiedFinal, QualifiedPregame, TimelinePoint, calculate_full_aev
+from cfb.excitement import (
+    QualifiedFinal,
+    QualifiedPregame,
+    TimelinePoint,
+    calculate_full_aev,
+)
 from cfb.historical_rebuild import _school
 from cfb.reference_archive import _rows, _score
 
@@ -23,7 +31,9 @@ ABNORMAL = re.compile(r"shortened|abandoned|forfeit|shorten.*quarter", re.I)
 
 def period_scores(game):
     try:
-        home, away = (json.loads(game[side + "_line_scores"]) for side in ("home", "away"))
+        home, away = (
+            json.loads(game[side + "_line_scores"]) for side in ("home", "away")
+        )
         if (
             len(home) != len(away)
             or len(home) < 4
@@ -68,11 +78,22 @@ def measure(game, plays):
     previous_order = None
     seen = {}
     try:
-        for play in sorted(plays, key=lambda p: (int(p["driveNumber"]), int(p["playNumber"]), int(p["id"]))):
+        for play in sorted(
+            plays,
+            key=lambda p: (int(p["driveNumber"]), int(p["playNumber"]), int(p["id"])),
+        ):
             identity = play["id"]
             signature = tuple(
                 play[k]
-                for k in ("period", "clock", "offense", "defense", "offenseScore", "defenseScore", "scoring")
+                for k in (
+                    "period",
+                    "clock",
+                    "offense",
+                    "defense",
+                    "offenseScore",
+                    "defenseScore",
+                    "scoring",
+                )
             )
             if identity in seen:
                 if seen[identity] != signature:
@@ -80,7 +101,9 @@ def measure(game, plays):
                 continue
             seen[identity] = signature
             period = int(play["period"])
-            if (play["home"], play["away"]) != (home, away) or not 1 <= period <= len(ends):
+            if (play["home"], play["away"]) != (home, away) or not 1 <= period <= len(
+                ends
+            ):
                 return None
             if (play["offense"], play["defense"]) == (home, away):
                 score = int(play["offenseScore"]), int(play["defenseScore"])
@@ -97,7 +120,9 @@ def measure(game, plays):
                 change = (score[0] - current[0], score[1] - current[1])
                 if min(change) != 0 or not 1 <= max(change) <= 8:
                     return None
-                elapsed = (period * 900 - remaining(play["clock"])) if period <= 4 else None
+                elapsed = (
+                    (period * 900 - remaining(play["clock"])) if period <= 4 else None
+                )
                 key = (period, elapsed or 0)
                 if previous_order is not None and key < previous_order:
                     return None
@@ -115,7 +140,12 @@ def measure(game, plays):
         states = regulation + [s for s in states if s[3] > 4]
         points = tuple(
             TimelinePoint(
-                h, a, i, elapsed_minute=t / 60 if t is not None else None, overtime=t is None, period=p
+                h,
+                a,
+                i,
+                elapsed_minute=t / 60 if t is not None else None,
+                overtime=t is None,
+                period=p,
             )
             for i, (t, h, a, p) in enumerate(states)
         )
@@ -132,31 +162,66 @@ def measure(game, plays):
         tie = None
         if len(ends) > 4:
             tied = replace(
-                final, home_score=ends[3][0], away_score=ends[3][1], overtime=False, quarter_scores=None
+                final,
+                home_score=ends[3][0],
+                away_score=ends[3][1],
+                overtime=False,
+                quarter_scores=None,
             )
-            tie = calculate_full_aev(PRE, tied, points[: len(regulation)]).components.drama_points
+            tie = calculate_full_aev(
+                PRE, tied, points[: len(regulation)]
+            ).components.drama_points
         return drama, tie
     except (IndexError, KeyError, ValueError, TypeError):
         return None
 
 
-def prep(data, private, site):
+def prep(data, private, site, *, inventory=None, years=None):
+    names = {}
+    if inventory:
+        with closing(
+            sqlite3.connect(inventory.resolve().as_uri() + "?mode=ro", uri=True)
+        ) as db:
+            for year, body in db.execute(
+                "SELECT season,body FROM responses WHERE endpoint='games'"
+            ):
+                for game in json.loads(zlib.decompress(body)):
+                    names[year, str(game["id"])] = (
+                        str(game["homeId"]),
+                        str(game["awayId"]),
+                        _school(game["homeTeam"]),
+                        _school(game["awayTeam"]),
+                    )
+
     games = defaultdict(dict)
     with (data / "games.csv").open(encoding="utf-8-sig", newline="") as source:
         for g in csv.DictReader(source):
-            if g["status"] != "completed" or not g["home_points"] or not g["away_points"]:
+            if (
+                g["status"] != "completed"
+                or not g["home_points"]
+                or not g["away_points"]
+            ):
                 continue
             g["h"], g["a"] = int(float(g["home_points"])), int(float(g["away_points"]))
             games[int(g["season"])][g["id"]] = g
     private.mkdir(parents=True, exist_ok=True)
     for year, roster in sorted(games.items()):
+        if years and year not in years:
+            continue
         results = site / f"cfb/years/{year}/data/results/{year}_FBS_results.html"
         if not results.is_file():
             continue
         path = private / f"{year}.json"
         by_names = defaultdict(list)
+        aliases = {}
         for g in roster.values():
-            by_names[_school(g["home_team"]), _school(g["away_team"]), g["h"], g["a"]].append(g)
+            pairs = {(_school(g["home_team"]), _school(g["away_team"]))}
+            official = names.get((year, g["id"]))
+            if official and official[:2] == (g["home_team_id"], g["away_team_id"]):
+                pairs.add(official[2:])
+            aliases[g["id"]] = pairs
+            for home, away in pairs:
+                by_names[home, away, g["h"], g["a"]].append(g)
         matched = {}
         for row in _rows(results):
             h, a = _score(row.get("home_score")), _score(row.get("away_score"))
@@ -170,7 +235,10 @@ def prep(data, private, site):
                 if len(matches) != 1:
                     continue
                 game = matches[0]
-            if (_school(game["home_team"]), _school(game["away_team"]), game["h"], game["a"]) != shape:
+            if (home, away) not in aliases[game["id"]] or (game["h"], game["a"]) != (
+                h,
+                a,
+            ):
                 continue
             ends = period_scores(game)
             if not ends:
@@ -187,7 +255,9 @@ def prep(data, private, site):
                 metric = measure(roster[gid], plays)
                 if metric is not None:
                     matched[gid].update(drama=metric[0], tied_drama=metric[1])
-        path.write_text(json.dumps(matched, sort_keys=True, separators=(",", ":")) + "\n")
+        path.write_text(
+            json.dumps(matched, sort_keys=True, separators=(",", ":")) + "\n"
+        )
         if matched:
             print(
                 year,
@@ -204,5 +274,15 @@ if __name__ == "__main__":
     cli.add_argument("--export", type=Path, required=True)
     cli.add_argument("--private", type=Path, required=True)
     cli.add_argument("--site", type=Path, default=Path("website"))
+    cli.add_argument(
+        "--inventory",
+        type=Path,
+        help="Retained CFBD games for current team names by stable ID",
+    )
+    cli.add_argument(
+        "--years", type=int, nargs="+", help="Requalify selected export seasons"
+    )
     args = cli.parse_args()
-    prep(args.export, args.private, args.site)
+    prep(
+        args.export, args.private, args.site, inventory=args.inventory, years=args.years
+    )

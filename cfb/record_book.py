@@ -322,7 +322,8 @@ def build(site: Path) -> tuple[int, int, int]:
                 sort_keys=True, separators=(",", ":")) + "\n").encode())
             guide = folder / "index.html"
             changed += _write_changed(guide, presentation.render(
-                season_guide(season.year, scores, year_routes[season.year], directory).encode(), archive=False,
+                season_guide(season.year, scores, year_routes[season.year], directory,
+                             completed_season="FINAL" in season.rankings).encode(), archive=False,
             ))
             generated_pages.add(guide)
     for relative, markup in build_program_pages(

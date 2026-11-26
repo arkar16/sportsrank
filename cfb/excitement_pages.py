@@ -94,9 +94,11 @@ def add_score_columns(markup: bytes, directory: Path, path: Path, scores, year: 
     return text.encode(encoding, errors="xmlcharrefreplace")
 
 
-def season_guide(year, scores, routes, directory=None):
+def season_guide(year, scores, routes, directory=None, *, completed_season=False):
     def table(games, pending):
-        title = "Upcoming games by BEV" if pending else "Completed games by AEV"
+        title = "Completed games by AEV"
+        if pending:
+            title = "Games awaiting a verified final" if completed_season else "Upcoming games by BEV"
         if not games:
             return ""
         rows = []

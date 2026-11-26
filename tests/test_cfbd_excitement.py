@@ -48,3 +48,6 @@ class CollegeFootballDataEvidenceTests(unittest.TestCase):
             before=Game(3,"Home","Away",None,None,None)
             updated,=_official_schedule(directory,2026,[before])
             self.assertEqual((updated.home_score,updated.away_score),(7,3))
+            older=Game(3,"Home","Away",7,6,None)
+            corrected,=_official_schedule(directory,2026,[older])
+            self.assertEqual((corrected.home_score,corrected.away_score),(7,3))
