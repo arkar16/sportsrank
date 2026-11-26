@@ -36,7 +36,7 @@ async function checkDownload() {
   const selectors = {
     "#game-link": {}, "#save-card": save, "#share-status": {},
     ".edition": {textContent: "CFB · 2026 · Week 13"},
-    ".pick strong": {textContent: "Alabama by 17.75", dataset: {imagePick: "Alabama by 17.75 · 89% to win"}},
+    ".pick strong": {textContent: "Alabama by 17.75 · 89% to win", dataset: {}},
     ".game-details": {textContent: "Conference (SEC) · @ Alabama"},
   };
   const document = {

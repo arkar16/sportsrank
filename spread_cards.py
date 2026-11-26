@@ -18,7 +18,7 @@ from cfb.conference_pages import Record, _is_conference_game, _UNAFFILIATED
 from cfb.performance import _saved_margin
 from cfb.program_marks import _atomic_write
 from cfb.reference_archive import Season, _rows
-from cfb.win_probability import win_probability
+from cfb.win_probability import format_win_chance
 from site_navigation import masthead
 
 
@@ -145,8 +145,9 @@ def _preview_icon(directory: Path, sport: str, mark: str) -> tuple[str, int] | N
 
 def _document(game: Spread, icon: tuple[str, int] | None) -> str:
     title = escape(game.matchup)
-    line = escape(game.prediction)
-    home_chance = win_probability(game.home_margin, sport="football" if game.sport == "cfb" else "basketball")
+    sport = "football" if game.sport == "cfb" else "basketball"
+    home_chance = format_win_chance(-game.home_margin, sport=sport)
+    line = escape(f"{game.prediction} · {home_chance} to win")
     context = escape(f"{game.sport_label} · {game.date_label}")
     details = escape(f"{game.play} · " + ("Neutral site" if game.neutral else f"@ {game.home.name}"))
     description = escape(f"{game.away.summary} vs. {game.home.summary}") + f" · {context} · {details}"
@@ -183,7 +184,7 @@ def _document(game: Spread, icon: tuple[str, int] | None) -> str:
 <main class="spread-page"><h1 class="sr-only">{title}</h1><p class="edition">{context}</p>
 <table class="game-line"><thead><tr><th scope="col">CORS rank · Team</th><th scope="col">Overall (conf)</th></tr></thead>
 <tbody>{''.join(teams)}</tbody></table>
-<p class="pick"><strong data-image-pick="{line} · {home_chance:.0%} to win">{line}</strong> <span class="game-details">{details}</span></p>
+<p class="pick"><strong>{line}</strong> <span class="game-details">{details}</span></p>
 <div class="share-actions"><a id="game-link" href="{canonical}">Game link</a>
 <button id="save-card" type="button" hidden>Save image</button><span id="share-status" role="status"></span></div>
 <nav aria-label="Forecasts"><a class="back" href="{back}">{game.sport_label} forecasts</a>{edition_link}</nav></main></body></html>

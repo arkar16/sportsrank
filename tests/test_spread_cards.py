@@ -36,8 +36,10 @@ class GameSharingTests(unittest.TestCase):
         page = BeautifulSoup((directory.parent / link["href"][1:]).read_text(), "html.parser")
         self.assertEqual(page.h1.text, "Away & Co. @ Home")
         self.assertTrue(link["href"].endswith("/away-co-at-home.html"))
-        self.assertEqual(page.select_one(".pick strong").text, "Home to lose by 2.50")
-        self.assertEqual(page.select_one(".pick strong")["data-image-pick"], "Home to lose by 2.50 · 43% to win")
+        forecast = "Home to lose by 2.50 · 43% to win"
+        self.assertEqual(page.select_one(".pick strong").text, forecast)
+        self.assertEqual(page.select_one('meta[property="og:title"]')["content"], f"Away & Co. @ Home · {forecast}")
+        self.assertIn(forecast, page.title.text)
         self.assertEqual(page.select_one(".game-details").text, "OOC · @ Home")
         self.assertEqual([td.text for td in page.select(".game-line td")], ["—", "0-0 (0-0)"])
         self.assertEqual([tag.text for tag in page.select(".rank")], ["", "#24"])
@@ -131,14 +133,16 @@ class GameSharingTests(unittest.TestCase):
                          "https://www.sportsrank.top/cbb/assets/team-logos/72.png")
         self.assertEqual(first.select_one('link[rel="apple-touch-icon"]')["href"],
                          first.select_one('meta[property="og:image"]')["content"])
-        self.assertIn("Duke by 0.34", first.select_one('meta[property="og:title"]')["content"])
         self.assertIn("#4 UConn 4-1 (0-1) vs. #3 Duke 4-2 (1-0)", first.select_one('meta[property="og:description"]')["content"])
         self.assertEqual([r.get_text(" ", strip=True) for r in first.select(".game-line tbody tr")],
                          ["#4 UConn 4-1 (0-1)", "#3 Duke 4-2 (1-0)"])
         self.assertEqual(first.main.get_text().count("0.34"), 1)
-        self.assertEqual(second.select_one(".pick strong").text, "Pick’em")
-        self.assertEqual(first.select_one(".pick strong")["data-image-pick"], "Duke by 0.34 · 51% to win")
-        self.assertEqual(second.select_one(".pick strong")["data-image-pick"], "Pick’em · 50% to win")
+        for page, matchup, forecast in [(first, "UConn vs. Duke", "Duke by 0.34 · 51% to win"),
+                                        (second, "UConn @ Duke", "Pick’em · 50% to win")]:
+            with self.subTest(matchup=matchup):
+                self.assertEqual(page.select_one(".pick strong").text, forecast)
+                self.assertEqual(page.select_one('meta[property="og:title"]')["content"], f"{matchup} · {forecast}")
+                self.assertIn(forecast, page.title.text)
         self.assertEqual(first.select_one(".game-details").text, "OOC (ACC vs ACC) · Neutral site")
         self.assertEqual(second.select_one(".game-details").text, "Conference (ACC) · @ Duke")
         self.assertNotIn("97–95", second.get_text())
