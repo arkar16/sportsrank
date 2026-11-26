@@ -4,15 +4,14 @@ from __future__ import annotations
 from collections import Counter
 from dataclasses import asdict, dataclass, replace
 from decimal import Decimal
-from functools import cached_property, lru_cache
 from hashlib import sha256
 import json
 from pathlib import Path
 from typing import NamedTuple
 
-from .excitement import SCORING_VERSION, QualifiedFinal, QualifiedPregame, TimelinePoint, calculate_bev, calculate_full_aev, matchup_quality
-from .excitement_reference import ReferenceArtifact, estimate_aev, load_reference_artifact
-from .sparse_excitement import MarginPool, pregame_prior
+from .excitement import SCORING_VERSION, QualifiedFinal, QualifiedPregame, TimelinePoint, calculate_bev, matchup_quality
+from .cfbd_appeal import fingerprint, load as site_reference  # Public record-book entry point.
+from .sparse_excitement import pregame_prior
 from .historical_rebuild import _school
 from .performance import _identity, _saved_margin
 from .reference_archive import _rows
@@ -156,20 +155,12 @@ def _prior(key, game, rankings, year):
     return prior, checkpoint
 
 
-@lru_cache(maxsize=1)
-def _tie_pool():
-    raw = (Path(__file__).with_name("excitement_data") / "regulation-ties-v1.json").read_bytes()
-    if sha256(raw).hexdigest() != "0297f169b0e0b15e1ea89c5707818278e5b0b9cf71ea1b85e128784846a3589e":
-        raise ValueError("football regulation tie reference changed")
-    return MarginPool(json.loads(raw))
-
-
 def _sparse_final(reference, final, quality, margin, identity, overtime):
     home, away = final
     if home == away == 0:
         return 80 + 3 * quality, None
     if home == away:
-        drama, support = _tie_pool().estimate(home, identity)
+        drama, support = reference.tie_pool.estimate(home, identity)
         return drama + 3 * quality, support
     drama, support = reference.final_pools[overtime].estimate(abs(home-away), identity)
     winner_margin = (margin if home > away else -margin) if margin is not None else 0
@@ -182,25 +173,13 @@ def season_scores(directory: Path, season, reference):
     forecasts, ledger = frozen_forecasts(ledger_path, year, read_forecasts(directory, year))
     if not forecasts and ledger["games"]:
         raise ValueError(f"no matching sources for the retained {year} BEV records")
-    evidence = {}
-    source = ""
-    flow_path = DATA / f"{year}.json"
-    if flow_path.is_file():
-        data = json.loads(flow_path.read_bytes())
-        if data["season"] != year or data["schema"] != "espn-scoring-summary/v1":
-            raise ValueError(f"incompatible AEV evidence for {year}")
-        source = data["source"]
-        for row in data["games"]:
-            key = Matchup(*row["matchup"][:4])
-            if key in evidence:
-                raise ValueError(f"duplicate AEV evidence for {year} {key}")
-            evidence[key] = row
+    evidence = reference.season(year) if reference else {}
     by_key = Counter(Matchup(g.week, g.home, g.away, g.neutral_site) for g in season.games)
     games = {}
     for game in season.games:
         key = Matchup(game.week, game.home, game.away, game.neutral_site)
         if by_key[key] > 1:
-            if key in forecasts or key in evidence:
+            if key in forecasts:
                 raise ValueError(f"ambiguous excitement source for {year} {key}")
             key = key._replace(rematch=(game.home_score, game.away_score))
         if key in games:
@@ -229,28 +208,16 @@ def season_scores(directory: Path, season, reference):
         scores[key] = score
         if final_score is None:
             continue
-        row = evidence.get(key)
-        game_id = row["game_id"] if row else None
-        if row:
-            if tuple(row["final"]) != final_score:
-                raise ValueError(f"AEV evidence disagrees with the CORS final for {year} {key}")
-            final, points = flow_inputs(row, year, source)
-            if points or (reference and final.quarter_scores and final.home_score != final.away_score
-                          and "quarter" in reference.tiers):
-                # The scoring core exposes its quality component. Replace it with the
-                # expectation when the checkpoint has no qualified pair of ranks.
-                inputs = pre or QualifiedPregame(1, 1, None, "baseline", "pregame")
-                result = (calculate_full_aev(inputs, final, points) if points else
-                          estimate_aev(inputs, final, reference.artifact,
-                                       qualification_reasons=(row["reduced_because"],)))
-                value = result.value if pre else result.value + 3 * (quality - result.components.quality)
-                scores[key] = replace(score, aev=value, tier=result.evidence.evidence_tier,
-                                      source_game=game_id, support=result.evidence.reference_support)
-                continue
-        if reference and "final" in reference.tiers:
-            value, support = _sparse_final(reference, final_score, quality, margin, game_id,
-                                           row["overtime"] if row else None)
-            scores[key] = replace(score, aev=value, tier="final", source_game=game_id, support=support)
+        row = evidence.get(fingerprint(year, key, final_score))
+        gid, overtime, tier, drama, support = row or (None, None, "final", None, None)
+        if drama is not None and (tier == "full" or tier in reference.tiers):
+            h, a = final_score
+            winner_margin = (margin if h > a else -margin) if margin is not None and h != a else 0.
+            bonus = 3 * quality + 3 * min(1., max(0., -winner_margin / 14))
+            scores[key] = replace(score, aev=drama + 2 * overtime + bonus, tier=tier, source_game=gid, support=support)
+        elif reference:
+            value, support = _sparse_final(reference, final_score, quality, margin, gid, overtime)
+            scores[key] = replace(score, aev=value, tier="final", source_game=gid, support=support)
     if baselines:
         # One pregame score per matchup at its checkpoint, including same-week rematches.
         current = {tuple(r["matchup"]): r for r in baselines}
@@ -263,32 +230,3 @@ def season_scores(directory: Path, season, reference):
                     raise ValueError(f"changed frozen football pregame baseline for {year} {key}")
         ledger["pregame_baselines_v1"] = [current[k] for k in sorted(current)]
     return scores, ledger
-
-
-@dataclass(frozen=True)
-class EstimatePolicy:
-    artifact: ReferenceArtifact
-    tiers: frozenset[str]
-
-    @cached_property
-    def final_pools(self):
-        return {
-            ot: MarginPool((r.game_id, r.absolute_final_margin,
-                            r.mixed_target if ot is None else r.drama_target + 2 * ot)
-                           for r in self.artifact.games if ot is None or r.overtime == ot)
-            for ot in (None, False, True)
-        }
-
-
-@lru_cache(maxsize=1)
-def site_reference() -> EstimatePolicy | None:
-    """Only a pinned, reviewed reference can supply estimated scores to a build."""
-    # Activation requires sufficient whole-season evidence and owner acceptance.
-    policy_path = DATA / "reference-policy.json"
-    if not policy_path.is_file():
-        return None
-    policy = json.loads(policy_path.read_bytes())
-    tiers = frozenset(policy["tiers"])
-    if not tiers or not tiers <= {"quarter", "final"}:
-        raise ValueError("unknown AEV reference tier")
-    return EstimatePolicy(load_reference_artifact(DATA / policy["file"], expected_checksum=policy["checksum"]), tiers)

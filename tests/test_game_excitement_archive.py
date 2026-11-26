@@ -7,6 +7,7 @@ import unittest
 
 from lxml import html
 
+from cfb.cfbd_appeal import fingerprint
 from cfb.excitement import QualifiedFinal, normalize_timeline
 from cfb.reference_archive import Game, Season, Standing
 from cfb.excitement_pages import add_score_columns, season_guide
@@ -60,7 +61,7 @@ class ArchiveExcitementTests(unittest.TestCase):
         final = Game(9, "Tennessee", "South Carolina", 15, 16, None)
         scores, _ = season_scores(years / "2005", Season(2005, {}, [final]), site_reference())
         score = scores[Matchup(9, "Tennessee", "South Carolina", False)]
-        self.assertEqual((score.bev, f"{score.aev:.1f}", score.tier), ("39.7", "76.1", "quarter"))
+        self.assertEqual((score.bev, f"{score.aev:.1f}", score.tier), ("39.7", "76.5", "full"))
 
     def test_forecast_uses_only_previous_checkpoint_and_remains_frozen(self):
         with TemporaryDirectory() as tmp:
@@ -116,20 +117,19 @@ class ArchiveExcitementTests(unittest.TestCase):
         evidence = {"matchup": list(key), "game_id": "101", "final": [3, 0],
                     "quarters": [[0, 0], [3, 0], [3, 0]], "overtime": False,
                     "states": [[0, 0, 0, 1], [900, 3, 0, 2], [3600, 3, 0, 4]]}
-        with TemporaryDirectory() as tmp, patch("cfb.game_excitement.DATA", Path(tmp)), patch(
+        ref = site_reference()
+        facts = {fingerprint(2026,key,(3,0)): ["101",False,"full",75.0,None]}
+        with TemporaryDirectory() as tmp, patch.object(ref, "season", return_value=facts), patch(
             "cfb.game_excitement.read_forecasts",
             return_value={key: Forecast("PRESEASON", 1, 2, "2", "forecast", "rankings")},
         ):
             base = Path(tmp)
-            (base / "2026.json").write_text(json.dumps({
-                "schema": "espn-scoring-summary/v1", "season": 2026, "source": "revision", "games": [evidence],
-            }))
             season = Season(2026, {}, [Game(0, "Home", "Away", None, None, None)])
-            before, _ = season_scores(base, season, None)
+            before, _ = season_scores(base, season, ref)
             self.assertEqual(before[key].bev, "98.6")
             self.assertIsNone(before[key].aev)
             season.games = [Game(0, "Home", "Away", 3, 0, None)]
-            after, _ = season_scores(base, season, None)
+            after, _ = season_scores(base, season, ref)
             self.assertEqual(after[key].bev, before[key].bev)
             self.assertEqual(after[key].tier, "full")
             self.assertTrue(0 < after[key].aev < 100)
@@ -141,28 +141,22 @@ class ArchiveExcitementTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "quarter"):
                 normalize_timeline(points, wrong)
             season.games = [Game(0, "Home", "Away", 0, 3, None)]
-            with self.assertRaisesRegex(ValueError, "disagrees with the CORS final"):
-                season_scores(base, season, None)
+            corrected, _ = season_scores(base, season, ref)
+            self.assertEqual(corrected[key].tier, "final")
+            self.assertNotEqual(corrected[key].aev, after[key].aev)
 
     def test_released_reference_preserves_quarter_scores_and_estimates_from_finals(self):
         base = Path(__file__).resolve().parents[1] / "website/cfb/years/2024"
         duke = Game(2, "Northwestern", "Duke", 20, 26, None, neutral_site=True)
         policy = site_reference()
-        self.assertEqual(policy.tiers, {"quarter", "final"})
+        self.assertEqual(set(policy.tiers), {"quarter", "final"})
+        key = Matchup(2, "Northwestern", "Duke", True)
         scores, _ = season_scores(base, Season(2024, {}, [duke]), policy)
-        score = scores[Matchup(2, "Northwestern", "Duke", True)]
-        self.assertTrue(score.estimated)
-        self.assertEqual(f"{score.aev:.1f}", "70.7")
-        self.assertEqual(score.support, 50)
-        row = {"matchup": [2, "Northwestern", "Duke", True], "game_id": "401635533",
-               "final": [20, 26], "quarters": None, "overtime": True, "reduced_because": "missing quarters"}
-        with TemporaryDirectory() as tmp, patch("cfb.game_excitement.DATA", Path(tmp)):
-            (Path(tmp) / "2024.json").write_text(json.dumps({
-                "schema": "espn-scoring-summary/v1", "season": 2024, "source": "test", "games": [row],
-            }))
+        self.assertEqual((scores[key].tier, scores[key].source_game), ("quarter","401635533"))
+        with patch.object(policy, "season", return_value={}):
             limited, _ = season_scores(base, Season(2024, {}, [duke]), policy)
-        self.assertEqual(limited[Matchup(*row["matchup"])].tier, "final")
-        self.assertGreater(limited[Matchup(*row["matchup"])].aev, 0)
+        self.assertEqual(limited[key].tier, "final")
+        self.assertGreater(limited[key].aev, 0)
 
     def test_scoring_summary_checks_scorer_clock_event_order_and_box_score(self):
         teams = [{"linescores": [{"displayValue": str(s)} for s in vals]} for vals in ((0, 7, 0, 0), (0, 0, 0, 3))]

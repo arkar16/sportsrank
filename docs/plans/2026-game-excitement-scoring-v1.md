@@ -3,9 +3,10 @@
 Status: BEV, full-data AEV and the comparable-game estimated-AEV approach
 accepted on 2026-09-29 under
 [ADR-0021](../adr/0021-define-versioned-game-excitement-scores.md).
-The first football quarter-score reference passed its reserved-season test in
-November 2026. The [delivery issue](https://github.com/arkar16/sportsrank/issues/179)
-records the empirical results.
+CollegeFootballData supplies the public football game inventory, scoring plays and
+comparison sample. The 2025 confirmation season is held out from the frozen
+2024 and 2026 sample. The public policy records its metrics and reference
+checksum. [Football delivery](https://github.com/arkar16/sportsrank/issues/182)
 The [product plan](2026-game-excitement.md) owns the accepted behavior.
 
 ## Shared definitions

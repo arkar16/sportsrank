@@ -254,8 +254,33 @@ def _games(site: Path, directory: Path, year: int, *, active: bool) -> list[Game
                 if key in saved and saved[key] != -margin:
                     raise ValueError(f"ambiguous published forecast in {path} for {key}")
                 saved[key] = -margin
+    if active:
+        games = _official_schedule(directory, year, games)
     return [replace(game, home_handicap=saved[key]) if (key := _matchup(game)) in saved else game
             for game in games]
+
+
+def _official_schedule(directory, year, games):
+    path = directory / "excitement/cfbd-schedule-v1.json"
+    if not path.is_file():
+        return games
+    record = json.loads(path.read_bytes())
+    if (record.get("provider"), record.get("year")) != ("CollegeFootballData", year):
+        raise ValueError("incompatible official football schedule")
+    current = {_matchup(g): i for i,g in enumerate(games)}
+    for row in record["games"]:
+        key = (row["week"], row["home"], row["away"], row["neutral"])
+        final = row["final"] or (None,None)
+        if key in current:
+            index = current[key]
+            game = games[index]
+            if game.home_score is None and final[0] is not None:
+                games[index] = replace(game, home_score=final[0], away_score=final[1], start_utc=row["start"])
+            continue
+        current[key] = len(games)
+        games.append(Game(key[0], key[1], key[2], *final, None, key[3], home_division=row["home_division"],
+                          away_division=row["away_division"], postseason=row["postseason"], start_utc=row["start"]))
+    return games
 
 
 def read_archive(site: Path) -> list[Season]:

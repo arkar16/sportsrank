@@ -133,6 +133,17 @@ pages, and homepages) offline with zero live API calls:
 env -u CFBD_API -u CFBD_API_KEY -u CFBD_PRED_API uv run --locked python -m cfb.cors_v1
 ```
 
+## Football game excitement
+
+The offline record-book build adds BEV to matchups and AEV to verified finals.
+CollegeFootballData supplies the season rosters, results, scoring plays and the
+comparison sample. The earliest game guides begin in 1869. A star identifies an
+estimate and the adjacent label identifies the evidence.
+
+The metered acquisition command requires a current request allowance. Cached
+page generation reads the versioned CORS evidence in `cfb/cfbd_excitement`.
+[Scoring method](docs/plans/2026-game-excitement-scoring-v1.md)
+
 ## College football record book
 
 The public college football record book links each ranked program to its

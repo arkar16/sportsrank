@@ -82,3 +82,12 @@ validation prerequisites belong in the first-pass implementation contract;
 they do not reopen the accepted scoring direction. Acceptance of this ADR
 does not itself authorize live CFBD calls, implementation dispatch, merge or
 production publication.
+
+## Public source decision, 26 November 2026
+
+The owner selected CollegeFootballData for football and CollegeBasketballData
+for men's basketball. Public pregame checkpoints, schedules, final scores,
+scoring evidence and comparison references must come from these providers.
+Each sport qualifies its period estimator against its reserved season. Every
+verified ordinary final can receive a labeled final-score estimate when richer
+evidence is unavailable. Scheduled games receive pregame appeal.

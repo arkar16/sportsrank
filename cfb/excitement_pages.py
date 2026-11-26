@@ -94,7 +94,7 @@ def add_score_columns(markup: bytes, directory: Path, path: Path, scores, year: 
     return text.encode(encoding, errors="xmlcharrefreplace")
 
 
-def season_guide(year, scores, routes):
+def season_guide(year, scores, routes, directory=None):
     def table(games, pending):
         title = "Upcoming games by BEV" if pending else "Completed games by AEV"
         if not games:
@@ -104,12 +104,14 @@ def season_guide(year, scores, routes):
             folder = "spread" if pending else "data/results/weekly_results"
             kind = "spread" if pending else "results"
             week = f"../{folder}/{year}_W{key.week}_FBS_{kind}.html"
-            cells = (f'<td><a href="{week}">{key.week}</a></td><td>{school_label(key.away, routes)}</td>'
+            link = (f'<a href="{week}">{key.week}</a>' if directory is None or
+                    (directory / week.removeprefix("../")).is_file() else str(key.week))
+            cells = (f'<td>{link}</td><td>{school_label(key.away, routes)}</td>'
                      f'<td>{school_label(key.home, routes)}</td><td class="num">{bev_label(score)}</td>')
             if not pending:
                 hs, aws = score.final
-                source = (f'<a href="https://www.espn.com/college-football/game/_/gameId/{escape(score.source_game)}">'
-                          f"{aws}&ndash;{hs}</a>" if score.source_game else f"{aws}&ndash;{hs}")
+                source = (f'<span data-cfbd-game="{escape(score.source_game)}">{aws}&ndash;{hs}</span>'
+                          if score.source_game else f"{aws}&ndash;{hs}")
                 cells += f'<td class="num">{source}</td><td class="num">{aev_label(score)}</td>'
             rows.append("<tr>" + cells + "</tr>")
         headers = ["Week", "Away", "Home", "BEV"] + ([] if pending else ["Score (away–home)", "AEV"])
@@ -128,7 +130,7 @@ def season_guide(year, scores, routes):
 <p><a href="../{year}_CFB.html">{year} college football</a></p><h1>{year} game excitement</h1>
 <p>Before Excitement Value (BEV) rates a matchup from its pregame CORS ranks and predicted margin.
 After Excitement Value (AEV) rates how long the score stayed close, lead changes, comebacks and overtime.
-Both run from 0 to 100.</p>
+Both run from 0 to 100. Game data comes from CollegeFootballData.</p>
 <p>{estimated_note}A final-score estimate uses comparable games with the same or a nearby margin. A pregame baseline uses only information available before kickoff.</p>
 {table(pending, True)}{table(completed, False)}
 <p>BEV uses the preceding CORS v1.0.0 checkpoint, including for reconstructed historical forecasts.
