@@ -254,8 +254,7 @@ def _games(site: Path, directory: Path, year: int, *, active: bool) -> list[Game
                 if key in saved and saved[key] != -margin:
                     raise ValueError(f"ambiguous published forecast in {path} for {key}")
                 saved[key] = -margin
-    if active:
-        games = _official_schedule(directory, year, games)
+    games = _official_schedule(directory, year, games)
     return [replace(game, home_handicap=saved[key]) if (key := _matchup(game)) in saved else game
             for game in games]
 
@@ -274,7 +273,7 @@ def _official_schedule(directory, year, games):
         if key in current:
             index = current[key]
             game = games[index]
-            if game.home_score is None and final[0] is not None:
+            if final[0] is not None and (game.home_score,game.away_score) != tuple(final):
                 games[index] = replace(game, home_score=final[0], away_score=final[1], start_utc=row["start"])
             continue
         current[key] = len(games)

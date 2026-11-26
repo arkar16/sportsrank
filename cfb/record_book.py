@@ -10,6 +10,7 @@ import tempfile
 
 from spread_cards import football_links
 
+from .football_impact import attach_football_impacts
 from .conference_pages import CONFERENCE_HONORS, build_conference_pages, conference_honors_route, conference_route
 from .excitement_pages import add_score_columns, season_guide
 from .game_excitement import season_scores, site_reference
@@ -285,11 +286,12 @@ def _honors_pages(site: Path, seasons: list[Season]) -> dict[str, bytes]:
     return pages
 
 
-def build(site: Path) -> tuple[int, int, int]:
+def build(site: Path, *, replays=None) -> tuple[int, int, int]:
     site = site.resolve()
     seasons = read_archive(site)
     if not seasons:
         raise ValueError(f"no college football rankings at {site}")
+    attach_football_impacts(seasons, replays)
     honors = _honors_pages(site, seasons)
     routes = program_routes(seasons)
     marks = program_logo_paths(site)
@@ -322,7 +324,8 @@ def build(site: Path) -> tuple[int, int, int]:
                 sort_keys=True, separators=(",", ":")) + "\n").encode())
             guide = folder / "index.html"
             changed += _write_changed(guide, presentation.render(
-                season_guide(season.year, scores, year_routes[season.year], directory).encode(), archive=False,
+                season_guide(season.year, scores, year_routes[season.year], directory,
+                             completed_season="FINAL" in season.rankings).encode(), archive=False,
             ))
             generated_pages.add(guide)
     for relative, markup in build_program_pages(

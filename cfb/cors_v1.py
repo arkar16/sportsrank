@@ -27,7 +27,6 @@ from .historical_rebuild import _school
 from .market_lines import MarketLines
 from .performance import _page, _read, build_performance_files
 from .ranking_progression import build_progression_outputs
-from .record_book import build as build_record_book
 from .release import _row_table
 from .season_snapshot import SeasonSnapshot, _checksum
 from .season_source import SourceGame, SourceTeam
@@ -143,6 +142,7 @@ class SeasonReplay:
     weekly_spreads: dict[int, list[dict[str, Any]]]
     upcoming_spreads: dict[int, list[dict[str, Any]]]
     final_uncertainty: dict[str, float]
+    game_impacts: dict[CompletedGame, dict[str, float]]
 
 
 def _format_spread_row(
@@ -247,6 +247,22 @@ def _build_ranking_rows(
     return rows
 
 
+def _game_impacts(mu, cov, teams, observations, effective_noise):
+    """Remove one observation from the fitted week, keeping its peers' pre-week weights."""
+    impacts = {}
+    for (game, home, away, observed, _), noise in zip(observations, effective_noise, strict=True):
+        # Rank-one downdate of the posterior. The model publishes FBS-centered ratings.
+        direction = cov[:, home] - cov[:, away]
+        residual = observed - (mu[home] - mu[away])
+        scale = residual / (noise - (direction[home] - direction[away]))
+        center = direction[:len(teams)].mean()
+        impacts[game] = {
+            teams[i]: float((direction[i] - center) * scale)
+            for i in (home, away) if i < len(teams)
+        }
+    return impacts
+
+
 def replay_seasons(
     season_inputs: Sequence[SeasonInput],
     *,
@@ -326,6 +342,7 @@ def replay_seasons(
             teams, conferences, pre_map, pre_fcs, pre_oth, year, team_stats
         )
 
+        game_impacts = {}
         weekly_rankings: dict[int, list[dict[str, Any]]] = {}
         weekly_spreads: dict[int, list[dict[str, Any]]] = {}
 
@@ -358,13 +375,13 @@ def replay_seasons(
                 cov[diag, diag] += SIGMA_WK ** 2
 
             # 3. Collect all week completed observations.
-            obs: list[tuple[int, int, float, float]] = []
+            obs: list[tuple[CompletedGame, int, int, float, float]] = []
             for g in week_games:
                 hd, ad = g.home_division.lower(), g.away_division.lower()
                 margin = float(g.home_score - g.away_score)
                 if hd == "fbs" and ad == "fbs":
                     site = 0.0 if g.neutral_site else hfa_est
-                    obs.append((tmap[g.home_team], tmap[g.away_team], margin - site, SIGMA_G ** 2))
+                    obs.append((g, tmap[g.home_team], tmap[g.away_team], margin - site, SIGMA_G ** 2))
                 elif {hd, ad} == {"fbs", "fcs"}:
                     home_is_fbs = hd == "fbs"
                     fbs_school = g.home_team if home_is_fbs else g.away_team
@@ -372,16 +389,16 @@ def replay_seasons(
                         fbs_margin = margin if home_is_fbs else -margin
                         sgn = 0.0 if g.neutral_site else (1.0 if home_is_fbs else -1.0)
                         if use_fcs and year >= FCS_MIN_YEAR:
-                            obs.append((tmap[fbs_school], idx_fcs, fbs_margin - sgn * hfa_est, SIGMA_FCS ** 2))
+                            obs.append((g, tmap[fbs_school], idx_fcs, fbs_margin - sgn * hfa_est, SIGMA_FCS ** 2))
                         elif use_other and year < FCS_MIN_YEAR:
-                            obs.append((tmap[fbs_school], idx_oth, fbs_margin - sgn * hfa_est, SIGMA_OTHER ** 2))
+                            obs.append((g, tmap[fbs_school], idx_oth, fbs_margin - sgn * hfa_est, SIGMA_OTHER ** 2))
                 elif use_other and (hd == "fbs") != (ad == "fbs"):
                     home_is_fbs = hd == "fbs"
                     fbs_school = g.home_team if home_is_fbs else g.away_team
                     if fbs_school in tmap:
                         fbs_margin = margin if home_is_fbs else -margin
                         sgn = 0.0 if g.neutral_site else (1.0 if home_is_fbs else -1.0)
-                        obs.append((tmap[fbs_school], idx_oth, fbs_margin - sgn * hfa_est, SIGMA_OTHER ** 2))
+                        obs.append((g, tmap[fbs_school], idx_oth, fbs_margin - sgn * hfa_est, SIGMA_OTHER ** 2))
 
                 # Update cumulative record / scoring stats for FBS participants.
                 for is_home, school, opp, div, opp_div, pts_for, pts_ag in (
@@ -405,17 +422,18 @@ def replay_seasons(
             # 4. Student-t weighted Kalman update (100% invariant to within-week order).
             if obs:
                 r_effs = []
-                for ih, ia, ym, r0 in obs:
+                for _, ih, ia, ym, r0 in obs:
                     pvar = cov[ih, ih] + cov[ia, ia] - 2.0 * cov[ih, ia] + r0
                     z2 = ((ym - (mu[ih] - mu[ia])) ** 2) / max(pvar, 1e-6)
                     wt = (NU + 1.0) / (NU + z2)
                     r_effs.append(r0 / wt)
-                for (ih, ia, ym, _), r_eff in zip(obs, r_effs):
+                for (_, ih, ia, ym, _), r_eff in zip(obs, r_effs):
                     ph = cov[:, ih] - cov[:, ia]
                     s_var = ph[ih] - ph[ia] + r_eff
                     kg = ph / s_var
                     mu = mu + kg * (ym - (mu[ih] - mu[ia]))
                     cov = cov - np.outer(kg, ph)
+                game_impacts.update(_game_impacts(mu, cov, teams, obs, r_effs))
 
             post_map, post_fcs, post_oth = _centered()
             weekly_rankings[week] = _build_ranking_rows(
@@ -482,6 +500,7 @@ def replay_seasons(
                 weekly_spreads=weekly_spreads,
                 upcoming_spreads=upcoming_spreads,
                 final_uncertainty=final_uncertainty,
+                game_impacts=game_impacts,
             )
         )
 
@@ -755,7 +774,8 @@ def rebuild_site(
 
     # 8. Rebuild the entire CFB static record book (teams, conferences, seasons, checkpoints,
     #    national champions, worst teams, homepage, 404, and archive decorations).
-    seasons_count, programs_count, changed_files = build_record_book(site)
+    from .record_book import build as build_record_book
+    seasons_count, programs_count, changed_files = build_record_book(site, replays=replays)
 
     latest = replays[-1]
     return {

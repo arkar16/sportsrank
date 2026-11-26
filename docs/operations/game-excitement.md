@@ -49,6 +49,24 @@ Spearman rank correlation reaches 0.90. The policy records the achieved errors
 and reference identity. Final-only scores have their own error measurements.
 [Scoring method](../plans/2026-game-excitement-scoring-v1.md)
 
+## Reconcile football results with the provider
+
+Run the inventory check on the rendered guides, supplying the official
+games CSV and each retained games cache. The latest response takes precedence
+for a season. The check distinguishes rematches by date and reconciles
+duplicated source records for the same fixture.
+
+```sh
+uv run --locked python -m scripts.verify_cfbd_excitement_inventory \
+  --export /path/to/official/starter-pack/data/games.csv \
+  --cache .sportsrank/cfbd-api.sqlite3 --cache .sportsrank/cfbd-inventory-corrections.sqlite3
+```
+
+Use the optional `--inventory` argument to `scripts.prepare_cfbd_excitement`
+to reconcile older and current provider team names by stable team ID. Spring
+2021 football games belong to the 2020 season. Their pregame baselines use
+the last available CORS checkpoint before kickoff.
+
 ## Build and verify basketball pages
 
 The basketball build accepts retained CollegeBasketballData responses. It
@@ -82,3 +100,9 @@ The first build freezes the 2023–24 and 2025–26 comparison games before
 evaluating 2024–25. `--extend` adds other seasons from a separate play cache
 using the existing reference. Every clock-based measurement must reconcile
 the scoring team, score changes, halftime, final and overtime boundaries.
+
+Check the rendered guides against every eligible game ID, game status and final score in the normalized API inventory. The check also verifies each AEV evidence label.
+
+```sh
+uv run --locked python -m scripts.verify_cbbd_excitement_inventory --database .sportsrank/cbbd-normalized.sqlite3
+```
