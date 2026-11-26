@@ -168,7 +168,7 @@ def _grade_scale_page():
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Excitement letter grades | SportsRank</title>
 <link rel="stylesheet" href="/cfb/assets/record-book.css"></head><body>{masthead()}
 <main class="archive-content"><h1>Excitement letter grades</h1>
-<p>A+ marks roughly the top 1% of historical games for that sport and metric. BEV grades pregame appeal.
+<p>A+ marks roughly the top 1% of the reference games for that sport and metric. BEV grades pregame appeal.
 AEV grades how the game unfolded. An asterisk marks an estimated AEV and grade.</p>
 <div class="table-scroll" tabindex="0"><table><caption>Minimum score for each grade</caption>
 <thead><tr><th scope="col">Grade</th>{heads}</tr></thead><tbody>{"".join(rows)}</tbody></table></div>
