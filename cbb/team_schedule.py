@@ -2,6 +2,8 @@
 from collections import defaultdict
 from contextlib import closing
 import csv
+import json
+from .source import fixture_start, visible_final
 from dataclasses import replace
 from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
@@ -49,26 +51,40 @@ def _matchup(week, home, away, margin, neutral, tipoff, game):
     )
 
 
-def schedule_views(database, season, checkpoint, as_of, *, snapshots=Path(__file__).with_name("schedules")):
+def schedule_views(database, season, checkpoint, as_of, *, snapshots=None):
     """Build the team schedule and known conference fixtures at the ranking cutoff."""
     year = season["season"]
     local_day = as_of.astimezone(EASTERN).date()
-    available = [p for p in (snapshots / str(year)).glob("*.csv") if date.fromisoformat(p.stem) <= local_day]
-    if not available:
-        return {}, set(), []
-    snapshot = max(available)
     ratings = {r["team_id"]: r for r in checkpoint["rows"]}
     with closing(sqlite3.connect(Path(database).resolve().as_uri() + "?mode=ro", uri=True)) as db:
-        teams = {str(source): ratings[team] for team, source in db.execute(
-            "SELECT id, json_extract(raw_json,'$.sourceId') FROM teams WHERE season = ?", (year,)
-        ) if team in ratings}
-        ids = {str(source): game for game, source in db.execute(
-            "SELECT id, json_extract(raw_json,'$.sourceId') FROM games WHERE season = ?", (year,)
-        ) if source is not None}
+        if snapshots is None:
+            # The stable game and team identities come from the same CBBD response as the replay.
+            teams = ratings
+            schedule_date = local_day
+            records = []
+            for gid, stamp, raw in db.execute(
+                    "SELECT id,start_utc,raw_json FROM games WHERE season=? AND status IN ('final','scheduled','in_progress')", (year,)):
+                game = json.loads(raw)
+                date_only = bool(game.get("startTimeTbd"))
+                records.append(dict(event_id=gid, tipoff=fixture_start(stamp, date_only).isoformat(),
+                                    time_known="0" if date_only else "1", home_id=game["homeTeamId"], away_id=game["awayTeamId"],
+                                    home_name=game["homeTeam"], away_name=game["awayTeam"], neutral="1" if game["neutralSite"] else "0"))
+            ids = {r["event_id"]: r["event_id"] for r in records}
+        else:
+            available = [p for p in (snapshots / str(year)).glob("*.csv") if date.fromisoformat(p.stem) <= local_day]
+            if not available:
+                return {}, set(), []
+            snapshot = max(available)
+            schedule_date = date.fromisoformat(snapshot.stem)
+            with snapshot.open(encoding="utf-8", newline="") as stream:
+                records = list(csv.DictReader(stream))
+            teams = {str(source): ratings[t] for t, source in db.execute(
+                "SELECT id,json_extract(raw_json,'$.sourceId') FROM teams WHERE season=?", (year,)) if t in ratings}
+            ids = {str(source): game for game, source in db.execute(
+                "SELECT id,json_extract(raw_json,'$.sourceId') FROM games WHERE season=?", (year,)) if source is not None}
 
     fixtures = {g["game_id"]: g for g in season["forecasts"]}
-    finished = {g["game_id"] for g in season["forecasts"] if g["status"] == "final"
-                and datetime.fromisoformat(g["start_utc"]) + timedelta(hours=6) < as_of}
+    finished = {g["game_id"] for g in season["forecasts"] if visible_final(g, as_of)}
     rows = defaultdict(list)
     moved = set()
     projections = []
@@ -84,56 +100,55 @@ def schedule_views(database, season, checkpoint, as_of, *, snapshots=Path(__file
                 row = ScheduledGame(matchup, f"{tip:%a, %b %d}", opponent["rank"] if opponent else None, str(fixture_id))
                 rows[year, team["school"]].append((tip, str(fixture_id), row))
 
-    with snapshot.open(encoding="utf-8", newline="") as stream:
-        for fixture in csv.DictReader(stream):
-            tip = datetime.fromisoformat(fixture["tipoff"]).astimezone(EASTERN)
-            known = fixture["time_known"] == "1"
-            on_team_schedule = tip.date() >= local_day and (not known or tip > as_of)
-            after_checkpoint = tip > cutoff if known else tip.date() >= cutoff.date()
-            if not (on_team_schedule or after_checkpoint):
+    for fixture in records:
+        tip = datetime.fromisoformat(fixture["tipoff"]).astimezone(EASTERN)
+        known = fixture["time_known"] == "1"
+        on_team_schedule = tip.date() >= local_day and (not known or tip > as_of)
+        after_checkpoint = tip > cutoff if known else tip.date() >= cutoff.date()
+        if not (on_team_schedule or after_checkpoint):
+            continue
+        home, away = (teams.get(fixture[key]) for key in ("home_id", "away_id"))
+        if home is None and away is None:
+            continue
+        neutral = fixture["neutral"] == "1"
+        game_id = ids.get(fixture["event_id"])
+        game = fixtures.get(game_id)
+        if game_id in finished:
+            after_checkpoint = after_checkpoint and datetime.fromisoformat(game["start_utc"]) >= cutoff - timedelta(hours=6)
+            if not after_checkpoint:
                 continue
-            home, away = (teams.get(fixture[key]) for key in ("home_id", "away_id"))
-            if home is None and away is None:
-                continue
-            neutral = fixture["neutral"] == "1"
-            game_id = ids.get(fixture["event_id"])
-            game = fixtures.get(game_id)
-            if game_id in finished:
-                after_checkpoint = after_checkpoint and datetime.fromisoformat(game["start_utc"]) >= cutoff - timedelta(hours=6)
-                if not after_checkpoint:
-                    continue
-            margin = None
-            if home and away:
-                h, a = home["team_id"], away["team_id"]
-                if (game and game["cutoff_utc"] == checkpoint["cutoff_utc"]
-                        and (game["home_team_id"], game["away_team_id"], game["neutral_site"]) == (h, a, neutral)):
-                    margin = game["home_margin"]
+        margin = None
+        if home and away:
+            h, a = home["team_id"], away["team_id"]
+            if (game and game["cutoff_utc"] == checkpoint["cutoff_utc"]
+                    and (game["home_team_id"], game["away_team_id"], game["neutral_site"]) == (h, a, neutral)):
+                margin = game["home_margin"]
+            else:
+                if "home_advantages" in checkpoint:
+                    venue = 0 if neutral else checkpoint["home_advantages"][h]
+                    margin = rounded(home["cors"] - away["cors"] + venue)
                 else:
-                    if "home_advantages" in checkpoint:
-                        venue = 0 if neutral else checkpoint["home_advantages"][h]
-                        margin = rounded(home["cors"] - away["cors"] + venue)
-                    else:
-                        venue = 0 if neutral else season["home_advantages"][h]
-                        margin = round(home["cors"] - away["cors"] + venue, 2)
-            clock = tipoff_clock(tip) if known else "Time TBD"
-            matchup = _matchup(
-                week,
-                home["school"] if home else fixture["home_name"],
-                away["school"] if away else fixture["away_name"],
-                margin, neutral, clock, game,
-            )
-            if after_checkpoint:
-                key = projection_key(tip.date(), matchup.home, matchup.away, neutral)
-                if key not in projected_keys:
-                    projections.append(replace(matchup, **conference_tipoff(tip, time_known=known)))
-                    projected_keys.add(key)
-                if game_id is not None:
-                    projected_ids.add(game_id)
-            if not on_team_schedule or game_id in finished:
-                continue
+                    venue = 0 if neutral else season["home_advantages"][h]
+                    margin = round(home["cors"] - away["cors"] + venue, 2)
+        clock = tipoff_clock(tip) if known else "Time TBD"
+        matchup = _matchup(
+            week,
+            home["school"] if home else fixture["home_name"],
+            away["school"] if away else fixture["away_name"],
+            margin, neutral, clock, game,
+        )
+        if after_checkpoint:
+            key = projection_key(tip.date(), matchup.home, matchup.away, neutral)
+            if key not in projected_keys:
+                projections.append(replace(matchup, **conference_tipoff(tip, time_known=known)))
+                projected_keys.add(key)
             if game_id is not None:
-                moved.add(game_id)
-            add_fixture(matchup, tip, game_id if game_id is not None else f"espn-{fixture['event_id']}", home, away)
+                projected_ids.add(game_id)
+        if not on_team_schedule or game_id in finished:
+            continue
+        if game_id is not None:
+            moved.add(game_id)
+        add_fixture(matchup, tip, game_id if game_id is not None else f"espn-{fixture['event_id']}", home, away)
 
     # The retained conference rebuild also uses the issued checkpoint's weekly
     # slate. A fixture can be absent from the dated public schedule, including
@@ -156,7 +171,6 @@ def schedule_views(database, season, checkpoint, as_of, *, snapshots=Path(__file
             add_fixture(matchup, tip, game_id, home, away)
             moved.add(game_id)
 
-    schedule_date = date.fromisoformat(snapshot.stem)
     schedules = {
         key: TeamSchedule(tuple(row for _, _, row in sorted(games, key=lambda item: item[:2])),
                           schedule_date, cutoff.date())

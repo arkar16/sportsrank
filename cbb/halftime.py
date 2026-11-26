@@ -6,17 +6,32 @@ from dataclasses import dataclass
 from functools import lru_cache
 from hashlib import sha256
 from io import StringIO
+import json
 from math import sqrt
 from pathlib import Path
 
 import numpy as np
 
+from cfb.sparse_excitement import MarginPool
 
-REFERENCE = Path(__file__).with_name("excitement_data") / "halftime-reference-v1.csv"
-REFERENCE_SHA256 = "3e6cd747ca8259debd07edfbd33a99d12fa18dd9c39f53b602ab287a65f613e5"
+
+DATA = Path(__file__).with_name("cbbd_excitement")
 FEATURES = ("abs_margin", "total", "halftime_margin")
-# Training-pool interquartile ranges in feature order, frozen with the reference.
-WIDTHS = {False: (13, 25, 11), True: (3.75, 27, 9.75)}
+
+
+@lru_cache(maxsize=1)
+def policy():
+    record = json.loads((DATA / "policy.json").read_bytes())
+    if (record["provider"] != "CollegeBasketballData" or record["training"] != [2024, 2026]
+            or record["reserved"] != 2025 or record["file"] != "halftime-reference-v1.csv"):
+        raise ValueError("unknown basketball excitement reference")
+    frozen = {k: record[k] for k in ("provider","training","file","sha256","widths")}
+    if sha256(json.dumps(frozen, sort_keys=True, separators=(",", ":")).encode()).hexdigest() != record["frozen_sha256"]:
+        raise ValueError("corrupt frozen basketball reference")
+    m = record["halftime"]
+    if record["halftime_qualified"] != (m["mae"] <= 7 and abs(m["bias"]) <= 2 and m["spearman"] >= .85):
+        raise ValueError("basketball halftime validation disagrees with release criteria")
+    return record
 
 
 @dataclass(frozen=True)
@@ -44,12 +59,14 @@ class HalftimePool:
 
 @lru_cache(maxsize=1)
 def halftime_pools():
-    data = REFERENCE.read_bytes()
-    if sha256(data).hexdigest() != REFERENCE_SHA256:
+    reference = policy()
+    data = (DATA / reference["file"]).read_bytes()
+    if sha256(data).hexdigest() != reference["sha256"]:
         raise ValueError("basketball halftime reference differs from the accepted checksum")
     rows = list(csv.DictReader(StringIO(data.decode("ascii"))))
     pools = {}
-    for overtime, widths in WIDTHS.items():
+    for overtime in (False, True):
+        widths = tuple(reference["widths"][str(int(overtime))])
         group = [r for r in rows if int(r["overtime"]) == overtime]
         pools[overtime] = HalftimePool(
             {r["game"]: i for i, r in enumerate(group)},
@@ -58,3 +75,11 @@ def halftime_pools():
             widths,
         )
     return pools
+
+@lru_cache(maxsize=1)
+def final_pools():
+    pools = halftime_pools()
+    rows = [(gid, int(pool.features[index, 0]), pool.targets[index] + 2 * ot, ot)
+            for ot, pool in pools.items() for gid, index in pool.index.items()]
+    return {ot: MarginPool((gid, margin, value) for gid, margin, value, known in rows
+                           if ot is None or known == ot) for ot in (None, False, True)}

@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import NotRequired, TypedDict
 from zoneinfo import ZoneInfo
 
-from .source import Game, Season, read_history
+from .source import Game, Season, latest_start, read_history
 
 GENESIS_SEASON = 2020
 HOME_ADVANTAGE = 2.0
@@ -75,7 +75,10 @@ class ForecastRow(TypedDict):
     conference_game: NotRequired[bool | None]
     season_type: NotRequired[str | None]
     tournament: NotRequired[str | None]
+    date_only: NotRequired[bool]
     conference_tournament: NotRequired[bool]
+    overtime: NotRequired[bool | None]
+    halftime: NotRequired[tuple[int, int] | None]
     home_cors_delta: NotRequired[float]
     away_cors_delta: NotRequired[float]
     result_cutoff_utc: NotRequired[str]
@@ -197,7 +200,7 @@ def _forecast(
         status=game.status, home_points=home_points, away_points=away_points,
         actual_home_margin=actual_margin, ncaa_round=game.ncaa_round,
         conference_game=game.conference_game, season_type=game.season_type, tournament=game.tournament,
-        conference_tournament=game.conference_tournament,
+        conference_tournament=game.conference_tournament, date_only=game.date_only, verified_at=game.verified_at, overtime=game.overtime, halftime=game.halftime,
     )
 
 
@@ -211,8 +214,9 @@ def _replay(
     slates: dict[datetime, list[Game]] = defaultdict(list)
     for game in season.games:
         slates[_previous_monday(game.start_utc)].append(game)
-    finals = [(game, game.score) for game in season.games if game.score is not None]
-    last_result_start = finals[-1][0].start_utc
+    finals = sorted(((latest_start(g.start_utc, g.date_only), g) for g in season.games if g.score is not None),
+                    key=lambda pair: (pair[0], pair[1].id))
+    last_result_start = finals[-1][0]
     final_cutoff = _previous_monday(last_result_start) + _WEEK
     if last_result_start + _RESULT_BUFFER >= final_cutoff:
         final_cutoff += _WEEK
@@ -229,9 +233,10 @@ def _replay(
     cutoff = first_cutoff
     week = 0
     while cutoff <= last_cutoff:
-        latest_start = cutoff.astimezone(timezone.utc) - _RESULT_BUFFER
-        while result_index < len(finals) and finals[result_index][0].start_utc < latest_start:
-            game, (home, away) = finals[result_index]
+        latest_result_start = cutoff.astimezone(timezone.utc) - _RESULT_BUFFER
+        while result_index < len(finals) and finals[result_index][0] < latest_result_start:
+            _, game = finals[result_index]
+            home, away = game.score
             results[game.home_team_id].add(game.away_team_id, home, away)
             results[game.away_team_id].add(game.home_team_id, away, home)
             result_index += 1
@@ -258,6 +263,7 @@ def replay_seasons(
     db_path: str | Path,
     through_season: int = 2024,
     *,
+    first_season: int = GENESIS_SEASON,
     home_advantage: float = HOME_ADVANTAGE,
     carryover_strength: float = CARRYOVER_STRENGTH,
     margin_weight: float = MARGIN_WEIGHT,
@@ -275,8 +281,8 @@ def replay_seasons(
     Margin weight sets the signed logarithmic MOV coefficient and the
     corresponding CORS maximum used to normalize strength of schedule.
     """
-    if type(through_season) is not int or through_season < GENESIS_SEASON:
-        raise ValueError(f"through_season must be an ending year at least {GENESIS_SEASON}")
+    if type(through_season) is not int or through_season < first_season:
+        raise ValueError(f"through_season must be an ending year at least {first_season}")
     for name, value in (
         ("home_advantage", home_advantage),
         ("carryover_strength", carryover_strength),
@@ -289,7 +295,7 @@ def replay_seasons(
 
     replays: list[SeasonReplay] = []
     prior_final: tuple[RankingRow, ...] = ()
-    for season in read_history(db_path, GENESIS_SEASON, through_season):
+    for season in read_history(db_path, first_season, through_season):
         replay = _replay(season, prior_final, home_advantage, carryover_strength, margin_weight)
         replays.append(replay)
         prior_final = replay["final_rankings"]

@@ -10,12 +10,14 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from cfb.excitement import BASKETBALL, QualifiedPregame, calculate_bev, matchup_quality
-from cfb.excitement_pages import ESTIMATE_NOTE, aev_label
+from cfb.excitement_pages import ESTIMATE_NOTE, aev_label, bev_label
 from cfb.game_excitement import GameAppeal
 from cfb.record_book import _write_changed
-from .halftime import halftime_pools
+from hashlib import sha256
+from .source import visible_final
+from .halftime import DATA, policy, halftime_pools, final_pools
+from cfb.sparse_excitement import pregame_prior
 
-DATA = Path(__file__).with_name("excitement_data")
 EASTERN = ZoneInfo("America/New_York")
 FIELDS = ("version", "checkpoint", "game", "date", "home_id", "away_id", "neutral",
           "home_rank", "away_rank", "home_margin", "bev")
@@ -31,13 +33,18 @@ def basketball_bev(home_rank, away_rank, margin, game_id, cutoff):
 
 
 def read_measurements(year):
-    path = DATA / f"{year}.csv"
-    evidence = defaultdict(list)
-    if path.is_file():
-        with path.open(newline="") as source:
-            for row in csv.DictReader(source):
-                key = row["date"], frozenset((row["home_id"], row["away_id"]))
-                evidence[key].append(row)
+    digest = policy()["seasons"].get(str(year))
+    if not digest:
+        return {}
+    data = (DATA / f"{year}.csv").read_bytes()
+    if sha256(data).hexdigest() != digest:
+        raise ValueError(f"corrupt CollegeBasketballData measurements for {year}")
+    evidence = {}
+    for row in csv.DictReader(StringIO(data.decode())):
+        gid = row["game_id"]
+        if gid in evidence:
+            raise ValueError(f"duplicate CBBD game {gid}")
+        evidence[gid] = row
     return evidence
 
 
@@ -72,64 +79,112 @@ class PregameLedger:
         return value
 
     def write(self):
-        self.path.parent.mkdir(exist_ok=True, parents=True)
-        output = StringIO()
-        writer = csv.DictWriter(output, fieldnames=FIELDS, lineterminator="\n")
-        writer.writeheader()
-        writer.writerows(self.rows[key] for key in sorted(self.rows))
-        _write_changed(self.path, output.getvalue().encode("utf-8"))
+        write_ledger(self.path, FIELDS, self.rows)
 
 
-def after_game(g, bev, ranks, evidence, as_of):
-    if (g["status"] != "final" or datetime.fromisoformat(g["start_utc"]) + timedelta(hours=6) >= as_of
+def write_ledger(path, fields, rows):
+    path.parent.mkdir(exist_ok=True, parents=True)
+    output = StringIO()
+    writer = csv.DictWriter(output, fieldnames=fields, lineterminator="\n")
+    writer.writeheader()
+    writer.writerows(rows[key] for key in sorted(rows))
+    _write_changed(path, output.getvalue().encode("utf-8"))
+
+
+class BaselineLedger:
+    fields = ("checkpoint", "game", "home_id", "away_id", "date", "bev", "quality")
+
+    def __init__(self, root, year):
+        self.path = root / f"seasons/{year}/excitement/baselines-v1.csv"
+        self.rows = {}
+        if self.path.is_file():
+            with self.path.open(newline="") as source:
+                reader = csv.DictReader(source)
+                if tuple(reader.fieldnames or ()) != self.fields:
+                    raise ValueError("unknown basketball pregame baseline ledger")
+                for row in reader:
+                    key = row["checkpoint"], row["game"]
+                    if key in self.rows:
+                        raise ValueError("duplicate basketball pregame baseline")
+                    self.rows[key] = row
+
+    def capture(self, checkpoint, game_id, home, away, date, prior):
+        key = checkpoint, str(game_id)
+        row = dict(zip(self.fields, (*key, str(home), str(away), date, f"{prior.bev:.1f}", repr(prior.quality))))
+        if self.rows.setdefault(key, row) != row:
+            raise ValueError(f"pregame baseline changed for {key}")
+        return row["bev"]
+
+    def write(self):
+        if self.rows:
+            write_ledger(self.path, self.fields, self.rows)
+
+
+def final_value(final, quality, margin=None, overtime=None, identity=None):
+    home, away = final
+    drama, support = final_pools()[overtime].estimate(abs(home - away), identity)
+    winner_margin = (margin if home > away else -margin) if margin is not None else 0
+    surprise = min(1, max(0, -winner_margin / BASKETBALL.close_margin))
+    return drama + 3 * quality + 3 * surprise, support
+
+
+def after_game(g, bev, ranks, evidence, as_of, *, prior=None):
+    basis = "Pregame baseline" if prior is not None else None
+    if (not visible_final(g, as_of)
             or g["home_points"] is None or g["away_points"] is None):
-        return GameAppeal(bev, None)
+        return GameAppeal(bev, None, source_game=str(g["game_id"]), bev_basis=basis)
     home, away = str(g["home_team_id"]), str(g["away_team_id"])
     final = (g["home_points"], g["away_points"])
-    key = local_date(g["start_utc"]), frozenset((home, away))
-    candidates = []
-    for row in evidence.get(key, ()):
-        flipped = row["home_id"] != home
-        scores = (int(row["home_score"]), int(row["away_score"]))
-        if final == (scores[::-1] if flipped else scores):
-            candidates.append(row)
-    if len(candidates) != 1 or final[0] == final[1]:
-        return GameAppeal(bev, final)
-    row = candidates[0]
-    if not row["periods"]:
-        return GameAppeal(bev, final)
-    periods = int(row["periods"])
-    if periods < 2:
+    identity = str(g["game_id"])
+    row = evidence.get(identity, {})
+    if row and ((row["home_id"], row["away_id"]) != (home, away)
+                or (int(row["home_score"]), int(row["away_score"])) != final):
+        row = {}  # A corrected box must be requalified against the scoring evidence.
+    if final[0] == final[1] or min(final) < 0:
+        return GameAppeal(bev, None, source_game=str(g["game_id"]), bev_basis=basis)
+    quality = prior.quality if prior else matchup_quality(ranks[g["home_team_id"]], ranks[g["away_team_id"]])
+    margin = g["home_margin"]
+    winner_margin = (margin if final[0] > final[1] else -margin) if margin is not None else 0
+    surprise = min(1, max(0, -winner_margin / BASKETBALL.close_margin))
+    periods = int(row["periods"]) if row.get("periods") else None
+    if periods is not None and periods < 2:
         raise ValueError(f"invalid basketball period count for {row['game_id']}")
-    quality = matchup_quality(ranks[g["home_team_id"]], ranks[g["away_team_id"]])
-    margin = g["home_margin"] if final[0] > final[1] else -g["home_margin"]
-    surprise = min(1, max(0, -margin / BASKETBALL.close_margin))
-    overtime = periods > 2
-    if row["tension"]:
+    overtime = periods > 2 if periods is not None else g.get("overtime")
+    if row.get("tension") and periods is not None:
         tension = float(row["tension"])
         leads, deficit = int(row["lead_changes"]), int(row["winner_deficit"])
         if not (0 <= tension <= 1 and leads >= 0 and deficit >= 0):
             raise ValueError(f"invalid basketball score path for {row['game_id']}")
         drama = 80 * tension + 8 * min(1, leads / 3) + 4 * min(1, deficit / BASKETBALL.comeback_margin)
-        return GameAppeal(bev, final, drama + 2 * overtime + 3 * quality + 3 * surprise, "full", row["game_id"])
+        return GameAppeal(bev, final, drama + 2 * overtime + 3 * quality + 3 * surprise, "full", identity, bev_basis=basis)
 
-    if not row["half_home"] or not row["half_away"]:
-        return GameAppeal(bev, final)
-    half = int(row["half_home"]), int(row["half_away"])
-    source_final = int(row["home_score"]), int(row["away_score"])
+    half = g.get("halftime")
+    source_final = final
+    if half is None or overtime is None or not policy()["halftime_qualified"]:
+        value, support = final_value(final, quality, margin, overtime, identity)
+        return GameAppeal(bev, final, value, "final", identity, support, bev_basis=basis)
     if any(h < 0 or h > f for h, f in zip(half, source_final)):
-        raise ValueError(f"invalid basketball halftime score for {row['game_id']}")
+        raise ValueError(f"invalid basketball halftime score for {identity}")
     winner_margin = (half[0] - half[1]) * (1 if source_final[0] > source_final[1] else -1)
     drama, support, distance = halftime_pools()[overtime].estimate(
-        row["game_id"], abs(final[0] - final[1]), sum(final), winner_margin,
+        identity, abs(final[0] - final[1]), sum(final), winner_margin,
     )
     value = drama + 2 * overtime + (3 * quality + 3 * surprise)
-    return GameAppeal(bev, final, value, "halftime", row["game_id"], support, distance)
+    return GameAppeal(bev, final, value, "halftime", identity, support, distance, basis)
+
+
+def checkpoint_prior(rows, home, away, neutral, checkpoint):
+    def team(key):
+        return (rows[key]["rank"], rows[key]["cors"]) if key in rows else None
+    venue = 0 if neutral else (checkpoint.get("home_advantages") or {}).get(home, 3.6)
+    return pregame_prior(team(home), team(away), field_size=len(rows), close=BASKETBALL.close_margin,
+                         venue=venue, missing_rating=checkpoint.get("non_d1_rating", -26.0))
 
 
 def weekly_scores(root, season, checkpoints, as_of, schedules=None):
     year = season["season"]
     ledger = PregameLedger(root / f"seasons/{year}/excitement/bev-v1.csv")
+    baselines = BaselineLedger(root, year)
     evidence = read_measurements(year)
     standings = {c["cutoff_utc"]: {r["team_id"]: r for r in c["rows"]} for c in checkpoints}
     positions = {cutoff: {i: r["rank"] for i, r in rows.items()} for cutoff, rows in standings.items()}
@@ -154,16 +209,24 @@ def weekly_scores(root, season, checkpoints, as_of, schedules=None):
             continue
         for fixture in schedule.fixtures:
             game = fixture.game
-            if (game in scheduled or game.home_handicap is None or not game.start_utc
-                    or game.home not in ids or game.away not in ids):
+            if game in scheduled or not game.start_utc:
+                continue
+            if game.home_handicap is None or game.home not in ids or game.away not in ids:
+                prior = checkpoint_prior(standings[cutoff], ids.get(game.home), ids.get(game.away),
+                                         game.neutral_site, checkpoints[-1])
+                bev = baselines.capture(cutoff, f"schedule-{schedule.snapshot_date}-{fixture.forecast_id}",
+                                        ids.get(game.home, game.home), ids.get(game.away, game.away),
+                                        local_date(game.start_utc), prior)
+                scheduled[game] = GameAppeal(bev, None, source_game=str(fixture.forecast_id), bev_basis="Pregame baseline")
                 continue
             # A dated schedule can reverse the designated sides at a neutral site.
             # Preserve its projection and the weekly forecast under their own source identities.
             projection = f"schedule-{schedule.snapshot_date}-{fixture.forecast_id}"
             bev = ledger.capture(cutoff, projection, game.start_utc, ids[game.home], ids[game.away],
                                  game.neutral_site, positions[cutoff], -game.home_handicap)
-            scheduled[game] = GameAppeal(bev, None)
+            scheduled[game] = GameAppeal(bev, None, source_game=str(fixture.forecast_id))
     ledger.write()
+    baselines.write()
     return scores, scheduled
 
 
@@ -179,9 +242,9 @@ def guide(year, games, season_name, label, week_link, table, as_of):
                '<p>Before Excitement Value (BEV) rates pregame appeal using CORS ranks and the projected margin. '
                'After Excitement Value (AEV) measures score-and-clock drama over two halves, with lead changes, '
                'comebacks and overtime. Both use a 0–100 scale. Six points is a two-possession margin. '
-               'A dash means the scoring evidence is insufficient.</p>')
+               'A pregame baseline uses the ratings available before tipoff.</p>')
     if any(row[4].estimated for row in completed):
-        content += f'<p>{ESTIMATE_NOTE} Basketball estimates use the halftime and final scores.</p>'
+        content += f'<p>{ESTIMATE_NOTE} The score label identifies the available evidence.</p>'
     for heading, rows in (("Current and upcoming games by BEV", upcoming),
                           ("Completed games by AEV", completed), ("Games awaiting a verified final", missing)):
         if not rows:
@@ -189,14 +252,14 @@ def guide(year, games, season_name, label, week_link, table, as_of):
         has_final = rows is completed
         values = []
         for day, away, home, week, score in rows:
-            row = (day, week_link(year, week, "Preseason" if not week else f"Week {week}"), label(away), label(home), score.bev)
+            row = (day, week_link(year, week, "Preseason" if not week else f"Week {week}"), label(away), label(home), f'<span data-cbbd-fixture="{escape(score.source_game or "")}">{bev_label(score)}</span>')
             if has_final:
                 h, a = score.final
                 final = f"{a}–{h}"
                 if score.source_game:
-                    final = f'<a href="https://www.espn.com/mens-college-basketball/game/_/gameId/{escape(score.source_game)}">{final}</a>'
+                    final = f'<span data-cbbd-game="{escape(score.source_game)}">{final}</span>'
                 aev = aev_label(score)
-                if score.estimated:
+                if score.tier == "halftime":
                     aev = (f'<span title="Halftime estimate from {score.support} comparable games" '
                            f'data-reference-distance="{score.reference_distance}">{aev}</span>')
                 row += (final, aev)

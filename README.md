@@ -294,60 +294,26 @@ current task scope, dependencies, and acceptance. Historical workflow records ar
 
 ## Basketball record book
 
-Basketball uses the frozen two-timescale Bayesian state-space model
-**CORS v1.0.0** (`cbb-kalman-2scale/v1`). Ratings are expected neutral-court
-points above or below the season's average Division I team (`0.00`).
-[ADR-0030](docs/adr/0030-adopt-kalman-two-scale-basketball-cors-v1.md)
-
-Build the current rankings, a dated forecast edition, team histories, weekly
-scores and forecasts, and model performance offline from the retained SQLite
-cache and historical inputs. The season argument is the ending year. Use the
-pinned historical CSV directory to include the full 47-season weekly archive
-from 1980–81 through 2026–27. The command below builds a local review copy.
+Public games, rosters, schedules, tournament results and CORS comparison data
+come from CollegeBasketballData. The season is its ending year. A normal build
+starts with retained API responses, replays the CORS model in chronological
+order and writes a complete static site. The import discards local overrides.
+A season before 1980 appears when the provider returns game records.
 
 ```sh
 uv run --locked python -m cbb.site --database .sportsrank/cbb/history.sqlite3 \
-  --season 2027 --as-of "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-  --historical-dir /path/to/compact-results --output .sportsrank/cbb-review
+  --season 2027 --as-of 2026-11-26T16:47:00+00:00 --output website/cbb
 ```
 
-Each weekly pick uses the preceding Monday 06:00 Eastern checkpoint, with a
-six-hour completion buffer for games entering the ratings. The build grades
-completed games and forecasts scheduled matchups. Dated editions preserve the
-picks shown at publication. See the reconstructed-picks rule in AGENTS.md.
+A weekly forecast uses the preceding Monday at 06:00 Eastern. A date-only
+fixture uses the earliest possible tipoff for selecting its checkpoint and
+the end of the local date for admitting its result. Scheduled games show
+BEV. Every verified final also shows AEV and its scoring basis.
+[CollegeBasketballData coverage](https://api.collegebasketballdata.com/data-availability)
 
-Team-season pages also show the remaining announced games from the latest
-schedule snapshot on or before the build date. Later matchups use the displayed
-checkpoint’s ratings and home-court adjustment. Weekly picks appear with their
-original spread. To refresh the public ESPN schedule, use the acquisition date
-as the first day and a separate cache directory for each acquisition, then run
-the basketball build. For example:
-
-```sh
-uv run --locked python -m scripts.collect_cbb_schedule --season 2027 \
-  --from-date 2026-11-23 --through-date 2027-04-06 --cache .sportsrank/cbb/schedules/2026-11-23
-```
-
-The weekly historical replay uses the six CSV inputs listed in
-`scripts/backfill_cbb_finals.py`. The repository includes the rosters and dated
-results for the first four years.
-[1980–81 through 1982–83 sources](cbb/historical_inputs/1981-83/README.md) ·
-[1983–84 sources](cbb/historical_inputs/1984/README.md)
-
-The importer verifies input hashes, season rosters and win/loss totals. The
-program crosswalk in `cbb/archive_programs.csv` connects matching historical
-teams to CBBD program pages. Regenerate the historical final standings in
-`cbb/archive_finals.csv` from the same inputs.
-[Pinned source files](https://github.com/Nate-Cheney/March-Machine-Learning-Mania-2026/tree/b12a81c1201bb88b1d2010210116559d1fa03851/raw_data)
-
-```sh
-uv run --locked python -m scripts.backfill_cbb_finals /path/to/compact-results
-```
-
-The same build exports completed 2022–26 March Madness replays. It joins the
-weekly CORS forecasts and final score to the retained opponent-adjusted margin
-model's weekly and pre-tipoff predictions in `cbb/tournament_margins.csv`.
-Both research columns are signed points for the designated home team. The
-archive checks game identity, teams, tipoff, weekly cutoff, and coverage against
-the cached NCAA tournament finals. A season becomes visible after its last
-tipoff clears the replay's six-hour result buffer.
+With an authorized request allowance, `scripts.cache_basketball_history`
+retains official games and rosters and splits saturated queries into smaller
+date windows. `scripts.cache_basketball_plays` retains scoring-play responses.
+`scripts.prepare_cbbd_excitement` freezes the training reference and tests
+the halftime estimate on the held-out season.
+[Scoring method](docs/plans/2026-game-excitement-scoring-v1.md)

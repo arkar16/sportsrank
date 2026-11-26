@@ -88,19 +88,19 @@ class BasketballExcitementTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "conflict"):
             period_totals("[{'value':20.0} {'value':21.0}]", "[{'value':19.0} {'value':20.0}]", (42, 39), 2)
 
-    def test_future_final_cutoff_and_neutral_orientation(self):
-        game = dict(home_team_id=12, away_team_id=18, home_points=53, away_points=50, status="final",
-                    start_utc="2026-11-24T23:00:00Z", home_margin=-6)
-        evidence = {("2026-11-24",frozenset(("12","18"))):[
-            dict(game_id="99", home_id="18", away_id="12", home_score="50", away_score="53",
-                 tension="0.5", lead_changes="3", winner_deficit="9", periods="3")]}
+    def test_final_cutoff_and_cbbd_game_identity(self):
+        game = dict(game_id=99, home_team_id=12, away_team_id=18, home_points=53, away_points=50,
+                    status="final", start_utc="2026-11-24T23:00:00Z", home_margin=-6)
+        row = dict(game_id="99", home_id="12", away_id="18", home_score="53", away_score="50",
+                   tension="0.5", lead_changes="3", winner_deficit="9", periods="3")
         ranks = {12: 1, 18: 2}
-        expected = 40 + 8 + 4 + 2 + 3*exp(-1/100) + 3
-        self.assertIsNone(after_game(game, "85.0", ranks, evidence, datetime.fromisoformat("2026-11-25T04:00Z")).aev)
+        expected = 40 + 8 + 4 + 2 + 3 * exp(-1/100) + 3
+        early = datetime.fromisoformat("2026-11-25T04:00Z")
         after = datetime.fromisoformat("2026-11-25T06:00Z")
-        self.assertAlmostEqual(after_game(game, "85.0", ranks, evidence, after).aev, expected)
-        self.assertIsNone(after_game(dict(game, away_points=49), "85.0", ranks, evidence, after).aev)
-        self.assertIsNone(after_game(dict(game, start_utc="2026-11-20T23:00Z"), "85.0", ranks, evidence, after).aev)
+        self.assertIsNone(after_game(game, "85.0", ranks, {"99": row}, early).aev)
+        self.assertAlmostEqual(after_game(game, "85.0", ranks, {"99": row}, after).aev, expected)
+        for stale in (dict(game, away_points=49), dict(game, game_id=23)):
+            self.assertEqual(after_game(stale, "85.0", ranks, {"99": row}, after).tier, "final")
 
     def test_verified_break_can_survive_missing_plays_but_conflicting_scores_cannot(self):
         event = (10, 11, 65, 72, 2)
@@ -129,28 +129,34 @@ class BasketballExcitementTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "conflict"):
             matched_box((*record[:3], ([27, 31], [31, 41])), day, (12, 18), (65, 72), 2)
 
-    def test_checked_in_reference_with_neutral_site_swap_and_known_overtime(self):
-        game = dict(home_team_id=12, away_team_id=18, home_points=65, away_points=72, home_margin=6,
-                    status="final", start_utc="2025-02-01T20:00:00Z")
-        key = "2025-02-01", frozenset(("12", "18"))
-        row = dict(game_id="99", home_id="18", away_id="12", home_score="72", away_score="65",
-                   half_home="31", half_away="27", periods="2", tension="")
-        as_of = datetime.fromisoformat("2025-02-02T10:00Z")
+    def test_halftime_and_final_use_frozen_official_references(self):
+        import csv
+        from statistics import fmean
+        from cbb.halftime import DATA, policy
+        game = dict(game_id=99, home_team_id=12, away_team_id=18, home_points=65, away_points=72,
+                    home_margin=6, halftime=(27,31), overtime=False, status="final", start_utc="2025-02-01T20:00Z")
         ranks = {12: 1, 18: 2}
-        def score(*evidence):
-            return after_game(game, "33.0", ranks, {key: evidence}, as_of)
-        # Direct calculation from the frozen CSV yields two extra cutoff ties in regulation.
-        regular = score(row)
-        self.assertEqual((aev_label(regular), regular.support), ("55.0*", 52))
-        self.assertAlmostEqual(regular.aev, 55.041353946323746)
-        self.assertAlmostEqual(regular.reference_distance, 0.18402299532916355)
-        overtime = score(dict(row, periods="3"))
-        self.assertAlmostEqual(overtime.aev, 66.60161493453799)
-        self.assertEqual(overtime.support, 50)
-        for unsupported in ((dict(row, half_away=""),), (dict(row, periods=""),), (row, row)):
-            self.assertIsNone(score(*unsupported).aev)
-        early = datetime.fromisoformat("2025-02-01T21:00Z")
-        self.assertIsNone(after_game(game, "33.0", ranks, {key: [row]}, early).aev)
+        as_of = datetime.fromisoformat("2025-02-02T10:00Z")
+        ref = policy()
+        self.assertEqual((ref["provider"],ref["reserved"]),("CollegeBasketballData",2025))
+        with (DATA/ref["file"]).open() as stream:
+            records=list(csv.DictReader(stream))
+        for overtime in (False,True):
+            actual=after_game(dict(game,overtime=overtime), "33.0", ranks, {}, as_of)
+            values=[]
+            widths=ref["widths"][str(int(overtime))]
+            for r in records:
+                if bool(int(r["overtime"])) != overtime or r["game"]=="99":
+                    continue
+                distance=sum(((v-int(r[k]))/w)**2 for k,v,w in
+                             zip(("abs_margin","total","halftime_margin"),(7,137,4),widths))
+                values.append((distance,float(r["drama"])))
+            cutoff=sorted(v[0] for v in values)[min(49,len(values)-1)]
+            neighbors=[d for distance,d in values if distance <= cutoff]
+            self.assertEqual((actual.tier,actual.support),("halftime",len(neighbors)))
+            self.assertAlmostEqual(actual.aev,fmean(neighbors)+2*overtime+3*exp(-.01)+3)
+        self.assertEqual(after_game(dict(game,halftime=None), "33.0", ranks, {}, as_of).tier,"final")
+        self.assertIsNone(after_game(game,"33.0",ranks,{},datetime.fromisoformat("2025-02-01T21:00Z")).aev)
 
     def test_target_is_excluded_and_all_fiftieth_place_ties_are_included(self):
         games = [[3, 120, 0]] * 50 + [[2, 120, 0], [4, 120, 0], [8, 120, 0]]

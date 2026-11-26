@@ -130,6 +130,7 @@ class GameAppeal:
     source_game: str | None = None
     support: int | None = None
     reference_distance: float | None = None
+    bev_basis: str | None = None
 
     @property
     def estimated(self) -> bool:

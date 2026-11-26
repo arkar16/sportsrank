@@ -26,8 +26,7 @@ class BasketballConferenceFixturesTest(unittest.TestCase):
             Game(3, datetime.fromisoformat("2026-11-24T03:00Z"), 1, 2, False, "final", (70, 80)),
         )), (), 2., 1., 4.)
         with TemporaryDirectory() as temp, patch("cbb.record_book.build_conference_pages", return_value=[]) as pages:
-            build(Path(temp), [modern], datetime.fromisoformat("2026-11-25T12:00Z"), set(),
-                  historical_seasons=[old])
+            build(Path(temp), [old, modern], datetime.fromisoformat("2026-11-25T12:00Z"), set())
         historical, current = pages.call_args.args[0]
         self.assertIn("FINAL", historical.rankings)
         self.assertEqual(current.updated_at, "2026-11-23T11:00:00+00:00")

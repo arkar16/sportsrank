@@ -170,7 +170,7 @@ def _score_details(bev, aev):
     if aev:
         metrics.append(f"Game drama (AEV) <strong>{escape(aev)}</strong>")
     text = '<p class="game-excitement">' + " · ".join(metrics) + "</p>"
-    return text + (f"<p>{ESTIMATE_NOTE}</p>" if aev and aev.endswith("*") else "")
+    return text + (f"<p>{ESTIMATE_NOTE}</p>" if aev and "*" in aev else "")
 
 
 def complete_basketball_card(directory, day, game, score):
@@ -190,7 +190,7 @@ def complete_basketball_card(directory, day, game, score):
         return
     start = raw.index('<p class="game-excitement">')
     end = raw.index('<div class="share-actions">', start)
-    updated = raw[:start] + _score_details(score.bev, unescape(aev_label(score))) + raw[end:]
+    updated = raw[:start] + _score_details(score.bev, unescape(aev_label(score, plain=True))) + raw[end:]
     if updated != raw:
         target.write_text(updated, encoding="utf-8")
 
@@ -264,7 +264,7 @@ def football_links(raw: bytes, path: Path, directory: Path, season: Season, *, e
         return Spread("cfb", f"{year}/week-{week[1:]}", f"{year} · Week {week[1:]}", source,
                       home, away, neutral, margin,
                       conference.play.get(("", home.name, away.name), "Play type unavailable"),
-                      score.bev if score else None, unescape(aev_label(score)) if score and score.final else None)
+                      score.bev if score else None, unescape(aev_label(score, plain=True)) if score and score.final else None)
 
     try:
         markup = raw.decode("utf-8")
@@ -278,7 +278,7 @@ def football_links(raw: bytes, path: Path, directory: Path, season: Season, *, e
 def basketball_links(directory: Path, conference: ConferenceSlate) -> None:
     path = directory / "current.html"
     markup = path.read_text(encoding="utf-8")
-    source = re.search(r'href="(editions/[\dTZ-]+\.html)"', markup)
+    source = re.search(r'href="(editions/[\dTZ-]+(?:-api)?\.html)"', markup)
     if source is None:
         raise ValueError("The basketball forecast has no dated edition")
     edition = directory / source[1]

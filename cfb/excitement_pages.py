@@ -19,10 +19,19 @@ _METHOD = "https://github.com/arkar16/sportsrank/blob/main/docs/plans/2026-game-
 ESTIMATE_NOTE = "* AEV estimated from the available scoring totals and comparable games."
 
 
-def aev_label(score: GameAppeal | None):
+def aev_label(score: GameAppeal | None, *, plain=False):
     if score is None or score.aev is None:
         return "&mdash;"
-    return f"{score.aev:.1f}" + ("*" if score.estimated else "")
+    basis = {"full": "Play-by-play", "quarter": "Quarter scores", "halftime": "Halftime score",
+             "final": "Final score only"}[score.tier]
+    number = f'{score.aev:.1f}{"*" if score.estimated else ""}'
+    return f"{number} · {basis}" if plain else f"{number}<small> · {basis}</small>"
+
+
+def bev_label(score):
+    if not score:
+        return "&mdash;"
+    return score.bev + (f"<small> · {score.bev_basis}</small>" if score.bev_basis else "")
 
 
 def add_score_columns(markup: bytes, directory: Path, path: Path, scores, year: int) -> bytes:
