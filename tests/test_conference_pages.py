@@ -7,7 +7,7 @@ from lxml import html
 import numpy as np
 
 from cbb.cors_v1 import _update
-from cfb.conference_pages import _football_deltas, build_conference_pages
+from cfb.conference_pages import build_conference_pages
 from cfb.win_probability import win_probability
 from cfb.reference_archive import Game, Season, Standing, _postseason
 
@@ -30,6 +30,7 @@ class ConferencePagesTest(unittest.TestCase):
             standing("I", 2, "8", "0–0", "Indep."),
         ]
         preseason = [replace(row, rating=row.rating - Decimal("2.00")) for row in rows]
+        preseason[1] = replace(preseason[1], rank=9)
         games = [
             Game(0, "B", "A", 75, 70, None, conference_game=True, home_cors_delta=1.25, away_cors_delta=-1.1),
             Game(0, "A", "B", 80, 70, None, conference_game=False, home_cors_delta=3.2, away_cors_delta=-2.0),
@@ -56,7 +57,7 @@ class ConferencePagesTest(unittest.TestCase):
         b, a = [cells(tr) for tr in table.xpath(".//tbody/tr")]
         self.assertEqual(b[:4], ["3", "B", "2–1", "1–0"])
         self.assertEqual(a[:4], ["1", "A", "1–2", "0–1"])
-        self.assertEqual(a[6:], ["W 80–70 vs #3 B (+3.20)", "L 70–75 @ #3 B (-1.10)", "0.5–1.5", "2.0–3.0"])
+        self.assertEqual(a[6:], ["W 80–70 vs #9 B (+3.20)", "L 70–75 @ #9 B (-1.10)", "0.5–1.5", "2.0–3.0"])
         self.assertEqual(ooc.xpath(".//tbody/tr/th/a/@href"), ["/cbb/conferences/west/2025.html"])
         self.assertEqual(cells(ooc.xpath(".//tfoot/tr")[0]), ["Total OOC", "1–0", "100.0%", "+8.0"])
         final = html.fromstring(pages["cbb/conferences/east/2024.html"])
@@ -68,15 +69,19 @@ class ConferencePagesTest(unittest.TestCase):
         self.assertEqual(directory.xpath("//tbody/tr[1]/th/a/@href"), ["/cbb/conferences/east/2025.html"])
         self.assertIn("/cbb/conferences/indep/index.html", directory.xpath("//ul[@class='program-list']//a/@href"))
 
-    def test_football_weekly_deltas_and_calendar(self):
-        a, b = standing("A", 1, "1", "0–0", "East"), standing("B", 2, "-1", "0–0", "East")
-        new_a, new_b = replace(a, rating=Decimal("4.50")), replace(b, rating=Decimal("-2.50"))
-        games = [Game(1, "A", "B", 28, 7, Decimal(-3)), Game(1, "C", "A", 17, 14, Decimal(3))]
-        season = Season(2025, {"PRESEASON": [a, b], "W1": [new_a, new_b]}, games)
-        deltas = _football_deltas(season, games)
-        self.assertAlmostEqual(deltas[0, "A"] + deltas[1, "A"], 3.5)
-        self.assertGreater(deltas[0, "A"], deltas[1, "A"])
-        self.assertEqual(deltas[0, "B"], -1.5)
+    def test_football_uses_pregame_ranks_for_week_zero_and_later_games(self):
+        a = standing("A", 1, "10", "1-1", "East")
+        b = standing("B", 2, "5", "1-1", "East")
+        rankings = {"PRESEASON": [a, replace(b, rank=11)], "W0": [a, replace(b, rank=7)], "W1": [a, b]}
+        games = [Game(0, "A", "B", 24, 17, None, home_cors_delta=1.25),
+                 Game(1, "B", "A", 21, 10, None, away_cors_delta=-1.5)]
+        routes = {r.school: f"/cfb/teams/{r.school}/index.html" for r in (a, b)}
+        pages = dict(build_conference_pages([Season(2025, rankings, games)], routes))
+        page = html.fromstring(pages["cfb/conferences/east/2025.html"])
+        row, = page.xpath('//table[@aria-label="Conference standings"]/tbody/tr[th/a="A"]')
+        self.assertEqual(cells(row)[6:8], ["W 24–17 vs #11 B (+1.25)", "L 10–21 @ #7 B (-1.50)"])
+
+    def test_football_calendar(self):
         self.assertFalse(_postseason(2025, 14, ""))
         self.assertTrue(_postseason(2025, 15, ""))
         self.assertTrue(_postseason(2025, 19, ""))

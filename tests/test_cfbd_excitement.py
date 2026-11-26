@@ -51,3 +51,23 @@ class CollegeFootballDataEvidenceTests(unittest.TestCase):
             older=Game(3,"Home","Away",7,6,None)
             corrected,=_official_schedule(directory,2026,[older])
             self.assertEqual((corrected.home_score,corrected.away_score),(7,3))
+
+    def test_corrected_finals_and_unchanged_published_impact_are_visible(self):
+        from lxml import html
+        root=Path(__file__).resolve().parents[1]/"website/cfb"
+
+        def games(year,home,away):
+            guide=html.parse(root/f"years/{year}/excitement/index.html",parser=html.HTMLParser(encoding="utf-8"))
+            return [cells for tr in guide.xpath("//tbody/tr")
+                    if (cells:=[c.text_content().strip() for c in tr.xpath("./td")])[1:3]==[away,home]]
+
+        self.assertEqual(games(2018,"Missouri","Kentucky")[0][4],"15–14")
+        self.assertEqual(games(2018,"California","UCLA")[0][4],"37–7")
+        self.assertEqual(len(games(2004,"Florida A&M","Tennessee State")),1)
+        self.assertEqual(games(2020,"New Mexico State","Tarleton State")[0][4],"43–17")
+        self.assertEqual(games(2020,"New Mexico State","Utah Tech")[0][4],"29–36")
+        self.assertEqual(len(games(2024,"App State","Liberty")[0]),4)
+        # This contribution comes from the original ratings on both sides of the
+        # checkpoint. A later result correction in a different season cannot erase it.
+        league=html.parse(root/"conferences/acc/2013.html",parser=html.HTMLParser(encoding="utf-8"))
+        self.assertIn("Maryland (+4.79)",league.getroot().text_content())
