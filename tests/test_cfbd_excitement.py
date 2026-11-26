@@ -1,6 +1,8 @@
 """Verify the native scoring evidence independently of the public table renderer."""
 from pathlib import Path
 from tempfile import TemporaryDirectory
+import json
+import re
 import unittest
 
 from cfb.cfbd_appeal import load
@@ -10,6 +12,17 @@ from scripts.prepare_cfbd_excitement import measure
 
 
 class CollegeFootballDataEvidenceTests(unittest.TestCase):
+    def test_hosting_excludes_sealed_receipts_with_external_sports_sources(self):
+        root = Path(__file__).resolve().parents[1]
+        site = root / "website"
+        ignored = json.loads((root / "firebase.json").read_bytes())["hosting"]["ignore"]
+        receipts = [*site.glob("*.json"), *site.glob("cfb/years/*/metadata.json")]
+        for receipt in receipts:
+            hosts = re.findall(rb"https?://([\w.-]+)", receipt.read_bytes())
+            if any(host.split(b".")[-2:] not in ([b"collegefootballdata", b"com"],
+                                                  [b"collegebasketballdata", b"com"]) for host in hosts):
+                self.assertIn(receipt.relative_to(site).as_posix(), ignored)
+
     def test_measured_score_needs_all_four_verified_quarter_boundaries(self):
         game=dict(id="19",season=2024,home_team="H",away_team="A",h=7,a=3,
                   home_line_scores="[0,7,0,0]",away_line_scores="[0,0,0,3]",notes="")

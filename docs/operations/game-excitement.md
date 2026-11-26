@@ -67,6 +67,10 @@ to reconcile older and current provider team names by stable team ID. Spring
 2021 football games belong to the 2020 season. Their pregame baselines use
 the last available CORS checkpoint before kickoff.
 
+Hosting excludes the sealed historical correction receipt and the 2024–2026
+season metadata that cite school or NCAA publications. These local files
+remain available to verify the archived release.
+
 ## Build and verify basketball pages
 
 The basketball build accepts retained CollegeBasketballData responses. It
