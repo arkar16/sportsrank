@@ -8,10 +8,10 @@ import unittest
 from lxml import html
 
 from cfb.excitement import QualifiedFinal, normalize_timeline
-from cfb.reference_archive import Game, Season
+from cfb.reference_archive import Game, Season, Standing
 from cfb.excitement_pages import add_score_columns, season_guide
 from cfb.game_excitement import (
-    Forecast, GameAppeal, Matchup, flow_inputs, frozen_forecasts, read_forecasts, season_scores, site_reference,
+    Forecast, GameAppeal, Matchup, flow_inputs, frozen_forecasts, read_forecasts, score_for, season_scores, site_reference,
 )
 from cfb.reference_markup import source_bytes
 from scripts.prepare_game_drama import cumulative_quarters, scoring_states, supports_regulation
@@ -28,6 +28,29 @@ def sheet(path, title, rows):
 
 
 class ArchiveExcitementTests(unittest.TestCase):
+    def test_weekly_rematches_ties_and_missing_ranks_keep_their_own_finals(self):
+        from decimal import Decimal
+        games = [Game(2, "Chicago", "Visitor", h, a, None) for h, a in ((18, 0), (9, 0))]
+        games += [Game(2, "A", "B", n, n, None) for n in (0, 7)]
+        games.append(Game(2, "A", "Pending", None, None, None))
+        prior = Standing("A", 1, Decimal("10"), "1–0", "")
+        later = Standing("B", 1, Decimal("40"), "2–0", "")
+        with TemporaryDirectory() as tmp:
+            season = Season(1898, {"W1": [prior], "W2": [later]}, games)
+            policy = site_reference()
+            scores, ledger = season_scores(Path(tmp), season, policy)
+            self.assertEqual(len(scores), 5)
+            for g in games[:-1]:
+                score = score_for(scores, Matchup(g.week, g.home, g.away, False), (g.home_score, g.away_score))
+                self.assertEqual(score.final, (g.home_score, g.away_score))
+                self.assertEqual(score.tier, "final")
+                self.assertTrue(0 <= score.aev <= 100)
+            self.assertEqual(score_for(scores, Matchup(2, "A", "B", False), (0, 0)).aev, 83)
+            self.assertIsNone(score_for(scores, Matchup(2, "A", "Pending", False)).aev)
+            self.assertEqual({r["checkpoint"] for r in ledger["pregame_baselines_v1"]}, {"W1"})
+            del season.rankings["W2"]
+            self.assertEqual(season_scores(Path(tmp), season, policy)[0], scores)
+
     def test_early_forecasts_and_historical_quarter_estimates_use_their_own_seasons(self):
         years = Path(__file__).resolve().parents[1] / "website/cfb/years"
         early = read_forecasts(years / "1897", 1897)
@@ -121,11 +144,11 @@ class ArchiveExcitementTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "disagrees with the CORS final"):
                 season_scores(base, season, None)
 
-    def test_released_reference_scores_quarters_and_leaves_final_only_unrated(self):
+    def test_released_reference_preserves_quarter_scores_and_estimates_from_finals(self):
         base = Path(__file__).resolve().parents[1] / "website/cfb/years/2024"
         duke = Game(2, "Northwestern", "Duke", 20, 26, None, neutral_site=True)
         policy = site_reference()
-        self.assertEqual(policy.tiers, {"quarter"})
+        self.assertEqual(policy.tiers, {"quarter", "final"})
         scores, _ = season_scores(base, Season(2024, {}, [duke]), policy)
         score = scores[Matchup(2, "Northwestern", "Duke", True)]
         self.assertTrue(score.estimated)
@@ -138,7 +161,8 @@ class ArchiveExcitementTests(unittest.TestCase):
                 "schema": "espn-scoring-summary/v1", "season": 2024, "source": "test", "games": [row],
             }))
             limited, _ = season_scores(base, Season(2024, {}, [duke]), policy)
-        self.assertIsNone(limited[Matchup(*row["matchup"])].aev)
+        self.assertEqual(limited[Matchup(*row["matchup"])].tier, "final")
+        self.assertGreater(limited[Matchup(*row["matchup"])].aev, 0)
 
     def test_scoring_summary_checks_scorer_clock_event_order_and_box_score(self):
         teams = [{"linescores": [{"displayValue": str(s)} for s in vals]} for vals in ((0, 7, 0, 0), (0, 0, 0, 3))]

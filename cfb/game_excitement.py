@@ -1,16 +1,18 @@
 """Pregame evidence for the football archive's reconstructed CORS v1 forecasts."""
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from collections import Counter
+from dataclasses import asdict, dataclass, replace
 from decimal import Decimal
-from functools import lru_cache
+from functools import cached_property, lru_cache
 from hashlib import sha256
 import json
 from pathlib import Path
 from typing import NamedTuple
 
-from .excitement import SCORING_VERSION, QualifiedFinal, QualifiedPregame, TimelinePoint, calculate_bev, calculate_full_aev
+from .excitement import SCORING_VERSION, QualifiedFinal, QualifiedPregame, TimelinePoint, calculate_bev, calculate_full_aev, matchup_quality
 from .excitement_reference import ReferenceArtifact, estimate_aev, load_reference_artifact
+from .sparse_excitement import MarginPool, pregame_prior
 from .historical_rebuild import _school
 from .performance import _identity, _saved_margin
 from .reference_archive import _rows
@@ -24,6 +26,7 @@ class Matchup(NamedTuple):
     home: str
     away: str
     neutral: bool
+    rematch: tuple[int, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -87,7 +90,7 @@ def frozen_forecasts(path: Path, year: int, current: dict[Matchup, Forecast]):
         ):
             raise ValueError(f"incompatible BEV record in {path}")
         for row in ledger["games"]:
-            key = Matchup(*row["matchup"])
+            key = Matchup(*row["matchup"][:4])
             forecast = Forecast(**row["forecast"])
             if key in saved or forecast.bev() != row["bev"]:
                 raise ValueError(f"invalid frozen BEV for {year} {key}")
@@ -104,7 +107,7 @@ def frozen_forecasts(path: Path, year: int, current: dict[Matchup, Forecast]):
 
     payload = {"scoring_version": SCORING_VERSION, "season": year, "model": "CORS v1.0.0",
                "basis": "pregame rating checkpoint", "market": "no qualified excitement line",
-               "games": [{"matchup": list(key), "forecast": asdict(record), "bev": record.bev()}
+               "games": [{"matchup": list(key[:4]), "forecast": asdict(record), "bev": record.bev()}
                          for key, record in sorted(saved.items())]}
     return {key: saved[key] for key in current}, payload
 
@@ -128,20 +131,57 @@ class GameAppeal:
     tier: str | None = None
     source_game: str | None = None
     support: int | None = None
+    reference_distance: float | None = None
+    bev_basis: str | None = None
 
     @property
     def estimated(self) -> bool:
         return self.tier in ("quarter", "final") and self.aev is not None
 
 
+def score_for(scores, key, final=None):
+    return scores.get(key) or (scores.get(key._replace(rematch=tuple(final))) if final else None)
+
+
+def _prior(key, game, rankings, year):
+    from .cors_v1 import FCS_INIT_MEAN, OTHER_INIT_MEAN, FCS_MIN_YEAR
+
+    eligible = [(int(k[1:]), k) for k in rankings if k.startswith("W") and int(k[1:]) < key.week]
+    checkpoint = max(eligible)[1] if eligible else "PRESEASON"
+    rows = rankings.get(checkpoint, {})
+    other = (FCS_INIT_MEAN if year >= FCS_MIN_YEAR and
+             "fcs" in (game.home_division.lower(), game.away_division.lower()) else OTHER_INIT_MEAN)
+    prior = pregame_prior(rows.get(key.home), rows.get(key.away), field_size=len(rows) or 100,
+                          close=14, missing_rating=other)
+    return prior, checkpoint
+
+
+@lru_cache(maxsize=1)
+def _tie_pool():
+    raw = (Path(__file__).with_name("excitement_data") / "regulation-ties-v1.json").read_bytes()
+    if sha256(raw).hexdigest() != "0297f169b0e0b15e1ea89c5707818278e5b0b9cf71ea1b85e128784846a3589e":
+        raise ValueError("football regulation tie reference changed")
+    return MarginPool(json.loads(raw))
+
+
+def _sparse_final(reference, final, quality, margin, identity, overtime):
+    home, away = final
+    if home == away == 0:
+        return 80 + 3 * quality, None
+    if home == away:
+        drama, support = _tie_pool().estimate(home, identity)
+        return drama + 3 * quality, support
+    drama, support = reference.final_pools[overtime].estimate(abs(home-away), identity)
+    winner_margin = (margin if home > away else -margin) if margin is not None else 0
+    return drama + 3 * quality + 3 * min(1, max(0, -winner_margin / 14)), support
+
+
 def season_scores(directory: Path, season, reference):
     year = season.year
     ledger_path = directory / "excitement/bev-v1.json"
     forecasts, ledger = frozen_forecasts(ledger_path, year, read_forecasts(directory, year))
-    if not forecasts:
-        if ledger["games"]:
-            raise ValueError(f"no matching sources for the retained {year} BEV records")
-        return {}, ledger
+    if not forecasts and ledger["games"]:
+        raise ValueError(f"no matching sources for the retained {year} BEV records")
     evidence = {}
     source = ""
     flow_path = DATA / f"{year}.json"
@@ -151,36 +191,77 @@ def season_scores(directory: Path, season, reference):
             raise ValueError(f"incompatible AEV evidence for {year}")
         source = data["source"]
         for row in data["games"]:
-            key = Matchup(*row["matchup"])
+            key = Matchup(*row["matchup"][:4])
             if key in evidence:
                 raise ValueError(f"duplicate AEV evidence for {year} {key}")
             evidence[key] = row
-    finals = {}
+    by_key = Counter(Matchup(g.week, g.home, g.away, g.neutral_site) for g in season.games)
+    games = {}
     for game in season.games:
-        if game.home_score is not None and game.away_score is not None:
-            key = Matchup(game.week, game.home, game.away, game.neutral_site)
-            if key in finals and key in forecasts:
-                raise ValueError(f"ambiguous CORS final for {year} {key}")
-            finals[key] = (game.home_score, game.away_score)
+        key = Matchup(game.week, game.home, game.away, game.neutral_site)
+        if by_key[key] > 1:
+            if key in forecasts or key in evidence:
+                raise ValueError(f"ambiguous excitement source for {year} {key}")
+            key = key._replace(rematch=(game.home_score, game.away_score))
+        if key in games:
+            raise ValueError(f"duplicate football result identity for {year} {key}")
+        games[key] = game
+    standings = {k: {r.school: (r.rank, r.rating) for r in rows} for k, rows in season.rankings.items()}
     scores = {}
-    for key, record in forecasts.items():
-        final_score = finals.get(key)
-        scores[key] = GameAppeal(record.bev(), final_score)
-        row = evidence.get(key)
-        if final_score is None or row is None:
-            continue
-        if tuple(row["final"]) != final_score:
-            raise ValueError(f"AEV evidence disagrees with the CORS final for {year} {key}")
-        final, points = flow_inputs(row, year, source)
-        if points:
-            result = calculate_full_aev(record.pregame(), final, points)
-        elif reference and ("quarter" if final.quarter_scores and final.home_score != final.away_score else "final") in reference.tiers:
-            result = estimate_aev(record.pregame(), final, reference.artifact,
-                                  qualification_reasons=(row["reduced_because"],))
+    baselines = []
+    for key in dict.fromkeys((*games, *forecasts)):
+        game = games.get(key)
+        final_score = ((game.home_score, game.away_score) if game and
+                       game.home_score is not None and game.away_score is not None else None)
+        record = forecasts.get(key)
+        if record:
+            bev, basis = record.bev(), None
+            pre = record.pregame()
+            quality = matchup_quality(pre.home_rank, pre.away_rank)
+            margin = pre.cors_home_margin
         else:
+            prior, cutoff = _prior(key, game, standings, year)
+            bev, quality, margin = f"{prior.bev:.1f}", prior.quality, None
+            basis = "Pregame baseline"
+            baselines.append({"matchup": list(key[:4]), "checkpoint": cutoff, "bev": bev})
+            pre = None
+        score = GameAppeal(bev, final_score, bev_basis=basis)
+        scores[key] = score
+        if final_score is None:
             continue
-        scores[key] = GameAppeal(record.bev(), final_score, result.value, result.evidence.evidence_tier,
-                                 final.game_id, result.evidence.reference_support)
+        row = evidence.get(key)
+        game_id = row["game_id"] if row else None
+        if row:
+            if tuple(row["final"]) != final_score:
+                raise ValueError(f"AEV evidence disagrees with the CORS final for {year} {key}")
+            final, points = flow_inputs(row, year, source)
+            if points or (reference and final.quarter_scores and final.home_score != final.away_score
+                          and "quarter" in reference.tiers):
+                # The scoring core exposes its quality component. Replace it with the
+                # expectation when the checkpoint has no qualified pair of ranks.
+                inputs = pre or QualifiedPregame(1, 1, None, "baseline", "pregame")
+                result = (calculate_full_aev(inputs, final, points) if points else
+                          estimate_aev(inputs, final, reference.artifact,
+                                       qualification_reasons=(row["reduced_because"],)))
+                value = result.value if pre else result.value + 3 * (quality - result.components.quality)
+                scores[key] = replace(score, aev=value, tier=result.evidence.evidence_tier,
+                                      source_game=game_id, support=result.evidence.reference_support)
+                continue
+        if reference and "final" in reference.tiers:
+            value, support = _sparse_final(reference, final_score, quality, margin, game_id,
+                                           row["overtime"] if row else None)
+            scores[key] = replace(score, aev=value, tier="final", source_game=game_id, support=support)
+    if baselines:
+        # One pregame score per matchup at its checkpoint, including same-week rematches.
+        current = {tuple(r["matchup"]): r for r in baselines}
+        if ledger_path.exists():
+            old = json.loads(ledger_path.read_bytes()).get("pregame_baselines_v1", [])
+            for r in old:
+                key = tuple(r["matchup"])
+                # A change to a recorded pregame input needs an explicit corrected version.
+                if key in current and current[key] != r:
+                    raise ValueError(f"changed frozen football pregame baseline for {year} {key}")
+        ledger["pregame_baselines_v1"] = [current[k] for k in sorted(current)]
     return scores, ledger
 
 
@@ -188,6 +269,15 @@ def season_scores(directory: Path, season, reference):
 class EstimatePolicy:
     artifact: ReferenceArtifact
     tiers: frozenset[str]
+
+    @cached_property
+    def final_pools(self):
+        return {
+            ot: MarginPool((r.game_id, r.absolute_final_margin,
+                            r.mixed_target if ot is None else r.drama_target + 2 * ot)
+                           for r in self.artifact.games if ot is None or r.overtime == ot)
+            for ot in (None, False, True)
+        }
 
 
 @lru_cache(maxsize=1)

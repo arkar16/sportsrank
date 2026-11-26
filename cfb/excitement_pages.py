@@ -6,7 +6,7 @@ from pathlib import Path
 import re
 
 from .archive_markup import ui
-from .game_excitement import GameAppeal, Matchup
+from .game_excitement import GameAppeal, Matchup, score_for
 from .historical_rebuild import _school
 from .reference_archive import _rows, _score
 from .reference_markup import school_label
@@ -19,10 +19,19 @@ _METHOD = "https://github.com/arkar16/sportsrank/blob/main/docs/plans/2026-game-
 ESTIMATE_NOTE = "* AEV estimated from the available scoring totals and comparable games."
 
 
-def aev_label(score: GameAppeal | None):
+def aev_label(score: GameAppeal | None, *, plain=False):
     if score is None or score.aev is None:
         return "&mdash;"
-    return f"{score.aev:.1f}" + ("*" if score.estimated else "")
+    basis = {"full": "Play-by-play", "quarter": "Quarter scores", "halftime": "Halftime score",
+             "final": "Final score only"}[score.tier]
+    number = f'{score.aev:.1f}{"*" if score.estimated else ""}'
+    return f"{number} · {basis}" if plain else f"{number}<small> · {basis}</small>"
+
+
+def bev_label(score):
+    if not score:
+        return "&mdash;"
+    return score.bev + (f"<small> · {score.bev_basis}</small>" if score.bev_basis else "")
 
 
 def add_score_columns(markup: bytes, directory: Path, path: Path, scores, year: int) -> bytes:
@@ -58,12 +67,12 @@ def add_score_columns(markup: bytes, directory: Path, path: Path, scores, year: 
         if not {week, home, away, neutral} <= row.keys():
             return markup  # A preserved legacy report with a different schema.
         key = Matchup(int(row[week]), _school(row[home]), _school(row[away]), row[neutral].lower() == "true")
-        score = scores.get(key)
-        extra = f'<td class="num">{score.bev if score else "&mdash;"}</td>'
+        hs, aws = ("Home score", "Away score") if report else ("home_score", "away_score")
+        observed = tuple(_score(None if row.get(field) in ("—", "Pending") else row.get(field))
+                         for field in (hs, aws))
+        score = score_for(scores, key, observed)
+        extra = f'<td class="num">{bev_label(score)}</td>'
         if not forecast:
-            hs, aws = ("Home score", "Away score") if report else ("home_score", "away_score")
-            observed = tuple(_score(None if row.get(field) in ("—", "Pending") else row.get(field))
-                             for field in (hs, aws))
             has_final = None not in observed
             if score and score.aev is not None and has_final and observed != score.final:
                 raise ValueError(f"AEV differs from the displayed game's final in {path}")
@@ -96,7 +105,7 @@ def season_guide(year, scores, routes):
             kind = "spread" if pending else "results"
             week = f"../{folder}/{year}_W{key.week}_FBS_{kind}.html"
             cells = (f'<td><a href="{week}">{key.week}</a></td><td>{school_label(key.away, routes)}</td>'
-                     f'<td>{school_label(key.home, routes)}</td><td class="num">{score.bev}</td>')
+                     f'<td>{school_label(key.home, routes)}</td><td class="num">{bev_label(score)}</td>')
             if not pending:
                 hs, aws = score.final
                 source = (f'<a href="https://www.espn.com/college-football/game/_/gameId/{escape(score.source_game)}">'
@@ -120,8 +129,8 @@ def season_guide(year, scores, routes):
 <p>Before Excitement Value (BEV) rates a matchup from its pregame CORS ranks and predicted margin.
 After Excitement Value (AEV) rates how long the score stayed close, lead changes, comebacks and overtime.
 Both run from 0 to 100.</p>
-<p>{estimated_note}A dash means the evidence is insufficient.</p>
+<p>{estimated_note}A final-score estimate uses comparable games with the same or a nearby margin. A pregame baseline uses only information available before kickoff.</p>
 {table(pending, True)}{table(completed, False)}
 <p>BEV uses the preceding CORS v1.0.0 checkpoint, including for reconstructed historical forecasts.
-These scores use no market bonus. <a href="bev-v1.json">Pregame inputs</a> · <a href="{_METHOD}">Scoring method</a></p>
+A missing team rating uses a pregame baseline. These scores use no market bonus. <a href="bev-v1.json">Pregame inputs</a> · <a href="{_METHOD}">Scoring method</a></p>
 </main></body></html>"""

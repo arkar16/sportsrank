@@ -132,7 +132,7 @@ def _document(game: Spread) -> str:
         if game.aev:
             metrics.append(f"Game drama (AEV) <strong>{escape(game.aev)}</strong>")
         appeal = '<p class="game-excitement">' + " · ".join(metrics) + "</p>"
-        if game.aev and game.aev.endswith("*"):
+        if game.aev and "*" in game.aev:
             appeal += f"<p>{ESTIMATE_NOTE}</p>"
     teams = []
     for team in (game.away, game.home):
@@ -236,7 +236,7 @@ def football_links(raw: bytes, path: Path, directory: Path, season: Season, *, e
         return Spread("cfb", f"{year}/week-{week[1:]}", f"{year} · Week {week[1:]}", source,
                       home, away, neutral, margin,
                       conference.play.get(("", home.name, away.name), "Play type unavailable"),
-                      score.bev if score else None, unescape(aev_label(score)) if score and score.final else None)
+                      score.bev if score else None, unescape(aev_label(score, plain=True)) if score and score.final else None)
 
     try:
         markup = raw.decode("utf-8")

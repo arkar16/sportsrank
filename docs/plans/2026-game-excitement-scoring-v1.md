@@ -267,3 +267,26 @@ pregame eligibility. Apply the accepted missing-market rules when it cannot.
 Do not imply that such a reconstruction
 was published before kickoff. This policy is for excitement and does not
 silently select ADR-0019's forecast-evaluation benchmark.
+
+
+## Games with incomplete pregame information or only a final
+
+Where a qualified pregame spread exists, keep its frozen BEV. Otherwise show
+“Pregame baseline”. Use the available pregame team ratings. Integrate a
+missing rank uniformly over the pregame field, and average predicted closeness
+over the rating prior and values one close-game margin on either side of it.
+A qualified football lower-division classification selects that population's
+CORS prior. The fallback awards zero upset bonus without a pregame spread.
+
+The “Final score only” estimate averages the drama of reference games nearest
+in absolute final margin. Include all ties at the 50th neighbour, omit the
+target game, and use verified overtime when known. With unknown overtime the
+reference averages the overtime contribution across comparable games. Mean
+absolute error is the average distance to the play-by-play AEV, in points on
+the same 0–100 scale.
+
+A 0–0 football final determines the regulation score path throughout. For
+other football ties, use verified games tied after regulation, remove overtime,
+and match on the tied score. The tied score alone has little power to order
+those games. Labels distinguish measured play-by-play, period-score estimates
+and final-only estimates on the same scale.

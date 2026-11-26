@@ -50,6 +50,17 @@ at most 5 points, absolute signed bias at most 2 points and Spearman rank
 correlation at least 0.90. The [delivery issue](https://github.com/arkar16/sportsrank/issues/179)
 records the confirmation and coverage.
 
+## Coverage of the API game archive
+
+On 2026-11-26 the owner requested a BEV and AEV for every historical football
+and men's basketball game with a verified final, and limited the public site to
+sports data originating in an API. A scheduled game gets BEV. AEV follows a
+verified final. A numeric score carries its evidence label wherever it appears.
+A prior-season aggregate or an inferred scoreline cannot establish that two
+schools played. Retain an early basketball season when its API supplies
+individual games. See the [scoring rules](../plans/2026-game-excitement-scoring-v1.md)
+and [football delivery](https://github.com/arkar16/sportsrank/issues/182).
+
 ## Delivery prerequisites
 
 - Inspect the API's actual provider coverage before finalizing the excitement
