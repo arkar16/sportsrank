@@ -16,7 +16,8 @@ from spread_preview import refresh_retained_previews
 from .football_impact import attach_football_impacts
 from .conference_pages import CONFERENCE_HONORS, build_conference_pages, conference_honors_route, conference_route
 from .excitement_pages import add_score_columns, season_guide
-from .game_excitement import season_scores, site_reference
+from .game_excitement import ranking_version, season_scores, site_reference
+from .cors_v1 import MODEL_VERSION, load_site_seasons, replay_seasons
 from .early_excitement import build_guides, early_seasons
 from .history_sheets import render_history_sheet
 from .program_marks import program_logo_paths
@@ -308,6 +309,9 @@ def build(site: Path, *, replays=None) -> tuple[int, int, int]:
     seasons = read_archive(site)
     if not seasons:
         raise ValueError(f"no college football rankings at {site}")
+    if replays is None and ranking_version(site / f"cfb/years/{seasons[-1].year}", seasons[-1].year) == MODEL_VERSION:
+        # Reproduce the ranked schedule. The game guide also lists supplementary fixtures.
+        replays, _ = replay_seasons(load_site_seasons(site))
     attach_football_impacts(seasons, replays)
     honors = _honors_pages(site, seasons)
     routes = program_routes(seasons)

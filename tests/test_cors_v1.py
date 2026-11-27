@@ -1,4 +1,4 @@
-"""Tests for college football CORS v1.0.0 (kalman-2scale + Other)."""
+"""Tests for the college football CORS replay and reader-facing archive."""
 from __future__ import annotations
 
 from dataclasses import replace
@@ -11,7 +11,9 @@ from bs4 import BeautifulSoup
 
 from cfb.cors_v1 import (
     MODEL_VERSION,
+    UNCAPPED_VERSION,
     CompletedGame,
+    KalmanState,
     ScheduledGame,
     SeasonInput,
     rebuild_site,
@@ -55,6 +57,46 @@ def _sample_seasons() -> list[SeasonInput]:
 
 
 class CorsV1Tests(unittest.TestCase):
+    def test_fcs_ceiling_fixes_team_credit_while_the_shared_tier_uses_the_full_week(self):
+        members = (("Wolfpack", "A"), ("Cardinals", "A"), ("Bears", "B"))
+        peer = CompletedGame(1, "Cardinals", "fbs", 24, "Bears", "fbs", 16, False)
+        for fbs_home, neutral, fcs_rating, ceiling in (
+            (True, False, -26, 36), (False, False, -26, 35),
+            (True, True, -26, 35), (False, False, -45, 49),
+        ):
+            with self.subTest(home=fbs_home, neutral=neutral, ceiling=ceiling):
+                def fit(points, version):
+                    game = (CompletedGame(1, "Wolfpack", "fbs", points, "Spiders", "fcs", 0, neutral)
+                            if fbs_home else CompletedGame(1, "Spiders", "fcs", 0, "Wolfpack", "fbs", points, neutral))
+                    season = SeasonInput(2026, members, (game, peer))
+                    replay, _ = replay_seasons([season], model_version=version, state=KalmanState(fcs_mean=fcs_rating))
+                    return replay[0], replay[0].game_impacts[game]["Wolfpack"]
+
+                at_ceiling, credit = fit(ceiling, MODEL_VERSION)
+                blowout, extra_credit = fit(ceiling + 25, MODEL_VERSION)
+                raw, _ = fit(ceiling + 25, UNCAPPED_VERSION)
+                self.assertLess(fit(ceiling - 1, MODEL_VERSION)[1], credit)
+                self.assertEqual(credit, extra_credit)
+                self.assertEqual([r["cors"] for r in at_ceiling.final_ranking],
+                                 [r["cors"] for r in blowout.final_ranking])
+                self.assertAlmostEqual(blowout.fcs_rating_end, raw.fcs_rating_end)
+                self.assertNotAlmostEqual(at_ceiling.fcs_rating_end, blowout.fcs_rating_end)
+
+    def test_uncapped_observations_include_upsets_underdogs_ties_and_historical_other(self):
+        members = (("Wolfpack", "A"), ("Cardinals", "A"))
+        for year, opponent_division, fbs_score, away_score, fcs_rating in (
+            (2026, "fcs", 10, 20, -26), (2026, "fcs", 14, 14, -26),
+            (2026, "fcs", 17, 14, -26), (2026, "fcs", 70, 0, 4),
+            (2002, "fcs", 73, 0, -26), (2026, "other", 73, 0, -26),
+            (2026, "fbs", 73, 0, -26),
+        ):
+            with self.subTest(year=year, division=opponent_division, score=fbs_score, tier=fcs_rating):
+                game = CompletedGame(1, "Wolfpack", "fbs", fbs_score, "Cardinals", opponent_division, away_score, False)
+                season = SeasonInput(year, members, (game,))
+                old = replay_seasons([season], state=KalmanState(fcs_mean=fcs_rating), model_version=UNCAPPED_VERSION)
+                new = replay_seasons([season], state=KalmanState(fcs_mean=fcs_rating))
+                self.assertEqual(old, new)
+
     def test_individual_impacts_match_first_postgame_rating_with_result_removed(self):
         season = _sample_seasons()[0]
         fcs_home = CompletedGame(1, "FCS State", "fcs", 17, "Beta", "fbs", 31, False)
@@ -226,7 +268,7 @@ class CorsV1Tests(unittest.TestCase):
         home = BeautifulSoup((site / "index.html").read_bytes(), "html.parser")
         self.assertIsNotNone(home.find("a", string="Week 3 forecasts"))
         season25 = (site / "cfb/years/2025/2025_CFB.html").read_text(encoding="utf-8")
-        self.assertIn("CORS v1.0.0", season25)
+        self.assertIn(f"CORS {MODEL_VERSION}", season25)
         self.assertNotIn("CORS v0.4.0", season25)
         self.assertTrue((site / "cfb/years/2025/spread/2025_W3_FBS_spread.html").is_file())
         self.assertTrue((site / "cfb/conferences/east/2025.html").is_file())

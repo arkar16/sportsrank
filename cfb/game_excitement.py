@@ -12,6 +12,7 @@ from typing import NamedTuple
 from .excitement import SCORING_VERSION, QualifiedFinal, QualifiedPregame, TimelinePoint, calculate_bev, matchup_quality
 from .cfbd_appeal import fingerprint, load as site_reference  # Public record-book entry point.
 from .sparse_excitement import pregame_prior
+from .cors_v1 import MODEL_VERSION, UNCAPPED_VERSION
 from .historical_rebuild import _school
 from .performance import _identity, _saved_margin
 from .reference_archive import _rows
@@ -36,6 +37,7 @@ class Forecast:
     home_margin: str
     forecast_sha256: str
     ranking_sha256: str
+    model_version: str = UNCAPPED_VERSION
 
     def pregame(self) -> QualifiedPregame:
         return QualifiedPregame(self.home_rank, self.away_rank, float(self.home_margin),
@@ -45,12 +47,21 @@ class Forecast:
         return f"{calculate_bev(self.pregame()).value:.1f}"
 
 
+def ranking_version(directory: Path, year: int) -> str:
+    path = directory / "rankings" / f"{year}_PRESEASON_FBS_cors.html"
+    if path.exists() and f"CORS {MODEL_VERSION} rankings".encode() in source_bytes(path.read_bytes()):
+        return MODEL_VERSION
+    return UNCAPPED_VERSION
+
+
 def read_forecasts(directory: Path, year: int) -> dict[Matchup, Forecast]:
     """Join the retained spread to the preceding checkpoint, independent of results."""
     forecasts = {}
     for path in sorted((directory / "spread").glob(f"{year}_W*_FBS_spread.html")):
         raw = source_bytes(path.read_bytes())
-        if b"CORS v1.0.0 spreads" not in raw:
+        version = next((v for v in (MODEL_VERSION, UNCAPPED_VERSION)
+                        if f"CORS {v} spreads".encode() in raw), None)
+        if version is None:
             continue
         week = int(path.name.split("_")[1][1:])
         checkpoint = f"W{week - 1}" if week else "PRESEASON"
@@ -58,7 +69,7 @@ def read_forecasts(directory: Path, year: int) -> dict[Matchup, Forecast]:
         if not ranking.is_file():
             continue
         ranking_bytes = source_bytes(ranking.read_bytes())
-        if f"{year} {checkpoint} CORS v1.0.0 rankings".encode() not in ranking_bytes:
+        if f"{year} {checkpoint} CORS {version} rankings".encode() not in ranking_bytes:
             continue
         standings = {_school(row["school"]): (int(row["rank"]), Decimal(row["cors"])) for row in _rows(ranking)}
         ranking_id = sha256(ranking_bytes).hexdigest()
@@ -75,28 +86,37 @@ def read_forecasts(directory: Path, year: int) -> dict[Matchup, Forecast]:
                 if (hc, ac) != (Decimal(row["home_cors"]), Decimal(row["away_cors"])):
                     raise ValueError(f"spread and pregame ratings disagree for {year} {key}")
                 forecasts[key] = Forecast(checkpoint, hr, ar, str(margin),
-                                          forecast_id, ranking_id)
+                                          forecast_id, ranking_id, version)
     return forecasts
 
 
-def frozen_forecasts(path: Path, year: int, current: dict[Matchup, Forecast]):
+def frozen_forecasts(path: Path, year: int, current: dict[Matchup, Forecast], *,
+                     version=UNCAPPED_VERSION, fixtures=()):
     """Preserve the first captured inputs and score; reject silent corrections."""
     saved = {}
+    ledger = {}
+    first_version = version
     if path.exists():
         ledger = json.loads(path.read_bytes())
-        if (ledger["scoring_version"], ledger["season"], ledger["model"]) != (
-            SCORING_VERSION, year, "CORS v1.0.0"
-        ):
+        first_version = ledger["model"].removeprefix("CORS ")
+        if ((ledger["scoring_version"], ledger["season"]) != (SCORING_VERSION, year)
+                or ledger["model"] not in (f"CORS {UNCAPPED_VERSION}", f"CORS {MODEL_VERSION}")):
             raise ValueError(f"incompatible BEV record in {path}")
         for row in ledger["games"]:
             key = Matchup(*row["matchup"][:4])
-            forecast = Forecast(**row["forecast"])
+            forecast = Forecast(**{"model_version": first_version, **row["forecast"]})
             if key in saved or forecast.bev() != row["bev"]:
                 raise ValueError(f"invalid frozen BEV for {year} {key}")
             saved[key] = forecast
 
+    baselines = {tuple(row["matchup"]): row for row in ledger.get("pregame_baselines_v1", [])}
     for key, forecast in current.items():
+        previous = baselines.get(tuple(key[:4]))
+        if previous and previous.get("model_version", first_version) != forecast.model_version:
+            continue  # A newer reconstruction cannot upgrade an already issued baseline.
         existing = saved.setdefault(key, forecast)
+        if existing.model_version != forecast.model_version:
+            continue
         # Formatting and timestamps can change in a regenerated source page.
         # If the *inputs* change, the original needs an explicit correction.
         if (existing.checkpoint, existing.home_rank, existing.away_rank, float(existing.home_margin)) != (
@@ -104,11 +124,20 @@ def frozen_forecasts(path: Path, year: int, current: dict[Matchup, Forecast]):
         ):
             raise ValueError(f"pregame inputs differ from the frozen BEV for {year} {key}")
 
-    payload = {"scoring_version": SCORING_VERSION, "season": year, "model": "CORS v1.0.0",
+    def serialize(record):
+        row = asdict(record)
+        if record.model_version == first_version:
+            del row["model_version"]
+        return row
+
+    payload = {"scoring_version": SCORING_VERSION, "season": year, "model": f"CORS {first_version}",
                "basis": "pregame rating checkpoint", "market": "no qualified excitement line",
-               "games": [{"matchup": list(key[:4]), "forecast": asdict(record), "bev": record.bev()}
+               "games": [{"matchup": list(key[:4]), "forecast": serialize(record), "bev": record.bev()}
                          for key, record in sorted(saved.items())]}
-    return {key: saved[key] for key in current}, payload
+    if baselines:
+        payload["pregame_baselines_v1"] = list(baselines.values())
+    return {key: record for key, record in saved.items()
+            if key in current or (key in fixtures and record.model_version != version)}, payload
 
 
 def flow_inputs(row: dict, year: int, source: str):
@@ -160,6 +189,31 @@ def _prior(key, game, rankings, year):
     return prior, checkpoint
 
 
+def retain_baseline_quality(directory, year):
+    """Complete the v1.0 pregame records before their source rankings are replaced."""
+    path = directory / "excitement/bev-v1.json"
+    if not path.is_file():
+        return
+    ledger = json.loads(path.read_bytes())
+    missing = [r for r in ledger.get("pregame_baselines_v1", []) if "quality" not in r]
+    if not missing:
+        return
+    if ranking_version(directory, year) != UNCAPPED_VERSION:
+        raise ValueError(f"missing original CORS rankings for {year} excitement baselines")
+    standings = {}
+    for row in missing:
+        checkpoint = row["checkpoint"]
+        if checkpoint not in standings:
+            source = directory / "rankings" / f"{year}_{checkpoint}_FBS_cors.html"
+            standings[checkpoint] = {_school(r["school"]): (int(r["rank"]), Decimal(r["cors"]))
+                                     for r in _rows(source)}
+        teams = standings[checkpoint]
+        _, home, away, _ = row["matchup"]
+        prior = pregame_prior(teams.get(home), teams.get(away), field_size=len(teams) or 100, close=14)
+        row["quality"] = prior.quality
+    path.write_text(json.dumps(ledger, separators=(",", ":")) + "\n", encoding="utf-8")
+
+
 def _sparse_final(reference, final, quality, margin, identity, overtime):
     home, away = final
     if home == away == 0:
@@ -175,11 +229,15 @@ def _sparse_final(reference, final, quality, margin, identity, overtime):
 def season_scores(directory: Path, season, reference):
     year = season.year
     ledger_path = directory / "excitement/bev-v1.json"
-    forecasts, ledger = frozen_forecasts(ledger_path, year, read_forecasts(directory, year))
+    version = ranking_version(directory, year)
+    by_key = Counter(Matchup(g.week, g.home, g.away, g.neutral_site) for g in season.games)
+    forecasts, ledger = frozen_forecasts(ledger_path, year, read_forecasts(directory, year),
+                                         version=version, fixtures=by_key)
+    first_version = ledger["model"].removeprefix("CORS ")
+    baselines = {tuple(r["matchup"]): r for r in ledger.get("pregame_baselines_v1", [])}
     if not forecasts and ledger["games"]:
         raise ValueError(f"no matching sources for the retained {year} BEV records")
     evidence = reference.season(year) if reference else {}
-    by_key = Counter(Matchup(g.week, g.home, g.away, g.neutral_site) for g in season.games)
     games = {}
     for game in season.games:
         key = Matchup(game.week, game.home, game.away, game.neutral_site)
@@ -192,7 +250,6 @@ def season_scores(directory: Path, season, reference):
         games[key] = game
     standings = {k: {r.school: (r.rank, r.rating) for r in rows} for k, rows in season.rankings.items()}
     scores = {}
-    baselines = []
     for key in dict.fromkeys((*games, *forecasts)):
         game = games.get(key)
         final_score = ((game.home_score, game.away_score) if game and
@@ -204,10 +261,21 @@ def season_scores(directory: Path, season, reference):
             quality = matchup_quality(pre.home_rank, pre.away_rank)
             margin = pre.cors_home_margin
         else:
-            prior, cutoff = _prior(key, game, standings, year)
-            bev, quality, margin = f"{prior.bev:.1f}", prior.quality, None
+            identity = tuple(key[:4])
+            previous = baselines.get(identity)
+            if previous and previous.get("model_version", first_version) != version:
+                bev, quality = previous["bev"], previous["quality"]
+            else:
+                prior, cutoff = _prior(key, game, standings, year)
+                bev, quality = f"{prior.bev:.1f}", prior.quality
+                row = {"matchup": list(identity), "checkpoint": cutoff, "bev": bev, "quality": quality}
+                if version != first_version:
+                    row["model_version"] = version
+                if previous and {k: row.get(k) for k in previous} != previous:
+                    raise ValueError(f"changed frozen football pregame baseline for {year} {identity}")
+                baselines[identity] = row
+            margin = None
             basis = "Pregame baseline"
-            baselines.append({"matchup": list(key[:4]), "checkpoint": cutoff, "bev": bev})
             pre = None
         score = GameAppeal(bev, final_score, bev_basis=basis)
         scores[key] = score
@@ -224,14 +292,5 @@ def season_scores(directory: Path, season, reference):
             value, support = _sparse_final(reference, final_score, quality, margin, gid, overtime)
             scores[key] = replace(score, aev=value, tier="final", source_game=gid, support=support)
     if baselines:
-        # One pregame score per matchup at its checkpoint, including same-week rematches.
-        current = {tuple(r["matchup"]): r for r in baselines}
-        if ledger_path.exists():
-            old = json.loads(ledger_path.read_bytes()).get("pregame_baselines_v1", [])
-            for r in old:
-                key = tuple(r["matchup"])
-                # A change to a recorded pregame input needs an explicit corrected version.
-                if key in current and current[key] != r:
-                    raise ValueError(f"changed frozen football pregame baseline for {year} {key}")
-        ledger["pregame_baselines_v1"] = [current[k] for k in sorted(current)]
+        ledger["pregame_baselines_v1"] = [baselines[k] for k in sorted(baselines)]
     return scores, ledger

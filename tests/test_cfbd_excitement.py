@@ -65,7 +65,7 @@ class CollegeFootballDataEvidenceTests(unittest.TestCase):
             corrected,=_official_schedule(directory,2026,[older])
             self.assertEqual((corrected.home_score,corrected.away_score),(7,3))
 
-    def test_corrected_finals_and_unchanged_published_impact_are_visible(self):
+    def test_corrected_finals_and_replayed_conference_impact_are_visible(self):
         from lxml import html
         root=Path(__file__).resolve().parents[1]/"website/cfb"
 
@@ -80,7 +80,9 @@ class CollegeFootballDataEvidenceTests(unittest.TestCase):
         self.assertEqual(games(2020,"New Mexico State","Tarleton State")[0][4],"43–17")
         self.assertEqual(games(2020,"New Mexico State","Utah Tech")[0][4],"29–36")
         self.assertEqual(len(games(2024,"App State","Liberty")[0]),4)
-        # This contribution comes from the original ratings on both sides of the
-        # checkpoint. A later result correction in a different season cannot erase it.
+        # This game is Florida State's largest positive win contribution in the
+        # v1.1.0 replay, including the retained score corrections above.
         league=html.parse(root/"conferences/acc/2013.html",parser=html.HTMLParser(encoding="utf-8"))
-        self.assertIn("Maryland (+4.79)",league.getroot().text_content())
+        state = league.xpath("//tr[./th[normalize-space(.)='Florida State'] or ./td[2][normalize-space(.)='Florida State']]")
+        self.assertEqual(len(state), 1)
+        self.assertEqual(state[0].xpath("./td|./th")[6].text_content().strip(), "W 62–7 vs #77 Nevada (+4.84)")

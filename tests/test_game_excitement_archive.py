@@ -12,7 +12,8 @@ from cfb.excitement import QualifiedFinal, normalize_timeline
 from cfb.reference_archive import Game, Season, Standing
 from cfb.excitement_pages import add_score_columns, season_guide
 from cfb.game_excitement import (
-    Forecast, GameAppeal, Matchup, flow_inputs, frozen_forecasts, read_forecasts, score_for, season_scores, site_reference,
+    Forecast, GameAppeal, Matchup, flow_inputs, frozen_forecasts, read_forecasts, retain_baseline_quality,
+    score_for, season_scores, site_reference,
 )
 from cfb.reference_markup import source_bytes
 from scripts.prepare_game_drama import cumulative_quarters, scoring_states, supports_regulation
@@ -87,6 +88,48 @@ class ArchiveExcitementTests(unittest.TestCase):
                 frozen_forecasts(path, 2026, read_forecasts(base, 2026))
             pre.unlink()
             self.assertEqual(read_forecasts(base, 2026), {})  # FINAL never fills a missing checkpoint.
+
+    def test_model_transition_retains_original_forecasts_and_baselines_and_admits_new_games(self):
+        from decimal import Decimal
+        year = 2026
+        with TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            game = Game(0, "H", "A", 21, 7, None)
+            baseline = Game(0, "H", "Spiders", 70, 0, None, home_division="fbs", away_division="fcs")
+            season = Season(year, {}, [game, baseline])
+            def edition(version, values, fixtures):
+                pre = [dict(school=team, rank=i, cors=rating) for i, (team, rating) in enumerate(values, 1)]
+                ranks = {r["school"]: r["cors"] for r in pre}
+                season.rankings = {"PRESEASON": [Standing(r["school"], r["rank"], Decimal(r["cors"]), "0–0", "") for r in pre]}
+                sheet(base / "rankings/2026_PRESEASON_FBS_cors.html", f"2026 PRESEASON CORS {version} rankings", pre)
+                sheet(base / "spread/2026_W0_FBS_spread.html", f"2026 W0 CORS {version} spreads",
+                      [dict(week=0, home_team=h, away_team=a, neutral_site="False", home_cors=ranks[h],
+                            away_cors=ranks[a], home_margin=ranks[h]-ranks[a], spread=f"{h} {ranks[a]-ranks[h]:+d}")
+                       for h, a in fixtures])
+
+            edition("v1.0.0", [("H", 15), ("A", 4)], [("H", "A")])
+            old_scores, ledger = season_scores(base, season, site_reference())
+            del ledger["pregame_baselines_v1"][0]["quality"]  # First-release ledger format.
+            path = base / "excitement/bev-v1.json"
+            path.parent.mkdir()
+            path.write_text(json.dumps(ledger))
+            retain_baseline_quality(base, year)
+            old_games = ledger["games"].copy()
+
+            season.games.append(Game(0, "B", "H", None, None, None))
+            edition("v1.1.0", [("B", 22), ("A", 3), ("H", 1)], [("H", "A"), ("B", "H")])
+            new_scores, revised = season_scores(base, season, site_reference())
+            for key, score in old_scores.items():
+                self.assertEqual(new_scores[key], score)
+            self.assertEqual(revised["games"][1], old_games[0])
+            self.assertEqual(revised["games"][0]["forecast"]["model_version"], "v1.1.0")
+            self.assertEqual(new_scores[Matchup(0, "B", "H", False)].bev, revised["games"][0]["bev"])
+            self.assertIsNone(new_scores[Matchup(0, "B", "H", False)].aev)
+            path.write_text(json.dumps(revised))
+            self.assertEqual(season_scores(base, season, site_reference()), (new_scores, revised))
+            edition("v1.1.0", [("B", 23), ("A", 3), ("H", 1)], [("H", "A"), ("B", "H")])
+            with self.assertRaisesRegex(ValueError, "frozen BEV"):
+                season_scores(base, season, site_reference())
 
     def test_score_sheet_preserves_original_and_marks_estimates_and_missing_inputs(self):
         with TemporaryDirectory() as tmp:
