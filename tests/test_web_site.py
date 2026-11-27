@@ -118,6 +118,21 @@ def _build_fixture_site(root: Path) -> None:
         ["week", "home_team", "away_team", "home_score", "away_score", "neutral_site"],
         [["1", "Alabama", "Oregon", "31", "20", "False"]],
     )
+    _write_table_html(
+        y26 / "data/slate/weekly_slate/2026_W2_FBS_slate.html",
+        ["week", "home_team", "away_team", "neutral_site"],
+        [["2", "Alabama", "Oregon", "False"]],
+    )
+    _write_table_html(
+        y26 / "spread/2026_W2_FBS_spread.html",
+        ["week", "home_team", "away_team", "neutral_site", "spread", "home_margin", "home_handicap"],
+        [["2", "Alabama", "Oregon", "False", "Alabama -17.76", "17.76", "-17.76"]],
+    )
+    (root / "cfb/picks/2026/week-2").mkdir(parents=True, exist_ok=True)
+    (root / "cfb/picks/2026/week-2/oregon-at-alabama.html").write_text(
+        '<!doctype html><html><body><header class="masthead"></header><main><h1>Oregon @ Alabama</h1></main></body></html>',
+        encoding="utf-8",
+    )
 
     # CBB dated edition
     ed_dir = root / "cbb/editions"
@@ -250,6 +265,38 @@ class WebSiteTests(unittest.TestCase):
         code, _, body = _wsgi_call(self.app, "/cfb/history/last-place")
         self.assertEqual(code, 200)
         self.assertIn("Alabama", body.decode("utf-8"))
+
+    def test_team_schedule_win_chance_projected_record_and_links(self):
+        # Active 2026 Alabama (1-0) with upcoming Week 2 home game favored by 17.76 -> 89% win chance, 1.9-0.1 projected
+        code, _, body = _wsgi_call(self.app, "/cfb/teams/alabama/2026")
+        self.assertEqual(code, 200)
+        html = body.decode("utf-8")
+        self.assertIn("Win chance", html)
+        self.assertIn("89%", html)
+        self.assertIn('id="remaining-schedule"', html)
+        self.assertIn('id="projected-season-record">Projected season record <strong>1.9–0.1</strong>', html)
+
+        # Opponent Oregon (1-0) has 11% win chance -> 1.1-0.9 projected
+        code, _, body = _wsgi_call(self.app, "/cfb/teams/oregon/2026")
+        self.assertEqual(code, 200)
+        html = body.decode("utf-8")
+        self.assertIn("11%", html)
+        self.assertIn('id="projected-season-record">Projected season record <strong>1.1–0.9</strong>', html)
+
+        # Program history links best rank to checkpoint and conference to clean conference page
+        code, _, body = _wsgi_call(self.app, "/cfb/teams/alabama")
+        self.assertEqual(code, 200)
+        hist = body.decode("utf-8")
+        self.assertIn('href="/cfb/2025/preseason"', hist)
+        self.assertIn('href="/cfb/conferences/sec/2025"', hist)
+
+        # Weekly spreads include win chance and shareable pick card link
+        code, _, body = _wsgi_call(self.app, "/cfb/2026/w2/spreads")
+        self.assertEqual(code, 200)
+        sp = body.decode("utf-8")
+        self.assertIn("Win chance", sp)
+        self.assertIn("89%", sp)
+        self.assertIn('href="/cfb/picks/2026/week-2/oregon-at-alabama"', sp)
 
     def test_legacy_redirects_resolve_to_live_canonical_pages(self):
         legacy_paths = [
