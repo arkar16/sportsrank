@@ -1,6 +1,7 @@
 """Build the static program record book from the published college football archive."""
 import argparse
 from collections import defaultdict
+from datetime import datetime
 from hashlib import sha256
 from html import escape
 import json
@@ -8,7 +9,9 @@ import os
 from pathlib import Path
 import tempfile
 
-from spread_cards import football_links
+from alltime_excitement import Game as LeaderGame, Leaders, football_anchor, publish_pages
+from spread_cards import CardURLs, football_links
+from spread_preview import refresh_retained_previews
 
 from .football_impact import attach_football_impacts
 from .conference_pages import CONFERENCE_HONORS, build_conference_pages, conference_honors_route, conference_route
@@ -22,6 +25,7 @@ from .reference_archive import Game, Season, final_history_rows, program_routes,
 from .reference_markup import PagePresentation, _image, school_label
 from .release import _page, _row_table
 from .season_pages import build_season_pages, weekly_forecast_path
+from .week_calendar import EASTERN
 
 
 def _write_changed(path: Path, content: bytes) -> bool:
@@ -42,6 +46,7 @@ def _write_changed(path: Path, content: bytes) -> bool:
 
 def _home_game(
     school: str, game: Game, ranks: dict[str, int], routes: dict[str, str], *, forecast: bool = False,
+    card_url: str | None = None,
 ) -> str:
     at_home = school == game.home
     opponent = game.away if at_home else game.home
@@ -61,6 +66,9 @@ def _home_game(
         else:
             spread = handicap if at_home else handicap.copy_negate()
             line = format(spread.normalize(), "+f") if spread else "Pick’em"
+            if card_url:
+                link_label = escape(f"{school} {line} against {opponent}, open game card")
+                line = f'<a class="share-spread" href="{escape(card_url)}" aria-label="{link_label}">{line}</a>'
             value = f'<strong class="home-game-score">{line}</strong>'
     else:
         scored, allowed = (game.home_score, game.away_score) if at_home else (game.away_score, game.home_score)
@@ -86,7 +94,7 @@ def _home_table(rows: list[str], headings: str, label: str) -> str:
     )
 
 
-def _home_rankings(directory: Path, season: Season, routes: dict[str, str], key: str) -> str:
+def _home_rankings(directory: Path, season: Season, routes: dict[str, str], key: str, card_urls: CardURLs) -> str:
     if key == "FINAL":
         week = max((game.week for game in season.games
                     if game.home_score is not None and game.away_score is not None), default=None)
@@ -123,15 +131,19 @@ def _home_rankings(directory: Path, season: Season, routes: dict[str, str], key:
         if path:
             kind = "reconstructed forecasts" if path.startswith("reconstructed/") else "forecasts"
             forecast_link = f'<p><a href="/cfb/years/{season.year}/{path}">Week {next_week} {kind}</a></p>'
+
+    def card_url(game):
+        return card_urls.get((f"{season.year}/week-{game.week}", game.home, game.away, game.neutral_site))
+
     return home_rankings(
         entries, routes, games, previous=previous, previous_ranks=previous_ranks, pregame_ranks=pregame_ranks,
         week=week, next_week=next_week, empty_result=empty_result, empty_forecast=empty_forecast,
-        forecast_link=forecast_link, conference_year=season.year,
+        forecast_link=forecast_link, conference_year=season.year, card_url=card_url,
     )
 
 
 def home_rankings(entries, routes, games, *, previous, previous_ranks, pregame_ranks, week, next_week,
-                  empty_result, empty_forecast, forecast_link, conference_year=None, sport="football"):
+                  empty_result, empty_forecast, forecast_link, conference_year=None, sport="football", card_url=None):
     """Render both sports' Top 25, with the rest of the standings available on demand."""
     current_ranks = {row.school: row.rank for row in entries}
     rows = []
@@ -150,7 +162,8 @@ def home_rankings(entries, routes, games, *, previous, previous_ranks, pregame_r
             movement = " rise" if delta > 0 else " fall" if delta < 0 else ""
         last = "".join(_last_week_game(school, game, pregame_ranks, routes) for game in games[week, school])
         upcoming = "".join(
-            _home_game(school, game, current_ranks, routes, forecast=True) for game in games[next_week, school]
+            _home_game(school, game, current_ranks, routes, forecast=True, card_url=card_url(game) if card_url else None)
+            for game in games[next_week, school]
         )
         rows.append(
             f'<tr><td class="num">{entry.rank}</td><th scope="row">{school_label(school, routes)}</th>'
@@ -185,14 +198,15 @@ def home_rankings(entries, routes, games, *, previous, previous_ranks, pregame_r
     return tables
 
 
-def _home(site: Path, seasons: list[Season], routes: dict[str, str], stylesheet_revision: str, *, is_root: bool) -> str:
+def _home(site: Path, seasons: list[Season], routes: dict[str, str], stylesheet_revision: str, *, is_root: bool,
+          card_urls: CardURLs) -> str:
     latest = seasons[-1]
     program_count = len(routes)
     routes = season_team_routes(latest, routes)
     key = next(reversed(latest.rankings))
     edition = "Final" if key == "FINAL" else "Preseason" if key == "PRESEASON" else f"Through Week {key[1:]}"
     year_link = f"/cfb/years/{latest.year}/{latest.year}_CFB.html"
-    rankings = _home_rankings(site / f"cfb/years/{latest.year}", latest, routes, key)
+    rankings = _home_rankings(site / f"cfb/years/{latest.year}", latest, routes, key, card_urls)
     decades = defaultdict(list)
     for season in reversed(seasons):
         year = season.year
@@ -207,6 +221,9 @@ def _home(site: Path, seasons: list[Season], routes: dict[str, str], stylesheet_
 <p><a href="/cfb/years/history/nc_FBS_CFB_output.html">National champions</a></p>
 <p><a href="/cfb/years/history/wt_FBS_CFB_output.html">Last-place finishers</a></p>
 <p><a href="{conference_honors_route()}">{CONFERENCE_HONORS}</a></p>"""
+    prefix = "" if is_root else "/cfb"
+    record_links += (f'<p>All-time game excitement · <a href="{prefix}/excitement/aev.html">AEV leaders</a>'
+                     f' · <a href="{prefix}/excitement/bev.html">BEV leaders</a></p>')
     return home_document(
         title, "College football", f"{latest.year} FBS &middot; {edition}", rankings,
         year_link, f"{latest.year} standings", record_links, archive,
@@ -307,8 +324,9 @@ def build(site: Path, *, replays=None) -> tuple[int, int, int]:
 
     generated_pages = set()
     excitement = {}
+    leaders = Leaders()
     if seasons[0].year == 1897:
-        for year, page, ledger in build_guides():
+        for year, page, ledger in build_guides(leaders=leaders):
             directory = site / f"cfb/years/{year}/excitement"
             path = directory / "index.html"
             changed += _write_changed(path, presentation.render(page.encode(), archive=False))
@@ -319,6 +337,13 @@ def build(site: Path, *, replays=None) -> tuple[int, int, int]:
         scores, ledger = season_scores(directory, season, site_reference())
         if scores:
             excitement[season.year] = scores
+            days = {(g.week, g.home, g.away, g.neutral_site, g.home_score, g.away_score):
+                    datetime.fromisoformat(g.start_utc).astimezone(EASTERN).date().isoformat()
+                    for g in season.games if g.start_utc}
+            leaders.add_season(
+                LeaderGame.from_score("cfb", season.year, days.get((*k[:4], *(s.final or (None, None))),
+                                      f"Week {k.week}"), k.away, k.home, football_anchor(k), s)
+                for k, s in scores.items())
             folder = directory / "excitement"
             changed += _write_changed(folder / "bev-v1.json", (json.dumps(ledger, ensure_ascii=False,
                 sort_keys=True, separators=(",", ":")) + "\n").encode())
@@ -344,23 +369,23 @@ def build(site: Path, *, replays=None) -> tuple[int, int, int]:
             path = site / relative
             changed += _write_changed(path, presentation.render(markup.encode(), archive=False))
             generated_pages.add(path)
-    stylesheet_revision = sha256((site / "cfb/assets/record-book.css").read_bytes()).hexdigest()[:12]
-    for relative in ("index.html", "cfb/cfb.html"):
-        markup = _home(site, seasons, routes, stylesheet_revision, is_root=relative == "index.html")
-        changed += _write_changed(site / relative, presentation.render(markup.encode(), archive=False))
+    home_paths = ("index.html", "cfb/cfb.html")
     has_cbb = all((site / p).is_file() for p in ("cbb/index.html", "cbb/teams/index.html", "cbb/seasons/index.html"))
     changed += _write_changed(site / "404.html", presentation.render(_not_found(seasons[-1].year, include_cbb=has_cbb).encode(), archive=False))
     targets = {"/" + path.relative_to(site).as_posix() for path in site.rglob("*.html")}
+    targets.update("/" + path for path in home_paths)
     latest_year = seasons[-1].year
     seasons_by_year = {str(season.year): season for season in seasons}
     spread_dir = site / f"cfb/years/{latest_year}/spread"
     current_spread = max(spread_dir.glob(f"{latest_year}_W*_FBS_spread.html"),
                          key=lambda p: int(p.name.split("_")[1][1:]), default=None)
+    refresh_retained_previews(site / "cfb", "cfb")
     for relative, raw in honors.items():
         markup = presentation.render(raw, archive=True, relative=relative, targets=targets, sortable=True)
         changed += _write_changed(site / relative, markup)
-    # Decorate source pages last. School text, scoring rows, existing links and
-    # the exact input bytes used by forecast evaluation can all be recovered.
+    card_urls = {}
+    # School text, scoring rows, existing links and the exact input bytes used by
+    # forecast evaluation can all be recovered from the decorated source pages.
     for directory in ("years", "performance", "history"):
         for path in (site / "cfb" / directory).rglob("*.html"):
             if path in generated_pages:
@@ -378,7 +403,7 @@ def build(site: Path, *, replays=None) -> tuple[int, int, int]:
                 year, checkpoint = path.name.split("_")[:2]
                 if path == current_spread or (site / "cfb/picks" / year / f"week-{checkpoint[1:]}").is_dir():
                     markup = football_links(markup, path, site / "cfb", seasons_by_year[year],
-                                            excitement=excitement.get(int(year)))
+                                           excitement=excitement.get(int(year)), card_urls=card_urls)
             if directory == "years":
                 year_text = path.relative_to(site / "cfb/years").parts[0]
                 if year_text.isdecimal() and int(year_text) in excitement:
@@ -386,6 +411,12 @@ def build(site: Path, *, replays=None) -> tuple[int, int, int]:
                                                excitement[int(year_text)], int(year_text))
             if raw != markup:
                 changed += _write_changed(path, markup)
+    changed += leaders.save(site / "cfb", "cfb")
+    changed += publish_pages(site / "cfb", "cfb")
+    stylesheet_revision = sha256((site / "cfb/assets/record-book.css").read_bytes()).hexdigest()[:12]
+    for relative in home_paths:
+        markup = _home(site, seasons, routes, stylesheet_revision, is_root=relative == "index.html", card_urls=card_urls)
+        changed += _write_changed(site / relative, presentation.render(markup.encode(), archive=False))
     return len(seasons), len(routes), changed
 
 

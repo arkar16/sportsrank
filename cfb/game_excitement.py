@@ -137,6 +137,11 @@ class GameAppeal:
     def estimated(self) -> bool:
         return self.tier in ("quarter", "halftime", "final") and self.aev is not None
 
+    @property
+    def evidence_label(self):
+        return {"full": "Play-by-play", "quarter": "Quarter scores", "halftime": "Halftime score",
+                "final": "Final score only"}[self.tier]
+
 
 def score_for(scores, key, final=None):
     return scores.get(key) or (scores.get(key._replace(rematch=tuple(final))) if final else None)

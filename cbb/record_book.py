@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from html import escape
 
+from alltime_excitement import Game as LeaderGame, Leaders
 from cfb.archive_presentation import updated_time
 from cfb.conference_pages import build_conference_pages, conference_route, projected_overall_records
 from cfb.program_pages import build_program_pages
@@ -62,9 +63,13 @@ def _write(root, path, title, body, *, index=True):
     target.write_text(_page(title, body, index=index), encoding="utf-8")
 
 
-def _table(headers, rows):
+def _table(headers, rows, *, row_ids=None):
     head = "".join(f'<th scope="col">{header}</th>' for header in headers)
-    body = "".join("<tr>" + "".join(f"<td>{cell}</td>" for cell in row) + "</tr>" for row in rows)
+    rendered = []
+    for index, row in enumerate(rows):
+        start = "<tr>" if row_ids is None else f'<tr id="{escape(row_ids[index])}">'
+        rendered.append(start + "".join(f"<td>{cell}</td>" for cell in row) + "</tr>")
+    body = "".join(rendered)
     return f'<div class="table-scroll" tabindex="0"><table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>'
 
 
@@ -146,7 +151,7 @@ def _games(games, logos, as_of, *, year=None, date_only=False, excitement=None):
         )
         if excitement is not None:
             appeal = excitement.get(g["game_id"])
-            cells += (bev_label(appeal), aev_label(appeal))
+            cells += (bev_label(appeal, sport="cbb"), aev_label(appeal, sport="cbb"))
             if appeal and appeal.estimated:
                 has_estimate = True
         rows.append(cells)
@@ -248,6 +253,7 @@ def build(
     projections = None
     weekly_years: set[int] = set()
     excitement_logs = {}
+    leaders = Leaders()
     card_dates = {p.name for p in (root / "picks").glob("*") if p.is_dir()}
     for season in seasons:
         year = season["season"]
@@ -371,6 +377,8 @@ def build(
 
         metadata = _season_notes(last["cutoff_utc"])
         if scores is not None and guide_rows:
+            leaders.add_season(LeaderGame.from_score("cbb", year, day, away, home, f"game-{score.source_game}", score)
+                               for day, away, home, week, score in guide_rows)
             guide_title = f"{season_name(year)} basketball game excitement"
             body = excitement_guide(year, guide_rows, season_name, lambda n: team_label(n, ids.get(n), logos, year=year),
                                     _week_link, _table, as_of)
@@ -524,4 +532,5 @@ def build(
         root, performance_records, editions, fixtures, as_of, tournament_years, model, logos,
         season_name=season_name, team_label=team_label, write_page=_write,
     )
+    leaders.save(root, "cbb")
     return archives, routes, presentation

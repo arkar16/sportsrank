@@ -86,8 +86,16 @@
     const pick = document.querySelector(".pick strong");
     drawText(ctx, pick.dataset.imagePick || pick.textContent, left, 420,
       {size: 55, width: contentWidth, color: "#faf7ef"});
+    const bev = document.querySelector('meta[name="sportsrank:bev"]')?.content;
+    const grade = document.querySelector('meta[name="sportsrank:bev-grade"]')?.content;
+    const scoreWidth = grade ? 245 : 168;
+    const detailsWidth = bev ? contentWidth - scoreWidth - 20 : contentWidth;
     drawText(ctx, document.querySelector(".game-details").textContent, left, 482,
-      {size: 29, width: contentWidth, color: "#faf7ef", face: "Arial, sans-serif"});
+      {size: 29, width: detailsWidth, color: "#faf7ef", face: "Arial, sans-serif"});
+    if (bev) {
+      drawText(ctx, "BEV " + bev + (grade ? " (" + grade + ")" : ""), right, 482,
+        {size: 32, width: scoreWidth, align: "right", color: "#faf7ef", face: "Arial, sans-serif"});
+    }
     return new Promise((resolve, reject) => canvas.toBlob(blob => {
       if (blob) resolve(blob);
       else reject(new Error("Could not encode the spread image"));
