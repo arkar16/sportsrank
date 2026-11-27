@@ -12,14 +12,23 @@ import numpy as np
 from .source import fixture_start, latest_start
 from .replay import _iso_utc, _previous_monday, _rank
 
-VERSION = "CORS v1.0.0"
-MODEL_ID = "cbb-kalman-2scale/v1"
+MARGIN_ONLY_VERSION = "CORS v1.0.0"
+VERSION = "CORS v1.1.0"
+MODEL_ID = "cbb-kalman-2scale/v1.1"
 CARRY_TOTAL, W_SLOW, ALPHA_SLOW, RHO_VAR = .96, .45, .22, .80
 SIGMA_OFF, SIGMA_WK, SIGMA_G_BASE, NU = 3.8, .55, 11., 14.
 ENTRANT_PRIOR, SIGMA_NOND1 = -12., 21.
 SIGMA_HFA_OFF, SIGMA_HFA_WK = .40, .08
 HFA_SHRINK, HFA_TEAM_MEM = 40., .95
 NOISE_SCALE = math.sqrt((NU - 2) / NU)
+MISMATCH_SPREAD = 20.
+WIN_SCALE = SIGMA_G_BASE * math.sqrt(3.) / math.pi
+OUTCOME_START = datetime.fromisoformat("2026-11-27T00:00:00+00:00")
+
+
+def version_for_edition(as_of):
+    """Choose the v1 observation rule in force at the edition timestamp."""
+    return VERSION if as_of >= OUTCOME_START else MARGIN_ONLY_VERSION
 
 
 def rounded(x):
@@ -45,7 +54,22 @@ def _prior(year, previous, genesis):
     return CARRY_TOTAL**gap * slow, min(100., variance + gap*SIGMA_OFF**2)
 
 
-def _update(mu, cov, observations, adaptive, *, game_deltas=None):
+def _mixed_information(node_mean, residual, margin_weight, final_margin, pregame_spread):
+    """Combine margin and winner evidence into one weekly precision and information term."""
+    margin_share = MISMATCH_SPREAD**2 / (MISMATCH_SPREAD**2 + pregame_spread**2)
+    win_share = 1. - margin_share
+    # The residual includes every court adjustment. For a buffered final the
+    # update state may be newer than the pregame spread that fixes the shares.
+    expected_margin = final_margin - residual
+    home_win_probability = .5 * (1. + math.tanh(expected_margin / (2. * WIN_SCALE)))
+    win_score = (float(final_margin > 0) - home_win_probability) / WIN_SCALE
+    win_precision = home_win_probability * (1. - home_win_probability) / WIN_SCALE**2
+    weight = margin_share * margin_weight + win_share * win_precision
+    score = margin_share * margin_weight * residual + win_share * win_score
+    return weight, weight * node_mean + score
+
+
+def _update(mu, cov, observations, adaptive, *, d1_evidence=None, game_deltas=None):
     """Accumulate information using a single pre-update mean and covariance."""
     n = len(mu) - 2
     cov[np.arange(n), np.arange(n)] += SIGMA_WK**2
@@ -54,6 +78,7 @@ def _update(mu, cov, observations, adaptive, *, game_deltas=None):
     precision = np.linalg.inv(cov)
     eta = precision @ mu
     terms = []
+    evidence = iter(d1_evidence) if d1_evidence is not None else None
     for home, away, margin, venue in observations:
         noise = ((SIGMA_NOND1 if away == n else SIGMA_G_BASE) * NOISE_SCALE)**2
         # Only D1-D1 games measure the league home-advantage node.
@@ -65,21 +90,25 @@ def _update(mu, cov, observations, adaptive, *, game_deltas=None):
             margin -= venue * mu[-1]
         x = np.asarray(design)
         block = np.ix_(ids, ids)
-        residual = margin - x @ mu[ids]
+        node_mean = x @ mu[ids]
+        residual = margin - node_mean
         variance = noise + x @ cov[block] @ x
         weight = (NU + 1) / (NU + residual**2 / max(variance, 1e-6)) / noise
+        information = weight * margin
+        if evidence is not None and away < n:
+            final_margin, pregame_spread = next(evidence)
+            weight, information = _mixed_information(node_mean, residual, weight, final_margin, pregame_spread)
         precision[block] += weight * np.outer(x, x)
-        eta[ids] += weight * margin * x
+        eta[ids] += information * x
         if game_deltas is not None and away < n:
-            terms.append((home, away, margin, ids, x, weight))
+            terms.append((home, away, information, ids, x, weight))
     cov = np.linalg.inv(precision)
     mu = cov @ eta
-    # Remove one observation from the same weekly fit with its robust
-    # weight held fixed. Neither the fit nor its covariance changes.
-    for home, away, margin, ids, x, weight in terms:
+    # Remove both terms for one game while keeping the other weekly observations.
+    for home, away, information, ids, x, weight in terms:
         v = cov[:, ids] @ x
         leverage = weight * float(x @ v[ids])
-        delta = (weight * (margin - x @ mu[ids]) / max(1.0 - leverage, 1e-9)) * v
+        delta = ((information - weight * (x @ mu[ids])) / max(1.0 - leverage, 1e-9)) * v
         center = delta[:n].mean()
         game_deltas.append((float(delta[home] - center), float(delta[away] - center)))
     return mu, cov
@@ -104,7 +133,7 @@ def _validate_seed(seed):
 
 def _weekly_games(season, idx, effect, tier_games):
     """Group fixtures by prediction cutoff and finals by first eligible observation cutoff."""
-    fixtures, observations, result_ids = defaultdict(list), defaultdict(list), defaultdict(list)
+    fixtures, observations, results = defaultdict(list), defaultdict(list), defaultdict(list)
     for g in sorted(season["forecasts"], key=lambda g: (g["start_utc"], g["game_id"])):
         fixtures[g["cutoff_utc"]].append(g)
         if g["actual_home_margin"] is not None:
@@ -112,12 +141,12 @@ def _weekly_games(season, idx, effect, tier_games):
             venue = int(not g["neutral_site"])
             cutoff = _available(latest_start(datetime.fromisoformat(g["start_utc"]), g.get("date_only")))
             observations[cutoff].append((h, a, g["actual_home_margin"] - venue * effect[h], venue))
-            result_ids[cutoff].append(g["game_id"])
+            results[cutoff].append(g)
     for start, team, margin, venue in sorted(tier_games):
         if team in idx:
             h = idx[team]
             observations[_available(start)].append((h, len(idx), margin - (effect[h] if venue == 1 else 0), venue))
-    return fixtures, observations, result_ids
+    return fixtures, observations, results
 
 
 def _checkpoints(season, observations):
@@ -131,8 +160,10 @@ def _checkpoints(season, observations):
     return checkpoints, final_cutoff
 
 
-def iter_cors_v1_seasons(seasons, keys, seed=None, *, nond1_by_season=None, hfa_start_year=2008, use_roster=False):
+def iter_cors_v1_seasons(seasons, keys, seed=None, *, nond1_by_season=None, hfa_start_year=2008, use_roster=False, model=VERSION):
     """Replay consecutive seasons. Tier observations are (UTC start, roster ID, D1 margin, venue sign)."""
+    if model not in (VERSION, MARGIN_ONLY_VERSION):
+        raise ValueError(f"Unknown basketball CORS v1 model: {model}")
     state = {}
     previous_year = None
     tier, tier_var, hfa, hfa_var = -26., 25., 3.6, .25
@@ -174,10 +205,11 @@ def iter_cors_v1_seasons(seasons, keys, seed=None, *, nond1_by_season=None, hfa_
             effect[experienced] -= effect[experienced].mean()
 
         tier_games = (nond1_by_season or {}).get(year, ())
-        fixtures, observations, result_ids = _weekly_games(season, idx, effect, tier_games)
+        fixtures, observations, results = _weekly_games(season, idx, effect, tier_games)
         checkpoints, final_cutoff = _checkpoints(season, observations)
         rankings, forecasts = [], []
         deltas_by_game = {}
+        pregame_spreads = {}
         opp_sum, opp_count = np.zeros((2, n))
         residuals = np.zeros((n, 4))
         ratings = mu[:n].copy()
@@ -190,9 +222,13 @@ def iter_cors_v1_seasons(seasons, keys, seed=None, *, nond1_by_season=None, hfa_
                         opp_sum[a] += ratings[h]
                         opp_count[[h, a]] += 1
                 deltas = []
-                mu, cov = _update(mu, cov, observations[cutoff], year >= hfa_start_year, game_deltas=deltas)
-                for game_id, (home, away) in zip(result_ids[cutoff], deltas, strict=True):
-                    deltas_by_game[game_id] = {
+                evidence = None
+                if model == VERSION:
+                    evidence = [(g["actual_home_margin"], pregame_spreads.pop(g["game_id"])) for g in results[cutoff]]
+                mu, cov = _update(mu, cov, observations[cutoff], year >= hfa_start_year,
+                                  d1_evidence=evidence, game_deltas=deltas)
+                for g, (home, away) in zip(results[cutoff], deltas, strict=True):
+                    deltas_by_game[g["game_id"]] = {
                         "home_cors_delta": home, "away_cors_delta": away, "result_cutoff_utc": cutoff,
                     }
             sos = opp_sum / np.maximum(1, opp_count)
@@ -214,8 +250,11 @@ def iter_cors_v1_seasons(seasons, keys, seed=None, *, nond1_by_season=None, hfa_
                 h, a = idx[g["home_team_id"]], idx[g["away_team_id"]]
                 gap = mu[h] - mu[a]
                 venue = 0. if g["neutral_site"] else advantages[g["home_team_id"]]
+                spread = float(gap + venue)
+                if model == VERSION:
+                    pregame_spreads[g["game_id"]] = spread
                 forecasts.append({**g, "home_cors": float(ratings[h]), "away_cors": float(ratings[a]),
-                                  "home_margin": rounded(gap + venue)})
+                                  "home_margin": rounded(spread)})
                 if year >= hfa_start_year and not g["neutral_site"] and g["actual_home_margin"] is not None:
                     err = g["actual_home_margin"] - (gap + mu[-1])
                     residuals[h, 0] += err
@@ -240,7 +279,7 @@ def iter_cors_v1_seasons(seasons, keys, seed=None, *, nond1_by_season=None, hfa_
                "final_cutoff_utc": final_cutoff, "final_rankings": final_rows, "home_advantages": final_advantages}
 
 
-def cors_v1_seasons(database, seasons, *, seed_path=None, api_only=False):
+def cors_v1_seasons(database, seasons, *, seed_path=None, api_only=False, model=VERSION):
     seed = None
     if not api_only:
         seed = json.loads(Path(seed_path or Path(__file__).with_name("cors_v1_seed.json")).read_bytes())
@@ -267,4 +306,4 @@ def cors_v1_seasons(database, seasons, *, seed_path=None, api_only=False):
                 start = latest_start(fixture_start(start, date_only), date_only)
                 tiers[y].append((start, h if home else a,
                                  sign * (hp - ap), 0 if g["neutralSite"] else sign))
-    return tuple(iter_cors_v1_seasons(seasons, keys, seed, nond1_by_season=tiers, use_roster=api_only))
+    return tuple(iter_cors_v1_seasons(seasons, keys, seed, nond1_by_season=tiers, use_roster=api_only, model=model))

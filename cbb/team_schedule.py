@@ -50,6 +50,18 @@ def _matchup(week, home, away, margin, neutral, tipoff, game):
     )
 
 
+def projection_margin(season, checkpoint, home, away, neutral, game):
+    h, a = home["team_id"], away["team_id"]
+    if (game and game["cutoff_utc"] == checkpoint["cutoff_utc"]
+            and (game["home_team_id"], game["away_team_id"], game["neutral_site"]) == (h, a, neutral)):
+        return game["home_margin"]
+    if "home_advantages" in checkpoint:
+        venue = 0 if neutral else checkpoint["home_advantages"][h]
+        return rounded(home["cors"] - away["cors"] + venue)
+    venue = 0 if neutral else season["home_advantages"][h]
+    return round(home["cors"] - away["cors"] + venue, 2)
+
+
 def schedule_views(database, season, checkpoint, as_of):
     """Build the team schedule and known conference fixtures at the ranking cutoff."""
     year = season["season"]
@@ -101,17 +113,7 @@ def schedule_views(database, season, checkpoint, as_of):
                 continue
         margin = None
         if home and away:
-            h, a = home["team_id"], away["team_id"]
-            if (game and game["cutoff_utc"] == checkpoint["cutoff_utc"]
-                    and (game["home_team_id"], game["away_team_id"], game["neutral_site"]) == (h, a, neutral)):
-                margin = game["home_margin"]
-            else:
-                if "home_advantages" in checkpoint:
-                    venue = 0 if neutral else checkpoint["home_advantages"][h]
-                    margin = rounded(home["cors"] - away["cors"] + venue)
-                else:
-                    venue = 0 if neutral else season["home_advantages"][h]
-                    margin = round(home["cors"] - away["cors"] + venue, 2)
+            margin = projection_margin(season, checkpoint, home, away, neutral, game)
         clock = tipoff_clock(tip) if known else "Time TBD"
         matchup = _matchup(
             week,

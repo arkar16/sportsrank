@@ -10,13 +10,13 @@ from excitement_grades import graded_number
 from site_navigation import masthead
 from spread_cards import ConferenceSlate, basketball_links
 from spread_preview import refresh_retained_previews
-from .cors_v1 import VERSION as V1_VERSION, _available, cors_v1_seasons
+from .cors_v1 import VERSION, _available, cors_v1_seasons, version_for_edition
 from .source import supplemental_fixtures
 from .api_history import championship_finals, materialize
 from zoneinfo import ZoneInfo
 from tempfile import TemporaryDirectory
 from .public_tree import ISSUED, install_pages, record_artifacts, restore_artifacts
-from .game_excitement import basketball_bev
+from .game_excitement import basketball_bev, frozen_excitement_seasons
 from .home import landing_page
 from .honors import write_honors
 from .march_archive import build_tournaments
@@ -137,9 +137,9 @@ def _build_api_site(database, output, args, first_season):
     seasons = replay_seasons(database, args.season, first_season=first_season)
     baseline = seasons
     blended = as_of >= V1_START
-    model = V1_VERSION if blended else "CORS v0.4.0"
+    model = version_for_edition(as_of) if blended else "CORS v0.4.0"
     if blended:
-        seasons = cors_v1_seasons(database, baseline, api_only=True)
+        seasons = cors_v1_seasons(database, baseline, api_only=True, model=model)
     season = seasons[-1]
     checkpoints = [c for c in season["rankings"] if datetime.fromisoformat(c["cutoff_utc"]) <= as_of]
     if not checkpoints:
@@ -153,7 +153,11 @@ def _build_api_site(database, output, args, first_season):
     cutoff = checkpoint["cutoff_utc"]
     et = ZoneInfo("America/New_York")
     edition_games = []
-    ranks = {r["team_id"]: r["rank"] for r in checkpoint["rows"]}
+    frozen = frozen_excitement_seasons(database, baseline, seasons) if model == VERSION else {}
+    excitement_season = frozen.get(season["season"], season)
+    excitement_checkpoint = next((c for c in excitement_season["rankings"] if c["cutoff_utc"] == cutoff), checkpoint)
+    ranks = {r["team_id"]: r["rank"] for r in excitement_checkpoint["rows"]}
+    excitement_margins = {g["game_id"]: g["home_margin"] for g in excitement_season["forecasts"] if g["cutoff_utc"] == cutoff}
     for row in season["forecasts"]:
         tipoff = datetime.fromisoformat(row["start_utc"])
         if row["cutoff_utc"] == cutoff and (blended or (row["status"] == "scheduled" and tipoff > as_of)):
@@ -161,9 +165,9 @@ def _build_api_site(database, output, args, first_season):
                              "home": row["home_team"], "away": row["away_team"],
                              "home_id": row["home_team_id"], "away_id": row["away_team_id"],
                              "predicted_home_margin": row["home_margin"]})
-            if model == V1_VERSION and as_of >= BEV_EDITION_START:
+            if blended and as_of >= BEV_EDITION_START:
                 edition_games[-1]["bev"] = basketball_bev(ranks[row["home_team_id"]], ranks[row["away_team_id"]],
-                                                          row["home_margin"], row["game_id"], cutoff)
+                                                          excitement_margins[row["game_id"]], row["game_id"], cutoff)
     rankings = [{"rank": r["rank"], "team": r["school"], "team_id": r["team_id"], "rating": r["cors"],
                  "wins": r["wins"], "losses": r["losses"]} for r in checkpoint["rows"]]
     logo_dir = Path(__file__).resolve().parents[1] / "website/cbb/assets/team-logos"
@@ -186,11 +190,11 @@ def _build_api_site(database, output, args, first_season):
     schedules, upcoming_ids, conference_schedule = (
         schedule_views(database, season, checkpoint, as_of) if blended else (None, set(), [])
     )
-    current_excitement = {} if model == V1_VERSION else None
+    current_excitement = {} if blended else None
     archives, routes, presentation = build(
         output, seasons, as_of, logo_ids, tournament_years=years, model=model,
         schedules=schedules, upcoming_ids=upcoming_ids, conference_schedule=conference_schedule,
-        current_excitement=current_excitement,
+        current_excitement=current_excitement, frozen_excitement=frozen,
         supplemental=(supplemental_fixtures(database, [s["season"] for s in seasons])
                       if current_excitement is not None else None),
     )

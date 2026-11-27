@@ -15,7 +15,9 @@ from excitement_grades import SCALE_LINK
 from cfb.game_excitement import GameAppeal
 from cfb.record_book import _write_changed
 from hashlib import sha256
+from .cors_v1 import OUTCOME_START, MARGIN_ONLY_VERSION, cors_v1_seasons
 from .source import visible_final
+from .team_schedule import projection_margin
 from .halftime import DATA, policy, halftime_pools, final_pools
 from cfb.sparse_excitement import pregame_prior
 
@@ -31,6 +33,28 @@ def local_date(stamp):
 def basketball_bev(home_rank, away_rank, margin, game_id, cutoff):
     pre = QualifiedPregame(home_rank, away_rank, float(margin), str(game_id), cutoff)
     return f"{calculate_bev(pre, scale=BASKETBALL).value:.1f}"
+
+
+def frozen_excitement_seasons(database, baseline, current):
+    """Recover the CORS inputs in force at each pregame checkpoint used by the excitement ledgers."""
+    cutoff = OUTCOME_START.isoformat()
+    earlier = [s for s in baseline if s["rankings"][0]["cutoff_utc"] < cutoff]
+    if not earlier:
+        return {}
+    legacy = cors_v1_seasons(database, earlier, api_only=True, model=MARGIN_ONLY_VERSION)
+    result = {}
+    for old, new in zip(legacy, current):
+        year = old["season"]
+        if old["rankings"][-1]["cutoff_utc"] < cutoff:
+            result[year] = old
+            continue
+        # Only the transition season spans checkpoints from both model versions.
+        checkpoints = {c["cutoff_utc"]: c for c in old["rankings"] if c["cutoff_utc"] < cutoff}
+        forecasts = {g["game_id"]: g for g in old["forecasts"] if g["cutoff_utc"] < cutoff}
+        result[year] = {**new,
+                        "rankings": tuple(checkpoints.get(c["cutoff_utc"], c) for c in new["rankings"]),
+                        "forecasts": tuple(forecasts.get(g["game_id"], g) for g in new["forecasts"])}
+    return result
 
 
 def read_measurements(year):
@@ -205,6 +229,7 @@ def weekly_scores(root, season, checkpoints, as_of, schedules=None):
         scores[g["game_id"]] = after_game(g, bev, positions[cutoff], evidence, as_of)
     cutoff = checkpoints[-1]["cutoff_utc"]
     ids = {r["school"]: i for i, r in standings[cutoff].items()}
+    fixtures = {str(g["game_id"]): g for g in season["forecasts"]}
     for (y, _), schedule in (schedules or {}).items():
         if y != year:
             continue
@@ -223,8 +248,11 @@ def weekly_scores(root, season, checkpoints, as_of, schedules=None):
             # A dated schedule can reverse the designated sides at a neutral site.
             # Preserve its projection and the weekly forecast under their own source identities.
             projection = f"schedule-{schedule.snapshot_date}-{fixture.forecast_id}"
-            bev = ledger.capture(cutoff, projection, game.start_utc, ids[game.home], ids[game.away],
-                                 game.neutral_site, positions[cutoff], -game.home_handicap)
+            home, away = ids[game.home], ids[game.away]
+            margin = projection_margin(season, checkpoints[-1], standings[cutoff][home], standings[cutoff][away],
+                                       game.neutral_site, fixtures.get(fixture.forecast_id))
+            bev = ledger.capture(cutoff, projection, game.start_utc, home, away,
+                                 game.neutral_site, positions[cutoff], margin or 0.)
             scheduled[game] = GameAppeal(bev, None, source_game=str(fixture.forecast_id))
     ledger.write()
     baselines.write()

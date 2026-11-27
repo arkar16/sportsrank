@@ -14,7 +14,7 @@ from cfb.reference_archive import Game, Season, Standing
 from cfb.reference_markup import PagePresentation
 from site_navigation import masthead
 
-from .cors_v1 import _available, cors_v1_seasons
+from .cors_v1 import _available, cors_v1_seasons, version_for_edition
 from tempfile import TemporaryDirectory
 from .api_history import materialize
 from .public_tree import install_conferences
@@ -182,7 +182,8 @@ def main():
 
 def _rebuild(args, database, stage, first_season):
     site = args.site / "cbb"
-    seasons = cors_v1_seasons(database, replay_seasons(database, args.season, first_season=first_season), api_only=True)
+    baseline = replay_seasons(database, args.season, first_season=first_season)
+    seasons = cors_v1_seasons(database, baseline, api_only=True, model=version_for_edition(args.as_of))
     routes = {r["school"]: f'/cbb/teams/{r["team_id"]}/index.html' for season in seasons
               for c in season["rankings"] for r in c["rows"]}
     archives = [_season_archive(season, args.season, args.as_of, database)

@@ -16,7 +16,7 @@ from cfb.season_pages import _document, _standings, _rankings as standings_table
 from site_navigation import masthead
 from spread_cards import complete_basketball_card
 from .source import visible_final
-from .cors_v1 import _available
+from .cors_v1 import MARGIN_ONLY_VERSION, VERSION, _available
 from .grade import grade_margins
 from .game_excitement import (BaselineLedger, after_game, checkpoint_prior, guide as excitement_guide, local_date,
                               read_measurements, weekly_scores)
@@ -224,6 +224,7 @@ def build(
     upcoming_ids=(),
     conference_schedule=(),
     current_excitement=None,
+    frozen_excitement=None,
     supplemental=None,
 ):
     """Export only checkpoints available by as_of and their corresponding slates."""
@@ -281,8 +282,10 @@ def build(
         pending = []
         scores = None
         guide_rows = []
-        if model == "CORS v1.0.0":
-            scores, future = weekly_scores(root, season, checkpoints, as_of, schedules)
+        if model in (MARGIN_ONLY_VERSION, VERSION):
+            evidence_season = (frozen_excitement or {}).get(year, season)
+            evidence_checkpoints = [c for c in evidence_season["rankings"] if datetime.fromisoformat(c["cutoff_utc"]) <= as_of]
+            scores, future = weekly_scores(root, evidence_season, evidence_checkpoints, as_of, schedules)
             excitement_logs[year] = dict(future)
             guide_rows.extend((local_date(g.start_utc), g.away, g.home, g.week, score) for g, score in future.items())
             if current_excitement is not None and year == latest_season_year:
@@ -326,11 +329,11 @@ def build(
             covered_fixtures = {str(g["game_id"]) for g in season["forecasts"] if g["cutoff_utc"] in weeks}
             if year == latest_season_year:
                 covered_fixtures.update(map(str,upcoming_ids))
-            directory_by_cutoff = {c["cutoff_utc"]: {r["team_id"]: r for r in c["rows"]} for c in checkpoints}
+            directory_by_cutoff = {c["cutoff_utc"]: {r["team_id"]: r for r in c["rows"]} for c in evidence_checkpoints}
             for g in supplemental[year]:
                 stamp = datetime.fromisoformat(g["start_utc"])
                 # Previously issued weeks cannot see results or fixtures from a later checkpoint.
-                checkpoint = next((c for c in reversed(checkpoints) if datetime.fromisoformat(c["cutoff_utc"]) < stamp), None)
+                checkpoint = next((c for c in reversed(evidence_checkpoints) if datetime.fromisoformat(c["cutoff_utc"]) < stamp), None)
                 if checkpoint is None:
                     checkpoint = {"week": 0, "cutoff_utc": (stamp - timedelta(microseconds=1)).isoformat()}
                 week = checkpoint["week"]
