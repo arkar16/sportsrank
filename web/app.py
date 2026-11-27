@@ -211,7 +211,7 @@ class SportsRankApp:
         path = environ.get("PATH_INFO", "/") or "/"
         con = self._db()
 
-        if path == "/healthz":
+        if path in ("/health", "/healthz"):
             payload = json.dumps({"status": "ok", "release_id": self.release_id}).encode("utf-8")
             return self._respond(
                 environ, start_response, "200 OK", payload,

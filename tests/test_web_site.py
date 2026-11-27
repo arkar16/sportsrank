@@ -318,18 +318,21 @@ class WebSiteTests(unittest.TestCase):
         code, _, _ = _wsgi_call(self.app, "/", method="POST")
         self.assertEqual(code, 405)
 
-        # Performance downloads & healthz
+        # Performance downloads & health endpoints
         for path, ctype in (
             ("/cfb/performance/seasons.csv", "text/csv"),
             ("/cfb/performance/2025/report.json", "application/json"),
             ("/cfb/performance/2025/games.csv", "text/csv"),
             ("/cfb/performance/2025/weekly.csv", "text/csv"),
+            ("/health", "application/json"),
             ("/healthz", "application/json"),
         ):
             code, headers, body = _wsgi_call(self.app, path)
             self.assertEqual(code, 200, path)
             self.assertIn(ctype, headers["Content-Type"])
             self.assertGreater(len(body), 0)
+            if path in ("/health", "/healthz"):
+                self.assertEqual(json.loads(body), {"status": "ok", "release_id": "test-rel-1"})
 
         # Trailing post-season week in a completed season falls back to FINAL; bogus week 99 stays 404
         code, headers, _ = _wsgi_call(self.app, "/cfb/2025/w16")

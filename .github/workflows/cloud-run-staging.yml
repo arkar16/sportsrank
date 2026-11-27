@@ -79,13 +79,14 @@ jobs:
           url=$(gcloud run services describe sportsrank-web --project=sportsrank-837af \
             --region=us-central1 --format='value(status.url)')
           test -n "$url"
+          echo "Staging URL: $url"
           body="$RUNNER_TEMP/staging-response"
-          for path in /healthz / /cfb/2026 /cfb/teams/alabama/2025 /cfb/conferences/sec/2026 /excitement/grades /cbb /cbb/seasons/2026 /cbb/tournaments/2025 /cfb/assets/record-book.css; do
+          for path in /health / /cfb/2026 /cfb/teams/alabama/2025 /cfb/conferences/sec/2026 /excitement/grades /cbb /cbb/seasons/2026 /cbb/tournaments/2025 /cfb/assets/record-book.css; do
             status=$(curl --silent --show-error --retry 2 --retry-delay 2 --max-time 30 --output "$body" \
               --write-out '%{http_code}' "$url$path")
             echo "$path returned $status"
             test "$status" = 200
-            if [[ "$path" == /healthz ]]; then
+            if [[ "$path" == /health ]]; then
               jq -e --arg sha "$GITHUB_SHA" '.release_id == $sha' "$body"
             elif [[ "$path" != *.css ]]; then
               ! grep -q '\.html"' "$body"
