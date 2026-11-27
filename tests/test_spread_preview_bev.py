@@ -34,11 +34,15 @@ class SpreadPreviewTests(unittest.TestCase):
                 target.write_text(raw)
                 refresh_retained_previews(root, "cfb")
                 upgraded = target.read_text()
-                self.assertEqual(raw.split("</head>")[1], upgraded.split("</head>")[1])
+                grade = "F" if bev == "0.0" else "A"
+                label = f"{bev} ({grade})"
+                self.assertEqual(raw.split("</head>")[1].replace(f"<strong>{bev}</strong>", f"<strong>{label}</strong>"),
+                                 upgraded.split("</head>")[1])
                 doc = BeautifulSoup(upgraded, "html.parser")
                 self.assertEqual(doc.select_one('meta[name="sportsrank:bev"]')["content"], bev)
                 title = doc.select_one('meta[property="og:title"]')["content"]
-                self.assertTrue(title.endswith(" · BEV " + bev))
+                self.assertTrue(title.endswith(" · BEV " + label))
+                self.assertEqual(doc.select_one('meta[name="sportsrank:bev-grade"]')["content"], grade)
                 self.assertEqual(doc.select_one('meta[name="twitter:title"]')["content"], title)
                 image = Path(temp) / urlsplit(doc.select_one('meta[property="og:image"]')["content"]).path[1:]
                 previews.append(image)
@@ -63,10 +67,12 @@ class SpreadPreviewTests(unittest.TestCase):
                 if stored is None:
                     self.assertIsNone(page.select_one('meta[name="sportsrank:bev"]'))
                     continue
-                score = stored.get_text().partition("·")[0].strip()
+                value = stored.get_text().partition("·")[0].strip()
+                score, grade = value.split()
                 self.assertEqual(page.select_one('meta[name="sportsrank:bev"]')["content"], score, path)
+                self.assertEqual(page.select_one('meta[name="sportsrank:bev-grade"]')["content"], grade.strip("()"), path)
                 title = page.select_one('meta[property="og:title"]')["content"]
-                self.assertTrue(title.endswith(" · BEV " + score), path)
+                self.assertTrue(title.endswith(" · BEV " + value), path)
                 self.assertEqual(page.select_one('meta[name="twitter:title"]')["content"], title)
                 icon = page.select_one('meta[property="og:image"]')["content"]
                 self.assertEqual(page.select_one('meta[name="twitter:image"]')["content"], icon)

@@ -5,7 +5,7 @@ from datetime import datetime
 from html import escape
 import json
 from zoneinfo import ZoneInfo
-from cfb.excitement_pages import ESTIMATE_NOTE, aev_label
+from cfb.excitement_pages import ESTIMATE_NOTE, aev_label, bev_label
 
 from .grade import grade_game, grade_margins, grade_performance
 from .issued import VERIFIED_EDITIONS, grade_edition
@@ -218,7 +218,7 @@ def write_performance(
                 su,
                 cov,
                 f"{err:.2f}",
-            ) + ((score.bev if score else "—", aev_label(score)) if appeal is not None else ()))
+            ) + ((bev_label(score, sport="cbb"), aev_label(score, sport="cbb")) if appeal is not None else ()))
             game_rows_csv.append((
                 week, g["start_utc"], g["home_team"], g["away_team"], g["neutral_site"],
                 _checkpoint_label(week), f"{handicap:.2f}", pred_winner,
@@ -252,7 +252,7 @@ def write_performance(
                     "Neutral" if g["neutral_site"] else "Home",
                     f"{handicap:+.2f}" if handicap else "0.00",
                     pred_cell,
-                ) + ((score.bev if score else "—",) if appeal is not None else ()))
+                ) + ((bev_label(score, sport="cbb"),) if appeal is not None else ()))
                 pending_json.append({
                     "week": week, "start_utc": g["start_utc"], "home": g["home_team"], "away": g["away_team"],
                     "neutral_site": g["neutral_site"], "home_handicap": round(handicap, 2),

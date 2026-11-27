@@ -1,6 +1,7 @@
 """Build the static program record book from the published college football archive."""
 import argparse
 from collections import defaultdict
+from datetime import datetime
 from hashlib import sha256
 from html import escape
 import json
@@ -8,6 +9,7 @@ import os
 from pathlib import Path
 import tempfile
 
+from alltime_excitement import Game as LeaderGame, Leaders, football_anchor, publish_pages
 from spread_cards import football_links
 from spread_preview import refresh_retained_previews
 
@@ -23,6 +25,7 @@ from .reference_archive import Game, Season, final_history_rows, program_routes,
 from .reference_markup import PagePresentation, _image, school_label
 from .release import _page, _row_table
 from .season_pages import build_season_pages, weekly_forecast_path
+from .week_calendar import EASTERN
 
 
 def _write_changed(path: Path, content: bytes) -> bool:
@@ -208,6 +211,9 @@ def _home(site: Path, seasons: list[Season], routes: dict[str, str], stylesheet_
 <p><a href="/cfb/years/history/nc_FBS_CFB_output.html">National champions</a></p>
 <p><a href="/cfb/years/history/wt_FBS_CFB_output.html">Last-place finishers</a></p>
 <p><a href="{conference_honors_route()}">{CONFERENCE_HONORS}</a></p>"""
+    prefix = "" if is_root else "/cfb"
+    record_links += (f'<p>All-time game excitement · <a href="{prefix}/excitement/aev.html">AEV leaders</a>'
+                     f' · <a href="{prefix}/excitement/bev.html">BEV leaders</a></p>')
     return home_document(
         title, "College football", f"{latest.year} FBS &middot; {edition}", rankings,
         year_link, f"{latest.year} standings", record_links, archive,
@@ -308,8 +314,9 @@ def build(site: Path, *, replays=None) -> tuple[int, int, int]:
 
     generated_pages = set()
     excitement = {}
+    leaders = Leaders()
     if seasons[0].year == 1897:
-        for year, page, ledger in build_guides():
+        for year, page, ledger in build_guides(leaders=leaders):
             directory = site / f"cfb/years/{year}/excitement"
             path = directory / "index.html"
             changed += _write_changed(path, presentation.render(page.encode(), archive=False))
@@ -320,6 +327,13 @@ def build(site: Path, *, replays=None) -> tuple[int, int, int]:
         scores, ledger = season_scores(directory, season, site_reference())
         if scores:
             excitement[season.year] = scores
+            days = {(g.week, g.home, g.away, g.neutral_site, g.home_score, g.away_score):
+                    datetime.fromisoformat(g.start_utc).astimezone(EASTERN).date().isoformat()
+                    for g in season.games if g.start_utc}
+            leaders.add_season(
+                LeaderGame.from_score("cfb", season.year, days.get((*k[:4], *(s.final or (None, None))),
+                                      f"Week {k.week}"), k.away, k.home, football_anchor(k), s)
+                for k, s in scores.items())
             folder = directory / "excitement"
             changed += _write_changed(folder / "bev-v1.json", (json.dumps(ledger, ensure_ascii=False,
                 sort_keys=True, separators=(",", ":")) + "\n").encode())
@@ -388,6 +402,8 @@ def build(site: Path, *, replays=None) -> tuple[int, int, int]:
                                                excitement[int(year_text)], int(year_text))
             if raw != markup:
                 changed += _write_changed(path, markup)
+    changed += leaders.save(site / "cfb", "cfb")
+    changed += publish_pages(site / "cfb", "cfb")
     return len(seasons), len(routes), changed
 
 

@@ -5,6 +5,8 @@ from hashlib import sha256
 from pathlib import Path
 import shutil
 
+from alltime_excitement import publish_pages
+from excitement_grades import graded_number
 from site_navigation import masthead
 from spread_cards import ConferenceSlate, basketball_links
 from spread_preview import refresh_retained_previews
@@ -24,6 +26,8 @@ from .team_schedule import schedule_views
 
 V1_START = datetime.fromisoformat("2026-11-24T00:00:00+00:00")
 BEV_EDITION_START = datetime.fromisoformat("2026-11-26T00:00:00+00:00")
+# This dated edition must still reproduce its original published fields.
+LAST_NUMBER_ONLY_EDITION = datetime.fromisoformat("2026-11-26T16:47:00+00:00")
 
 
 def share_conferences(season, checkpoint):
@@ -51,10 +55,13 @@ def _forecasts(forecasts, prepared_at, logo_ids, current, *, year=None):
     for row in forecasts:
         margin = row["predicted_home_margin"]
         pick = "Pick’em" if margin == 0 else escape(row["home"] if margin > 0 else row["away"])
+        bev = row.get("bev", "—")
+        if bev != "—" and (current or prepared_at > LAST_NUMBER_ONLY_EDITION):
+            bev = graded_number("cbb", "BEV", bev)
         forecast_rows.append(
             f'<tr><td>{escape(row["tipoff"])}</td><td>{team_label(row["away"], row.get("away_id"), logo_ids, linked=current, year=year if current else None)}</td>'
             f'<td>{team_label(row["home"], row.get("home_id"), logo_ids, linked=current, year=year if current else None)}</td><td>{pick}</td><td class="num">{abs(margin):.2f}</td>'
-            + (f'<td class="num">{row.get("bev", "—")}</td>' if has_bev else "") + "</tr>"
+            + (f'<td class="num">{bev}</td>' if has_bev else "") + "</tr>"
         )
     section_id = ' id="forecasts"' if current else ""
     forecast_section = ""
@@ -118,6 +125,7 @@ def main():
         refresh_retained_previews(site, "cbb")
         record_artifacts(site, as_of)
         install_pages(site, args.output)
+        publish_pages(args.output, "cbb")
 
 
 def _build_api_site(database, output, args, first_season):

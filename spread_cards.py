@@ -13,13 +13,13 @@ from bs4 import BeautifulSoup
 
 from cfb.archive_markup import ui
 from cfb.conference_pages import Record, _is_conference_game, _UNAFFILIATED
-from cfb.excitement_pages import ESTIMATE_NOTE, aev_label
+from cfb.excitement_pages import ESTIMATE_NOTE, aev_label, bev_label
 from cfb.game_excitement import Matchup
 from cfb.performance import _saved_margin
 from cfb.reference_archive import Season, _rows
 from cfb.win_probability import format_win_chance
 from site_navigation import masthead
-from spread_preview import ORIGIN, SCRIPT, bev_number, preview_icon, social_tags
+from spread_preview import ORIGIN, SCRIPT, bev_number, preview_icon, score_paragraph, social_tags
 
 
 def _matchup_slug(matchup):
@@ -128,11 +128,11 @@ def _document(game: Spread, icon: tuple[str, int] | None) -> str:
     description = escape(f"{game.away.summary} vs. {game.home.summary}") + f" · {context} · {details}"
     canonical = ORIGIN + game.path
     preview = social_tags(canonical, unescape(f"{title} · {line}"), unescape(description), icon,
-                          game.home.name, bev_number(game.bev))
+                          game.home.name, bev_number(game.bev), game.sport)
     source = escape(game.source)
     back = source if game.sport == "cfb" else "/cbb/current.html#forecasts"
     edition_link = f' · <a href="{source}">Dated edition</a>' if game.sport == "cbb" else ""
-    appeal = _score_details(game.bev, game.aev)
+    appeal = _score_details(game.sport, game.bev, game.aev)
     teams = []
     for team in (game.away, game.home):
         logo = f'<img src="{escape(team.mark)}" width="60" height="60" alt="">' if team.mark else ""
@@ -164,14 +164,9 @@ _SHARE = re.compile(r'<!--sr-ui--><a class="share-spread" [^>]*><!--/sr-ui-->(.*
 _HINT = ui('<p class="spread-hint">Select a spread to share that game.</p>')
 
 
-def _score_details(bev, aev):
-    if not bev:
-        return ""
-    metrics = [f"Pregame appeal (BEV) <strong>{escape(bev)}</strong>"]
-    if aev:
-        metrics.append(f"Game drama (AEV) <strong>{escape(aev)}</strong>")
-    text = '<p class="game-excitement">' + " · ".join(metrics) + "</p>"
-    return text + (f"<p>{ESTIMATE_NOTE}</p>" if aev and "*" in aev else "")
+def _score_details(sport, bev, aev):
+    text = score_paragraph(sport, bev, aev)
+    return text + (f"<p>{ESTIMATE_NOTE}</p>" if text and aev and "*" in aev else "")
 
 
 def complete_basketball_card(directory, day, game, score):
@@ -184,7 +179,7 @@ def complete_basketball_card(directory, day, game, score):
     page = BeautifulSoup(raw, "html.parser")
     old = page.select_one(".game-excitement strong")
     current_title = f"{game.away} {'vs.' if game.neutral_site else '@'} {game.home}"
-    if old is None or old.get_text(strip=True) != score.bev or page.h1.get_text(strip=True) not in (matchup, current_title):
+    if old is None or bev_number(old.get_text(strip=True)) != score.bev or page.h1.get_text(strip=True) not in (matchup, current_title):
         return
     margin = -game.home_handicap
     line = "Pick’em" if not margin else f"{game.home} {'by' if margin > 0 else 'to lose by'} {abs(margin):.2f}"
@@ -193,7 +188,7 @@ def complete_basketball_card(directory, day, game, score):
         return
     start = raw.index('<p class="game-excitement">')
     end = raw.index('<div class="share-actions">', start)
-    updated = raw[:start] + _score_details(score.bev, unescape(aev_label(score, plain=True))) + raw[end:]
+    updated = raw[:start] + _score_details("cbb", old.get_text(strip=True), unescape(aev_label(score, plain=True))) + raw[end:]
     if updated != raw:
         target.write_text(updated, encoding="utf-8")
 
@@ -271,7 +266,8 @@ def football_links(raw: bytes, path: Path, directory: Path, season: Season, *, e
         return Spread("cfb", f"{year}/week-{week[1:]}", f"{year} · Week {week[1:]}", source,
                       home, away, neutral, margin,
                       conference.play.get(("", home.name, away.name), "Play type unavailable"),
-                      score.bev if score else None, unescape(aev_label(score, plain=True)) if score and score.final else None)
+                      bev_label(score, plain=True) if score else None,
+                      unescape(aev_label(score, plain=True)) if score and score.final else None)
 
     try:
         markup = raw.decode("utf-8")

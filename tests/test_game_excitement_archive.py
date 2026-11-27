@@ -101,7 +101,7 @@ class ArchiveExcitementTests(unittest.TestCase):
             self.assertEqual(source_bytes(page), raw)
             table = html.fromstring(page).xpath("//table")[0]
             self.assertEqual(table.xpath(".//tr[1]/th/abbr/text()"), ["BEV", "AEV"])
-            self.assertEqual(table.xpath(".//tr[2]/td/text()")[-2:], ["89.1", "77.2*"])
+            self.assertEqual(table.xpath(".//tr[2]/td/text()")[-2:], ["89.1 (A)", "77.2* (A)"])
             self.assertEqual(table.xpath(".//tr[3]/td/text()")[-2:], ["—", "—"])
             changed = {key: GameAppeal("89.1", (27, 21), 44, "full")}
             with self.assertRaisesRegex(ValueError, "displayed"):
@@ -110,7 +110,7 @@ class ArchiveExcitementTests(unittest.TestCase):
             guide = html.fromstring(season_guide(2026, scores, {}))
             self.assertEqual(len(guide.xpath("//table")), 2)
             self.assertNotIn("AEV", guide.xpath("(//table)[1]//th/text()"))
-            self.assertIn("77.2*", guide.xpath("(//table)[2]//td/text()"))
+            self.assertIn("77.2* (A)", guide.xpath("(//table)[2]//td/text()"))
 
     def test_future_game_gets_no_aev_even_if_the_evidence_directory_has_its_later_final(self):
         key = Matchup(0, "Home", "Away", False)

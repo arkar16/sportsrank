@@ -6,6 +6,7 @@ import re
 import sqlite3
 
 from lxml import html
+from excitement_grades import read_number
 
 
 def verify(database: Path, site: Path) -> Counter:
@@ -36,7 +37,7 @@ def verify(database: Path, site: Path) -> Counter:
                 cells = row.xpath("./th|./td")
                 if len(cells) != (7 if status == "final" else 5):
                     raise ValueError(f"{year} game {game_id}: wrong fields for {status}")
-                bev = cells[4].text_content().partition(" · ")[0].strip()
+                bev = read_number("cbb", "BEV", cells[4].text_content().partition(" · ")[0].strip())
                 if not score.fullmatch(bev):
                     raise ValueError(f"{year} game {game_id}: invalid BEV {bev!r}")
                 counts[status] += 1
@@ -47,6 +48,7 @@ def verify(database: Path, site: Path) -> Counter:
                 if final_id != [game_id] or result.text_content().strip() != f"{away}–{home}":
                     raise ValueError(f"{year} game {game_id}: final differs from the official result")
                 aev, _, label = cells[-1].text_content().strip().partition(" · ")
+                aev = read_number("cbb", "AEV", aev)
                 if (label not in labels or not score.fullmatch(aev.removesuffix("*"))
                         or aev.endswith("*") != (label != "Play-by-play")):
                     raise ValueError(f"{year} game {game_id}: invalid AEV or evidence label")

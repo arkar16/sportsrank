@@ -82,6 +82,17 @@ schools played. Retain an early basketball season when its API supplies
 individual games. See the [scoring rules](../plans/2026-game-excitement-scoring-v1.md)
 and [football delivery](https://github.com/arkar16/sportsrank/issues/182).
 
+## Letter grades
+
+The owner selected fixed historical cutoffs for each sport and metric. The
+original workbook used the same cutoffs for BEV and AEV. Those cutoffs would
+award no A-range grade to any verified AEV in the current archive. A+ instead
+marks approximately the top one percent of the reference games. Readers see
+the numeric score alongside the grade, with the existing evidence label.
+Grades use the published precision and leave numeric rankings and forecasts
+intact. The [grade calibration](../plans/2026-game-excitement-scoring-v1.md#letter-grade-calibration)
+defines the reference and the frozen scale.
+
 ## Delivery prerequisites
 
 - Inspect the API's actual provider coverage before finalizing the excitement
