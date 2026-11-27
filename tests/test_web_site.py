@@ -96,6 +96,9 @@ def _build_fixture_site(root: Path) -> None:
             "games": [{"week": 1, "home": "Alabama", "away": "Oregon", "home_score": 17, "away_score": 24,
                        "home_handicap": "-8.5", "market_home_handicap": "-3.0",
                        "neutral_site": False, "straight_up": "incorrect", "market_ats": "Loss"}],
+            "upcoming": [{"week": 2, "home": "Alabama", "away": "Oregon", "home_handicap": "-17.76",
+                          "neutral_site": False, "provider": "Bovada", "market_home_handicap": "-16",
+                          "market_pick": "Alabama", "status": "Pending result"}],
         }),
         encoding="utf-8",
     )
@@ -297,6 +300,13 @@ class WebSiteTests(unittest.TestCase):
         self.assertIn("Win chance", sp)
         self.assertIn("89%", sp)
         self.assertIn('href="/cfb/picks/2026/week-2/oregon-at-alabama"', sp)
+
+        # Performance page shows ungraded forecasts with actual provider name
+        code, _, body = _wsgi_call(self.app, "/cfb/performance/2025")
+        self.assertEqual(code, 200)
+        perf = body.decode("utf-8")
+        self.assertIn("Ungraded forecasts", perf)
+        self.assertIn("Bovada", perf)
 
     def test_legacy_redirects_resolve_to_live_canonical_pages(self):
         legacy_paths = [

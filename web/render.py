@@ -1420,7 +1420,7 @@ def render_performance_season(con: sqlite3.Connection, year: int) -> tuple[str |
             f'<td>{escape(str(u.get("away", "")))}</td>'
             f'<td>{escape(str(u.get("home", "")))}</td>'
             f'<td>{escape(str(u.get("home_handicap", _MISSING)))}</td>'
-            f'<td>{escape(str(u.get("market_provider") or _MISSING))}</td>'
+            f'<td>{escape(str(u.get("provider") or u.get("market_provider") or _MISSING))}</td>'
             f'<td>{escape(str(u.get("market_home_handicap") if u.get("market_home_handicap") is not None else _MISSING))}</td>'
             f'<td>{escape(str(u.get("market_pick") or _MISSING))}</td>'
             f'<td>{escape(str(u.get("status") or "Pending result"))}</td></tr>'
