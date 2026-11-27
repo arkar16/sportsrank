@@ -6,7 +6,7 @@ from pathlib import Path
 import sqlite3
 from urllib.parse import quote
 
-SCHEMA_VERSION = "sportsrank-web-db/v2"
+SCHEMA_VERSION = "sportsrank-web-db/v3"
 
 SCHEMA_DDL = """
 PRAGMA foreign_keys = ON;
@@ -50,6 +50,8 @@ CREATE TABLE seasons (
     is_final INTEGER NOT NULL DEFAULT 0,
     updated_at TEXT NOT NULL DEFAULT '',
     latest_checkpoint TEXT NOT NULL DEFAULT '',
+    home_advantage REAL NOT NULL DEFAULT 3.0,
+    has_excitement INTEGER NOT NULL DEFAULT 0,
     UNIQUE(sport_id, year)
 );
 
@@ -88,7 +90,15 @@ CREATE TABLE games (
     home_handicap_num REAL,
     neutral_site INTEGER NOT NULL DEFAULT 0,
     start_utc TEXT NOT NULL DEFAULT '',
-    status TEXT NOT NULL DEFAULT ''
+    status TEXT NOT NULL DEFAULT '',
+    home_division TEXT NOT NULL DEFAULT '',
+    away_division TEXT NOT NULL DEFAULT '',
+    postseason INTEGER NOT NULL DEFAULT 0,
+    tipoff_label TEXT NOT NULL DEFAULT '',
+    bev_html TEXT NOT NULL DEFAULT '',
+    aev_html TEXT NOT NULL DEFAULT '',
+    aev_estimated INTEGER NOT NULL DEFAULT 0,
+    pick_path TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE performance_seasons (

@@ -71,7 +71,16 @@ def _compress_bytes(raw: bytes) -> bytes:
     return zlib.compress(raw, level=6)
 
 
+def _matchup_pick_slug(away: str, home: str, neutral: bool) -> str:
+    sep = "vs" if neutral else "at"
+    raw = unicodedata.normalize("NFKD", f"{away} {sep} {home}").encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z0-9]+", "-", raw.lower()).strip("-")
+
+
 def _export_cfb(con: sqlite3.Connection, site_dir: Path) -> dict[str, int]:
+    from cfb.excitement_pages import aev_label, bev_label
+    from cfb.game_excitement import Matchup, score_for, season_scores, site_reference
+
     seasons = read_archive(site_dir)
     if not seasons:
         return {"cfb_seasons": 0, "cfb_programs": 0, "cfb_rankings": 0, "cfb_games": 0}
@@ -79,6 +88,8 @@ def _export_cfb(con: sqlite3.Connection, site_dir: Path) -> dict[str, int]:
     routes = program_routes(seasons)
     marks = program_logo_paths(site_dir)
     latest = seasons[-1]
+    has_any_bev = any((site_dir / f"cfb/years/{s.year}/excitement/bev-v1.json").is_file() for s in seasons)
+    excitement_ref = site_reference() if has_any_bev else None
 
     cur = con.execute(
         "INSERT INTO sports(slug, name, classification, current_season, updated_at) "
@@ -107,10 +118,25 @@ def _export_cfb(con: sqlite3.Connection, site_dir: Path) -> dict[str, int]:
         checkpoints = list(season.rankings.keys())
         latest_cp = checkpoints[-1] if checkpoints else ""
         is_final = 1 if "FINAL" in season.rankings else 0
+        year_dir = site_dir / f"cfb/years/{season.year}"
+        scores = {}
+        if excitement_ref is not None and (year_dir / "excitement/bev-v1.json").is_file():
+            scores, _ = season_scores(year_dir, season, excitement_ref)
+        has_excitement = 1 if (scores or (year_dir / "excitement/index.html").is_file()) else 0
+
         cur = con.execute(
-            "INSERT INTO seasons(sport_id, year, label, is_final, updated_at, latest_checkpoint) "
-            "VALUES (?, ?, ?, ?, ?, ?)",
-            (sport_id, season.year, str(season.year), is_final, season.updated_at, latest_cp),
+            "INSERT INTO seasons(sport_id, year, label, is_final, updated_at, latest_checkpoint, "
+            "home_advantage, has_excitement) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                sport_id,
+                season.year,
+                str(season.year),
+                is_final,
+                season.updated_at,
+                latest_cp,
+                float(season.home_advantage),
+                has_excitement,
+            ),
         )
         season_id = int(cur.lastrowid)
 
@@ -141,28 +167,54 @@ def _export_cfb(con: sqlite3.Connection, site_dir: Path) -> dict[str, int]:
             )
             total_rankings += len(ranking_rows)
 
-        game_rows = [
-            (
-                season_id,
-                g.week,
-                g.home,
-                g.away,
-                program_ids.get(g.home),
-                program_ids.get(g.away),
-                g.home_score,
-                g.away_score,
-                format(g.home_handicap, "f") if g.home_handicap is not None else None,
-                float(g.home_handicap) if g.home_handicap is not None else None,
-                1 if g.neutral_site else 0,
-                "",
-                "final" if (g.home_score is not None and g.away_score is not None) else "scheduled",
+        picks_year_dir = site_dir / "cfb" / "picks" / str(season.year)
+        has_picks_dir = picks_year_dir.is_dir()
+        game_rows = []
+        for g in season.games:
+            has_final = g.home_score is not None and g.away_score is not None
+            score = None
+            if scores:
+                key = Matchup(g.week, g.home, g.away, g.neutral_site)
+                score = score_for(scores, key, (g.home_score, g.away_score))
+            bev_html = bev_label(score, sport="cfb") if score else ""
+            aev_html = aev_label(score, sport="cfb") if (score and has_final and score.aev is not None) else ""
+            aev_estimated = 1 if (score and has_final and score.estimated) else 0
+            pick_path = ""
+            if has_picks_dir:
+                pslug = _matchup_pick_slug(g.away, g.home, g.neutral_site)
+                if (picks_year_dir / f"week-{g.week}" / f"{pslug}.html").is_file():
+                    pick_path = f"/cfb/picks/{season.year}/week-{g.week}/{pslug}"
+            game_rows.append(
+                (
+                    season_id,
+                    g.week,
+                    g.home,
+                    g.away,
+                    program_ids.get(g.home),
+                    program_ids.get(g.away),
+                    g.home_score,
+                    g.away_score,
+                    format(g.home_handicap, "f") if g.home_handicap is not None else None,
+                    float(g.home_handicap) if g.home_handicap is not None else None,
+                    1 if g.neutral_site else 0,
+                    g.start_utc,
+                    "final" if has_final else "scheduled",
+                    g.home_division,
+                    g.away_division,
+                    1 if g.postseason else 0,
+                    g.tipoff_label,
+                    bev_html,
+                    aev_html,
+                    aev_estimated,
+                    pick_path,
+                )
             )
-            for g in season.games
-        ]
         con.executemany(
             "INSERT INTO games(season_id, week, home_school, away_school, home_program_id, "
             "away_program_id, home_score, away_score, home_handicap, home_handicap_num, "
-            "neutral_site, start_utc, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "neutral_site, start_utc, status, home_division, away_division, postseason, "
+            "tipoff_label, bev_html, aev_html, aev_estimated, pick_path) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             game_rows,
         )
         total_games += len(game_rows)

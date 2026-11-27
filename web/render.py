@@ -7,11 +7,71 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from html import escape
 import json
+from math import atan, cos, sin, sqrt
+import re
 import sqlite3
 import zlib
 
 _MISSING = "—"
 _MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+_ESTIMATE_NOTE = "* AEV estimated from the available scoring totals and comparable games."
+_MARGIN_ERROR = {"cfb": 15.0, "cbb": 11.0}
+_RECORD_RE = re.compile(r"^(\d+)\s*[-–]\s*(\d+)(?:\s*[-–]\s*(\d+))?$")
+
+
+def _win_probability(margin: float, *, sport_slug: str) -> float:
+    """Variance-matched t(14) win probability matching cfb/win_probability.py."""
+    sigma = _MARGIN_ERROR.get(sport_slug, 15.0)
+    theta = atan(float(margin) / (sigma * sqrt(12 / 14) * sqrt(14)))
+    sine, cosine = sin(theta), cos(theta)
+    integral, half_integral = sine, 1.0
+    for power in range(3, 14, 2):
+        integral = (sine * cosine ** (power - 1) + (power - 1) * integral) / power
+        half_integral *= (power - 1) / power
+    return min(1.0, max(0.0, 0.5 + integral / (2 * half_integral)))
+
+
+def _format_win_chance(handicap: Decimal | None, *, sport_slug: str) -> str:
+    """Format a team handicap (negative when favored) as a whole percentage."""
+    return _MISSING if handicap is None else f"{_win_probability(-float(handicap), sport_slug=sport_slug):.0%}"
+
+
+def _project_record(record_text: str | None, probs: list[float]) -> str | None:
+    if not record_text:
+        return None
+    match = _RECORD_RE.fullmatch(record_text.strip())
+    if not match:
+        return None
+    w, l, t = (int(part or 0) for part in match.groups())
+    wins = w + t / 2 + sum(probs)
+    losses = l + t / 2 + sum(1.0 - p for p in probs)
+    return f"{wins:.1f}–{losses:.1f}"
+
+
+def _conference_slug(name: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+
+
+def _conference_href(con: sqlite3.Connection, sport_slug: str, conf_name: str | None, year: int) -> str | None:
+    if not conf_name or conf_name == _MISSING:
+        return None
+    slug = _conference_slug(conf_name)
+    if not slug:
+        return None
+    path = f"/{sport_slug}/conferences/{slug}/{year}"
+    exists = con.execute("SELECT 1 FROM pages WHERE canonical_path = ?", (path,)).fetchone()
+    return path if exists else None
+
+
+def _conference_paths_for_sport(con: sqlite3.Connection, sport_slug: str) -> set[str]:
+    prefix = f"/{sport_slug}/conferences/"
+    return {
+        r[0]
+        for r in con.execute(
+            "SELECT canonical_path FROM pages WHERE canonical_path >= ? AND canonical_path < ?",
+            (prefix, prefix[:-1] + "0"),
+        ).fetchall()
+    }
 
 
 def _updated_time(value: str, label: str = "Updated") -> str:
@@ -395,19 +455,66 @@ def render_program_history(con: sqlite3.Connection, sport_slug: str, team_slug: 
     final_ranks = [(int(h["year"]), int(h["final_rank"])) for h in reversed(history_rows) if h["final_rank"] is not None]
     svg = _rank_trend_svg(sport_slug, team_slug, final_ranks)
 
+    best_cps_rows = con.execute(
+        """
+        SELECT sn.year, cp.code, cp.label, cp.sort_order, r.rank
+        FROM rankings r
+        JOIN checkpoints cp ON cp.checkpoint_id = r.checkpoint_id
+        JOIN seasons sn ON sn.season_id = cp.season_id
+        WHERE r.program_id = ?
+        ORDER BY sn.year DESC, cp.sort_order ASC
+        """,
+        (row["program_id"],),
+    ).fetchall()
+    best_cps_by_year: dict[int, list[tuple[str, str]]] = defaultdict(list)
+    best_rank_by_year = {int(h["year"]): int(h["best_rank"]) for h in history_rows}
+    for b in best_cps_rows:
+        yr = int(b["year"])
+        if int(b["rank"]) == best_rank_by_year.get(yr):
+            best_cps_by_year[yr].append((b["code"], b["label"]))
+
+    conf_pages = _conference_paths_for_sport(con, sport_slug)
+
     tr_list = []
     for h in history_rows:
+        yr = int(h["year"])
         cp_code = h["latest_checkpoint"] or ""
         cp_label = h["latest_cp_label"] or cp_code
         as_of = f"Through {cp_label}" if cp_code.startswith("W") else cp_label
+        best_rank = h["best_rank"]
+        best_cps = best_cps_by_year.get(yr, [])
+        if best_cps:
+            first_code, first_label = best_cps[0]
+            best_href = f"/{sport_slug}/{yr}/{first_code.lower()}"
+            rank_label = f'{h["season_label"]} best rank {best_rank}'
+            if len(best_cps) == 1:
+                b_title = first_label
+                b_aria = f"{rank_label}, {first_label}"
+            else:
+                b_title = f"First reached {first_label}"
+                b_aria = f"{rank_label}, first reached {first_label}"
+            best_html = (
+                f'<a href="{escape(best_href)}" title="{escape(b_title)}" '
+                f'aria-label="{escape(b_aria)}">{best_rank}</a>'
+            )
+        else:
+            best_html = str(best_rank)
+
+        conf = h["latest_conf"] or ""
+        if conf and conf != _MISSING:
+            c_path = f"/{sport_slug}/conferences/{_conference_slug(conf)}/{yr}"
+            conf_html = f'<a href="{escape(c_path)}">{escape(conf)}</a>' if c_path in conf_pages else escape(conf)
+        else:
+            conf_html = _MISSING
+
         tr_list.append(
-            f'<tr><th scope="row"><a href="/{sport_slug}/teams/{escape(team_slug)}/{h["year"]}">{escape(h["season_label"])}</a></th>'
+            f'<tr><th scope="row"><a href="/{sport_slug}/teams/{escape(team_slug)}/{yr}">{escape(h["season_label"])}</a></th>'
             f"<td>{escape(as_of)}</td>"
             f'<td class="num">{h["latest_rank"] if h["latest_rank"] is not None else _MISSING}</td>'
             f'<td class="num">{escape(h["latest_rating"]) if h["latest_rating"] is not None else _MISSING}</td>'
-            f'<td class="num">{h["best_rank"]}</td>'
+            f'<td class="num">{best_html}</td>'
             f'<td class="num">{escape(h["latest_record"]) if h["latest_record"] is not None else _MISSING}</td>'
-            f'<td>{escape(h["latest_conf"] or _MISSING)}</td></tr>'
+            f"<td>{conf_html}</td></tr>"
         )
     table = (
         '<div class="table-scroll" role="region" aria-label="Season history" tabindex="0">'
@@ -433,7 +540,8 @@ def render_program_history(con: sqlite3.Connection, sport_slug: str, team_slug: 
 
 def render_program_season(con: sqlite3.Connection, sport_slug: str, team_slug: str, year: int) -> str | None:
     row = con.execute(
-        "SELECT p.*, s.sport_id, sn.season_id, sn.label AS season_label, sn.updated_at "
+        "SELECT p.*, s.sport_id, sn.season_id, sn.label AS season_label, sn.updated_at, "
+        "sn.is_final, sn.latest_checkpoint, sn.home_advantage, sn.has_excitement "
         "FROM programs p "
         "JOIN sports s ON s.sport_id = p.sport_id "
         "JOIN seasons sn ON sn.sport_id = s.sport_id AND sn.year = ? "
@@ -447,10 +555,12 @@ def render_program_season(con: sqlite3.Connection, sport_slug: str, team_slug: s
     season_id = row["season_id"]
     program_id = row["program_id"]
     sport_id = row["sport_id"]
+    is_final = bool(row["is_final"])
+    home_advantage = float(row["home_advantage"])
 
     # Checkpoints and this team's standings
     cps = con.execute(
-        "SELECT cp.checkpoint_id, cp.code, cp.label, cp.sort_order, r.rank, r.rating, r.record_text "
+        "SELECT cp.checkpoint_id, cp.code, cp.label, cp.sort_order, r.rank, r.rating, r.record_text, r.conference "
         "FROM checkpoints cp LEFT JOIN rankings r ON r.checkpoint_id = cp.checkpoint_id AND r.program_id = ? "
         "WHERE cp.season_id = ? ORDER BY cp.sort_order ASC",
         (program_id, season_id),
@@ -495,6 +605,71 @@ def render_program_season(con: sqlite3.Connection, sport_slug: str, team_slug: s
     if "FINAL" in cp_map:
         ordered_codes.append("FINAL")
 
+    through_week: int | None = None
+    if not is_final:
+        w_nums = [int(c["code"][1:]) for c in cps if c["code"].startswith("W")]
+        through_week = max(w_nums, default=-1)
+
+    def _is_upcoming(g: sqlite3.Row) -> bool:
+        return (
+            through_week is not None
+            and int(g["week"]) > through_week
+            and g["home_score"] is None
+            and g["away_score"] is None
+        )
+
+    has_upcoming = any(_is_upcoming(g) for g in games)
+    has_excitement = bool(row["has_excitement"]) or any(g["bev_html"] or g["aev_html"] for g in games)
+    has_estimate = False
+
+    # Projected season record (expected wins & losses) for active seasons
+    latest_cp = cp_map.get(row["latest_checkpoint"])
+    if latest_cp is None or latest_cp["rank"] is None:
+        latest_cp = next((c for c in reversed(cps) if c["rank"] is not None), None)
+    projection: str | None = None
+    if not is_final and latest_cp is not None:
+        latest_ratings = {
+            r["canonical_name"]: float(r["rating_num"])
+            for r in con.execute(
+                "SELECT p.canonical_name, r.rating_num FROM rankings r "
+                "JOIN programs p ON p.program_id = r.program_id WHERE r.checkpoint_id = ?",
+                (latest_cp["checkpoint_id"],),
+            ).fetchall()
+        }
+        rem_probs: list[float] = []
+        for g in games:
+            if g["postseason"] or not _is_upcoming(g):
+                continue
+            if g["home_handicap"] is not None:
+                home_margin = -float(g["home_handicap"])
+            elif sport_slug == "cfb":
+                h_rat = latest_ratings.get(
+                    g["home_school"],
+                    -26.0 if g["home_division"].lower() == "fcs" else -22.0,
+                )
+                a_rat = latest_ratings.get(
+                    g["away_school"],
+                    -26.0 if g["away_division"].lower() == "fcs" else -22.0,
+                )
+                venue = 0.0 if g["neutral_site"] else home_advantage
+                home_margin = h_rat - a_rat + venue
+            else:
+                continue
+            home_prob = _win_probability(home_margin, sport_slug=sport_slug)
+            at_home = g["home_program_id"] == program_id
+            rem_probs.append(home_prob if at_home else 1.0 - home_prob)
+        projection = _project_record(latest_cp["record_text"], rem_probs)
+
+    anchor = ' id="remaining-schedule"'
+
+    def _row_start(upcoming: bool) -> str:
+        nonlocal anchor
+        if upcoming and anchor:
+            start = f"<tr{anchor}>"
+            anchor = ""
+            return start
+        return "<tr>"
+
     seen_marks: set[str] = set()
     groups = []
     for code in ordered_codes:
@@ -507,13 +682,15 @@ def render_program_season(con: sqlite3.Connection, sport_slug: str, team_slug: s
         rec_s = escape(cp["record_text"]) if (cp and cp["record_text"] is not None) else _MISSING
 
         if wk_games:
-            game_cells = []
-            for g in wk_games:
+            sorted_games = sorted(((_is_upcoming(g), g) for g in wk_games), key=lambda item: item[0])
+            game_rows = []
+            for upcoming, g in sorted_games:
                 at_home = g["home_program_id"] == program_id
                 opp = g["away_school"] if at_home else g["home_school"]
                 side = "Neutral" if g["neutral_site"] else ("Home" if at_home else "Away")
                 ts, os_ = (g["home_score"], g["away_score"]) if at_home else (g["away_score"], g["home_score"])
                 score_s = f"{ts}–{os_}" if (ts is not None and os_ is not None) else _MISSING
+                handicap: Decimal | None = None
                 spread_s = _MISSING
                 if g["home_handicap"] is not None:
                     h = Decimal(g["home_handicap"])
@@ -528,28 +705,62 @@ def render_program_season(con: sqlite3.Connection, sport_slug: str, team_slug: s
                 show_mark = opp not in seen_marks
                 seen_marks.add(opp)
                 opp_html = _team_label(opp, opp_href, marks.get(opp), show_mark=show_mark)
-                game_cells.append(f'<td>{opp_html}</td><td>{side}</td><td class="num">{spread_s}</td><td class="num">{score_s}</td>')
+                if g["tipoff_label"]:
+                    opp_html += f'<small>{escape(g["tipoff_label"])}</small>'
+                cells = f'<td>{opp_html}</td><td>{side}</td><td class="num">{spread_s}</td>'
+                if has_upcoming:
+                    chance = _format_win_chance(handicap, sport_slug=sport_slug) if upcoming else _MISSING
+                    cells += f'<td class="num">{chance}</td>'
+                cells += f'<td class="num">{score_s}</td>'
+                if has_excitement:
+                    if g["aev_estimated"]:
+                        has_estimate = True
+                    bev_cell = g["bev_html"] or "&mdash;"
+                    aev_cell = g["aev_html"] or "&mdash;"
+                    cells += f'<td class="num">{bev_cell}</td><td class="num">{aev_cell}</td>'
+                game_rows.append((_row_start(upcoming), cells))
         else:
             opp_label = "No game listed" if code.startswith("W") else _MISSING
-            game_cells = [f"<td>{opp_label}</td><td>{_MISSING}</td><td>{_MISSING}</td><td>{_MISSING}</td>"]
+            extra_dashes = 3 + (1 if has_upcoming else 0) + (2 if has_excitement else 0)
+            game_rows = [("<tr>", f"<td>{opp_label}</td>" + f"<td>{_MISSING}</td>" * extra_dashes)]
 
         groups.append(
-            f'<tbody><tr><th scope="rowgroup"{span}>{escape(cp_label)}</th>'
+            f'<tbody>{game_rows[0][0]}<th scope="rowgroup"{span}>{escape(cp_label)}</th>'
             f'<td class="num"{span}>{rank_s}</td><td class="num"{span}>{rating_s}</td>'
-            f'<td{span}>{rec_s}</td>{game_cells[0]}</tr>'
-            + "".join(f"<tr>{cell}</tr>" for cell in game_cells[1:])
+            f'<td{span}>{rec_s}</td>{game_rows[0][1]}</tr>'
+            + "".join(f"{start}{cell}</tr>" for start, cell in game_rows[1:])
             + "</tbody>"
         )
 
-    table = (
+    headers = [
+        '<th scope="col">Week</th>',
+        '<th scope="col">National rank</th>',
+        '<th scope="col">CORS rating</th>',
+        '<th scope="col">Record</th>',
+        '<th scope="col">Opponent</th>',
+        '<th scope="col">Site</th>',
+        '<th scope="col">CORS spread <small>Negative if favored</small></th>',
+    ]
+    if has_upcoming:
+        headers.append('<th scope="col">Win chance</th>')
+    headers.append(f'<th scope="col">Score <small>{escape(school)} first</small></th>')
+    if has_excitement:
+        headers.append('<th scope="col">BEV <small>Pregame appeal</small></th>')
+        headers.append('<th scope="col">AEV <small>Postgame drama</small></th>')
+
+    log = (
         '<div class="table-scroll" role="region" aria-label="Rankings and games" tabindex="0">'
         '<table aria-label="Rankings and games"><thead><tr>'
-        '<th scope="col">Week</th><th scope="col">National rank</th><th scope="col">CORS rating</th>'
-        '<th scope="col">Record</th><th scope="col">Opponent</th><th scope="col">Site</th>'
-        '<th scope="col">CORS spread <small>Negative if favored</small></th>'
-        f'<th scope="col">Score <small>{escape(school)} first</small></th>'
-        f'</tr></thead>{"".join(groups)}</table></div>'
+        + "".join(headers)
+        + f'</tr></thead>{"".join(groups)}</table></div>'
     )
+    if has_estimate:
+        log += f"<p>{_ESTIMATE_NOTE}</p>"
+    if has_upcoming:
+        log = '<p><a href="#remaining-schedule">Remaining schedule</a></p><h2>Weekly rankings and games</h2>' + log
+    if projection is not None or has_upcoming:
+        log += f'<p id="projected-season-record">Projected season record <strong>{escape(projection or _MISSING)}</strong></p>'
+
     heading = f'{escape(row["season_label"])} <span data-program="{escape(school)}">{_mark_img(row["mark_path"], large=True)}{escape(school)}</span>'
     sport_noun = "football" if sport_slug == "cfb" else "basketball"
     footer = _updated_time(row["updated_at"], "Rankings updated") if row["updated_at"] else ""
@@ -557,13 +768,23 @@ def render_program_season(con: sqlite3.Connection, sport_slug: str, team_slug: s
         (f"/{sport_slug}/teams/{team_slug}", f"{school} history"),
         (f"/{sport_slug}/{year}", f'{row["season_label"]} season'),
     ]
+    latest_conf = latest_cp["conference"] if latest_cp else None
+    conf_href = _conference_href(con, sport_slug, latest_conf, year)
+    if conf_href and latest_conf:
+        related.append((conf_href, f'{row["season_label"]} {latest_conf}'))
+    if has_excitement:
+        exc_path = f"/{sport_slug}/{year}/excitement"
+        if con.execute("SELECT 1 FROM pages WHERE canonical_path = ?", (exc_path,)).fetchone():
+            related.append((exc_path, "Game excitement"))
+
     return _layout(
         con,
         f'{row["season_label"]} {school} {sport_noun} | SportsRank',
-        f"<h1>{heading}</h1>{table}",
+        f"<h1>{heading}</h1>{log}",
         active="teams" if sport_slug == "cfb" else sport_slug,
         footer=footer,
         related_nav=related,
+        sport_slug=sport_slug,
     )
 
 
@@ -678,6 +899,7 @@ def render_season_or_checkpoint(
     else:
         delta_note = f'Change since {baseline["label"]}.'
 
+    conf_pages = _conference_paths_for_sport(con, sport_slug)
     tr_html = []
     for r in rows:
         prev = prior_map.get(r["program_id"])
@@ -687,13 +909,19 @@ def render_season_or_checkpoint(
             rat_delta = float(r["rating_num"]) - float(prev["rating_num"])
             rc = f"{r_delta:+d}" if r_delta else "0"
             ratc = f"{rat_delta:+.2f}" if abs(rat_delta) >= 0.005 else "0.00"
+        conf = r["conference"] or ""
+        if conf and conf != _MISSING:
+            c_path = f"/{sport_slug}/conferences/{_conference_slug(conf)}/{year}"
+            conf_html = f'<a href="{escape(c_path)}">{escape(conf)}</a>' if c_path in conf_pages else escape(conf)
+        else:
+            conf_html = _MISSING
         tr_html.append(
             f'<tr><td class="num">{r["rank"]}</td>'
             f'<th scope="row">{_team_label(r["canonical_name"], f"/{sport_slug}/teams/{r["slug"]}/{year}", r["mark_path"])}</th>'
             f'<td class="num">{rc}</td><td class="num">{ratc}</td>'
             f'<td class="num">{float(r["rating_num"]):.2f}</td>'
             f'<td class="num">{escape(r["record_text"])}</td>'
-            f'<td>{escape(r["conference"])}</td></tr>'
+            f"<td>{conf_html}</td></tr>"
         )
 
     rankings_table = (
@@ -789,6 +1017,16 @@ def render_season_or_checkpoint(
         )
         week_archive_html = f'<section id="season-archive"><h2>Weekly sheets</h2><ul class="week-links">{wk_items}</ul></section>'
 
+    jump_links = []
+    if upsets_html:
+        jump_links.append('<a href="#cors-upsets">Upsets</a>')
+    if week_archive_html:
+        jump_links.append('<a href="#season-archive">Season archive</a>')
+    exc_path = f"/{sport_slug}/{year}/excitement"
+    if season["has_excitement"] and con.execute("SELECT 1 FROM pages WHERE canonical_path = ?", (exc_path,)).fetchone():
+        jump_links.append(f'<a href="{exc_path}">Game excitement</a>')
+    jump_html = f'<p>{" · ".join(jump_links)}</p>' if jump_links else ""
+
     stamp = _updated_time(season["updated_at"]) if season["updated_at"] else ""
     meta_html = f'<div id="season-notes"><p>{stamp}</p></div>' if stamp else ""
     if is_landing:
@@ -800,7 +1038,7 @@ def render_season_or_checkpoint(
         heading = f'{season["label"]} {sport_slug.upper()} · {target["label"]}'
         related = [(f"/{sport_slug}/{year}", f'{season["label"]} season')]
 
-    body = f"<header><h1>{escape(heading)}</h1>{meta_html}</header>{cp_nav}{matchup_nav}{standings_block}{week_archive_html}"
+    body = f"<header><h1>{escape(heading)}</h1>{meta_html}</header>{cp_nav}{matchup_nav}{jump_html}{standings_block}{week_archive_html}"
     html = _layout(
         con,
         title,
@@ -859,6 +1097,12 @@ def render_games_view(
         href = f"/{sport_slug}/teams/{ranked_slugs[name]}/{year}" if name in ranked_slugs else None
         return _team_label(name, href, marks.get(name))
 
+    show_excitement = view in ("spreads", "results") and (
+        bool(season["has_excitement"]) or any(g["bev_html"] or g["aev_html"] for g in games)
+    )
+    has_estimate = False
+    has_picks = view == "spreads" and any(g["pick_path"] for g in games)
+
     rows_html = []
     for g in games:
         home = team_cell(g["home_school"])
@@ -868,30 +1112,42 @@ def render_games_view(
         as_ = str(g["away_score"]) if g["away_score"] is not None else _MISSING
         pick = _MISSING
         margin_s = _MISSING
+        chance_s = _MISSING
         if g["home_handicap"] is not None:
             h = Decimal(g["home_handicap"])
             if h == 0:
                 pick = "Pick’em"
                 margin_s = "0.00"
+                chance_s = _format_win_chance(Decimal(0), sport_slug=sport_slug)
             elif h < 0:
                 pick = escape(g["home_school"])
                 margin_s = f"{abs(h):.2f}"
+                chance_s = _format_win_chance(h, sport_slug=sport_slug)
             else:
                 pick = escape(g["away_school"])
                 margin_s = f"{abs(h):.2f}"
+                chance_s = _format_win_chance(h.copy_negate(), sport_slug=sport_slug)
 
         if view == "schedule":
             rows_html.append(f'<tr><td class="num">{g["week"]}</td><td>{away}</td><td>{home}</td><td>{site}</td></tr>')
         elif view == "spreads":
             score_s = f"{g['away_score']}–{g['home_score']}" if (g["home_score"] is not None and g["away_score"] is not None) else _MISSING
+            pick_cell = f'<a class="share-spread" href="{escape(g["pick_path"])}">{pick}</a>' if g["pick_path"] else pick
+            extra = f'<td class="num">{g["bev_html"] or "&mdash;"}</td>' if show_excitement else ""
             rows_html.append(
                 f'<tr><td class="num">{g["week"]}</td><td>{away}</td><td>{home}</td>'
-                f'<td>{pick}</td><td class="num">{margin_s}</td><td class="num">{score_s}</td></tr>'
+                f'<td>{pick_cell}</td><td class="num">{margin_s}</td>'
+                f'<td class="num">{chance_s}</td><td class="num">{score_s}</td>{extra}</tr>'
             )
         else:  # results
+            extra = ""
+            if show_excitement:
+                if g["aev_estimated"]:
+                    has_estimate = True
+                extra = f'<td class="num">{g["bev_html"] or "&mdash;"}</td><td class="num">{g["aev_html"] or "&mdash;"}</td>'
             rows_html.append(
                 f'<tr><td class="num">{g["week"]}</td><td>{away}</td><td class="num">{as_}</td>'
-                f'<td>{home}</td><td class="num">{hs}</td><td>{site}</td></tr>'
+                f'<td>{home}</td><td class="num">{hs}</td><td>{site}</td>{extra}</tr>'
             )
 
     if view == "schedule":
@@ -900,20 +1156,42 @@ def render_games_view(
     elif view == "spreads":
         headers = (
             '<th scope="col" class="num">Week</th><th scope="col">Away</th><th scope="col">Home</th>'
-            '<th scope="col">CORS pick</th><th scope="col" class="num">Margin</th><th scope="col" class="num">Score (A–H)</th>'
+            '<th scope="col">CORS pick</th><th scope="col" class="num">Margin</th>'
+            '<th scope="col" class="num">Win chance</th><th scope="col" class="num">Score (A–H)</th>'
+            + ('<th scope="col"><abbr title="Before Excitement Value">BEV</abbr></th>' if show_excitement else "")
         )
         kind_label = "CORS spreads"
     else:
         headers = (
             '<th scope="col" class="num">Week</th><th scope="col">Away</th><th scope="col" class="num">Score</th>'
             '<th scope="col">Home</th><th scope="col" class="num">Score</th><th scope="col">Site</th>'
+            + (
+                '<th scope="col"><abbr title="Before Excitement Value">BEV</abbr></th>'
+                '<th scope="col"><abbr title="After Excitement Value">AEV</abbr></th>'
+                if show_excitement else ""
+            )
         )
         kind_label = "scores"
 
     scope_label = f'Week {week} {kind_label}' if week is not None else f'All season {kind_label}'
     heading = f'{season["label"]} {sport_slug.upper()} · {scope_label}'
+    intro = ""
+    if has_picks:
+        intro += '<p class="spread-hint">Select a CORS pick to open its shareable card.</p>'
+    if show_excitement:
+        exc_path = f"/{sport_slug}/{year}/excitement"
+        exc_link = (
+            f' <a href="{exc_path}">{year} game excitement</a>'
+            if con.execute("SELECT 1 FROM pages WHERE canonical_path = ?", (exc_path,)).fetchone()
+            else ""
+        )
+        after = "" if view == "spreads" else " AEV measures game drama."
+        if has_estimate:
+            after += " " + _ESTIMATE_NOTE
+        intro += f"<p>BEV rates pregame appeal on a 0&ndash;100 scale.{after}{exc_link}</p>"
+
     if rows_html:
-        content = f'<div class="table-scroll"><table><thead><tr>{headers}</tr></thead><tbody>{"".join(rows_html)}</tbody></table></div>'
+        content = f'{intro}<div class="table-scroll"><table><thead><tr>{headers}</tr></thead><tbody>{"".join(rows_html)}</tbody></table></div>'
     else:
         content = "<p>No games recorded for this selection.</p>"
 
@@ -966,22 +1244,33 @@ def render_honors(con: sqlite3.Connection, sport_slug: str, kind: str) -> str | 
             (sport["sport_id"],),
         ).fetchall()
 
-    tr_html = "".join(
-        f'<tr><th scope="row"><a href="/{sport_slug}/{r["year"]}">{escape(r["season_label"])}</a></th>'
-        f'<td>{_team_label(r["canonical_name"], f"/{sport_slug}/teams/{r["slug"]}/{r["year"]}", r["mark_path"])}</td>'
-        f'<td>{escape(r["conference"] or _MISSING)}</td>'
-        f'<td class="num">{escape(r["record_text"])}</td>'
-        f'<td class="num">{escape(r["rating"])}</td></tr>'
-        for r in rows
-    )
+    conf_pages = _conference_paths_for_sport(con, sport_slug)
+    tr_html = []
+    for r in rows:
+        conf = r["conference"] or ""
+        if conf and conf != _MISSING:
+            c_path = f"/{sport_slug}/conferences/{_conference_slug(conf)}/{r['year']}"
+            conf_html = f'<a href="{escape(c_path)}">{escape(conf)}</a>' if c_path in conf_pages else escape(conf)
+        else:
+            conf_html = _MISSING
+        tr_html.append(
+            f'<tr><th scope="row"><a href="/{sport_slug}/{r["year"]}">{escape(r["season_label"])}</a></th>'
+            f'<td>{_team_label(r["canonical_name"], f"/{sport_slug}/teams/{r["slug"]}/{r["year"]}", r["mark_path"])}</td>'
+            f"<td>{conf_html}</td>"
+            f'<td class="num">{escape(r["record_text"])}</td>'
+            f'<td class="num">{escape(r["rating"])}</td></tr>'
+        )
     table = (
         '<div class="table-scroll"><table><thead><tr>'
         '<th scope="col">Season</th><th scope="col">Team</th><th scope="col">Conference</th>'
         '<th scope="col" class="num">Record</th><th scope="col" class="num">CORS rating</th>'
-        f'</tr></thead><tbody>{tr_html}</tbody></table></div>'
+        f'</tr></thead><tbody>{"".join(tr_html)}</tbody></table></div>'
     )
     other = ("last-place", "Last-place finishers") if kind == "champions" else ("champions", "National champions")
     related = [(f"/{sport_slug}", sport["name"]), (f"/{sport_slug}/history/{other[0]}", other[1])]
+    conf_honors = f"/{sport_slug}/history/conference-honors"
+    if con.execute("SELECT 1 FROM pages WHERE canonical_path = ?", (conf_honors,)).fetchone():
+        related.append((conf_honors, "Best and worst conferences by year"))
     return _layout(con, f"{title} | SportsRank", f"<h1>{escape(title)}</h1>{table}", active=sport_slug, related_nav=related)
 
 
@@ -1122,6 +1411,27 @@ def render_performance_season(con: sqlite3.Connection, year: int) -> tuple[str |
     s = report.get("summary", {})
     weekly = report.get("weekly", [])
     games = report.get("games", [])
+    upcoming = report.get("upcoming", [])
+
+    upcoming_html = ""
+    if upcoming:
+        up_rows = "".join(
+            f'<tr><td>W{u.get("week", "")}</td>'
+            f'<td>{escape(str(u.get("away", "")))}</td>'
+            f'<td>{escape(str(u.get("home", "")))}</td>'
+            f'<td>{escape(str(u.get("home_handicap", _MISSING)))}</td>'
+            f'<td>{escape(str(u.get("provider") or u.get("market_provider") or _MISSING))}</td>'
+            f'<td>{escape(str(u.get("market_home_handicap") if u.get("market_home_handicap") is not None else _MISSING))}</td>'
+            f'<td>{escape(str(u.get("market_pick") or _MISSING))}</td>'
+            f'<td>{escape(str(u.get("status") or "Pending result"))}</td></tr>'
+            for u in upcoming
+        )
+        upcoming_html = (
+            f'<h2>Ungraded forecasts ({len(upcoming)})</h2><div class="scroll"><table><thead><tr>'
+            "<th>Week</th><th>Away</th><th>Home</th><th>CORS spread (home)</th>"
+            "<th>Provider</th><th>Provider spread (home)</th><th>Market pick</th><th>Status</th>"
+            f"</tr></thead><tbody>{up_rows}</tbody></table></div>"
+        )
 
     weekly_rows = "".join(
         f'<tr><td>Week {w["week"]}</td><td>{w.get("game_count", 0)}</td>'
@@ -1160,6 +1470,7 @@ def render_performance_season(con: sqlite3.Connection, year: int) -> tuple[str |
         f'<p><a href="/cfb/performance/{year}/report.json">Report (JSON)</a> · '
         f'<a href="/cfb/performance/{year}/games.csv">Games (CSV)</a> · '
         f'<a href="/cfb/performance/{year}/weekly.csv">Weekly (CSV)</a></p>'
+        f"{upcoming_html}"
         '<h2>By week</h2><div class="scroll"><table><thead><tr>'
         "<th>Week</th><th>Games</th><th>Winner W–L</th><th>Cover W–L</th>"
         "<th>MAE</th><th>RMSE</th><th>Market ATS</th><th>ATS %</th>"
