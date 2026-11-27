@@ -36,3 +36,4 @@ consult architecture/current work before treating it as implemented.
 | [0029](0029-adopt-kalman-two-scale-football-cors-v1.md) | Adopt two-timescale Bayesian state-space football CORS v1.0.0 |
 | [0030](0030-adopt-kalman-two-scale-basketball-cors-v1.md) | Adopt two-timescale Bayesian state-space basketball CORS v1.0.0 |
 | [0031](0031-weight-basketball-outcomes-by-pregame-spread.md) | Weight basketball outcomes by the pregame spread in CORS v1.1.0 |
+| [0032](0032-limit-football-credit-for-fcs-blowouts.md) | Limit football CORS credit for FBS favorites' blowouts against FCS opponents |

@@ -142,6 +142,6 @@ After Excitement Value (AEV) rates how long the score stayed close, lead changes
 Both run from 0 to 100. Game data comes from CollegeFootballData. {SCALE_LINK}.</p>
 <p>{estimated_note}A final-score estimate uses comparable games with the same or a nearby margin. A pregame baseline uses only information available before kickoff.</p>
 {table(pending, True)}{table(completed, False)}
-<p>BEV uses the preceding CORS v1.0.0 checkpoint, including for reconstructed historical forecasts.
+<p>BEV keeps the pregame ranks and spread from the CORS edition that first scored the matchup.
 A missing team rating uses a pregame baseline. These scores use no market bonus. <a href="bev-v1.json">Pregame inputs</a> · <a href="{_METHOD}">Scoring method</a></p>
 </main></body></html>"""

@@ -5,7 +5,7 @@ from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
 
-from .cors_v1 import CompletedGame, SeasonInput, replay_seasons
+from .cors_v1 import CompletedGame, SeasonInput, UNCAPPED_VERSION, replay_seasons
 
 
 def _input(game):
@@ -49,13 +49,13 @@ def _replay_inputs(seasons, revisions):
 def attach_football_impacts(seasons, replays=None):
     if replays is None:
         inputs, _ = _replay_inputs(seasons, {})
-        replays, _ = replay_seasons(inputs)
+        replays, _ = replay_seasons(inputs, model_version=UNCAPPED_VERSION)
         _attach(seasons, replays)
         record = json.loads(Path(__file__).with_name("football_impact_revisions.json").read_bytes())
         inputs, changed = _replay_inputs(seasons, record["seasons"])
         if not changed:
             return
-        replays, _ = replay_seasons(inputs)
+        replays, _ = replay_seasons(inputs, model_version=UNCAPPED_VERSION)
     _attach(seasons, replays)
 
 
@@ -75,7 +75,8 @@ def _attach(seasons, replays):
             if previous_matches and current_matches:
                 matching.add(week)
             previous_matches = current_matches
-        impacts = {replace(g, game_id="", game_date=""): changes
+        impacts = {CompletedGame(g.week, g.home_team, g.home_division, g.home_score,
+                                 g.away_team, g.away_division, g.away_score, g.neutral_site): changes
                    for g, changes in replay.game_impacts.items()}
         for index, game in enumerate(season.games):
             if game.week in matching and game.home_score is not None and game.away_score is not None:

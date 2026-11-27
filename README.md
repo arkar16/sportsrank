@@ -119,10 +119,13 @@ GitHub evidence using `GITHUB_TOKEN`, `GH_TOKEN`, or the existing `gh` login,
 without printing or saving the credential; it does not read or
 write Firebase. Results are `site/` and `receipt.json` under a new output folder.
 
-## College football CORS v1.0.0
+## College football CORS v1.1.0
 
-College football uses the frozen two-timescale Bayesian state-space multi-tier
-Kalman model (**CORS v1.0.0**, [ADR-0029](docs/adr/0029-adopt-kalman-two-scale-football-cors-v1.md)).
+College football uses a two-timescale Bayesian state-space Kalman model. When
+an FBS favorite beats an FCS opponent, its rating credit levels off at a margin
+of 35 points or seven above the pregame expectation, whichever is higher. The
+full score informs the shared FCS rating.
+[Football CORS decision](docs/adr/0032-limit-football-credit-for-fcs-blowouts.md)
 Ratings are zero-centered expected neutral-field points above or below an
 average FBS team (`0.00`). Replay the full 1897–current football archive
 (rankings, spreads including the current upcoming slate, weekly forecast

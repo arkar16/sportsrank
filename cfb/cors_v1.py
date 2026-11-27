@@ -1,9 +1,10 @@
-"""College football CORS v1.0.0 (two-timescale Bayesian state-space multi-tier model).
+"""College football CORS v1.1.0 (two-timescale Bayesian state-space multi-tier model).
 
 Implements ADR-0029: exact multivariate Kalman filter with fast/slow multi-year
 season carryover, weekly state innovation, Student-t robust margin weighting
 (evaluated strictly from pre-week state for 100% within-week order invariance),
 adaptive league home-field advantage, and joint latent FCS and Other tier nodes.
+ADR-0032 limits the margin credited to FBS favorites against FCS opponents.
 
 Ratings are zero-centered expected neutral-field points above/below an average
 FBS team in that season. Positive spreads indicate the home team is favored.
@@ -31,8 +32,9 @@ from .release import _row_table
 from .season_snapshot import SeasonSnapshot, _checksum
 from .season_source import SourceGame, SourceTeam
 
-MODEL_VERSION = "v1.0.0"
-POLICY = "cors-kalman-2scale/v1"
+MODEL_VERSION = "v1.1.0"
+UNCAPPED_VERSION = "v1.0.0"
+POLICY = "cors-kalman-2scale/v1.1"
 
 # Frozen 2010-2016 locked hyperparameters (ADR-0029).
 W_SLOW = 0.50
@@ -51,6 +53,8 @@ TIER_OFFSEASON_VAR = 16.0
 FCS_INIT_MEAN = -26.0
 FCS_INIT_VAR = 25.0
 FCS_MIN_YEAR = 2003
+FCS_BLOWOUT_MARGIN = 35.0
+FCS_MARGIN_HEADROOM = 7.0
 OTHER_INIT_MEAN = -22.0
 OTHER_INIT_VAR = 49.0
 HFA_INIT = 3.0
@@ -247,6 +251,23 @@ def _build_ranking_rows(
     return rows
 
 
+def _fit_week(mu, cov, observations):
+    """Weight every observation at the common pre-week state before fitting the batch."""
+    effective_noise = []
+    for _, home, away, margin, variance in observations:
+        predictive_variance = cov[home, home] + cov[away, away] - 2 * cov[home, away] + variance
+        residual = margin - (mu[home] - mu[away])
+        z2 = residual ** 2 / max(predictive_variance, 1e-6)
+        weight = (NU + 1.0) / (NU + z2)
+        effective_noise.append(variance / weight)
+    for (_, home, away, margin, _), noise in zip(observations, effective_noise, strict=True):
+        direction = cov[:, home] - cov[:, away]
+        gain = direction / (direction[home] - direction[away] + noise)
+        mu = mu + gain * (margin - (mu[home] - mu[away]))
+        cov = cov - np.outer(gain, direction)
+    return mu, cov, effective_noise
+
+
 def _game_impacts(mu, cov, teams, observations, effective_noise):
     """Remove one observation from the fitted week, keeping its peers' pre-week weights."""
     impacts = {}
@@ -269,8 +290,11 @@ def replay_seasons(
     use_fcs: bool = True,
     use_other: bool = True,
     state: KalmanState | None = None,
+    model_version: str = MODEL_VERSION,
 ) -> tuple[list[SeasonReplay], KalmanState]:
-    """Replay seasons chronologically using the frozen CORS v1.0.0 Kalman model."""
+    """Replay seasons chronologically using the football CORS model."""
+    if model_version not in (UNCAPPED_VERSION, MODEL_VERSION):
+        raise ValueError(f"unknown football CORS model {model_version!r}")
     if not season_inputs:
         return [], state or KalmanState()
 
@@ -376,6 +400,7 @@ def replay_seasons(
 
             # 3. Collect all week completed observations.
             obs: list[tuple[CompletedGame, int, int, float, float]] = []
+            uncapped_observations = {}
             for g in week_games:
                 hd, ad = g.home_division.lower(), g.away_division.lower()
                 margin = float(g.home_score - g.away_score)
@@ -389,7 +414,14 @@ def replay_seasons(
                         fbs_margin = margin if home_is_fbs else -margin
                         sgn = 0.0 if g.neutral_site else (1.0 if home_is_fbs else -1.0)
                         if use_fcs and year >= FCS_MIN_YEAR:
-                            obs.append((g, tmap[fbs_school], idx_fcs, fbs_margin - sgn * hfa_est, SIGMA_FCS ** 2))
+                            i = tmap[fbs_school]
+                            site = sgn * hfa_est
+                            expected = mu[i] - mu[idx_fcs] + site
+                            ceiling = max(FCS_BLOWOUT_MARGIN, expected + FCS_MARGIN_HEADROOM)
+                            if model_version == MODEL_VERSION and expected > 0 and fbs_margin > ceiling:
+                                uncapped_observations[len(obs)] = (g, i, idx_fcs, fbs_margin - site, SIGMA_FCS ** 2)
+                                fbs_margin = ceiling
+                            obs.append((g, i, idx_fcs, fbs_margin - site, SIGMA_FCS ** 2))
                         elif use_other and year < FCS_MIN_YEAR:
                             obs.append((g, tmap[fbs_school], idx_oth, fbs_margin - sgn * hfa_est, SIGMA_OTHER ** 2))
                 elif use_other and (hd == "fbs") != (ad == "fbs"):
@@ -419,21 +451,17 @@ def replay_seasons(
                         opp_kind = "fbs" if (opp_div == "fbs" and opp in tmap) else ("fcs" if opp_div == "fcs" else "other")
                         s["opponents"].append((opp_kind, opp))
 
-            # 4. Student-t weighted Kalman update (100% invariant to within-week order).
+            # Both fits start at the same pre-week state. Only the shared FCS
+            # mean uses uncapped scores, expressed relative to the raw fit's FBS mean.
             if obs:
-                r_effs = []
-                for _, ih, ia, ym, r0 in obs:
-                    pvar = cov[ih, ih] + cov[ia, ia] - 2.0 * cov[ih, ia] + r0
-                    z2 = ((ym - (mu[ih] - mu[ia])) ** 2) / max(pvar, 1e-6)
-                    wt = (NU + 1.0) / (NU + z2)
-                    r_effs.append(r0 / wt)
-                for (_, ih, ia, ym, _), r_eff in zip(obs, r_effs):
-                    ph = cov[:, ih] - cov[:, ia]
-                    s_var = ph[ih] - ph[ia] + r_eff
-                    kg = ph / s_var
-                    mu = mu + kg * (ym - (mu[ih] - mu[ia]))
-                    cov = cov - np.outer(kg, ph)
+                if uncapped_observations:
+                    raw = [uncapped_observations.get(index, item) for index, item in enumerate(obs)]
+                    raw_mu, _, _ = _fit_week(mu, cov, raw)
+                    raw_tier = raw_mu[idx_fcs] - raw_mu[:k].mean()
+                mu, cov, r_effs = _fit_week(mu, cov, obs)
                 game_impacts.update(_game_impacts(mu, cov, teams, obs, r_effs))
+                if uncapped_observations:
+                    mu[idx_fcs] = raw_tier + mu[:k].mean()
 
             post_map, post_fcs, post_oth = _centered()
             weekly_rankings[week] = _build_ranking_rows(
@@ -514,6 +542,8 @@ def load_site_seasons(site: Path) -> list[SeasonInput]:
     inputs: list[SeasonInput] = []
     for year in years:
         folder = years_root / str(year)
+        if not (folder / "rankings").exists() and (folder / "excitement").is_dir():
+            continue  # The pre-1897 public game guides have no ranked season.
         pre_path = folder / f"rankings/{year}_PRESEASON_FBS_cors.html"
         if not pre_path.exists():
             pre_path = folder / f"rankings/{year}_W0_FBS_cors.html"
@@ -640,7 +670,7 @@ def rebuild_site(
     updated_at: str | None = None,
     market_lines: MarketLines | None = None,
 ) -> dict[str, Any]:
-    """Replay the full CFB archive (1897-current) with CORS v1.0.0 and rebuild all static pages."""
+    """Replay the full football archive and rebuild its static pages."""
     site = site.resolve()
     stamp = updated_at or datetime.now(timezone.utc).isoformat()
     season_inputs = load_site_seasons(site)
@@ -649,11 +679,13 @@ def rebuild_site(
 
     replays, final_state = replay_seasons(season_inputs, use_fcs=True, use_other=True)
     input_by_year = {s.year: s for s in season_inputs}
+    from .game_excitement import retain_baseline_quality
 
     for replay in replays:
         year = replay.year
         s_in = input_by_year[year]
         prefix = f"cfb/years/{year}"
+        retain_baseline_quality(site / prefix, year)
 
         # 1. Write PRESEASON, weekly W0..W<max>, and FINAL rankings.
         _write_html(
@@ -737,7 +769,7 @@ def rebuild_site(
             _write_html(site, prog_base + ".html", rendered_prog.encode("utf-8"))
             (site / (prog_base + ".json")).write_text(serialized_prog, encoding="utf-8")
 
-        # 5. Update season landing title version tag (CORS v0.4.0 -> CORS v1.0.0) before record_book runs.
+        # 5. Update the season landing title before the record book runs.
         landing_path = site / prefix / f"{year}_CFB.html"
         if landing_path.exists():
             raw_landing = landing_path.read_text(encoding="utf-8", errors="replace")
