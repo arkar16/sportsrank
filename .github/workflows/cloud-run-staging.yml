@@ -1,0 +1,109 @@
+name: Deploy Cloud Run staging preview
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sportsrank-cloud-run-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy-staging:
+    if: github.repository == 'arkar16/sportsrank' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+    env:
+      CFBD_API: ""
+      CFBD_API_KEY: ""
+      CFBD_PRED_API: ""
+      IMAGE: us-central1-docker.pkg.dev/sportsrank-837af/sportsrank/web:${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Configure runner-local uv cache
+        run: |
+          mkdir -p "$RUNNER_TEMP/sportsrank-uv-cache"
+          echo "UV_CACHE_DIR=$RUNNER_TEMP/sportsrank-uv-cache" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: true
+
+      - run: uv sync --locked
+
+      - name: Check the offline web application
+        run: |
+          uv run --locked python -m compileall -q web tests/test_web_site.py
+          uv run --locked python -m unittest tests/test_web_site.py -v
+
+      - name: Export the offline release database
+        run: |
+          uv run --locked python -m web export --site website --output .sportsrank/web/sportsrank.sqlite3 --release-id "$GITHUB_SHA"
+          test -s .sportsrank/web/sportsrank.sqlite3
+
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SPORTSRANK_837AF }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and push the staging image
+        run: |
+          gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+          docker build --tag "$IMAGE" .
+          docker push "$IMAGE"
+
+      - name: Deploy the staging service
+        run: |
+          gcloud run deploy sportsrank-web --image="$IMAGE" \
+            --region=us-central1 --project=sportsrank-837af --allow-unauthenticated \
+            --min-instances=0 --max-instances=2 --memory=1Gi --cpu=1 \
+            --port=8080 --concurrency=80 --timeout=30 --quiet
+
+      - name: Verify the staging release
+        shell: bash
+        run: |
+          set -euo pipefail
+          url=$(gcloud run services describe sportsrank-web --project=sportsrank-837af \
+            --region=us-central1 --format='value(status.url)')
+          test -n "$url"
+          body="$RUNNER_TEMP/staging-response"
+          for path in /healthz / /cfb/2026 /cfb/teams/alabama/2025 /cfb/conferences/sec/2026 /excitement/grades /cbb /cbb/seasons/2026 /cbb/tournaments/2025 /cfb/assets/record-book.css; do
+            status=$(curl --silent --show-error --retry 2 --retry-delay 2 --max-time 30 --output "$body" \
+              --write-out '%{http_code}' "$url$path")
+            echo "$path returned $status"
+            test "$status" = 200
+            if [[ "$path" == /healthz ]]; then
+              jq -e --arg sha "$GITHUB_SHA" '.release_id == $sha' "$body"
+            elif [[ "$path" != *.css ]]; then
+              ! grep -q '\.html"' "$body"
+            fi
+          done
+          for pair in \
+            "/cfb/years/2026/2026_CFB.html:/cfb/2026" \
+            "/cfb/conferences/sec/2026.html:/cfb/conferences/sec/2026" \
+            "/cbb/seasons/2026/index.html:/cbb/seasons/2026" \
+            "/excitement/grades.html:/excitement/grades"; do
+            src=${pair%%:*}
+            expected=${pair#*:}
+            redirect=$(curl --silent --show-error --retry 2 --retry-delay 2 --max-time 30 --output /dev/null \
+              --write-out '%{http_code} %header{location}' "$url$src")
+            echo "Legacy redirect $src -> $redirect"
+            case "$redirect" in
+              "301 $expected"|"301 $url$expected") ;;
+              *) exit 1 ;;
+            esac
+          done
+          echo "Verified staging URL $url at commit \`$GITHUB_SHA\`." >> "$GITHUB_STEP_SUMMARY"
