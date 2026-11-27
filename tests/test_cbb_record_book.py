@@ -26,15 +26,13 @@ class BasketballBookTests(unittest.TestCase):
         )), (), 2., 1., 4.)
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
-            _, routes, _ = build(root, [completed, future], instant("1982-11-10T23:00Z"), set(),
-                                 include_early_finals=True)
+            _, routes, _ = build(root, [completed, future], instant("1982-11-10T23:00Z"), set())
+            self.assertNotIn("Indiana", routes)
             for school, rank, href, title, aria_label, destination_heading in (
                 ("A & M", "1", "/cbb/seasons/1982/weeks/0.html", "Preseason",
                  "1981–82 best rank 1, Preseason", "1981–82 basketball · Preseason"),
                 ("B", "1", "/cbb/seasons/1982/weeks/1.html", "Week 1",
                  "1981–82 best rank 1, Week 1", "1981–82 basketball · Week 1"),
-                ("Indiana", "1", "/cbb/seasons/1981/index.html", "Final",
-                 "1980–81 best rank 1, Final", "1980–81 Division I basketball"),
             ):
                 with self.subTest(school=school):
                     history = BeautifulSoup((root / routes[school].removeprefix("/cbb/")).read_bytes(), "html.parser")

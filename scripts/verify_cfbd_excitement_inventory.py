@@ -13,6 +13,7 @@ from lxml import html
 
 from cfb.historical_rebuild import _school, local_day
 from cfb.reference_archive import _score
+from excitement_grades import read_number
 
 
 def inventory(export, caches):
@@ -110,10 +111,11 @@ def verify(export, caches, site):
             away, home, bev = cells[1:4]
             home = current_names.get((year, home), home)
             away = current_names.get((year, away), away)
-            assert 0 <= float(bev.split(" · ")[0]) <= 100, (year, cells)
+            assert 0 <= float(read_number("cfb", "BEV", bev.split(" · ")[0])) <= 100, (year, cells)
             if len(cells) == 6:
                 a, h = map(int, cells[4].split("–"))
                 value, tier = cells[5].split(" · ")
+                value = read_number("cfb", "AEV", value)
                 assert 0 <= float(value.rstrip("*")) <= 100 and (
                     tier == "Play-by-play"
                 ) != value.endswith("*"), (year, cells)

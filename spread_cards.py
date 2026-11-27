@@ -5,28 +5,30 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 from html import escape, unescape
-from io import BytesIO
 from pathlib import Path
 import re
 import unicodedata
 
 from bs4 import BeautifulSoup
-from PIL import Image
 
 from cfb.archive_markup import ui
 from cfb.conference_pages import Record, _is_conference_game, _UNAFFILIATED
-from cfb.excitement_pages import ESTIMATE_NOTE, aev_label
+from cfb.excitement_pages import ESTIMATE_NOTE, aev_label, bev_label
 from cfb.game_excitement import Matchup
 from cfb.performance import _saved_margin
-from cfb.program_marks import _atomic_write
 from cfb.reference_archive import Season, _rows
 from cfb.win_probability import format_win_chance
 from site_navigation import masthead
+from spread_preview import ORIGIN, SCRIPT, bev_number, preview_icon, score_paragraph, social_tags
 
 
-ORIGIN = "https://www.sportsrank.top"
-# Messages recommends icons of at least 108 px and may present images below 150 px as icons.
-_ICON_SIZE = 120
+# Edition (football week or Eastern basketball date), home, away, neutral site.
+CardURLs = dict[tuple[str, str, str, bool], str]
+
+
+def _matchup_slug(matchup):
+    name = unicodedata.normalize("NFKD", matchup).encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
 
 
 @dataclass
@@ -115,36 +117,9 @@ class Spread:
 
     @property
     def path(self):
-        # Retain the published -at- URLs when displaying an @ for home games.
         separator = "vs" if self.neutral else "at"
-        matchup = f"{self.away.name} {separator} {self.home.name}"
-        name = unicodedata.normalize("NFKD", matchup).encode("ascii", "ignore").decode()
-        slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+        slug = _matchup_slug(f"{self.away.name} {separator} {self.home.name}")
         return f"/{self.sport}/picks/{self.edition}/{slug}.html"
-
-
-def _preview_icon(directory: Path, sport: str, mark: str) -> tuple[str, int] | None:
-    path = Path(mark)
-    if not path.is_relative_to(f"/{sport}/assets") or ".." in path.parts:
-        return None
-    source = directory / path.relative_to(f"/{sport}")
-    if not source.is_file():
-        return None
-    with Image.open(source) as image:
-        if image.width == image.height and image.width <= _ICON_SIZE:
-            return mark, image.width
-        artwork = image.convert("RGBA")
-    artwork.thumbnail((_ICON_SIZE - 12, _ICON_SIZE - 12), Image.Resampling.LANCZOS)
-    icon = Image.new("RGBA", (_ICON_SIZE, _ICON_SIZE))
-    icon.paste(artwork, ((_ICON_SIZE - artwork.width) // 2, (_ICON_SIZE - artwork.height) // 2))
-    buffer = BytesIO()
-    icon.save(buffer, format="PNG")
-    data = buffer.getvalue()
-    target = directory / "assets/share-icons" / path.name
-    if not target.is_file() or target.read_bytes() != data:
-        target.parent.mkdir(parents=True, exist_ok=True)
-        _atomic_write(target, data)
-    return f"/{sport}/assets/share-icons/{path.name}", _ICON_SIZE
 
 
 def _document(game: Spread, icon: tuple[str, int] | None) -> str:
@@ -156,27 +131,12 @@ def _document(game: Spread, icon: tuple[str, int] | None) -> str:
     details = escape(f"{game.play} · " + ("Neutral site" if game.neutral else f"@ {game.home.name}"))
     description = escape(f"{game.away.summary} vs. {game.home.summary}") + f" · {context} · {details}"
     canonical = ORIGIN + game.path
-    preview = ""
-    if icon:
-        path, size = icon
-        mark = ORIGIN + escape(path)
-        alt = f"{escape(game.home.name)} school mark"
-        preview = (f'<link rel="apple-touch-icon" sizes="{size}x{size}" href="{mark}">\n'
-                   f'<link rel="icon" type="image/png" sizes="{size}x{size}" href="{mark}">\n'
-                   f'<meta property="og:image" content="{mark}"><meta property="og:image:alt" content="{alt}">\n'
-                   f'<meta property="og:image:width" content="{size}"><meta property="og:image:height" content="{size}">\n'
-                   f'<meta name="twitter:image" content="{mark}"><meta name="twitter:image:alt" content="{alt}">')
+    preview = social_tags(canonical, unescape(f"{title} · {line}"), unescape(description), icon,
+                          game.home.name, bev_number(game.bev), game.sport)
     source = escape(game.source)
     back = source if game.sport == "cfb" else "/cbb/current.html#forecasts"
     edition_link = f' · <a href="{source}">Dated edition</a>' if game.sport == "cbb" else ""
-    appeal = ""
-    if game.bev:
-        metrics = [f"Pregame appeal (BEV) <strong>{escape(game.bev)}</strong>"]
-        if game.aev:
-            metrics.append(f"Game drama (AEV) <strong>{escape(game.aev)}</strong>")
-        appeal = '<p class="game-excitement">' + " · ".join(metrics) + "</p>"
-        if game.aev and "*" in game.aev:
-            appeal += f"<p>{ESTIMATE_NOTE}</p>"
+    appeal = _score_details(game.sport, game.bev, game.aev)
     teams = []
     for team in (game.away, game.home):
         logo = f'<img src="{escape(team.mark)}" width="60" height="60" alt="">' if team.mark else ""
@@ -188,11 +148,9 @@ def _document(game: Spread, icon: tuple[str, int] | None) -> str:
 <link rel="canonical" href="{canonical}">
 <meta name="description" content="{description} · {line}">
 <meta property="og:type" content="website"><meta property="og:site_name" content="SportsRank">
-<meta property="og:url" content="{canonical}"><meta property="og:title" content="{title} · {line}">
-<meta property="og:description" content="{description}">
-<meta name="twitter:card" content="summary">{preview}
+{preview}
 <link rel="stylesheet" href="/cfb/assets/record-book.css"><link rel="stylesheet" href="/cfb/assets/spread-card.css?v=3">
-<script src="/cfb/assets/spread-card.js?v=5" defer></script></head><body>{masthead(compact=True)}
+<script src="{SCRIPT}" defer></script></head><body>{masthead(compact=True)}
 <main class="spread-page"><h1 class="sr-only">{title}</h1><p class="edition">{context}</p>
 <table class="game-line"><thead><tr><th scope="col">CORS rank · Team</th><th scope="col">Overall (conf)</th></tr></thead>
 <tbody>{''.join(teams)}</tbody></table>
@@ -210,7 +168,36 @@ _SHARE = re.compile(r'<!--sr-ui--><a class="share-spread" [^>]*><!--/sr-ui-->(.*
 _HINT = ui('<p class="spread-hint">Select a spread to share that game.</p>')
 
 
-def _link_table(markup: str, directory: Path, pick_field: str, read_game) -> str:
+def _score_details(sport, bev, aev):
+    text = score_paragraph(sport, bev, aev)
+    return text + (f"<p>{ESTIMATE_NOTE}</p>" if text and aev and "*" in aev else "")
+
+
+def complete_basketball_card(directory, day, game, score):
+    """Add the reconciled final's AEV to individual pregame cards retained from an earlier slate."""
+    matchup = f"{game.away} {'vs.' if game.neutral_site else 'at'} {game.home}"
+    target = directory / "picks" / day / f"{_matchup_slug(matchup)}.html"
+    if not target.is_file():
+        return
+    raw = target.read_text(encoding="utf-8")
+    page = BeautifulSoup(raw, "html.parser")
+    old = page.select_one(".game-excitement strong")
+    current_title = f"{game.away} {'vs.' if game.neutral_site else '@'} {game.home}"
+    if old is None or bev_number(old.get_text(strip=True)) != score.bev or page.h1.get_text(strip=True) not in (matchup, current_title):
+        return
+    margin = -game.home_handicap
+    line = "Pick’em" if not margin else f"{game.home} {'by' if margin > 0 else 'to lose by'} {abs(margin):.2f}"
+    displayed = page.select_one(".pick strong").get_text(strip=True)
+    if displayed not in (line, f"{line} · {format_win_chance(game.home_handicap, sport='basketball')} to win"):
+        return
+    start = raw.index('<p class="game-excitement">')
+    end = raw.index('<div class="share-actions">', start)
+    updated = raw[:start] + _score_details("cbb", old.get_text(strip=True), unescape(aev_label(score, plain=True))) + raw[end:]
+    if updated != raw:
+        target.write_text(updated, encoding="utf-8")
+
+
+def _link_table(markup: str, directory: Path, pick_field: str, read_game, card_urls: CardURLs | None) -> str:
     """Insert only presentation markup so archived football source bytes remain recoverable."""
     markup = _SHARE.sub(r"\1", markup).replace(_HINT, "")
     table = _TABLE.search(markup)
@@ -240,14 +227,17 @@ def _link_table(markup: str, directory: Path, pick_field: str, read_game) -> str
         return markup
     # Write every destination before exposing its link in the slate.
     icons = {}
-    for game in games.values():
-        if game.home.mark not in icons:
-            icons[game.home.mark] = _preview_icon(directory, game.sport, game.home.mark)
-        target = directory / game.path.removeprefix(f"/{game.sport}/")
-        content = _document(game, icons[game.home.mark]).encode()
+    for url, game in games.items():
+        icon_key = (game.home.mark, bev_number(game.bev))
+        if icon_key not in icons:
+            icons[icon_key] = preview_icon(directory, game.sport, *icon_key)
+        target = directory / url.removeprefix(f"/{game.sport}/")
+        content = _document(game, icons[icon_key]).encode()
         if not target.exists() or target.read_bytes() != content:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(content)
+        if card_urls is not None:
+            card_urls[game.edition, game.home.name, game.away.name, game.neutral] = url
     parts = []
     pos = 0
     for start, end, link in edits:
@@ -259,7 +249,8 @@ def _link_table(markup: str, directory: Path, pick_field: str, read_game) -> str
     return markup.replace("</h1>", "</h1>" + _HINT, 1)
 
 
-def football_links(raw: bytes, path: Path, directory: Path, season: Season, *, excitement=None) -> bytes:
+def football_links(raw: bytes, path: Path, directory: Path, season: Season, *, excitement=None,
+                   card_urls: CardURLs | None = None) -> bytes:
     year, week = path.stem.split("_")[:2]
     source = f"/cfb/years/{year}/spread/{path.name}"
     number = int(week[1:])
@@ -282,7 +273,8 @@ def football_links(raw: bytes, path: Path, directory: Path, season: Season, *, e
         return Spread("cfb", f"{year}/week-{week[1:]}", f"{year} · Week {week[1:]}", source,
                       home, away, neutral, margin,
                       conference.play.get(("", home.name, away.name), "Play type unavailable"),
-                      score.bev if score else None, unescape(aev_label(score, plain=True)) if score and score.final else None)
+                      bev_label(score, plain=True) if score else None,
+                      unescape(aev_label(score, plain=True)) if score and score.final else None)
 
     try:
         markup = raw.decode("utf-8")
@@ -290,13 +282,13 @@ def football_links(raw: bytes, path: Path, directory: Path, season: Season, *, e
     except UnicodeDecodeError:
         markup = raw.decode("latin-1")
         encoding = "latin-1"
-    return _link_table(markup, directory, "spread", read_game).encode(encoding, errors="xmlcharrefreplace")
+    return _link_table(markup, directory, "spread", read_game, card_urls).encode(encoding, errors="xmlcharrefreplace")
 
 
-def basketball_links(directory: Path, conference: ConferenceSlate) -> None:
+def basketball_links(directory: Path, conference: ConferenceSlate, *, card_urls: CardURLs | None = None) -> None:
     path = directory / "current.html"
     markup = path.read_text(encoding="utf-8")
-    source = re.search(r'href="(editions/[\dTZ-]+\.html)"', markup)
+    source = re.search(r'href="(editions/[\dTZ-]+(?:-cbbd)?\.html)"', markup)
     if source is None:
         raise ValueError("The basketball forecast has no dated edition")
     edition = directory / source[1]
@@ -320,10 +312,14 @@ def basketball_links(directory: Path, conference: ConferenceSlate) -> None:
             if winner not in (away.name, home.name) or not points.is_finite() or points <= 0:
                 raise ValueError(f"Invalid basketball pick: {pick}")
             margin = points if winner == home.name else -points
+        bev = cells["BEV"].get_text(strip=True) if "BEV" in cells else None
+        final = cells.get("Final (away–home)")
+        aev = cells["AEV"].get_text(strip=True) if "AEV" in cells and final and final.get_text(strip=True) != "—" else None
         return Spread("cbb", day.isoformat(), label, "/cbb/" + source[1],
                       home, away, cells["Court"].get_text(strip=True) == "Neutral", margin,
-                      conference.play.get((day.isoformat(), home.name, away.name), "Play type unavailable"))
+                      conference.play.get((day.isoformat(), home.name, away.name), "Play type unavailable"),
+                      bev if bev != "—" else None, aev)
 
-    updated = _link_table(markup, directory, "Reconstructed pick", read_game)
+    updated = _link_table(markup, directory, "Reconstructed pick", read_game, card_urls)
     if updated != markup:
         path.write_text(updated, encoding="utf-8")

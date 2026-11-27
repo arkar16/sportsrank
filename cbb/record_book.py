@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from html import escape
 
+from alltime_excitement import Game as LeaderGame, Leaders
 from cfb.archive_presentation import updated_time
 from cfb.conference_pages import build_conference_pages, conference_route, projected_overall_records
 from cfb.program_pages import build_program_pages
@@ -13,12 +14,14 @@ from cfb.reference_markup import PagePresentation
 from cfb.season_pages import _document, _standings, _rankings as standings_table, _upsets
 
 from site_navigation import masthead
-from .archive_finals import read_archive
+from spread_cards import complete_basketball_card
+from .source import visible_final
 from .cors_v1 import _available
-from .early_records import SOURCE as EARLY_SOURCE, record_rows
 from .grade import grade_margins
+from .game_excitement import (BaselineLedger, after_game, checkpoint_prior, guide as excitement_guide, local_date,
+                              read_measurements, weekly_scores)
+from cfb.excitement_pages import ESTIMATE_NOTE, aev_label, bev_label
 from .performance import write_performance
-from .program_records import program_record_rows
 from .progression import write_progression
 from .team_schedule import EASTERN, conference_tipoff, projection_key
 
@@ -60,9 +63,13 @@ def _write(root, path, title, body, *, index=True):
     target.write_text(_page(title, body, index=index), encoding="utf-8")
 
 
-def _table(headers, rows):
+def _table(headers, rows, *, row_ids=None):
     head = "".join(f'<th scope="col">{header}</th>' for header in headers)
-    body = "".join("<tr>" + "".join(f"<td>{cell}</td>" for cell in row) + "</tr>" for row in rows)
+    rendered = []
+    for index, row in enumerate(rows):
+        start = "<tr>" if row_ids is None else f'<tr id="{escape(row_ids[index])}">'
+        rendered.append(start + "".join(f"<td>{cell}</td>" for cell in row) + "</tr>")
+    body = "".join(rendered)
     return f'<div class="table-scroll" tabindex="0"><table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>'
 
 
@@ -118,7 +125,7 @@ def _tipoff(game):
 
 def _has_score(game, as_of):
     # Historical data gives tipoff but no completion time. Match the replay buffer.
-    return game["status"] == "final" and _tipoff(game) + timedelta(hours=6) < as_of
+    return visible_final(game, as_of)
 
 
 def _pick(game):
@@ -128,21 +135,31 @@ def _pick(game):
     return f'{escape(game["home_team"] if margin > 0 else game["away_team"])} by {abs(margin):.2f}'
 
 
-def _games(games, logos, as_of, *, year=None, date_only=False):
+def _games(games, logos, as_of, *, year=None, date_only=False, excitement=None):
     if not games:
         return "<p>No Division I games in this period.</p>"
     rows = []
+    has_estimate = False
     for g in games:
         score = f'{g["away_points"]}–{g["home_points"]}' if _has_score(g, as_of) else "—"
         when = _tipoff(g).strftime("%b %d, %Y") if (date_only or g.get("date_only")) else _tipoff(g).strftime("%b %d, %Y · %I:%M %p")
-        rows.append((
+        cells = (
             when,
             team_label(g["away_team"], g["away_team_id"], logos, year=year),
             team_label(g["home_team"], g["home_team_id"], logos, year=year),
             "Neutral" if g["neutral_site"] else "Home", _pick(g), score,
-        ))
+        )
+        if excitement is not None:
+            appeal = excitement.get(g["game_id"])
+            cells += (bev_label(appeal, sport="cbb"), aev_label(appeal, sport="cbb"))
+            if appeal and appeal.estimated:
+                has_estimate = True
+        rows.append(cells)
     first_col = "Date" if date_only else "Tipoff (Eastern)"
-    return _table((first_col, "Away", "Home", "Court", "Reconstructed pick", "Final (away–home)"), rows)
+    headers = (first_col, "Away", "Home", "Court", "Reconstructed pick", "Final (away–home)")
+    if excitement is not None:
+        headers += ("BEV", "AEV")
+    return _table(headers, rows) + (f"<p>{ESTIMATE_NOTE}</p>" if has_estimate else "")
 
 
 def _grade_row(label, pairs):
@@ -206,21 +223,14 @@ def build(
     schedules=None,
     upcoming_ids=(),
     conference_schedule=(),
-    include_early_finals=False,
-    early_records=None,
-    program_records=None,
-    historical_seasons=(),
+    current_excitement=None,
+    supplemental=None,
 ):
     """Export only checkpoints available by as_of and their corresponding slates."""
-    weekly_seasons = [*historical_seasons, *seasons]
-    earliest_weekly = min(
-        as_of.year + (as_of.month >= 7),
-        *(s["season"] for s in weekly_seasons),
-    )
-    archives, names = read_archive(earliest_weekly) if include_early_finals else ([], {})
+    archives, names = [], {}
     program_archives = list(archives)
     conference_archives = list(archives)
-    for season in weekly_seasons:
+    for season in seasons:
         for c in season["rankings"]:
             if datetime.fromisoformat(c["cutoff_utc"]) <= as_of:
                 names.update((r["team_id"], r["school"]) for r in c["rows"])
@@ -239,50 +249,13 @@ def build(
     performance_records = []
     fixtures = defaultdict(lambda: defaultdict(list))
     season_index = []
-    for year, records in sorted((program_records or {}).items()):
-        title = f"{season_name(year)} basketball team records"
-        context = ('<nav class="archive-nav"><a href="/cbb/seasons/index.html">Season archive</a></nav>'
-                   '<p>Season records for the programs covered by the linked sources. '
-                   'Records include ties when reported.</p>')
-        table = _table(("Team", "Record", "Conference", "Record book"), program_record_rows(records, routes))
-        publish(f"seasons/{year}/index.html", _document(title, title, context + table))
-        season_index.append((_season_link(year), len(records), "Team records only", "—", "—"))
-
-    record_tables = {}
-    cors_years = {s.year for s in archives} | {s["season"] for s in weekly_seasons}
-    for year, records in sorted((early_records or {}).items()):
-        title = f"{season_name(year)} basketball team records"
-        context = ('<p>Records count games listed in the historical score archive. Some schools appear '
-                   'only in a tournament. Other games include the regular season, conference tournaments '
-                   f'and other invitationals. <a href="{EARLY_SOURCE}">Source and coverage</a></p>')
-        table = _table(("Team", "Covered record", "Other games", "NCAA tournament", "NIT"),
-                       record_rows(records, routes))
-        if year in cors_years:
-            record_tables[year] = "<h2>Team records by competition</h2>" + context + table
-            continue
-        nav = '<nav class="archive-nav"><a href="/cbb/seasons/index.html">Season archive</a></nav>'
-        publish(f"seasons/{year}/index.html", _document(title, title, nav + context + table))
-        completed = sum(w + nw + iw for _, w, _, nw, _, iw, _ in records)
-        season_index.append((_season_link(year), len(records), "Team records only", completed, "—"))
-
-    for season in archives:
-        year = season.year
-        final = season.rankings["FINAL"]
-        conferences = {r.conference: conference_route(r.conference, year, sport="basketball") for r in final}
-        table = standings_table(final, [], None, "FINAL", season_team_routes(season, routes),
-                                conference_links=conferences)
-        title = f"{season_name(year)} Division I basketball"
-        context = (f'<p>Final {escape(model)} standings. Records count games between Division I teams. '
-                   '<a href="/cbb/seasons/index.html">Season archive</a></p>')
-        body = '<div class="season-standings">' + _standings("Final CORS rankings", table, "") + "</div>"
-        publish(f"seasons/{year}/index.html", _document(title, title, context + body + record_tables.get(year, "")))
-        completed = sum(int(r.record.split("–")[0]) for r in final)
-        season_index.append((_season_link(year), len(final), "Final only", completed, "—"))
-
     latest_season_year = seasons[-1]["season"]
     projections = None
     weekly_years: set[int] = set()
-    for season in weekly_seasons:
+    excitement_logs = {}
+    leaders = Leaders()
+    card_dates = {p.name for p in (root / "picks").glob("*") if p.is_dir()}
+    for season in seasons:
         year = season["season"]
         date_only = bool(season.get("date_only"))
         checkpoints = [c for c in season["rankings"] if datetime.fromisoformat(c["cutoff_utc"]) <= as_of]
@@ -306,23 +279,38 @@ def build(
         weekly_games = defaultdict(list)
         evaluated = []
         pending = []
+        scores = None
+        guide_rows = []
+        if model == "CORS v1.0.0":
+            scores, future = weekly_scores(root, season, checkpoints, as_of, schedules)
+            excitement_logs[year] = dict(future)
+            guide_rows.extend((local_date(g.start_utc), g.away, g.home, g.week, score) for g, score in future.items())
+            if current_excitement is not None and year == latest_season_year:
+                current_excitement.update(scores)
         for g in season["forecasts"]:
             if g["cutoff_utc"] not in weeks:
                 continue
             week = weeks[g["cutoff_utc"]]
             slates[week].append(g)
             visible = _has_score(g, as_of)
-            if not date_only:
+            if not date_only and not g.get("date_only"):
                 fixture = (_tipoff(g).strftime("%b %d, %I:%M %p"), g["away_team"], g["home_team"])
                 fixtures[year][fixture].append((g, visible))
             if visible:
                 evaluated.append((week, g))
             elif g["cutoff_utc"] == last["cutoff_utc"]:
                 pending.append((week, g))
-            tip_text = _tipoff(g).strftime("%b %d") if date_only else _tipoff(g).strftime("%b %d · %I:%M %p ET")
+            tip_text = _tipoff(g).strftime("%b %d") if date_only or g.get("date_only") else _tipoff(g).strftime("%b %d · %I:%M %p ET")
             game = Game(week, names[g["home_team_id"]], names[g["away_team_id"]],
                         g["home_points"] if visible else None, g["away_points"] if visible else None,
-                        -Decimal(str(g["home_margin"])), g["neutral_site"], tip_text)
+                        -Decimal(str(g["home_margin"])), g["neutral_site"], tip_text, start_utc=g["start_utc"])
+            if scores is not None and (score := scores.get(g["game_id"])):
+                excitement_logs[year][game] = score
+                day = local_date(g["start_utc"])
+                if score.final and day in card_dates:
+                    complete_basketball_card(root, day, game, score)
+                if visible or year != latest_season_year or g["game_id"] not in upcoming_ids:
+                    guide_rows.append((day, game.away, game.home, week, score))
             games.append(game)
             if visible:
                 result_cutoff = g.get("result_cutoff_utc") or _available(datetime.fromisoformat(g["start_utc"]))
@@ -332,6 +320,36 @@ def build(
                 logged_games.append(game)
             weekly_games[week].append(game)
 
+        if scores is not None and supplemental and year in supplemental:
+            baselines = BaselineLedger(root, year)
+            evidence = read_measurements(year)
+            covered_fixtures = {str(g["game_id"]) for g in season["forecasts"] if g["cutoff_utc"] in weeks}
+            if year == latest_season_year:
+                covered_fixtures.update(map(str,upcoming_ids))
+            directory_by_cutoff = {c["cutoff_utc"]: {r["team_id"]: r for r in c["rows"]} for c in checkpoints}
+            for g in supplemental[year]:
+                stamp = datetime.fromisoformat(g["start_utc"])
+                # Previously issued weeks cannot see results or fixtures from a later checkpoint.
+                checkpoint = next((c for c in reversed(checkpoints) if datetime.fromisoformat(c["cutoff_utc"]) < stamp), None)
+                if checkpoint is None:
+                    checkpoint = {"week": 0, "cutoff_utc": (stamp - timedelta(microseconds=1)).isoformat()}
+                week = checkpoint["week"]
+                day = local_date(g["start_utc"])
+                home, away = g["home_team"], g["away_team"]
+                if str(g["game_id"]) in covered_fixtures:
+                    continue
+                basis = checkpoint_prior(directory_by_cutoff.get(checkpoint["cutoff_utc"], {}), g["home_team_id"],
+                                         g["away_team_id"], g["neutral_site"], checkpoint,
+                                         field_size=len(checkpoints[0]["rows"]))
+                bev = baselines.capture(checkpoint["cutoff_utc"], g["game_id"], g["home_team_id"], g["away_team_id"], day, basis)
+                score = after_game(g, bev, {}, evidence, as_of, prior=basis)
+                h, a = score.final or (None, None)
+                game = Game(week, home, away, h, a, None, g["neutral_site"], start_utc=g["start_utc"])
+                if score.final:
+                    logged_games.append(game)
+                guide_rows.append((day, away, home, week, score))
+                excitement_logs[year][game] = score
+            baselines.write()
         season_obj = Season(year, rankings, games, last["cutoff_utc"])
         season_routes = season_team_routes(season_obj, routes)
         archives.append(season_obj)
@@ -346,6 +364,7 @@ def build(
             "year": year,
             "evaluated": evaluated,
             "pending": pending,
+            "excitement": scores,
             "date_only": date_only,
         })
         season_index.append((
@@ -357,6 +376,13 @@ def build(
         ))
 
         metadata = _season_notes(last["cutoff_utc"])
+        if scores is not None and guide_rows:
+            leaders.add_season(LeaderGame.from_score("cbb", year, day, away, home, f"game-{score.source_game}", score)
+                               for day, away, home, week, score in guide_rows)
+            guide_title = f"{season_name(year)} basketball game excitement"
+            body = excitement_guide(year, guide_rows, season_name, lambda n: team_label(n, ids.get(n), logos, year=year),
+                                    _week_link, _table, as_of)
+            _write(root, f"seasons/{year}/excitement/index.html", guide_title, body)
         for c in checkpoints:
             week = c["week"]
             key = f"W{week}"
@@ -376,8 +402,10 @@ def build(
                 f'<p>{" · ".join(week_jumps)}</p>'
                 + nav + '<div id="rankings">' + standings + "</div>"
                 + '<h2 id="games">Scores and reconstructed forecasts</h2>'
-                + _games(slates[week], logos, as_of, year=year, date_only=date_only)
+                + _games(slates[week], logos, as_of, year=year, date_only=date_only, excitement=scores)
             )
+            if scores is not None and guide_rows:
+                body += '<p><a href="../excitement/index.html">Game excitement and scoring method</a></p>'
             publish(f"seasons/{year}/weeks/{week}.html", _document(title, title, body, metadata=_season_notes(c["cutoff_utc"])))
         weekly_years.add(year)
 
@@ -445,11 +473,13 @@ def build(
             )
             + "</section>"
         )
+        if scores is not None and guide_rows:
+            jumps.append('<a href="excitement/index.html">Game excitement</a>')
         publish(
             f"seasons/{year}/index.html",
             _document(
                 title, title,
-                nav + matchups_nav + f'<p>{" · ".join(jumps)}</p>' + standings + archive + record_tables.get(year, ""),
+                nav + matchups_nav + f'<p>{" · ".join(jumps)}</p>' + standings + archive,
                 metadata=metadata,
             ),
         )
@@ -461,20 +491,9 @@ def build(
     if not archives:
         raise ValueError("No basketball checkpoints available at this publication cutoff")
 
-    history_note = ""
-    if include_early_finals or historical_seasons:
-        modern_start = (
-            "The 2019–20 preseason uses ratings learned from 2002–19 hoopR results."
-            if model == "CORS v1.0.0" else "The modern series begins in 2019–20."
-        )
-        history_note = (
-            f'<p>Weekly {escape(model)} rankings, game logs, upsets, progression tables, and performance reports '
-            'cover 1980–81 through the current season. Teams start level in 1980–81. '
-            f'{modern_start} Earlier seasons list historical program records. '
-            '<a href="https://academics.smcvt.edu/jtrono/BBallArchive.htm">1980–84 game archive</a> · '
-            '<a href="https://github.com/Nate-Cheney/March-Machine-Learning-Mania-2026/tree/'
-            'b12a81c1201bb88b1d2010210116559d1fa03851/raw_data">Historical game data</a></p>'
-        )
+    history_note = ('<p>Seasons and game results come from retained CollegeBasketballData API responses. '
+                    'Each season lists the games available in the archive. '
+                    '<a href="https://api.collegebasketballdata.com/data-availability">Provider coverage</a></p>')
     _write(
         root, "seasons/index.html", "Basketball season archive",
         history_note + _table(("Season", "Teams", "Weekly checkpoints", "Completed games", "Performance"), reversed(season_index)),
@@ -494,6 +513,7 @@ def build(
         directory_label=lambda school: team_label(school, ids[school], logos),
         checkpoint_route=checkpoint_route,
         best_checkpoint_label=_best_checkpoint_label,
+        excitement_by_year=excitement_logs,
     ):
         sortable = path.endswith("/index.html") and path != "cbb/teams/index.html"
         publish(path.removeprefix("cbb/"), markup, sortable=sortable)
@@ -505,11 +525,12 @@ def build(
 
     editions = []
     for path in sorted((root / "editions").glob("*.html"), reverse=True):
-        stamp = datetime.strptime(path.stem, "%Y-%m-%dT%H%M%SZ").replace(tzinfo=UTC)
+        stamp = datetime.strptime(path.stem.removesuffix("-cbbd"), "%Y-%m-%dT%H%M%SZ").replace(tzinfo=UTC)
         if stamp <= as_of:
             editions.append((stamp, path))
     write_performance(
         root, performance_records, editions, fixtures, as_of, tournament_years, model, logos,
         season_name=season_name, team_label=team_label, write_page=_write,
     )
+    leaders.save(root, "cbb")
     return archives, routes, presentation

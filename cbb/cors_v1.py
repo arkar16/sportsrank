@@ -9,6 +9,7 @@ import sqlite3
 
 import numpy as np
 
+from .source import fixture_start, latest_start
 from .replay import _iso_utc, _previous_monday, _rank
 
 VERSION = "CORS v1.0.0"
@@ -109,7 +110,7 @@ def _weekly_games(season, idx, effect, tier_games):
         if g["actual_home_margin"] is not None:
             h, a = idx[g["home_team_id"]], idx[g["away_team_id"]]
             venue = int(not g["neutral_site"])
-            cutoff = _available(datetime.fromisoformat(g["start_utc"]))
+            cutoff = _available(latest_start(datetime.fromisoformat(g["start_utc"]), g.get("date_only")))
             observations[cutoff].append((h, a, g["actual_home_margin"] - venue * effect[h], venue))
             result_ids[cutoff].append(g["game_id"])
     for start, team, margin, venue in sorted(tier_games):
@@ -130,7 +131,7 @@ def _checkpoints(season, observations):
     return checkpoints, final_cutoff
 
 
-def iter_cors_v1_seasons(seasons, keys, seed=None, *, nond1_by_season=None, hfa_start_year=2008):
+def iter_cors_v1_seasons(seasons, keys, seed=None, *, nond1_by_season=None, hfa_start_year=2008, use_roster=False):
     """Replay consecutive seasons. Tier observations are (UTC start, roster ID, D1 margin, venue sign)."""
     state = {}
     previous_year = None
@@ -148,6 +149,8 @@ def iter_cors_v1_seasons(seasons, keys, seed=None, *, nond1_by_season=None, hfa_
             raise ValueError(f"CORS v1 requires season {previous_year + 1}, got {year}")
         previous_year = year
         active = {g[k] for g in season["forecasts"] for k in ("home_team_id", "away_team_id")}
+        if use_roster:
+            active = {row["team_id"] for row in season["rankings"][0]["rows"]}
         teams = sorted(active, key=lambda t: keys[year, t])
         sources = [keys[year, t] for t in teams]
         if len(set(sources)) != len(teams):
@@ -203,7 +206,8 @@ def iter_cors_v1_seasons(seasons, keys, seed=None, *, nond1_by_season=None, hfa_
                                       "sos": float(sos[i]) if i is not None else 0.})
                 advantages[team] = float(mu[-1] + (effect[i] if i is not None else 0.))
             rows = _rank(standing_rows)
-            rankings.append({**c, "rows": rows, "home_advantages": advantages})
+            rankings.append({**c, "rows": rows, "home_advantages": advantages,
+                             "non_d1_rating": float(mu[n] - mu[:n].mean())})
             if cutoff == final_cutoff:
                 final_rows, final_advantages = rows, advantages
             for g in fixtures[cutoff]:
@@ -236,15 +240,17 @@ def iter_cors_v1_seasons(seasons, keys, seed=None, *, nond1_by_season=None, hfa_
                "final_cutoff_utc": final_cutoff, "final_rankings": final_rows, "home_advantages": final_advantages}
 
 
-def cors_v1_seasons(database, seasons, *, seed_path=None):
-    seed = json.loads(Path(seed_path or Path(__file__).with_name("cors_v1_seed.json")).read_bytes())
-    _validate_seed(seed)
-    if seasons[0]["season"] != seed["season"] + 1:
-        raise ValueError(f"CORS v1 requires season {seed['season'] + 1} after seed")
+def cors_v1_seasons(database, seasons, *, seed_path=None, api_only=False):
+    seed = None
+    if not api_only:
+        seed = json.loads(Path(seed_path or Path(__file__).with_name("cors_v1_seed.json")).read_bytes())
+        _validate_seed(seed)
+        if seasons[0]["season"] != seed["season"] + 1:
+            raise ValueError(f"CORS v1 requires season {seed['season'] + 1} after seed")
     tiers = defaultdict(list)
     with closing(sqlite3.connect(Path(database).resolve().as_uri() + "?mode=ro", uri=True)) as db:
         db.execute("BEGIN")
-        keys = {(y, t): int(s) for y, t, s in db.execute(
+        keys = {(y, t): t if api_only else int(s) for y, t, s in db.execute(
             "SELECT season,id,json_extract(raw_json,'$.sourceId') FROM teams")}
         for season in seasons:
             y = season["season"]
@@ -253,10 +259,12 @@ def cors_v1_seasons(database, seasons, *, seed_path=None):
                 h, a = g["homeTeamId"], g["awayTeamId"]
                 home = (y, h) in keys
                 hp, ap = g.get("homePoints"), g.get("awayPoints")
-                if (home == ((y, a) in keys) or g.get("startTimeTbd") is not False
+                if (home == ((y, a) in keys) or (not api_only and g.get("startTimeTbd") is not False)
                         or type(hp) is not int or type(ap) is not int or hp == ap or min(hp, ap) < 0):
                     continue
                 sign = 1 if home else -1
-                tiers[y].append((datetime.fromisoformat(start), h if home else a,
+                date_only = bool(g.get("startTimeTbd"))
+                start = latest_start(fixture_start(start, date_only), date_only)
+                tiers[y].append((start, h if home else a,
                                  sign * (hp - ap), 0 if g["neutralSite"] else sign))
-    return tuple(iter_cors_v1_seasons(seasons, keys, seed, nond1_by_season=tiers))
+    return tuple(iter_cors_v1_seasons(seasons, keys, seed, nond1_by_season=tiers, use_roster=api_only))

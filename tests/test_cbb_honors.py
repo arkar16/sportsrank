@@ -19,9 +19,13 @@ class BasketballHonorsTest(unittest.TestCase):
         last, = tables("cbb/history/last-place.html")
         by_year = {row.td.get_text(): row for row in championships}
         self.assertEqual(len(by_year), len(championships))
-        self.assertIn("Oregon", by_year["1938–39"].get_text())
-        self.assertIn("Title vacated", by_year["2012–13"].get_text())
-        self.assertIn("Tournament canceled", by_year["2019–20"].get_text())
+        self.assertNotIn("1938–39", by_year)
+        self.assertNotIn("2019–20", by_year)
+        for year, winner, runner, score in (("2020–21", "Baylor", "Gonzaga", "86–70"),
+                                           ("2023–24", "UConn", "Purdue", "75–60"),
+                                           ("2024–25", "Florida", "Houston", "65–63")):
+            cells = [cell.get_text(strip=True) for cell in by_year[year].select("td")]
+            self.assertEqual((cells[1], cells[3], cells[4]), (winner, runner, score))
         self.assertEqual([r.td.text for r in leaders], [r.td.text for r in last])
         for top, bottom in zip(leaders, last):
             dest = top.td.a["href"]

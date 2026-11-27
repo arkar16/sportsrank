@@ -5,6 +5,16 @@ CollegeFootballData evidence in `cfb/cfbd_excitement`. Each result shows its
 evidence level. A scheduled game shows BEV. A retained final that corrects a
 previous score requires requalification against its scoring plays.
 
+The all-time rankings live at `/excitement/aev.html` and `/excitement/bev.html`.
+Each page links to the football and men's basketball rankings and to the
+individual games in their season guides. Both record-book builds refresh the
+rankings from the saved scores. Games tied at the displayed tenth-place score
+all appear. AEV requires a verified final, while scheduled games can earn BEV.
+
+The public cutoff table lives at `/excitement/grades.html`. The offline
+`tests.test_excitement_grades` check reproduces its four scales from the
+reference seasons' API-backed guides. Each rebuild applies the frozen cutoffs.
+
 ## Build and verify football pages
 
 ```sh
@@ -70,3 +80,43 @@ the last available CORS checkpoint before kickoff.
 Hosting excludes the sealed historical correction receipt and the 2024–2026
 season metadata that cite school or NCAA publications. These local files
 remain available to verify the archived release.
+
+## Build and verify basketball pages
+
+The basketball build accepts retained CollegeBasketballData responses. It
+checks the provider host, query ranges, response lengths and stable game IDs
+before replaying CORS from the earliest available roster. The dated edition,
+team pages and season guides are rebuilt together.
+
+```sh
+env -u CFBD_API -u CFBD_PRED_API uv run --locked python -m cbb.site \
+  --database .sportsrank/cbbd-history.sqlite3 --season 2027 \
+  --as-of 2026-11-26T16:47:00+00:00 --output website/cbb
+```
+
+Use `scripts.cache_basketball_history` for authorized games and roster requests.
+It records each attempt and splits queries that reach the provider’s row limit.
+Use `scripts.cache_basketball_plays` for scoring plays. The date, team and
+tournament endpoints return both sides of each matchup. Historical acquisitions
+can use `--cover` to group source requests. The shared account's rate and
+monthly limits apply to both sports. Historical play acquisition accepts
+`--reserve` to preserve the balance needed for scheduled work.
+
+```sh
+uv run --locked python -m cbb.api_history --database .sportsrank/cbbd-history.sqlite3 \
+  --season 2027 --output .sportsrank/cbbd-normalized.sqlite3
+uv run --locked python -m scripts.prepare_cbbd_excitement \
+  --database .sportsrank/cbbd-normalized.sqlite3 --plays .sportsrank/cbbd-plays.sqlite3 \
+  --output cbb/cbbd_excitement
+```
+
+The first build freezes the 2023–24 and 2025–26 comparison games before
+evaluating 2024–25. `--extend` adds other seasons from a separate play cache
+using the existing reference. Every clock-based measurement must reconcile
+the scoring team, score changes, halftime, final and overtime boundaries.
+
+Check the rendered guides against every eligible game ID, game status and final score in the normalized API inventory. The check also verifies each AEV evidence label.
+
+```sh
+uv run --locked python -m scripts.verify_cbbd_excitement_inventory --database .sportsrank/cbbd-normalized.sqlite3
+```

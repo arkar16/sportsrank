@@ -15,17 +15,12 @@ from cfb.reference_markup import PagePresentation
 from site_navigation import masthead
 
 from .cors_v1 import _available, cors_v1_seasons
-from .historical_replay import replay_historical_seasons
+from tempfile import TemporaryDirectory
+from .api_history import materialize
+from .public_tree import install_conferences
 from .record_book import SECTIONS, _record, conference_game, conference_slate, season_name
 from .replay import replay_seasons
 from .team_schedule import EASTERN, conference_tipoff, projection_key, schedule_views
-
-
-def _published_standings(path):
-    doc = html.parse(str(path))
-    rows = doc.xpath('//table[@aria-labelledby="cors-ranking"]/tbody/tr')
-    return [Standing(c[1].text_content(), int(c[0].text_content()), Decimal(c[4].text_content()),
-                     c[5].text_content(), c[6].text_content()) for c in rows]
 
 
 def _standings(checkpoint):
@@ -146,69 +141,30 @@ def _retained_schedule(site, year, standings, routes, week_page, replayed):
             if (source := metadata.get(key)) else game for key, game in schedule.items()]
 
 
-def _season_archive(site, model, year, latest_year, as_of, database, routes):
-    root = site / f"seasons/{year}"
-    current = _published_standings(root / "index.html")
-    if not current:
-        raise ValueError(f"No published standings for {year}")
+def _season_archive(model, latest_year, as_of, database):
+    year = model["season"]
     checkpoints = [c for c in model["rankings"] if datetime.fromisoformat(c["cutoff_utc"]) <= as_of]
     names = {r["team_id"]: r["school"] for c in checkpoints for r in c["rows"]}
     weeks = {c["cutoff_utc"]: c["week"] for c in checkpoints}
     rankings = {f'W{c["week"]}': _standings(c) for c in checkpoints}
-    games = {}
+    latest = checkpoints[-1]
+    cutoff = latest["cutoff_utc"]
+    completed = []
     for row in model["forecasts"]:
-        if row["home_team_id"] not in names or row["away_team_id"] not in names:
-            continue
-        game = conference_game(row, weeks.get(row["cutoff_utc"], 0), names)
-        games[_fixture_key(row["start_utc"], game.home, game.away, game.neutral_site)] = game
-
-    if year != latest_year:
-        cutoff = model["final_cutoff_utc"]
-        rankings["FINAL"] = rankings[f"W{weeks[cutoff]}"]
-        if current != rankings["FINAL"]:
-            raise ValueError(f"{year} replay does not match published FINAL")
-        return Season(year, rankings, [game for game in games.values() if game.home_score is not None], cutoff)
-
-    doc = html.parse(str(root / "index.html"))
-    (published_cutoff,) = doc.xpath('//*[@id="season-notes"]//time/@datetime')
-    if datetime.fromisoformat(published_cutoff) > as_of:
-        raise ValueError("Retained ranking cutoff is after the rebuild timestamp")
-    if (datetime.fromisoformat(checkpoints[-1]["cutoff_utc"]) == datetime.fromisoformat(published_cutoff)
-            and current == next(reversed(rankings.values()))):
-        _, _, projections = schedule_views(database, model, checkpoints[-1], as_of)
-        if not projections:
-            projections = conference_slate(model["forecasts"], checkpoints[-1], names)
-        visible = [game for key, game in games.items() if game.home_score is not None and _available(key[0]) in weeks]
-        return Season(year, rankings, visible + projections, published_cutoff)
-
-    # Retain the issued checkpoint when the private cache predates it. A
-    # replayed game has a usable delta only when its entire update checkpoint
-    # matches the published standings.
-    matching = {
-        c["cutoff_utc"] for c in checkpoints
-        if (path := root / f'weeks/{c["week"]}.html').exists()
-        and rankings[f'W{c["week"]}'] == _published_standings(path)
-    }
-    for key, game in games.items():
-        if _available(key[0]) not in matching:
-            games[key] = replace(game, home_cors_delta=None, away_cors_delta=None)
-    weekly = sorted((p for p in (root / "weeks").glob("*.html") if p.stem.isdecimal()),
-                    key=lambda p: int(p.stem))
-    rankings = {f"W{p.stem}": _published_standings(p) for p in weekly}
-    if current != next(reversed(rankings.values())):
-        raise ValueError(f"{year} latest retained standings disagree")
-    results = _retained_results(site, year, datetime.fromisoformat(published_cutoff), current, games)
-    schedule = _retained_schedule(site, year, current, routes, weekly[-1], games)
-    return Season(year, rankings, results + schedule, published_cutoff, conference_note=(
-        "Best wins and worst losses are selected from games with a verifiable CORS update. "
-        "Scores reflect the ranking checkpoint. The retained schedule supplies projections for this edition."
-    ))
+        if (row["home_team_id"] in names and row["away_team_id"] in names and row["status"] == "final"
+                and row["cutoff_utc"] in weeks and (row.get("result_cutoff_utc") or _available(datetime.fromisoformat(row["start_utc"]))) in weeks):
+            completed.append(conference_game(row, weeks[row["cutoff_utc"]], names))
+    if model.get("final_cutoff_utc") == cutoff and year < latest_year:
+        rankings["FINAL"] = rankings[f'W{latest["week"]}']
+    elif year == latest_year:
+        _, _, schedules = schedule_views(database, model, latest, as_of)
+        completed.extend(schedules or conference_slate(model["forecasts"], latest, names))
+    return Season(year, rankings, completed, cutoff)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--database", type=Path, required=True)
-    parser.add_argument("--historical-dir", type=Path, required=True)
     parser.add_argument("--site", type=Path, required=True, help="Existing site root with archived basketball pages")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--season", type=int, required=True)
@@ -216,13 +172,20 @@ def main():
     args = parser.parse_args()
     if args.as_of.utcoffset() is None:
         parser.error("--as-of requires a timezone")
+    with TemporaryDirectory(prefix="cbb-api-conferences-") as tmp:
+        database = Path(tmp) / "api.sqlite3"
+        years = materialize(args.database, database, args.season)
+        stage = Path(tmp) / "site"
+        _rebuild(args, database, stage, years[0])
+        install_conferences(stage / "cbb/conferences", args.output / "cbb/conferences")
+
+
+def _rebuild(args, database, stage, first_season):
     site = args.site / "cbb"
-    modern = cors_v1_seasons(args.database, replay_seasons(args.database, args.season))
-    historical = replay_historical_seasons(args.historical_dir)
-    seasons = [*historical, *modern]
+    seasons = cors_v1_seasons(database, replay_seasons(database, args.season, first_season=first_season), api_only=True)
     routes = {r["school"]: f'/cbb/teams/{r["team_id"]}/index.html' for season in seasons
               for c in season["rankings"] for r in c["rows"]}
-    archives = [_season_archive(site, season, season["season"], args.season, args.as_of, args.database, routes)
+    archives = [_season_archive(season, args.season, args.as_of, database)
                 for season in seasons]
     logos = {path.stem for path in (site / "assets/team-logos").glob("*.png")}
     marks = {name: f"/cbb/assets/team-logos/{team}.png" for name, route in routes.items()
@@ -232,7 +195,7 @@ def main():
         archives, routes, sport="basketball", year_label=season_name,
         season_route=lambda year: f"/cbb/seasons/{year}/index.html",
     ):
-        target = args.output / path
+        target = stage / path
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(presentation.render(markup.encode(), archive=False, sortable="data-sortable" in markup))
 

@@ -50,6 +50,27 @@ at most 5 points, absolute signed bias at most 2 points and Spearman rank
 correlation at least 0.90. The [delivery issue](https://github.com/arkar16/sportsrank/issues/179)
 records the confirmation and coverage.
 
+## Men’s basketball
+
+On 2026-11-26 the owner selected the same rank quality, scoring weights and
+pregame/postgame distinction for Division I men’s basketball and requested
+possession-based point scales. A three-point margin represents one possession
+on the scoreboard. Two possessions set the closeness and surprise scale. Three
+set the comeback scale. Use the regulation clock for two 20-minute halves.
+Each verified overtime contributes to observed lead changes and the winner’s
+deficit. The two-point overtime bonus applies once. Football and basketball
+have separate scoring versions and reference populations. The
+[basketball delivery](https://github.com/arkar16/sportsrank/issues/181) owns
+the empirical coverage and acceptance.
+
+On 2026-11-26 the owner set the release standard for basketball games with a
+verified halftime score, final and overtime status. The frozen basketball
+reference had to average at most 7 AEV points of absolute error, stay within
+2 points of signed bias in either direction and reach a Spearman rank
+correlation of at least 0.85 on the reserved 2024–25 season. It passed all
+three criteria. The season guides rank these starred estimates alongside
+measured scores. A separately labelled final-only estimate covers games without a verified halftime score.
+
 ## Coverage of the API game archive
 
 On 2026-11-26 the owner requested a BEV and AEV for every historical football
@@ -60,6 +81,17 @@ A prior-season aggregate or an inferred scoreline cannot establish that two
 schools played. Retain an early basketball season when its API supplies
 individual games. See the [scoring rules](../plans/2026-game-excitement-scoring-v1.md)
 and [football delivery](https://github.com/arkar16/sportsrank/issues/182).
+
+## Letter grades
+
+The owner selected fixed historical cutoffs for each sport and metric. The
+original workbook used the same cutoffs for BEV and AEV. Those cutoffs would
+award no A-range grade to any verified AEV in the current archive. A+ instead
+marks approximately the top one percent of the reference games. Readers see
+the numeric score alongside the grade, with the existing evidence label.
+Grades use the published precision and leave numeric rankings and forecasts
+intact. The [grade calibration](../plans/2026-game-excitement-scoring-v1.md#letter-grade-calibration)
+defines the reference and the frozen scale.
 
 ## Delivery prerequisites
 

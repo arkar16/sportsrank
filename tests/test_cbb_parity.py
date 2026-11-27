@@ -87,8 +87,8 @@ class CbbWebsiteParityTests(unittest.TestCase):
             for path in teams.glob("*/[0-9][0-9][0-9][0-9].html"):
                 self.assertNotIn(script_path, path.read_bytes(), path)
 
-    def test_all_cors_seasons_1981_through_2027_have_weekly_progression_and_performance(self):
-        for year in range(1981, 2028):
+    def test_cached_api_cors_seasons_have_weekly_progression_and_performance(self):
+        for year in range(1949, 2028):
             base = SITE / f"cbb/seasons/{year}"
             self.assertTrue((base / "index.html").is_file(), f"missing season {year}")
             self.assertTrue((base / "weeks/0.html").is_file(), f"missing week 0 for {year}")
@@ -101,8 +101,8 @@ class CbbWebsiteParityTests(unittest.TestCase):
             for name in ("index.html", "weekly.csv", "games.csv", "report.json"):
                 self.assertTrue((perf_dir / name).is_file(), f"missing performance/{year}/{name}")
 
-    def test_historical_seasons_have_populated_weekly_changes_upsets_and_no_fake_noon_tipoffs(self):
-        for year in (1981, 1985, 2002, 2019):
+    def test_api_seasons_have_weekly_changes_upsets_and_timed_games(self):
+        for year in (2020, 2022, 2024, 2026):
             season = self.read(f"cbb/seasons/{year}/index.html")
             self.assertIn("Change since Preseason.", season.get_text())
             self.assertIsNotNone(season.select_one("#cors-upsets"))
@@ -113,28 +113,26 @@ class CbbWebsiteParityTests(unittest.TestCase):
 
             week5 = self.read(f"cbb/seasons/{year}/weeks/5.html")
             self.assertEqual(week5.select_one('a[aria-current="page"]')["href"], f"/cbb/seasons/{year}/weeks/5.html")
-            self.assertIn("Date", [th.text for th in week5.select("table")[-1].select("thead th")])
-            self.assertNotIn("12:00 PM", week5.select("table")[-1].get_text())
+            self.assertIn("Tipoff (Eastern)", [th.text for th in week5.select("table")[-1].select("thead th")])
+            self.assertRegex(week5.select("table")[-1].tbody.get_text(), r"\d{1,2}:\d{2} [AP]M")
 
             prog = json.loads((SITE / f"cbb/seasons/{year}/progression.json").read_text(encoding="utf-8"))
             self.assertEqual(prog["season"], year)
             self.assertTrue(prog["rows"])
 
     def test_historical_team_season_pages_have_full_weekly_game_logs_and_season_opponent_links(self):
-        # Colorado State (57) in 2018-19 should now have full weekly game logs, not a single Final stub
-        page = self.read("cbb/teams/57/2019.html")
+        page = self.read("cbb/teams/57/2020.html")
         rows = page.select("table tbody tr")
         self.assertGreater(len(rows), 20)
         opp_links = [a["href"] for a in page.select("table tbody td a")]
         self.assertTrue(opp_links)
         for href in opp_links:
-            self.assertRegex(href, r"^/cbb/teams/[^/]+/2019\.html$")
+            self.assertRegex(href, r"^/cbb/teams/[^/]+/2020\.html$")
             self.assertTrue((SITE / href.lstrip("/")).is_file(), href)
-        self.assertNotIn("12:00 PM", page.get_text())
+        self.assertRegex(page.get_text(), r"\d{1,2}:\d{2} [AP]M")
 
-        # Program history shows season label 2018–19 and true best rank across weeks
         history = self.read("cbb/teams/57/index.html")
-        self.assertTrue(history.find("a", string="2018–19"))
+        self.assertTrue(history.find("a", string="2019–20"))
 
     def test_modern_seasons_and_current_forecasts_use_season_specific_team_links(self):
         season2027 = self.read("cbb/seasons/2027/index.html")
@@ -153,7 +151,7 @@ class CbbWebsiteParityTests(unittest.TestCase):
         self.assertIsNotNone(index.select_one('a[href="/cbb/performance/2027/index.html"]'))
         with (SITE / "cbb/performance/seasons.csv").open(encoding="utf-8") as handle:
             csv_rows = list(csv.DictReader(handle))
-        self.assertEqual([int(r["season"]) for r in csv_rows], list(range(1981, 2028)))
+        self.assertEqual([int(r["season"]) for r in csv_rows], list(range(1949, 2028)))
 
         report_2026 = self.read("cbb/performance/2026/index.html")
         self.assertIsNotNone(report_2026.select_one(".metrics"))
@@ -170,14 +168,14 @@ class CbbWebsiteParityTests(unittest.TestCase):
         for name in ("champions.html", "last-place.html"):
             page = self.read(f"cbb/history/{name}")
             conf_links = page.select('tbody a[href^="/cbb/conferences/"]')
-            self.assertEqual(len(conf_links), 46, name)
+            self.assertEqual(len(conf_links), len(range(1949, 2027)), name)
             for link in conf_links:
                 self.assertTrue((SITE / link["href"].lstrip("/")).is_file(), link["href"])
 
     def test_big_sky_conference_is_unified_and_404_covers_both_sports(self):
         self.assertFalse((SITE / "cbb/conferences/big-sky-conference").exists())
-        self.assertTrue((SITE / "cbb/conferences/big-sky/1982.html").is_file())
-        self.assertTrue((SITE / "cbb/conferences/big-sky/1983.html").is_file())
+        self.assertTrue((SITE / "cbb/conferences/big-sky/2020.html").is_file())
+        self.assertTrue((SITE / "cbb/conferences/big-sky/2021.html").is_file())
         self.assertTrue((SITE / "cbb/conferences/big-sky/2027.html").is_file())
 
         missing = self.read("404.html")

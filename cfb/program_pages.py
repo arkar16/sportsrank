@@ -41,6 +41,7 @@ class ScheduledGame:
     game: Game
     date_label: str
     opponent_rank: int | None
+    forecast_id: str = ""
 
 
 @dataclass(frozen=True)
@@ -122,7 +123,8 @@ def build_program_pages(
                 links.append((conference_route(standing.conference, year, sport=sport), f"{year_label(year)} {standing.conference}"))
             excitement = (excitement_by_year or {}).get(year)
             if excitement:
-                links.append((f"/cfb/years/{year}/excitement/index.html", "Game excitement"))
+                base = f"/cbb/seasons/{year}" if sport == "basketball" else f"/cfb/years/{year}"
+                links.append((f"{base}/excitement/index.html", "Game excitement"))
             log = _season_table(
                 school, entry, opponent_routes[year], sport=sport,
                 schedule=schedules.get((year, school)), excitement=excitement,
@@ -337,16 +339,21 @@ def _season_table(
         return "<tr>"
 
     has_estimate = False
+    grade_sport = "cbb" if sport == "basketball" else "cfb"
 
     def excitement_cells(game):
         nonlocal has_estimate
         if not excitement:
             return ""
-        key = Matchup(game.week, game.home, game.away, game.neutral_site)
-        score = score_for(excitement, key, (game.home_score, game.away_score))
+        if sport == "basketball":
+            score = excitement.get(game)
+        else:
+            key = Matchup(game.week, game.home, game.away, game.neutral_site)
+            score = score_for(excitement, key, (game.home_score, game.away_score))
         if score and score.estimated:
             has_estimate = True
-        return f'<td class="num">{bev_label(score)}</td><td class="num">{aev_label(score)}</td>'
+        return (f'<td class="num">{bev_label(score, sport=grade_sport)}</td>'
+                f'<td class="num">{aev_label(score, sport=grade_sport)}</td>')
 
     groups = []
     for checkpoint in checkpoints:
@@ -388,6 +395,7 @@ def _season_table(
                 + f"<td>{_MISSING}</td>" * 3
                 + _game_cells(school, fixture.game, routes, sport=sport, upcoming=True,
                               show_chance=True, opponent_rank=fixture.opponent_rank)
+                + excitement_cells(fixture.game)
                 + "</tr></tbody>\n"
             )
 

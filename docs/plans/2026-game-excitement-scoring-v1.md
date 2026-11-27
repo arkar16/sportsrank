@@ -170,6 +170,41 @@ field position or down-and-distance. Games with the same score path can differ
 on those dimensions. The owner accepted this first-pass method; empirical
 validation and the estimated-data method remain separate work.
 
+## Men’s basketball point and clock scales
+
+For `sportsrank-mbb-excitement-v1`, keep the 60/40 BEV and 80/8/4/2/3/3 AEV
+weights. Use six points for the two-possession competitiveness, sustained
+tension and upset scales and nine points for a three-possession comeback.
+The pregame market sign-change taper keeps the same fraction of the closeness
+scale, or 6/7 of a basketball point. Eligible market inputs are currently
+absent. Pregame quality uses the same CORS-rank horizon as football.
+
+Use 40 regulation minutes and a denominator of 100 weighted minutes for
+two 20-minute halves. Five-minute overtimes preserve the order of score
+changes and add to lead reversals and comeback evidence. The regulation
+tension integral ends at 40:00. Each game can receive at most two points
+for overtime. The [basketball build instructions](../operations/game-excitement.md#mens-basketball)
+describe the pregame ledger and evidence qualification.
+
+When only the halftime and final scores qualify, the accepted basketball
+reference matches on absolute final margin, combined final points and the
+eventual winner’s halftime margin. Use the regulation or overtime pool
+matching the verified period count. Divide each feature difference by that
+pool’s frozen interquartile range, with a one-point minimum divisor. Average
+the observed drama of the 50 nearest games, including all ties at the cutoff
+and excluding the target game. Add the known overtime, pregame quality and
+upset bonuses. Mark the result with an asterisk. A final alone or an unknown
+overtime status uses the final-only estimate.
+
+Historical basketball games outside the weekly CORS archive get a pregame
+baseline. At the start of each Eastern calendar day, shrink each team's mean
+scoring margin toward its prior with eight games of prior weight. Carry 65%
+of the previous consecutive season's shrunk margin into the next season.
+Rank the available teams by these point ratings, sharing ranks for ties.
+Use the six-point basketball closeness scale and the recorded venue. The score
+ledger preserves the date, team identities, pregame quality and BEV.
+[Basketball delivery](https://github.com/arkar16/sportsrank/issues/181)
+
 ## Estimated AEV: comparable-game method
 
 The owner accepted this approach on 2026-09-29. See the
@@ -269,6 +304,18 @@ Do not imply that such a reconstruction
 was published before kickoff. This policy is for excitement and does not
 silently select ADR-0019's forecast-evaluation benchmark.
 
+## Official basketball evidence
+
+CollegeBasketballData supplies the games, rosters, scoring plays and both
+comparison seasons. The 2024–25 season is reserved for confirmation. A
+halftime estimate qualifies for display when its mean absolute error is at
+most 7 AEV points, its absolute signed bias is at most 2 points, and
+Spearman rank correlation is at least 0.85. Basketball uses a 40-minute clock,
+six points for closeness and nine points for a full comeback bonus.
+Every verified final can use the final-margin reference. Each public score
+shows its evidence level. The versioned reference policy retains the measured
+errors and checksum. [Basketball delivery](https://github.com/arkar16/sportsrank/issues/181)
+
 
 ## Games with incomplete pregame information or only a final
 
@@ -291,3 +338,22 @@ other football ties, use verified games tied after regulation, remove overtime,
 and match on the tied score. The tied score alone has little power to order
 those games. Labels distinguish measured play-by-play, period-score estimates
 and final-only estimates on the same scale.
+
+## Letter grade calibration
+
+The four [frozen grade scales](../../excitement_grades.py) use reference games
+from the ten seasons starting in autumn 2014 through autumn 2023. Football
+uses CollegeFootballData and men's basketball uses CollegeBasketballData.
+BEV calibration uses qualified pregame CORS spreads and ranks. AEV calibration
+uses play-by-play. Baselines and estimates receive grades on the same scale as
+the better-documented games in their sport. The AEV asterisk applies to both
+the number and its letter.
+
+Sort the reference scores at their published one-decimal precision. For
+percentile p and N games, take the score at position ⌈pN/100⌉, counting from one.
+The inclusive lower bounds for A+, A, A−, B+, B, B−, C+, C, C−, D+, D, and D−
+use percentiles 99, 95, 90, 85, 75, 65, 55, 40, 30, 20, 15, and 10.
+Lower scores receive F. The next two completed seasons in each sport were
+reserved to check transfer. Ordinary builds reuse the frozen cutoffs.
+Changes to the grading scale require a new decision. Exact letter frequencies
+can vary by season and by evidence tier.
