@@ -206,9 +206,12 @@ def _build_api_site(database, output, args, first_season):
         if current_excitement:
             report += f'<p><a href="/cbb/seasons/{args.season}/excitement/index.html">Game excitement and scoring method</a></p>'
     _write(output, "current.html", f"{season_name(args.season)} basketball forecasts", edition_link + report)
+    card_urls = {}
     if blended and slate:
-        basketball_links(output, share_conferences(season, checkpoint))
-    (output / "index.html").write_bytes(landing_page(archives, routes, presentation, checkpoint, archive, years, model=model))
+        basketball_links(output, share_conferences(season, checkpoint), card_urls=card_urls)
+    home = landing_page(archives, routes, presentation, checkpoint, archive, years, model=model,
+                        card_urls=card_urls)
+    (output / "index.html").write_bytes(home)
 
 
 if __name__ == "__main__":

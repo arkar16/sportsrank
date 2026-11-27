@@ -10,9 +10,10 @@ from urllib.parse import urlsplit
 from bs4 import BeautifulSoup
 from PIL import Image
 
+from cbb.home import landing_page
 from cbb.site import share_conferences
 from cfb.reference_archive import Game, Season, Standing
-from cfb.reference_markup import source_bytes
+from cfb.reference_markup import PagePresentation, source_bytes
 from spread_cards import basketball_links, football_links
 
 
@@ -119,7 +120,8 @@ class GameSharingTests(unittest.TestCase):
                      {**base, "cutoff_utc": cutoff, "start_utc": "2026-11-26T00:00:00+00:00", "conference_game": False},
                      {**base, "cutoff_utc": cutoff, "start_utc": "2026-12-04T23:00:00+00:00", "neutral_site": False}]
         conference = share_conferences({"forecasts": forecasts}, checkpoint)
-        basketball_links(directory, conference)
+        card_urls = {}
+        basketball_links(directory, conference, card_urls=card_urls)
         linked = schedule.read_bytes()
         basketball_links(directory, conference)
         self.assertEqual(schedule.read_bytes(), linked)
@@ -148,3 +150,19 @@ class GameSharingTests(unittest.TestCase):
         self.assertNotIn("97–95", second.get_text())
         self.assertEqual(list(directory.rglob("*.png")), [mark])
         self.assertEqual(edition.read_bytes(), original)
+
+        teams = [Standing("Duke", 3, Decimal(5), "4-2", "ACC"), Standing("UConn", 4, Decimal(4), "4-1", "ACC")]
+        games = [
+            Game(4, "Duke", "UConn", None, None, Decimal("-0.34"), True, start_utc="2026-11-26T00:00:00Z"),
+            Game(4, "Duke", "UConn", None, None, Decimal(0), False, start_utc="2026-12-04T23:00:00Z"),
+            Game(4, "Duke", "UConn", None, None, Decimal("-1"), True, start_utc="2026-11-27T00:00:00Z"),
+        ]
+        home = landing_page([Season(2027, {"W4": teams}, games)], {}, PagePresentation({}, {}), checkpoint,
+                            edition, [], card_urls=card_urls)
+        duke, uconn = BeautifulSoup(home, "html.parser").select(".home-rankings tbody tr")
+        for row, sign in [(duke, "-"), (uconn, "+")]:
+            scores = row.select("td:last-child .home-game-score")
+            self.assertEqual([(a.text, a["href"]) for a in row.select(".home-game-score a")],
+                             [(sign + "0.34", links[0]["href"]), ("Pick’em", links[1]["href"])])
+            self.assertEqual(scores[-1].text, sign + "1")
+            self.assertIsNone(scores[-1].a)
