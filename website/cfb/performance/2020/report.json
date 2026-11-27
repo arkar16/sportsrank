@@ -13515,6 +13515,14 @@
     {
       "path": "cfb/years/2020/spread/2020_W20_FBS_spread.html",
       "sha256": "9defeebbf875b4b5645d7fa4cc270229d1c2b80cac267ef0c0819a624a3b8c3a"
+    },
+    {
+      "path": "cfb/years/2020/data/results/weekly_results/2020_W25_FBS_results.html",
+      "sha256": "ca5567633575c30feb5f17c74405796d9ad8b970fcb351f3bf7669704b88233d"
+    },
+    {
+      "path": "cfb/years/2020/data/results/weekly_results/2020_W27_FBS_results.html",
+      "sha256": "70899709a55fb4861753d1afadfa173bc6d35741f5a897478528fbcb28d8cc51"
     }
   ],
   "summary": {
@@ -13536,7 +13544,7 @@
     "missing_predictions": 0,
     "missing_scores": 0,
     "no_covers": 278,
-    "non_fbs_games": 34,
+    "non_fbs_games": 36,
     "paired_cors_mae": "13.35337811900191938579654511",
     "paired_cors_rmse": "16.73617962515034387435483467",
     "pickems": 0,
@@ -13551,7 +13559,7 @@
     "straight_up_wins": 386,
     "unknown_selections": 0
   },
-  "through_week": 20,
+  "through_week": 27,
   "weekly": [
     {
       "coverage_count": 0,
@@ -14287,6 +14295,76 @@
       "straight_up_wins": 1,
       "unknown_selections": 0,
       "week": 20
+    },
+    {
+      "coverage_count": 0,
+      "coverage_percentage": null,
+      "covers": 0,
+      "game_count": 0,
+      "mae": null,
+      "margin_count": 0,
+      "market_ats_percentage": null,
+      "market_games": 0,
+      "market_losses": 0,
+      "market_mae": null,
+      "market_no_picks": 0,
+      "market_pushes": 0,
+      "market_rmse": null,
+      "market_wins": 0,
+      "missing_market_lines": 0,
+      "missing_predictions": 0,
+      "missing_scores": 0,
+      "no_covers": 0,
+      "non_fbs_games": 1,
+      "paired_cors_mae": null,
+      "paired_cors_rmse": null,
+      "pickems": 0,
+      "pushes": 0,
+      "reconstructed_predictions": 0,
+      "rmse": null,
+      "saved_predictions": 0,
+      "straight_up_count": 0,
+      "straight_up_losses": 0,
+      "straight_up_percentage": null,
+      "straight_up_ties": 0,
+      "straight_up_wins": 0,
+      "unknown_selections": 0,
+      "week": 25
+    },
+    {
+      "coverage_count": 0,
+      "coverage_percentage": null,
+      "covers": 0,
+      "game_count": 0,
+      "mae": null,
+      "margin_count": 0,
+      "market_ats_percentage": null,
+      "market_games": 0,
+      "market_losses": 0,
+      "market_mae": null,
+      "market_no_picks": 0,
+      "market_pushes": 0,
+      "market_rmse": null,
+      "market_wins": 0,
+      "missing_market_lines": 0,
+      "missing_predictions": 0,
+      "missing_scores": 0,
+      "no_covers": 0,
+      "non_fbs_games": 1,
+      "paired_cors_mae": null,
+      "paired_cors_rmse": null,
+      "pickems": 0,
+      "pushes": 0,
+      "reconstructed_predictions": 0,
+      "rmse": null,
+      "saved_predictions": 0,
+      "straight_up_count": 0,
+      "straight_up_losses": 0,
+      "straight_up_percentage": null,
+      "straight_up_ties": 0,
+      "straight_up_wins": 0,
+      "unknown_selections": 0,
+      "week": 27
     }
   ]
 }

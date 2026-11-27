@@ -1,7 +1,5 @@
 """NCAA tournament outcomes and the published final CORS standings."""
-import csv
 from html import escape
-from pathlib import Path
 
 from cfb.conference_pages import CONFERENCE_HONORS, conference_honors_route, conference_route
 from cfb.reference_archive import season_team_routes
@@ -9,12 +7,7 @@ from cfb.reference_markup import school_label
 from cfb.season_pages import _document
 from .record_book import _season_link, season_name
 
-NCAA = "https://www.ncaa.com/history/basketball-men/d1"
-PROGRAM_NAMES = {
-    "Connecticut": "UConn", "LaSalle": "La Salle", "Loyola (Ill.)": "Loyola Chicago",
-    "Memphis State": "Memphis", "North Carolina State": "NC State", "Oklahoma A&M": "Oklahoma State",
-    "Seattle": "Seattle U",
-}
+NCAA = "https://api.collegebasketballdata.com/data-availability"
 
 
 def _honors_table(headers, rows, numeric_cols=()):
@@ -41,27 +34,16 @@ def _win_rate(record):
     return f"{wins / total:.2f}" if total else "—"
 
 
-def write_honors(root, archives, routes, presentation, as_of, *, earlier_years=()):
+def write_honors(root, archives, routes, presentation, as_of, *, earlier_years=(), championship_games=()):
     finals = {s.year: s for s in archives if s.rankings.get("FINAL")}
     team_routes = {year: season_team_routes(s, routes) for year, s in finals.items()}
     tournament = []
-    with Path(__file__).with_name("ncaa_finals.csv").open(encoding="utf-8") as source:
-        for game in csv.DictReader(source):
-            year = int(game["year"])
-            # The source lists tournament years, without tipoff dates. Publish past
-            # tournaments once their season ends, including when rebuilding an older edition.
-            if year >= as_of.year + (as_of.month >= 7):
-                continue
-            season = _season_link(year) if year in finals or year in earlier_years else season_name(year)
-            labels = {name: school_label(PROGRAM_NAMES.get(name, name), team_routes.get(year, routes))
-                      for name in (game["winner"], game["runner_up"]) if name}
-            if game["status"] == "canceled":
-                tournament.append((season, "Tournament canceled", "—", "—", "—"))
-                continue
-            winner = labels[game["winner"]]
-            if game["status"] == "vacated":
-                winner = f"Title vacated ({winner})"
-            tournament.append((season, winner, escape(game["record"]), labels[game["runner_up"]], escape(game["score"])))
+    for game in championship_games:
+        year = game["year"]
+        season = _season_link(year) if year in finals else season_name(year)
+        winner = school_label(game["winner"], team_routes.get(year, routes))
+        runner = school_label(game["runner_up"], team_routes.get(year, routes))
+        tournament.append((season, winner, escape(game.get("record") or "—"), runner, escape(game["score"])))
 
     def publish(name, title, nav_links, body):
         nav = '<nav class="archive-nav" aria-label="Archive">' + " · ".join(nav_links) + "</nav>"
@@ -78,7 +60,7 @@ def write_honors(root, archives, routes, presentation, as_of, *, earlier_years=(
             '<a href="/cbb/history/last-place.html">Last-place finishers</a>',
         ),
         _honors_table(("Season", "Tournament champion", "Record", "Runner-up", "Final score"), tournament, numeric_cols=(2, 4))
-        + f'<p><a href="{NCAA}">NCAA championship history</a></p>',
+        + f'<p><a href="{NCAA}">CollegeBasketballData championship game coverage</a></p>',
     )
     for last in (False, True):
         title = "Last-place CORS finishers" if last else "CORS national champions"

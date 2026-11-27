@@ -1,24 +1,33 @@
 """Render the public basketball page from a frozen weekly ranking."""
-from datetime import datetime
+from datetime import datetime, timezone
 from html import escape
+from hashlib import sha256
 from pathlib import Path
 import shutil
 
+from alltime_excitement import publish_pages
+from excitement_grades import graded_number
 from site_navigation import masthead
 from spread_cards import ConferenceSlate, basketball_links
-from .blend import VERSION, blend_seasons
+from spread_preview import refresh_retained_previews
 from .cors_v1 import VERSION as V1_VERSION, _available, cors_v1_seasons
-from .early_records import read_early_records
-from .historical_replay import replay_historical_seasons
+from .source import supplemental_fixtures
+from .api_history import championship_finals, materialize
+from zoneinfo import ZoneInfo
+from tempfile import TemporaryDirectory
+from .public_tree import ISSUED, install_pages, record_artifacts, restore_artifacts
+from .game_excitement import basketball_bev
 from .home import landing_page
 from .honors import write_honors
 from .march_archive import build_tournaments
-from .program_records import read_program_records
 from .record_book import SECTIONS, _games, _tipoff, _write, build, conference_game, season_name, team_label
 from .team_schedule import schedule_views
 
 
 V1_START = datetime.fromisoformat("2026-11-24T00:00:00+00:00")
+BEV_EDITION_START = datetime.fromisoformat("2026-11-26T00:00:00+00:00")
+# This dated edition must still reproduce its original published fields.
+LAST_NUMBER_ONLY_EDITION = datetime.fromisoformat("2026-11-26T16:47:00+00:00")
 
 
 def share_conferences(season, checkpoint):
@@ -42,19 +51,24 @@ def share_conferences(season, checkpoint):
 
 def _forecasts(forecasts, prepared_at, logo_ids, current, *, year=None):
     forecast_rows = []
+    has_bev = any("bev" in row for row in forecasts)
     for row in forecasts:
         margin = row["predicted_home_margin"]
         pick = "Pick’em" if margin == 0 else escape(row["home"] if margin > 0 else row["away"])
+        bev = row.get("bev", "—")
+        if bev != "—" and (current or prepared_at > LAST_NUMBER_ONLY_EDITION):
+            bev = graded_number("cbb", "BEV", bev)
         forecast_rows.append(
             f'<tr><td>{escape(row["tipoff"])}</td><td>{team_label(row["away"], row.get("away_id"), logo_ids, linked=current, year=year if current else None)}</td>'
-            f'<td>{team_label(row["home"], row.get("home_id"), logo_ids, linked=current, year=year if current else None)}</td><td>{pick}</td><td class="num">{abs(margin):.2f}</td></tr>'
+            f'<td>{team_label(row["home"], row.get("home_id"), logo_ids, linked=current, year=year if current else None)}</td><td>{pick}</td><td class="num">{abs(margin):.2f}</td>'
+            + (f'<td class="num">{bev}</td>' if has_bev else "") + "</tr>"
         )
     section_id = ' id="forecasts"' if current else ""
     forecast_section = ""
     if forecast_rows:
         forecast_section = f"""
 <section{section_id}><h2>Game forecasts</h2><p>Prepared {prepared_at:%B %d, %Y at %H:%M %Z}. Tipoffs reflect the schedule at preparation.</p><div class="table-scroll"><table>
-<thead><tr><th>Tipoff (Eastern)</th><th>Away</th><th>Home</th><th>CORS pick</th><th>Margin</th></tr></thead>
+<thead><tr><th>Tipoff (Eastern)</th><th>Away</th><th>Home</th><th>CORS pick</th><th>Margin</th>{"<th>BEV</th>" if has_bev else ""}</tr></thead>
 <tbody>{''.join(forecast_rows)}</tbody></table></div></section>"""
     return forecast_section
 
@@ -90,49 +104,70 @@ def render_rankings(season, cutoff, rankings, forecasts, prepared_at, *, logo_id
 
 def main():
     import argparse
-    from zoneinfo import ZoneInfo
 
-    from .replay import replay_seasons
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--database", type=Path, required=True)
     parser.add_argument("--season", type=int, required=True)
     parser.add_argument("--as-of", required=True, help="Snapshot preparation time, with timezone")
     parser.add_argument("--output", type=Path, required=True, help="Basketball website directory")
-    parser.add_argument("--historical-dir", type=Path, default=None,
-                        help="Directory containing pinned 1985–2019 March Mania CSV files for full weekly history")
     args = parser.parse_args()
+    with TemporaryDirectory(prefix="sportsrank-basketball-") as scratch:
+        work = Path(scratch)
+        database = work / "api.sqlite3"
+        years = materialize(args.database, database, args.season)
+        site = work / "site"
+        # Render a complete API-backed site before retiring any old public output.
+        site.mkdir()
+        as_of = datetime.fromisoformat(args.as_of)
+        restore_artifacts(args.output, site, as_of)
+        _build_api_site(database, site, args, years[0])
+        refresh_retained_previews(site, "cbb")
+        record_artifacts(site, as_of)
+        install_pages(site, args.output)
+        publish_pages(args.output, "cbb")
+
+
+def _build_api_site(database, output, args, first_season):
+    from .replay import replay_seasons
+
     as_of = datetime.fromisoformat(args.as_of)
     if as_of.utcoffset() is None:
-        parser.error("--as-of requires a timezone")
-    seasons = replay_seasons(args.database, args.season)
+        raise ValueError("--as-of requires a timezone")
+    seasons = replay_seasons(database, args.season, first_season=first_season)
     baseline = seasons
-    blended = as_of >= datetime.fromisoformat("2026-11-23T11:00:00+00:00")
-    model = VERSION if blended else "CORS v0.4.0"
-    if as_of >= V1_START:
-        model = V1_VERSION
-        seasons = cors_v1_seasons(args.database, baseline)
-    elif blended:
-        seasons = blend_seasons(args.database, baseline)
+    blended = as_of >= V1_START
+    model = V1_VERSION if blended else "CORS v0.4.0"
+    if blended:
+        seasons = cors_v1_seasons(database, baseline, api_only=True)
     season = seasons[-1]
     checkpoints = [c for c in season["rankings"] if datetime.fromisoformat(c["cutoff_utc"]) <= as_of]
     if not checkpoints:
-        parser.error("No ranking checkpoint precedes this timestamp")
+        # The published schedule can arrive before opening week. Its preseason
+        # ratings depend only on the returning roster and preceding seasons.
+        checkpoint = {**season["rankings"][0], "cutoff_utc": as_of.astimezone(timezone.utc).isoformat()}
+        season = {**season, "rankings": (checkpoint, *season["rankings"])}
+        seasons = (*seasons[:-1], season)
+        checkpoints = [checkpoint]
     checkpoint = checkpoints[-1]
     cutoff = checkpoint["cutoff_utc"]
     et = ZoneInfo("America/New_York")
     edition_games = []
+    ranks = {r["team_id"]: r["rank"] for r in checkpoint["rows"]}
     for row in season["forecasts"]:
         tipoff = datetime.fromisoformat(row["start_utc"])
         if row["cutoff_utc"] == cutoff and (blended or (row["status"] == "scheduled" and tipoff > as_of)):
-            edition_games.append({"tipoff": tipoff.astimezone(et).strftime("%b %d, %I:%M %p"),
+            edition_games.append({"tipoff": tipoff.astimezone(et).strftime("%b %d" if row.get("date_only") else "%b %d, %I:%M %p"),
                              "home": row["home_team"], "away": row["away_team"],
                              "home_id": row["home_team_id"], "away_id": row["away_team_id"],
                              "predicted_home_margin": row["home_margin"]})
+            if model == V1_VERSION and as_of >= BEV_EDITION_START:
+                edition_games[-1]["bev"] = basketball_bev(ranks[row["home_team_id"]], ranks[row["away_team_id"]],
+                                                          row["home_margin"], row["game_id"], cutoff)
     rankings = [{"rank": r["rank"], "team": r["school"], "team_id": r["team_id"], "rating": r["cors"],
                  "wins": r["wins"], "losses": r["losses"]} for r in checkpoint["rows"]]
     logo_dir = Path(__file__).resolve().parents[1] / "website/cbb/assets/team-logos"
-    output_logos = args.output / "assets/team-logos"
+    output_logos = output / "assets/team-logos"
     if output_logos.resolve() != logo_dir:
         shutil.copytree(logo_dir, output_logos, dirs_exist_ok=True)
     logo_ids = {int(path.stem) for path in logo_dir.glob("*.png")}
@@ -141,41 +176,25 @@ def main():
     if blended:
         page = page.replace("Division I · Rankings", f"Division I · {model} · Rankings")
     stamp = as_of.astimezone(ZoneInfo("UTC")).strftime("%Y-%m-%dT%H%M%SZ")
-    archive = args.output / "editions" / f"{stamp}.html"
+    issued = f"editions/{stamp}.html"
+    archive = output / (issued if ISSUED.get(issued) == sha256(page.encode()).hexdigest() else f"editions/{stamp}-cbbd.html")
     archive.parent.mkdir(parents=True, exist_ok=True)
-    retained = logo_dir.parents[1] / "editions"
-    if retained.resolve() != archive.parent.resolve():
-        for original in retained.glob("*.html"):
-            if original.stem > stamp:
-                continue
-            target = archive.parent / original.name
-            if target.exists() and target.read_bytes() != original.read_bytes():
-                raise ValueError(f"Conflicting retained basketball edition: {original.name}")
-            if not target.exists():
-                shutil.copyfile(original, target)
-    if archive.exists() and archive.read_text() != page:
-        raise ValueError("A different basketball edition exists for that timestamp")
-    archive.write_text(page)
-    years = build_tournaments(args.output, baseline, as_of, logo_ids, blends=seasons if blended else (), model=model)
+    if archive.exists() and archive.read_bytes() != page.encode():
+        raise ValueError("API edition changed at the same preparation time")
+    archive.write_text(page, encoding="utf-8")
+    years = build_tournaments(output, baseline, as_of, logo_ids, blends=seasons if blended else (), model=model, api_only=True)
     schedules, upcoming_ids, conference_schedule = (
-        schedule_views(args.database, season, checkpoint, as_of) if blended else (None, set(), [])
+        schedule_views(database, season, checkpoint, as_of) if blended else (None, set(), [])
     )
-    first_replay = min(as_of.year + (as_of.month >= 7), seasons[0]["season"])
-    historical_seasons = (
-        replay_historical_seasons(args.historical_dir, before_year=first_replay, model=model)
-        if args.historical_dir is not None else ()
-    )
-    program_records = read_program_records(first_replay)
-    early_records = read_early_records(first_replay)
-    earlier_years = early_records.keys() | program_records.keys()
+    current_excitement = {} if model == V1_VERSION else None
     archives, routes, presentation = build(
-        args.output, seasons, as_of, logo_ids, tournament_years=years, model=model,
+        output, seasons, as_of, logo_ids, tournament_years=years, model=model,
         schedules=schedules, upcoming_ids=upcoming_ids, conference_schedule=conference_schedule,
-        include_early_finals=True,
-        early_records=early_records, program_records=program_records,
-        historical_seasons=historical_seasons,
+        current_excitement=current_excitement,
+        supplemental=(supplemental_fixtures(database, [s["season"] for s in seasons])
+                      if current_excitement is not None else None),
     )
-    write_honors(args.output, archives, routes, presentation, as_of, earlier_years=earlier_years)
+    write_honors(output, archives, routes, presentation, as_of, championship_games=championship_finals(database, as_of))
     edition_link = f'<nav class="sr-report-nav"><a href="editions/{archive.name}">Dated edition</a></nav>'
     report = _forecasts(edition_games, as_of.astimezone(et), logo_ids, True, year=args.season)
     if not report:
@@ -183,14 +202,16 @@ def main():
     if blended:
         slate = [g for g in season["forecasts"] if g["cutoff_utc"] == cutoff]
         report = (f'<section id="forecasts"><h2>{model} weekly picks</h2>'
-                  + _games(slate, logo_ids, as_of, year=args.season) + '</section>')
-    _write(args.output, "current.html", f"{season_name(args.season)} basketball forecasts", edition_link + report)
+                  + _games(slate, logo_ids, as_of, year=args.season, excitement=current_excitement) + '</section>')
+        if current_excitement:
+            report += f'<p><a href="/cbb/seasons/{args.season}/excitement/index.html">Game excitement and scoring method</a></p>'
+    _write(output, "current.html", f"{season_name(args.season)} basketball forecasts", edition_link + report)
     card_urls = {}
     if blended and slate:
-        basketball_links(args.output, share_conferences(season, checkpoint), card_urls=card_urls)
+        basketball_links(output, share_conferences(season, checkpoint), card_urls=card_urls)
     home = landing_page(archives, routes, presentation, checkpoint, archive, years, model=model,
-                        earlier_years=earlier_years, card_urls=card_urls)
-    (args.output / "index.html").write_bytes(home)
+                        card_urls=card_urls)
+    (output / "index.html").write_bytes(home)
 
 
 if __name__ == "__main__":

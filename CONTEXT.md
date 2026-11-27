@@ -101,6 +101,9 @@ A Game's anticipated appeal in a pregame watch guide, emphasizing team quality a
 **After Excitement Value (AEV)**:
 A Game's experienced drama, including sustained suspense and dramatic swings, assessed after it finishes, with actual drama taking priority over team quality and surprise. When game-flow evidence is incomplete, AEV is an estimate from the available historical evidence.
 
+**Excitement Grade**:
+A letter from A+ through F showing how a Game's BEV or AEV compares with a fixed historical reference for the same sport and metric. An estimated AEV also has an estimated grade.
+
 **Ranking Run**:
 One attempt to calculate a CORS Ranking through a specified season week and prepare it for validation.
 _Avoid_: Cron, build

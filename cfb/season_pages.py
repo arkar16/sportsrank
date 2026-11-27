@@ -328,6 +328,8 @@ def build_season_pages(site: Path, season: Season, routes: dict[str, str]) -> It
         links.append(_anchor("#cors-upsets", "Upsets"))
     if archive:
         links.append(_anchor("#season-archive", "Season archive"))
+    if (directory / "excitement/index.html").is_file():
+        links.append(_anchor("excitement/index.html", "Game excitement"))
     jumps = f'<p>{" · ".join(links)}</p>' if links else ""
     navigation = _checkpoint_navigation(checkpoints)
     matchups = _matchup_navigation(directory, year, landing, "")

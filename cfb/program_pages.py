@@ -11,6 +11,8 @@ from typing import TYPE_CHECKING
 
 from .archive_presentation import updated_time
 from .conference_pages import conference_route, projected_overall_records
+from .excitement_pages import ESTIMATE_NOTE, aev_label, bev_label
+from .game_excitement import Matchup, score_for
 from .reference_archive import _checkpoint_order, program_season_route, season_team_routes
 from .reference_markup import school_label
 from .win_probability import format_win_chance
@@ -39,6 +41,7 @@ class ScheduledGame:
     game: Game
     date_label: str
     opponent_rank: int | None
+    forecast_id: str = ""
 
 
 @dataclass(frozen=True)
@@ -64,7 +67,7 @@ def build_program_pages(
     season_route=lambda year: f"/cfb/years/{year}/{year}_CFB.html",
     year_label=str, directory_label=None, remaining_schedules=None, projections=None,
     checkpoint_route=lambda year, checkpoint: f"/cfb/years/{year}/checkpoints/{checkpoint}.html",
-    best_checkpoint_label=_checkpoint_label,
+    best_checkpoint_label=_checkpoint_label, excitement_by_year=None,
 ) -> Iterator[tuple[str, str]]:
     """Yield the program index and one history and season page per ranked program."""
     histories: dict[str, list[_ProgramSeason]] = defaultdict(list)
@@ -118,9 +121,13 @@ def build_program_pages(
             standing = entry.standings.get(entry.latest_checkpoint)
             if standing and standing.conference and standing.conference != "—":
                 links.append((conference_route(standing.conference, year, sport=sport), f"{year_label(year)} {standing.conference}"))
+            excitement = (excitement_by_year or {}).get(year)
+            if excitement:
+                base = f"/cbb/seasons/{year}" if sport == "basketball" else f"/cfb/years/{year}"
+                links.append((f"{base}/excitement/index.html", "Game excitement"))
             log = _season_table(
                 school, entry, opponent_routes[year], sport=sport,
-                schedule=schedules.get((year, school)),
+                schedule=schedules.get((year, school)), excitement=excitement,
                 through_week=football_week if year == latest_year else None,
                 projection=projections.get(school) if projections is not None and year == latest_year else None,
             )
@@ -309,7 +316,7 @@ def _rank_trend(route: str, history: list[_ProgramSeason], year_label=str) -> st
 
 def _season_table(
     school: str, entry: _ProgramSeason, routes: dict[str, str], *, sport: str,
-    schedule: TeamSchedule | None, through_week: int | None, projection: str | None,
+    schedule: TeamSchedule | None, through_week: int | None, projection: str | None, excitement=None,
 ) -> str:
     rankings = entry.season.rankings
     weeks = {int(key[1:]) for key, rows in rankings.items() if rows and key.startswith("W")}
@@ -331,6 +338,23 @@ def _season_table(
             return start
         return "<tr>"
 
+    has_estimate = False
+    grade_sport = "cbb" if sport == "basketball" else "cfb"
+
+    def excitement_cells(game):
+        nonlocal has_estimate
+        if not excitement:
+            return ""
+        if sport == "basketball":
+            score = excitement.get(game)
+        else:
+            key = Matchup(game.week, game.home, game.away, game.neutral_site)
+            score = score_for(excitement, key, (game.home_score, game.away_score))
+        if score and score.estimated:
+            has_estimate = True
+        return (f'<td class="num">{bev_label(score, sport=grade_sport)}</td>'
+                f'<td class="num">{aev_label(score, sport=grade_sport)}</td>')
+
     groups = []
     for checkpoint in checkpoints:
         games = entry.games.get(int(checkpoint[1:]), []) if checkpoint.startswith("W") else []
@@ -341,14 +365,14 @@ def _season_table(
             game_rows.sort(key=lambda row: row[0])
             rows = [
                 (row_start(upcoming), _game_cells(school, game, routes, sport=sport,
-                                                  upcoming=upcoming, show_chance=has_upcoming))
+                                                  upcoming=upcoming, show_chance=has_upcoming) + excitement_cells(game))
                 for upcoming, game in game_rows
             ]
         else:
             opponent = "No game listed" if checkpoint.startswith("W") else _MISSING
             if schedule and checkpoint == entry.latest_checkpoint:
                 opponent = "No result yet"
-            rows = [("<tr>", f"<td>{opponent}</td>" + f"<td>{_MISSING}</td>" * (3 + has_upcoming))]
+            rows = [("<tr>", f"<td>{opponent}</td>" + f"<td>{_MISSING}</td>" * (3 + has_upcoming + (2 if excitement else 0)))]
         groups.append(
             f'<tbody>{rows[0][0]}<th scope="rowgroup"{span}>{_checkpoint_label(checkpoint)}</th>'
             f'<td class="num"{span}>{standing.rank if standing else _MISSING}</td>'
@@ -371,6 +395,7 @@ def _season_table(
                 + f"<td>{_MISSING}</td>" * 3
                 + _game_cells(school, fixture.game, routes, sport=sport, upcoming=True,
                               show_chance=True, opponent_rank=fixture.opponent_rank)
+                + excitement_cells(fixture.game)
                 + "</tr></tbody>\n"
             )
 
@@ -379,7 +404,11 @@ def _season_table(
     if has_upcoming:
         headers += ("Win chance",)
     headers += (f"Score <small>{escape(school)} first</small>",)
+    if excitement:
+        headers += ("BEV <small>Pregame appeal</small>", "AEV <small>Postgame drama</small>")
     log = _table("Rankings and games", headers, "".join(groups))
+    if has_estimate:
+        log += f"<p>{ESTIMATE_NOTE}</p>"
     if has_upcoming:
         log = ('<p><a href="#remaining-schedule">Remaining schedule</a></p>'
                '<h2>Weekly rankings and games</h2>' + note + log)

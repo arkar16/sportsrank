@@ -129,12 +129,24 @@ class TestCBBReplay(unittest.TestCase):
         cache_before = self.db_path.read_bytes()
         (season,) = self.replay(home_advantage=3.5, margin_weight=0.0)
         self.assertEqual(self.db_path.read_bytes(), cache_before)
-        self.assertEqual([row["game_id"] for row in season["forecasts"]], [1, 5])
+        self.assertEqual([row["game_id"] for row in season["forecasts"]], [1, 4, 5])
+        self.assertTrue(season["forecasts"][1]["date_only"])
         self.assertEqual(season["forecasts"][0]["home_margin"], 3.5)
         self.assertIsNone(season["forecasts"][1]["actual_home_margin"])
         self.assertEqual(season["final_cutoff_utc"], "2019-11-11T11:00:00+00:00")
         alpha, beta = season["final_rankings"]
         self.assertEqual((alpha["cors"], beta["cors"]), (20.0, 0.0))
+
+    def test_scheduled_only_season_uses_pregame_ratings(self):
+        self.add_game(1, "2019-11-04T17:00:00Z")
+        self.add_teams(2021, (1, "Alpha"), (2, "Beta"))
+        self.add_game(2, "2020-11-25T18:00:00Z", season=2021, status="scheduled")
+        self.add_game(3, "2020-12-07T20:00:00Z", season=2021, status="scheduled")
+        _, future = self.replay(2021)
+        self.assertTrue(all(g["actual_home_margin"] is None for g in future["forecasts"]))
+        self.assertEqual(future["forecasts"][0]["home_margin"], future["forecasts"][1]["home_margin"])
+        self.assertGreater(future["forecasts"][0]["home_margin"], 2)
+        self.assertTrue(all(not r["wins"] and not r["losses"] for r in future["final_rankings"]))
 
     def test_missing_cache_or_season_fails(self):
         missing = self.db_path.with_name("missing.sqlite3")

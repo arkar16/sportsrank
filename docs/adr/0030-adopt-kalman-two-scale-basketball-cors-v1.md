@@ -99,9 +99,11 @@ above or below an average Division I team (`0.00`)** in that season.
   - The modern archive (seasons ending 2020–27) starts from
     `cbb/cors_v1_seed.json`, the end-of-2019 state warmed up with 2002–19
     `hoopR` results as in Track A.
-  - The historical archive (seasons ending 1981–2019) replays from the
-    1980–81 genesis. The same `carry_total = 0.96` shrinks prior ratings
-    between seasons throughout the replay.
+  - The original historical study replayed from 1980–81. Under the
+    2026-11-26 public API source decision, the historical watch guide uses
+    individual API fixtures and marks the pregame baseline separately from a
+    full CORS forecast. The modern warm-up uses the pinned ESPN API archive.
+    [Source revision](https://github.com/sportsdataverse/hoopR-data/blob/24a404292a6dc1b853e89ecd7c040fb11ea28446/mbb_schedule_master.csv)
 
 ## Evidence
 
@@ -150,3 +152,14 @@ intervals use 5,000 paired weekly block bootstrap draws stratified by season.
   public URLs and the issued editions at
   `website/cbb/editions/2026-11-19T185800Z.html` and
   `website/cbb/editions/2026-11-23T161743Z.html` are preserved.
+
+
+## Source decision on 26 November 2026
+
+The public replay starts at the first retained CollegeBasketballData season.
+Season rosters and stable provider team IDs define the field. A cold initial
+state and chronological carryover implement the adopted CORS model across this
+archive. The earlier research seed remains an evaluation artifact. Date-only
+games use the beginning of the listed local date for the pregame checkpoint and
+the end of that date plus the completion buffer for result observations.
+The source decision and excitement scoring policy are recorded in ADR-0021.

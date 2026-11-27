@@ -4,22 +4,16 @@ The owner accepted BEV, full-data AEV and the comparable-game estimated-AEV
 approach on 2026-09-29. [ADR-0021](../adr/0021-define-versioned-game-excitement-scores.md)
 records the decision and its trade-offs.
 
-**SR-27 — Add versioned BEV and AEV to 2024–2026 game tables** is the canonical
-implementation specification. Open it with `bb tasks show SR-27`. The task owns
-scope, acceptance, dependencies, execution readiness and verification evidence;
-its attached documents are dated supporting snapshots. This page is a pointer,
-not a second specification.
+[Football game excitement #179](https://github.com/arkar16/sportsrank/issues/179)
+covers the first 2024–2026 FBS rollout. The [historical football extension](https://github.com/arkar16/sportsrank/issues/182) covers the earlier CORS archive.
+The earlier SR-27 specification established that scope. The
+[v1 calculation contract](2026-game-excitement-scoring-v1.md) defines the
+formulas, comparable-game estimator and examples. [CONTEXT.md](../../CONTEXT.md)
+owns the glossary.
 
-The [v1 calculation contract](2026-game-excitement-scoring-v1.md) remains the
-canonical definition of the formulas, comparable-game estimator and synthetic
-arithmetic examples. [CONTEXT.md](../../CONTEXT.md) owns the BEV/AEV glossary.
-Changes to consequential scoring decisions update the calculation contract and
-ADR together.
-
-Preparation can use the accepted contract. Issued-forecast/BEV integration
-requires SR-26's preserved forecast contract; data qualification and empirical
-reference acceptance remain explicit prerequisites in SR-27. The spec does not
-grant a live CFBD allowance, dispatch implementation or authorize publication.
+The [game evidence runbook](../operations/game-excitement.md) describes the
+static tables, frozen pregame records and reproducible offline preparation.
+The issue owns reference validation and acceptance for estimated scores.
 
 ## Design sources
 
