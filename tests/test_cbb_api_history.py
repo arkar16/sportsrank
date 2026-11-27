@@ -8,8 +8,8 @@ import unittest
 import zlib
 
 from cbb.replay import replay_seasons
-from cbb.cors_v1 import cors_v1_seasons
-from cbb.game_excitement import weekly_scores
+from cbb.cors_v1 import MARGIN_ONLY_VERSION, cors_v1_seasons
+from cbb.game_excitement import frozen_excitement_seasons, weekly_scores
 from cbb.api_history import HOST, materialize
 from cbb.public_tree import install_pages, record_artifacts, restore_artifacts
 
@@ -37,6 +37,42 @@ class PublicBasketballSourcesTest(unittest.TestCase):
             insert_reply(db, "teams?season=1949", [dict(id=1,school="East"),dict(id=2,school="West")])
             insert_reply(db, "games?season=1949", [game(99, "10", 100, 0)], host=HOST + ".example")
         return path
+
+    def test_excitement_inputs_follow_the_version_in_force_at_each_checkpoint(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "source.db"
+            with sqlite3.connect(source) as db:
+                db.execute("CREATE TABLE responses(url,acquired_utc,rows,compressed_json)")
+                teams = [dict(id=1, school="East", conference="League"), dict(id=2, school="West", conference="League")]
+                insert_reply(db, "teams?season=2027", teams)
+                games = [dict(game(gid, "01", home, away), season=2027, neutralSite=False,
+                              startDate=f"2026-{day}T22:00:00Z")
+                         for gid, (day, home, away) in enumerate((
+                             ("11-04", 95, 50), ("11-11", 100, 62),
+                             ("11-24", 67, 69), ("12-02", 80, 86)), 1)]
+                insert_reply(db, "games?season=2027", games)
+            database = root / "public.db"
+            materialize(source, database, 2027)
+            raw = replay_seasons(database, 2027, first_season=2027)
+            old, = cors_v1_seasons(database, raw, api_only=True, model=MARGIN_ONLY_VERSION)
+            current = cors_v1_seasons(database, raw, api_only=True)
+            frozen = frozen_excitement_seasons(database, raw, current)[2027]
+            self.assertNotEqual(old["forecasts"][2]["home_margin"], current[0]["forecasts"][2]["home_margin"])
+            self.assertNotEqual(old["forecasts"][3]["home_margin"], current[0]["forecasts"][3]["home_margin"])
+            self.assertEqual(frozen["forecasts"][2], old["forecasts"][2])
+            self.assertEqual(frozen["forecasts"][3], current[0]["forecasts"][3])
+            old_checkpoint = old["forecasts"][2]["cutoff_utc"]
+            new_checkpoint = old["forecasts"][3]["cutoff_utc"]
+            def rows(season, cutoff):
+                return next(c["rows"] for c in season["rankings"] if c["cutoff_utc"] == cutoff)
+            self.assertEqual(rows(frozen, old_checkpoint), rows(old, old_checkpoint))
+            self.assertEqual(rows(frozen, new_checkpoint), rows(current[0], new_checkpoint))
+            as_of = datetime.fromisoformat("2026-11-26T10:00:00Z")
+            old_weeks = [c for c in old["rankings"] if datetime.fromisoformat(c["cutoff_utc"]) <= as_of]
+            old_scores, _ = weekly_scores(root, old, old_weeks, as_of)
+            new_scores, _ = weekly_scores(root, frozen, frozen["rankings"], datetime.fromisoformat("2026-12-07T19:00:00Z"))
+            self.assertEqual(old_scores[3], new_scores[3])
 
     def test_api_games_before_1980_only_use_prior_days_and_verify_the_final(self):
         cutoff = datetime.fromisoformat("1949-04-01T00:00Z")

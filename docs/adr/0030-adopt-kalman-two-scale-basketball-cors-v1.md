@@ -163,3 +163,9 @@ archive. The earlier research seed remains an evaluation artifact. Date-only
 games use the beginning of the listed local date for the pregame checkpoint and
 the end of that date plus the completion buffer for result observations.
 The source decision and excitement scoring policy are recorded in ADR-0021.
+
+## November 27, 2026 amendment
+
+Basketball v1.1.0 adds winner evidence to the weekly Division I game update.
+ADR-0031 records the weighting rule and its forecast trade-off.
+[ADR-0031](0031-weight-basketball-outcomes-by-pregame-spread.md)

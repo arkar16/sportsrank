@@ -7,6 +7,7 @@ import json
 from zoneinfo import ZoneInfo
 from cfb.excitement_pages import ESTIMATE_NOTE, aev_label, bev_label
 
+from .cors_v1 import MARGIN_ONLY_VERSION, VERSION
 from .grade import grade_game, grade_margins, grade_performance
 from .issued import VERIFIED_EDITIONS, grade_edition
 
@@ -352,7 +353,7 @@ def write_performance(
         + _metrics_card(overall)
         + f'<p><a href="/cbb/performance/{latest_year}/index.html">Current forecasts and results</a> · '
           f'<a href="seasons.csv">Seasons (CSV)</a> · '
-          f'{len(season_rows)} seasons · Scores through {as_of.astimezone(EASTERN):%b %d, %Y at %H:%M %Z}.</p>'
+          f'{len(season_rows)} seasons · Report prepared {as_of.astimezone(EASTERN):%b %d, %Y at %H:%M %Z}.</p>'
         + _SCORING_RULES
         + f'<h2 id="reconstructed">Season summaries</h2><p>{escape(model)}, evaluated against final Division I scores. '
           'Select any season for weekly summaries, game-level results, and CSV/JSON downloads.</p>'
@@ -365,11 +366,16 @@ def write_performance(
             'with 16.77 points RMSE. '
             '<a href="https://github.com/arkar16/sportsrank/issues/100#issuecomment-7104093506">Experiment results</a></p>'
         )
-    elif model == "CORS v1.0.0":
+    elif model == MARGIN_ONLY_VERSION:
         body += (
             '<p>In the November 19–23 comparison across 153 games, margin RMSE was 13.25 points '
             'for v1.0.0, 13.48 for v0.6.0, and 16.77 for v0.4.0. Across 54,197 games in the '
             '2017–26 evaluation, RMSE was 11.40, 11.44, and 13.35 points respectively.</p>'
+        )
+    elif model == VERSION:
+        body += (
+            '<p>In v1.1.0, the winner carries more weight as the pregame spread grows. '
+            'At a 20-point spread the winner and final margin get equal weight.</p>'
         )
     if tournament_years:
         body += '<p><a href="/cbb/tournaments/index.html">March Madness picks and model comparisons</a></p>'

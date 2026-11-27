@@ -8,7 +8,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from .archive_finals import conference_name, program_id_map
-from .cors_v1 import VERSION, iter_cors_v1_seasons
+from .cors_v1 import MARGIN_ONLY_VERSION, VERSION, iter_cors_v1_seasons
 from .blend import iter_blended_seasons
 from .replay import CARRYOVER_STRENGTH, HOME_ADVANTAGE, MARGIN_WEIGHT, _replay
 from .source import Game, Season, Team
@@ -32,7 +32,7 @@ HASHES = {
 }
 
 
-def iter_raw_historical_seasons(directory: Path, *, through_year: int = LAST, model=VERSION):
+def iter_raw_historical_seasons(directory: Path, *, through_year: int = LAST, model=MARGIN_ONLY_VERSION):
     """Yield weekly historical replays using raw historical TeamIDs and conference codes."""
     last = min(LAST, through_year)
     if last < FIRST:
@@ -103,8 +103,8 @@ def iter_raw_historical_seasons(directory: Path, *, through_year: int = LAST, mo
 
     keys = {(year, tid): tid for year, roster in rosters.items() for tid in roster}
     seed = {"teams": {}, "xx": 0., "xy": 0.}
-    if model == VERSION:
-        seasons = iter_cors_v1_seasons(baseline(), keys, hfa_start_year=FIRST)
+    if model in (MARGIN_ONLY_VERSION, VERSION):
+        seasons = iter_cors_v1_seasons(baseline(), keys, hfa_start_year=FIRST, model=model)
     elif model == "CORS v0.6.0":
         seasons = iter_blended_seasons(baseline(), keys, seed)
     elif model == "CORS v0.4.0":
@@ -132,7 +132,7 @@ def _remap_row(row, programs):
     }
 
 
-def replay_historical_seasons(directory: Path, *, before_year: int = 2020, model=VERSION):
+def replay_historical_seasons(directory: Path, *, before_year: int = 2020, model=MARGIN_ONLY_VERSION):
     """Return full weekly historical seasons normalized to site program IDs and conferences."""
     programs = program_id_map()
     def remap_advantages(container):

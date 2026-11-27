@@ -305,6 +305,13 @@ current task scope, dependencies, and acceptance. Historical workflow records ar
 
 ## Basketball record book
 
+Men's basketball uses **CORS v1.1.0**. The larger the pregame spread, the more
+the weekly rating update weights the winner and the less it weights the exact
+margin. At 20 points the weights are equal. Conference pages select each
+team's best win and worst loss by the points that game added to or cost its
+rating in the first eligible weekly update.
+[Basketball model decision](docs/adr/0031-weight-basketball-outcomes-by-pregame-spread.md)
+
 Public games, rosters, schedules, tournament results and CORS comparison data
 come from CollegeBasketballData. The season is its ending year. A normal build
 starts with retained API responses, replays the CORS model in chronological
