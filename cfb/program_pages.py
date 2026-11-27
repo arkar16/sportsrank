@@ -339,6 +339,7 @@ def _season_table(
         return "<tr>"
 
     has_estimate = False
+    grade_sport = "cbb" if sport == "basketball" else "cfb"
 
     def excitement_cells(game):
         nonlocal has_estimate
@@ -351,7 +352,8 @@ def _season_table(
             score = score_for(excitement, key, (game.home_score, game.away_score))
         if score and score.estimated:
             has_estimate = True
-        return f'<td class="num">{bev_label(score)}</td><td class="num">{aev_label(score)}</td>'
+        return (f'<td class="num">{bev_label(score, sport=grade_sport)}</td>'
+                f'<td class="num">{aev_label(score, sport=grade_sport)}</td>')
 
     groups = []
     for checkpoint in checkpoints:

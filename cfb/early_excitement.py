@@ -4,6 +4,7 @@ from html import escape
 import json
 
 from alltime_excitement import Game as LeaderGame
+from excitement_grades import SCALE_LINK
 from .cfbd_appeal import DATA, load
 from .excitement import QualifiedPregame, calculate_bev, matchup_quality
 from .game_excitement import GameAppeal, _sparse_final
@@ -94,7 +95,7 @@ def build_guides(*, leaders=None):
             f'<body><main><p><a href="/cfb/cfb.html">Football seasons</a></p><h1>{y} football game excitement</h1>'
             "<p>BEV rates pregame appeal using the preceding CORS checkpoint. AEV estimates drama from the verified final "
             "when scoring history is unavailable. Scores run from 0 to 100. Game results and rosters come from CollegeFootballData.</p>"
-            '<p>* Final-score estimate. <a href="bev-v1.json">Pregame inputs</a></p><div class="table-scroll"><table><thead><tr>'
+            f'<p>* Final-score estimate. <a href="bev-v1.json">Pregame inputs</a> · {SCALE_LINK}</p><div class="table-scroll"><table><thead><tr>'
             "<th>Date</th><th>Away</th><th>Home</th><th>BEV</th><th>Final (away–home)</th><th>AEV</th>"
             "</tr></thead><tbody>" + "\n".join(rows) + "</tbody></table></div></main></body></html>"
         )

@@ -95,7 +95,9 @@ class PublicBasketballSourcesTest(unittest.TestCase):
             _build_api_site(db,site,Namespace(season=2028, as_of="2027-08-01T15:00:00+00:00"),2027)
             guide=html.parse(site/"seasons/2028/excitement/index.html")
             fixture,=guide.xpath('//*[@data-cbbd-fixture="2028"]')
-            self.assertTrue(0<=float(fixture.text_content())<=100)
+            number, grade = fixture.text_content().split()
+            self.assertTrue(0 <= float(number) <= 100)
+            self.assertRegex(grade, r"^\([ABCDF][+-]?\)$")
             self.assertEqual(guide.xpath('//*[@data-cbbd-game]'),[])
             self.assertIn("2027–28",guide.xpath("//title")[0].text)
 

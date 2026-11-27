@@ -79,12 +79,12 @@ class AllTimeGameTests(unittest.TestCase):
                     cells = list(tr)
                     idx = 3 if sport == "cfb" else 4
                     bev, _, basis = cells[idx].text_content().strip().partition(" · ")
-                    hist[sport, "BEV"][float(bev)] += 1
+                    hist[sport, "BEV"][float(bev.split()[0])] += 1
                     final, aev, evidence = "Pending", "", ""
                     if len(cells) == idx + 3:
                         final = cells[-2].text_content().strip()
                         aev, _, evidence = cells[-1].text_content().strip().partition(" · ")
-                        hist[sport, "AEV"][float(aev.rstrip("*"))] += 1
+                        hist[sport, "AEV"][float(aev.split()[0].rstrip("*"))] += 1
                     anchor = tr.get("id")
                     href = prefix + anchor
                     if href in linked:
@@ -101,7 +101,7 @@ class AllTimeGameTests(unittest.TestCase):
                 expected.extend([(rank, score)] * count)
                 if len(expected) >= 10:
                     break
-            self.assertEqual([(r[0], float(r[-2].rstrip("*"))) for r in rows], expected)
+            self.assertEqual([(r[0], float(r[-2].split()[0].rstrip("*"))) for r in rows], expected)
             for rank, href, matchup, final, value, basis in rows:
                 if scope:
                     self.assertTrue(href.startswith(f"/{scope}/"))

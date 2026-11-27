@@ -151,7 +151,7 @@ def _games(games, logos, as_of, *, year=None, date_only=False, excitement=None):
         )
         if excitement is not None:
             appeal = excitement.get(g["game_id"])
-            cells += (bev_label(appeal), aev_label(appeal))
+            cells += (bev_label(appeal, sport="cbb"), aev_label(appeal, sport="cbb"))
             if appeal and appeal.estimated:
                 has_estimate = True
         rows.append(cells)

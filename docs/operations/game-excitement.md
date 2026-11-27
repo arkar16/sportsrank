@@ -11,6 +11,10 @@ individual games in their season guides. Both record-book builds refresh the
 rankings from the saved scores. Games tied at the displayed tenth-place score
 all appear. AEV requires a verified final, while scheduled games can earn BEV.
 
+The public cutoff table lives at `/excitement/grades.html`. The offline
+`tests.test_excitement_grades` check reproduces its four scales from the
+reference seasons' API-backed guides. Each rebuild applies the frozen cutoffs.
+
 ## Build and verify football pages
 
 ```sh
