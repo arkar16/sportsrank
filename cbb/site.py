@@ -185,9 +185,12 @@ def main():
         report = (f'<section id="forecasts"><h2>{model} weekly picks</h2>'
                   + _games(slate, logo_ids, as_of, year=args.season) + '</section>')
     _write(args.output, "current.html", f"{season_name(args.season)} basketball forecasts", edition_link + report)
+    card_urls = {}
     if blended and slate:
-        basketball_links(args.output, share_conferences(season, checkpoint))
-    (args.output / "index.html").write_bytes(landing_page(archives, routes, presentation, checkpoint, archive, years, model=model, earlier_years=earlier_years))
+        basketball_links(args.output, share_conferences(season, checkpoint), card_urls=card_urls)
+    home = landing_page(archives, routes, presentation, checkpoint, archive, years, model=model,
+                        earlier_years=earlier_years, card_urls=card_urls)
+    (args.output / "index.html").write_bytes(home)
 
 
 if __name__ == "__main__":

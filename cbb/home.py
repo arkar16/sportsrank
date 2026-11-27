@@ -7,10 +7,12 @@ from pathlib import Path
 from cfb.conference_pages import CONFERENCE_HONORS, conference_honors_route
 from cfb.record_book import home_document, home_rankings
 from cfb.reference_archive import season_team_routes
+from spread_cards import CardURLs
 from .record_book import EASTERN, season_name
 
 
-def landing_page(archives, routes, presentation, checkpoint, edition_path, tournaments, *, model="CORS v0.4.0", earlier_years=()):
+def landing_page(archives, routes, presentation, checkpoint, edition_path, tournaments, *, model="CORS v0.4.0",
+                 earlier_years=(), card_urls: CardURLs | None = None):
     season = archives[-1]
     week = checkpoint["week"]
     previous = week - 1
@@ -20,6 +22,13 @@ def landing_page(archives, routes, presentation, checkpoint, edition_path, tourn
         if game.week == week or (game.week == previous and game.home_score is not None):
             for school in (game.home, game.away):
                 games[game.week, school].append(game)
+
+    def card_url(game):
+        if not card_urls or not game.start_utc:
+            return None
+        day = datetime.fromisoformat(game.start_utc).astimezone(EASTERN).date().isoformat()
+        return card_urls.get((day, game.home, game.away, game.neutral_site))
+
     # Basketball ratings are issued at the start of a slate. Last week's opponents
     # use last week's ranks, and this week's spreads use the displayed checkpoint.
     rankings = home_rankings(
@@ -27,7 +36,7 @@ def landing_page(archives, routes, presentation, checkpoint, edition_path, tourn
         previous=f"W{previous}" if week else None, previous_ranks=prior, pregame_ranks=prior,
         week=previous if week else None, next_week=week,
         empty_result="No game listed" if week else "No games yet", empty_forecast="No game listed",
-        conference_year=season.year, sport="basketball",
+        conference_year=season.year, sport="basketball", card_url=card_url,
         forecast_link=f'<p><a href="/cbb/current.html#forecasts">Week {week} forecasts</a></p>',
     )
     decades = defaultdict(list)

@@ -322,7 +322,7 @@ def build(
             tip_text = _tipoff(g).strftime("%b %d") if date_only else _tipoff(g).strftime("%b %d · %I:%M %p ET")
             game = Game(week, names[g["home_team_id"]], names[g["away_team_id"]],
                         g["home_points"] if visible else None, g["away_points"] if visible else None,
-                        -Decimal(str(g["home_margin"])), g["neutral_site"], tip_text)
+                        -Decimal(str(g["home_margin"])), g["neutral_site"], tip_text, start_utc=g["start_utc"])
             games.append(game)
             if visible:
                 result_cutoff = g.get("result_cutoff_utc") or _available(datetime.fromisoformat(g["start_utc"]))
