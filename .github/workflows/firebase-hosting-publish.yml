@@ -114,6 +114,7 @@ jobs:
             /cbb/seasons/2026 \
             /cbb/tournaments/2025 \
             /cfb/performance/2026 \
+            /cfb/years/history/CORS_NC_FBS_CFB.source.txt \
             /cfb/assets/record-book.css; do
             status=$(curl --silent --show-error --retry 4 --retry-delay 3 --max-time 30 --output "$body" \
               --write-out '%{http_code}' "$base$path?release=$GITHUB_SHA")
@@ -121,13 +122,19 @@ jobs:
             test "$status" = 200
             if [[ "$path" == /health ]]; then
               jq -e --arg sha "$GITHUB_SHA" '.release_id == $sha' "$body"
-            elif [[ "$path" != *.css ]]; then
+            elif [[ "$path" != *.css && "$path" != *.txt ]]; then
               ! grep -q '\.html"' "$body"
             fi
             if [[ "$path" == /cfb/teams/alabama/2026 ]]; then
               grep -q 'Win chance' "$body"
               grep -q 'Projected season record' "$body"
             fi
+          done
+          for blocked in /cfb/years/2026/metadata.json /historical-correction.json; do
+            status=$(curl --silent --show-error --retry 4 --retry-delay 3 --max-time 30 --output /dev/null \
+              --write-out '%{http_code}' "$base$blocked?release=$GITHUB_SHA")
+            echo "Excluded receipt $blocked returned $status"
+            test "$status" = 404
           done
           for pair in \
             "/cfb/years/2026/2026_CFB.html:/cfb/2026" \
