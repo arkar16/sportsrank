@@ -8,7 +8,85 @@
       "historical-correction.json",
       "cfb/years/2024/metadata.json",
       "cfb/years/2025/metadata.json",
-      "cfb/years/2026/metadata.json"
+      "cfb/years/2026/metadata.json",
+      "**/*.html",
+      "**/*.json",
+      "**/*.csv",
+      "**/*.source.txt"
+    ],
+    "headers": [
+      {
+        "source": "/cfb/assets/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=86400, s-maxage=604800"
+          }
+        ]
+      },
+      {
+        "source": "/cbb/assets/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=86400, s-maxage=604800"
+          }
+        ]
+      },
+      {
+        "source": "/cfb/assets/program-marks/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      },
+      {
+        "source": "/cfb/assets/share-icons/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      },
+      {
+        "source": "/cbb/assets/share-icons/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      },
+      {
+        "source": "/cbb/assets/team-logos/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      },
+      {
+        "source": "**/*.ttf",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      }
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "run": {
+          "serviceId": "sportsrank-web",
+          "region": "us-central1"
+        }
+      }
     ]
   }
 }

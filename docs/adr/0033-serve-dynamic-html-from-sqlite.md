@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # Serve dynamic HTML from a versioned SQLite release database
