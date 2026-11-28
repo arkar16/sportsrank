@@ -28,7 +28,7 @@ jobs:
     timeout-minutes: 25
     environment:
       name: production
-      url: https://www.sportsrank.top
+      url: https://sportsrank.top
     env:
       CFBD_API: ""
       CFBD_API_KEY: ""
@@ -100,7 +100,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          base="https://www.sportsrank.top"
+          base="https://sportsrank.top"
+          www_redirect=$(curl --silent --show-error --retry 4 --retry-delay 3 --max-time 30 --output /dev/null \
+            --write-out '%{http_code} %header{location}' "https://www.sportsrank.top/")
+          echo "www redirect -> $www_redirect"
+          test "$www_redirect" = "301 https://sportsrank.top/"
           body="$RUNNER_TEMP/live-response"
           for path in \
             /health \
