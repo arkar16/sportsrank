@@ -1,9 +1,12 @@
-name: Publish static site to Firebase Hosting
+name: Publish SportsRank to Cloud Run and Firebase Hosting
 
 on:
   push:
     branches: [main]
     paths:
+      - 'web/**'
+      - 'Dockerfile'
+      - '.dockerignore'
       - 'website/**'
       - 'firebase.json'
       - 'package.json'
@@ -22,15 +25,35 @@ jobs:
   publish:
     if: github.repository == 'arkar16/sportsrank' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     environment:
       name: production
       url: https://www.sportsrank.top
+    env:
+      CFBD_API: ""
+      CFBD_API_KEY: ""
+      CFBD_PRED_API: ""
+      IMAGE: us-central1-docker.pkg.dev/sportsrank-837af/sportsrank/web:${{ github.sha }}
     steps:
       - uses: actions/checkout@v6
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+
+      - name: Configure runner-local uv cache
+        run: |
+          mkdir -p "$RUNNER_TEMP/sportsrank-uv-cache"
+          echo "UV_CACHE_DIR=$RUNNER_TEMP/sportsrank-uv-cache" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: true
+
+      - run: uv sync --locked
 
       - uses: actions/setup-node@v6
         with:
@@ -40,29 +63,93 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-      - name: Authenticate Firebase
+      - name: Check the offline web application
+        run: |
+          uv run --locked python -m compileall -q web tests/test_web_site.py
+          uv run --locked python -m unittest tests/test_web_site.py -v
+
+      - name: Export the offline release database
+        run: |
+          uv run --locked python -m web export --site website --output .sportsrank/web/sportsrank.sqlite3 --release-id "$GITHUB_SHA"
+          test -s .sportsrank/web/sportsrank.sqlite3
+
+      - name: Authenticate Google Cloud and Firebase
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SPORTSRANK_837AF }}
 
-      - name: Publish committed website
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and push the production image
+        run: |
+          gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+          docker build --tag "$IMAGE" .
+          docker push "$IMAGE"
+
+      - name: Deploy Cloud Run web service
+        run: |
+          gcloud run deploy sportsrank-web --image="$IMAGE" \
+            --region=us-central1 --project=sportsrank-837af --allow-unauthenticated \
+            --min-instances=0 --max-instances=2 --memory=1Gi --cpu=1 \
+            --port=8080 --concurrency=80 --timeout=30 --quiet
+
+      - name: Deploy Firebase Hosting rewrites and static assets
         run: npx --no-install firebase deploy --only hosting --project sportsrank-837af --non-interactive
 
-      - name: Check updated public pages
+      - name: Verify live production site
         shell: bash
         run: |
           set -euo pipefail
-          season_dir=$(find website/cfb/years -mindepth 1 -maxdepth 1 -type d -name '[0-9][0-9][0-9][0-9]' | sort -V | tail -1)
-          season=$(basename "$season_dir")
-          ranking=$(find "$season_dir/rankings" -name '*_W*_FBS_cors.html' | sort -V | tail -1)
-          results=$(find "$season_dir/data/results/weekly_results" -name '*_FBS_results.html' | sort -V | tail -1)
-          forecast=$(find "$season_dir/spread" -name '*_W*_FBS_spread.html' | sort -V | tail -1)
-          for file in "$season_dir/${season}_CFB.html" "$ranking" "$results" "$forecast" "website/cfb/performance/$season/index.html" website/cbb/index.html; do
-            test -s "$file"
-            path=${file#website/}
-            curl --fail --silent --show-error --location --max-time 15 --retry 2 --retry-delay 2 \
-              "https://www.sportsrank.top/$path?publication=$GITHUB_SHA" -o "$RUNNER_TEMP/live-page"
-            cmp "$file" "$RUNNER_TEMP/live-page"
-            echo "Published: https://www.sportsrank.top/$path"
+          base="https://www.sportsrank.top"
+          body="$RUNNER_TEMP/live-response"
+          for path in \
+            /health \
+            / \
+            /cfb/2026 \
+            /cfb/teams/alabama/2026 \
+            /cfb/teams/alabama \
+            /cfb/conferences/sec/2026 \
+            /excitement/grades \
+            /cbb \
+            /cbb/seasons/2026 \
+            /cbb/tournaments/2025 \
+            /cfb/performance/2026 \
+            /cfb/years/history/CORS_NC_FBS_CFB.source.txt \
+            /cfb/assets/record-book.css; do
+            status=$(curl --silent --show-error --retry 4 --retry-delay 3 --max-time 30 --output "$body" \
+              --write-out '%{http_code}' "$base$path?release=$GITHUB_SHA")
+            echo "$path returned $status"
+            test "$status" = 200
+            if [[ "$path" == /health ]]; then
+              jq -e --arg sha "$GITHUB_SHA" '.release_id == $sha' "$body"
+            elif [[ "$path" != *.css && "$path" != *.txt ]]; then
+              ! grep -q '\.html"' "$body"
+            fi
+            if [[ "$path" == /cfb/teams/alabama/2026 ]]; then
+              grep -q 'Win chance' "$body"
+              grep -q 'Projected season record' "$body"
+            fi
           done
-          echo "Published commit $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+          for blocked in /cfb/years/2026/metadata.json /historical-correction.json; do
+            status=$(curl --silent --show-error --retry 4 --retry-delay 3 --max-time 30 --output /dev/null \
+              --write-out '%{http_code}' "$base$blocked?release=$GITHUB_SHA")
+            echo "Excluded receipt $blocked returned $status"
+            test "$status" = 404
+          done
+          for pair in \
+            "/cfb/years/2026/2026_CFB.html:/cfb/2026" \
+            "/cfb/teams/alabama/2026.html:/cfb/teams/alabama/2026" \
+            "/cfb/conferences/sec/2026.html:/cfb/conferences/sec/2026" \
+            "/cbb/seasons/2026/index.html:/cbb/seasons/2026" \
+            "/excitement/grades.html:/excitement/grades"; do
+            src=${pair%%:*}
+            expected=${pair#*:}
+            redirect=$(curl --silent --show-error --retry 4 --retry-delay 3 --max-time 30 --output /dev/null \
+              --write-out '%{http_code} %header{location}' "$base$src?release=$GITHUB_SHA")
+            echo "Legacy redirect $src -> $redirect"
+            case "$redirect" in
+              "301 $expected"|"301 $base$expected") ;;
+              *) exit 1 ;;
+            esac
+          done
+          echo "Published dynamic site at $base for commit \`$GITHUB_SHA\`." >> "$GITHUB_STEP_SUMMARY"

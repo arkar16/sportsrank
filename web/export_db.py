@@ -649,13 +649,18 @@ def _export_rich_pages_and_blobs(con: sqlite3.Connection, site_dir: Path) -> dic
                 page_batch.append((canonical, sport_slug, active_nav, is_final, _compress_bytes(text.encode("utf-8"))))
                 if len(page_batch) >= 500:
                     _flush_pages()
-            elif filename.endswith((".json", ".csv")) and rel not in (
+            elif filename.endswith((".json", ".csv", ".source.txt")) and rel not in (
                 "manifest.json", "release.json", "historical-correction.json",
             ):
-                # Skip CFB per-year performance files already stored in performance_seasons/performance_blobs
-                if rel.startswith("cfb/performance/"):
+                # Skip sealed CFB season metadata receipts and CFB performance files stored separately
+                if rel.startswith("cfb/performance/") or (filename == "metadata.json" and rel.startswith("cfb/years/")):
                     continue
-                ctype = "application/json; charset=utf-8" if filename.endswith(".json") else "text/csv; charset=utf-8"
+                if filename.endswith(".json"):
+                    ctype = "application/json; charset=utf-8"
+                elif filename.endswith(".csv"):
+                    ctype = "text/csv; charset=utf-8"
+                else:
+                    ctype = "text/plain; charset=utf-8"
                 year_match = re.search(r"/([12][0-9]{3})(?:/|$)", legacy_path)
                 is_final = 1 if (year_match and int(year_match[1]) < 2026) else 0
                 blob_batch.append((legacy_path, ctype, is_final, _compress_bytes(file_path.read_bytes())))

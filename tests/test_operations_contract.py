@@ -30,6 +30,11 @@ class OperationsContractTests(unittest.TestCase):
         firebase = json.loads((REPO_ROOT / "firebase.json").read_text(encoding="utf-8"))
         self.assertEqual(firebase["hosting"]["public"], "website")
         self.assertNotIn("functions", firebase)
+        self.assertIn("**/*.html", firebase["hosting"]["ignore"])
+        self.assertIn(
+            {"source": "**", "run": {"serviceId": "sportsrank-web", "region": "us-central1"}},
+            firebase["hosting"]["rewrites"],
+        )
 
         package = json.loads((REPO_ROOT / "package.json").read_text(encoding="utf-8"))
         self.assertRegex(package["devDependencies"]["firebase-tools"], r"^\d+\.\d+\.\d+$")

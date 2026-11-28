@@ -37,4 +37,4 @@ consult architecture/current work before treating it as implemented.
 | [0030](0030-adopt-kalman-two-scale-basketball-cors-v1.md) | Adopt two-timescale Bayesian state-space basketball CORS v1.0.0 |
 | [0031](0031-weight-basketball-outcomes-by-pregame-spread.md) | Weight basketball outcomes by the pregame spread in CORS v1.1.0 |
 | [0032](0032-limit-football-credit-for-fcs-blowouts.md) | Limit football CORS credit for FBS favorites' blowouts against FCS opponents |
-| [0033](0033-serve-dynamic-html-from-sqlite.md) | Proposed dynamic HTML serving from a versioned SQLite database |
+| [0033](0033-serve-dynamic-html-from-sqlite.md) | Serve dynamic HTML from a versioned SQLite release database |

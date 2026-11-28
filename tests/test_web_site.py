@@ -189,6 +189,11 @@ def _build_fixture_site(root: Path) -> None:
         '<main><h1>2025 March Madness</h1><a href="/cbb/seasons/2025/index.html">Season</a></main></body></html>',
         encoding="utf-8",
     )
+    # Sealed metadata receipt (must stay excluded from public serving) & public historical source download
+    (y26 / "metadata.json").write_text('{"sealed": true}', encoding="utf-8")
+    (root / "historical-correction.json").write_text('{"sealed": true}', encoding="utf-8")
+    (root / "cfb/years/history").mkdir(parents=True, exist_ok=True)
+    (root / "cfb/years/history/CORS_NC_FBS_CFB.source.txt").write_text("<table><tr><td>1900</td></tr></table>", encoding="utf-8")
 
 
 class WebSiteTests(unittest.TestCase):
@@ -397,6 +402,15 @@ class WebSiteTests(unittest.TestCase):
         self.assertEqual(headers["Location"], "/cfb/2025/final")
         code, _, _ = _wsgi_call(self.app, "/cfb/2025/w99")
         self.assertEqual(code, 404)
+
+        # Sealed metadata receipts must stay 404 while historical .source.txt downloads remain 200
+        for secret_path in ("/cfb/years/2026/metadata.json", "/historical-correction.json"):
+            code, _, _ = _wsgi_call(self.app, secret_path)
+            self.assertEqual(code, 404, f"Sealed receipt should not be publicly served: {secret_path}")
+        code, headers, body = _wsgi_call(self.app, "/cfb/years/history/CORS_NC_FBS_CFB.source.txt")
+        self.assertEqual(code, 200)
+        self.assertIn("text/plain", headers["Content-Type"])
+        self.assertIn(b"1900", body)
 
         # 404 page
         code, _, body = _wsgi_call(self.app, "/cfb/does-not-exist")
